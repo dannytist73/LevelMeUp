@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLASSES, MINUTES_OPTIONS, TIER_MIN_MINUTES, coreAllowance, ladderRungs } from '../../rules/src/index.ts';
+import { CLASSES, GOALS, MINUTES_OPTIONS, MIN_SIDE_MINUTES, TIER_MIN_MINUTES, coreAllowance, ladderRungs } from '../../rules/src/index.ts';
 import type { Condition } from '../../rules/src/index.ts';
 import { LADDERS, LIBRARY, TEMPLATES } from '../src/library.ts';
 
@@ -90,5 +90,52 @@ describe('ladders', () => {
       expect(ladder.goals.length).toBeGreaterThan(0);
       for (const classId of ladder.affinity) expect(Object.keys(CLASSES)).toContain(classId);
     });
+  });
+});
+
+describe('the whole library', () => {
+  it('has the 12 ladders and about 70 templates', () => {
+    expect(LADDERS.map((l) => l.id)).toEqual([
+      'push', 'squat', 'core', 'own-program', 'walk', 'mobility', 'sleep', 'breathing', 'reading', 'insight', 'focus', 'phone-free',
+    ]);
+    expect(TEMPLATES.length).toBeGreaterThanOrEqual(65);
+    expect(TEMPLATES.length).toBeLessThanOrEqual(80);
+  });
+
+  it('has exactly one Stillness, Dawn Ritual and article quest, and a recovery quest for every class', () => {
+    for (const role of ['stillness', 'dawn_ritual', 'article'] as const) {
+      expect(TEMPLATES.filter((t) => t.role === role)).toHaveLength(1);
+    }
+    for (const classId of Object.keys(CLASSES) as (keyof typeof CLASSES)[]) {
+      expect(TEMPLATES.find((t) => t.id === LIBRARY.recovery[classId])?.role).toBe('recovery');
+    }
+  });
+
+  it('recovery quests take 5 minutes and suit every player', () => {
+    for (const t of TEMPLATES.filter((x) => x.role === 'recovery')) {
+      expect(t.minutes).toBeLessThanOrEqual(5);
+      expect(t.contraindications).toEqual([]);
+      expect(t.exercise === null || t.gentle).toBe(true);
+    }
+  });
+
+  it('Stillness and the Dawn Ritual fit even a 10-minute day', () => {
+    for (const t of TEMPLATES.filter((x) => x.role === 'stillness' || x.role === 'dawn_ritual')) {
+      expect(t.minutes).toBeLessThanOrEqual(coreAllowance(10));
+    }
+  });
+
+  it('always has short side quests nobody is excluded from, in at least 3 stats', () => {
+    const open = TEMPLATES.filter((t) =>
+      (t.role === 'micro' || t.rung === 0) && t.minutes <= MIN_SIDE_MINUTES && t.exercise === null && t.contraindications.length === 0);
+    expect(new Set(open.map((t) => t.stat)).size).toBeGreaterThanOrEqual(3);
+  });
+
+  it('serves every goal, and gives every class affinity ladders for its main stat', () => {
+    for (const goal of GOALS) expect(LADDERS.some((l) => l.goals.includes(goal))).toBe(true);
+    for (const [classId, { main }] of Object.entries(CLASSES)) {
+      const own = LADDERS.filter((l) => l.stat === main && l.affinity.includes(classId as keyof typeof CLASSES));
+      expect(own.length, `${classId} ${main}`).toBeGreaterThan(0);
+    }
   });
 });

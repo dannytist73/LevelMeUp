@@ -1,4 +1,6 @@
 import type { Ladder, QuestLibrary } from '../../rules/src/index.ts';
+import { MIND_LADDERS, MIND_TEMPLATES } from './quests/mind.ts';
+import { SPECIAL_TEMPLATES } from './quests/special.ts';
 import { STRENGTH_LADDERS, STRENGTH_TEMPLATES } from './quests/strength.ts';
 import { VITALITY_LADDERS, VITALITY_TEMPLATES } from './quests/vitality.ts';
 import type { AuthoredTemplate } from './types.ts';
@@ -6,9 +8,14 @@ import type { AuthoredTemplate } from './types.ts';
 /** Bump when a template's meaning changes; each quest instance stores the version it was built from (architecture §3). */
 export const CONTENT_VERSION = 1;
 
-export const LADDERS: readonly Ladder[] = [...STRENGTH_LADDERS, ...VITALITY_LADDERS];
+export const LADDERS: readonly Ladder[] = [...STRENGTH_LADDERS, ...VITALITY_LADDERS, ...MIND_LADDERS];
 
-export const TEMPLATES: readonly AuthoredTemplate[] = [...STRENGTH_TEMPLATES, ...VITALITY_TEMPLATES];
+export const TEMPLATES: readonly AuthoredTemplate[] = [
+  ...STRENGTH_TEMPLATES,
+  ...VITALITY_TEMPLATES,
+  ...MIND_TEMPLATES,
+  ...SPECIAL_TEMPLATES,
+];
 
 export const LIBRARY: QuestLibrary = {
   ladders: LADDERS,
