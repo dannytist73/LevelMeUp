@@ -2,14 +2,17 @@ import { wrap } from '../src/data/expoSql.ts';
 
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn(), deleteDatabaseAsync: jest.fn() }));
 
-function fakeDb() {
+type FakeDb = Record<'execAsync' | 'runAsync' | 'getAllAsync' | 'withExclusiveTransactionAsync', jest.Mock>;
+
+function fakeDb(): { db: FakeDb; calls: unknown[][] } {
   const calls: unknown[][] = [];
-  const db = {
+  const db: FakeDb = {
     execAsync: jest.fn(async (text: string) => void calls.push(['exec', text])),
     runAsync: jest.fn(async (text: string, params: unknown[]) => void calls.push(['run', text, params])),
     getAllAsync: jest.fn(async (text: string, params: unknown[]) => (calls.push(['all', text, params]), [{ n: 1 }])),
-    withExclusiveTransactionAsync: jest.fn(async (task: (txn: unknown) => Promise<void>) => task(db)),
+    withExclusiveTransactionAsync: jest.fn(),
   };
+  db.withExclusiveTransactionAsync.mockImplementation(async (task: (txn: unknown) => Promise<void>) => task(db));
   return { db, calls };
 }
 
