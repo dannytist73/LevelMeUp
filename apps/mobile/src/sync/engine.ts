@@ -17,7 +17,9 @@ export type SyncOutcome =
   | { kind: 'session_ended' }
   | { kind: 'offline' }
   | { kind: 'retry'; code: string }
-  | { kind: 'failed'; status: number; code: string };
+  | { kind: 'failed'; status: number; code: string }
+  /** Set by the store, not by syncOnce: this phone holds data but its sign-in is gone for good (no retry). */
+  | { kind: 'sign_in_lost' };
 
 export type SyncDeps = {
   local: Pick<Local, 'pending' | 'acknowledge'>;

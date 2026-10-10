@@ -3,7 +3,7 @@ import type { SessionState } from '../src/auth/session.ts';
 import { makeLocal, migrate } from '../src/data/local.ts';
 import type { ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
-import { NO_SESSION_TEXT, createGameStore } from '../src/state/store.ts';
+import { SIGN_IN_LOST_TEXT, createGameStore } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { nodeSql } from './support/nodeSql.ts';
 import { serverState } from './support/fixtures.ts';
@@ -54,6 +54,8 @@ async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
 }
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
+/** What the store answered, at the last sign-in, to "may a new guest be made?". */
+const lastAllowNewGuest = (deps: GameDeps) => ((deps.ensureSession as jest.Mock).mock.calls.at(-1)![0] as () => boolean)();
 
 describe('the game store', () => {
   it('shows the cached state before the network answers', async () => {
@@ -82,25 +84,81 @@ describe('the game store', () => {
   it('allows a new guest only on an empty phone', async () => {
     const empty = await setup([{ ok: false, status: 404, code: 'not_started' }]);
     await empty.store.getState().boot();
-    expect(empty.deps.ensureSession).toHaveBeenLastCalledWith(true);
+    expect(lastAllowNewGuest(empty.deps)).toBe(true);
     empty.store.getState().stop();
 
     const holding = await setup([ok(SERVER)]);
     await holding.local.acknowledge([], [], SERVER, 1);
     await holding.store.getState().boot();
-    expect(holding.deps.ensureSession).toHaveBeenLastCalledWith(false);
+    expect(lastAllowNewGuest(holding.deps)).toBe(false);
     holding.store.getState().stop();
   });
 
-  it('a phone with a character but an unreadable sign-in keeps everything and says so (M4 code review)', async () => {
-    const { store, local, api } = await setup([ok(SERVER)], { ensureSession: jest.fn(async (): Promise<SessionState> => 'no_session') });
+  it('a phone with a character whose sign-in is gone for good keeps everything, stops retrying, and leaves the choice to the player', async () => {
+    const ensureSession = jest.fn(async (): Promise<SessionState> => 'no_session');
+    const { store, local, api } = await setup([ok(SERVER)], { ensureSession });
     await local.acknowledge([], [], SERVER, 1);
     await local.enqueue({ ...completeCore, id: 'e1' }, 2);
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
+    try {
+      await store.getState().boot();
+      expect(store.getState()).toMatchObject({ phase: 'ready', status: 'idle', signInLost: true });
+      await jest.advanceTimersByTimeAsync(3_600_000);
+      expect(ensureSession).toHaveBeenCalledTimes(1); // no endless retry
+      expect(api.sync).not.toHaveBeenCalled();
+      expect((await local.snapshot()).pending).toHaveLength(1);
+      expect(SIGN_IN_LOST_TEXT).toMatch(/start again/);
+    } finally {
+      store.getState().stop();
+      jest.useRealTimers();
+    }
+  });
+
+  it('starting again (the player chose it) clears the lost state and makes a new guest', async () => {
+    const replies: SessionState[] = ['no_session', 'signed_in'];
+    const ensureSession = jest.fn(async (): Promise<SessionState> => replies.shift() ?? 'signed_in');
+    const { store, local } = await setup([{ ok: false, status: 404, code: 'not_started' }], { ensureSession });
+    await local.acknowledge([], [], SERVER, 1);
     await store.getState().boot();
-    expect(api.sync).not.toHaveBeenCalled();
-    expect(store.getState()).toMatchObject({ phase: 'ready', status: 'retrying', error: NO_SESSION_TEXT });
-    expect((await local.snapshot()).pending).toHaveLength(1);
+    expect(store.getState().signInLost).toBe(true);
+    await store.getState().startOver();
+    expect(store.getState()).toMatchObject({ signInLost: false, phase: 'not_started' });
+    expect(await local.load()).toBeNull();
     store.getState().stop();
+  });
+
+  it('a sync abandoned at its deadline can\'t write back a character deleted meanwhile (M4 re-review)', async () => {
+    let lateAnswer: (() => void) | null = null;
+    const hung = () => new Promise<Call<SyncResponse>>((resolve) => (lateAnswer = () => resolve(ok(SERVER))));
+    // A sign-in like the real one: gone after sign-out, and a new guest only when the store allows it.
+    let signedIn = true;
+    const ensureSession = jest.fn(async (allowNewGuest: () => boolean): Promise<SessionState> => {
+      if (signedIn) return 'signed_in';
+      if (!allowNewGuest()) return 'no_session';
+      signedIn = true;
+      return 'signed_in';
+    });
+    // The old run wakes up at the worst moment: after the wipe, before the next sync starts (during sign-out).
+    const signOut = jest.fn(async () => {
+      signedIn = false;
+      (lateAnswer as () => void)();
+      for (let i = 0; i < 20; i++) await settle();
+    });
+    const { store, local } = await setup([hung, { ok: false, status: 404, code: 'not_started' }], { signOut, ensureSession });
+    await local.acknowledge([], [], SERVER, 1);
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
+    try {
+      const booting = store.getState().boot();
+      while (lateAnswer === null) await settle();
+      await jest.advanceTimersByTimeAsync(120_000); // the scheduler gives up on the hung run
+      await booting;
+      expect(await store.getState().deleteTestCharacter()).toEqual({ ok: true });
+      expect(await local.load()).toBeNull();
+      expect(store.getState()).toMatchObject({ signInLost: false, phase: 'not_started' });
+    } finally {
+      store.getState().stop();
+      jest.useRealTimers();
+    }
   });
 
   it('an action is sent with the next sync and leaves the outbox', async () => {
@@ -230,7 +288,7 @@ describe('the game store', () => {
     await store.getState().startOver();
     expect(deps.signOut).toHaveBeenCalled();
     expect(await local.load()).toBeNull();
-    expect(deps.ensureSession).toHaveBeenLastCalledWith(true);
+    expect(lastAllowNewGuest(deps)).toBe(true);
     store.getState().stop();
   });
 

@@ -96,6 +96,19 @@ describe('Today', () => {
     expect(onDeveloper).toHaveBeenCalled();
   });
 
+  it('a lost sign-in is explained, and starting again needs a second, explicit tap', async () => {
+    const { store } = await renderToday({ signInLost: true });
+    expect(screen.getByLabelText(/^System: This phone lost its guest sign-in/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Yes, start again' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Start again as a new guest' }));
+    expect(store.getState().startOver).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Not now' }));
+    expect(screen.queryByRole('button', { name: 'Yes, start again' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Start again as a new guest' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Yes, start again' }));
+    expect(store.getState().startOver).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a refused action as a plain notice that can be dismissed', async () => {
     const { store } = await renderToday({ notices: [{ eventId: 'e1', code: 'day_closed' }] });
     expect(screen.getByLabelText('System: That day had already closed, so the change was not saved.')).toBeTruthy();

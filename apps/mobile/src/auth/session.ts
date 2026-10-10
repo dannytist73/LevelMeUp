@@ -5,12 +5,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 /**
  * - `signed_in`: there is a session (now or from before).
  * - `offline`: the session couldn't be read or made right now; try again later, change nothing.
- * - `no_session`: there is none and `allowNewGuest` is false: this phone holds a character or unsent actions, so a new
- *   guest would orphan them (M4 code review). The app keeps its data and keeps trying.
+ * - `no_session`: the session is cleanly gone (Auth removed it after refusing a refresh, or its key is gone for good)
+ *   and a new guest isn't allowed: this phone holds a character or unsent actions (M4 code review). Retrying can't
+ *   bring it back; the player decides whether to start again.
+ *
+ * `allowNewGuest` is asked at the moment of signing in, so a sync abandoned meanwhile can't make a guest.
  */
 export type SessionState = 'signed_in' | 'offline' | 'no_session';
 
-export async function ensureSession(client: SupabaseClient, allowNewGuest: boolean): Promise<SessionState> {
+export async function ensureSession(client: SupabaseClient, allowNewGuest: () => boolean): Promise<SessionState> {
   let session: unknown;
   try {
     const { data, error } = await client.auth.getSession();
@@ -20,7 +23,7 @@ export async function ensureSession(client: SupabaseClient, allowNewGuest: boole
     return 'offline'; // the stored session couldn't be read (a vault error): keep it
   }
   if (session !== null) return 'signed_in';
-  if (!allowNewGuest) return 'no_session';
+  if (!allowNewGuest()) return 'no_session';
   const { error } = await client.auth.signInAnonymously();
   return error === null ? 'signed_in' : 'offline';
 }

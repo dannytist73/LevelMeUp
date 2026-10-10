@@ -26,7 +26,7 @@ export default function Developer() {
   const startTestCharacter = useGame((s) => s.startTestCharacter);
   const deleteTestCharacter = useGame((s) => s.deleteTestCharacter);
   const startOver = useGame((s) => s.startOver);
-  const error = useGame((s) => s.error);
+  const signInLost = useGame((s) => s.signInLost);
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
@@ -89,9 +89,9 @@ export default function Developer() {
         <Meta key={n.eventId}>{`Refused: ${n.code}`}</Meta>
       ))}
 
-      {error !== null && (
+      {signInLost && (
         <>
-          <Small>{error}</Small>
+          <Small>The guest sign-in on this phone is gone.</Small>
           <Button
             label="Start over as a new guest"
             variant="secondary"

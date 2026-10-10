@@ -12,15 +12,15 @@ const withSession = (session: unknown) => jest.fn(async () => ({ data: { session
 describe('the guest sign-in', () => {
   it('uses the session there is, without signing in again', async () => {
     const signInAnonymously = jest.fn();
-    expect(await ensureSession(client({ getSession: withSession({}), signInAnonymously }), true)).toBe('signed_in');
+    expect(await ensureSession(client({ getSession: withSession({}), signInAnonymously }), () => true)).toBe('signed_in');
     expect(signInAnonymously).not.toHaveBeenCalled();
   });
 
   it('signs in a new guest only when the phone holds nothing (M4 code review)', async () => {
     const signInAnonymously = jest.fn(async () => ({ data: {}, error: null }));
-    expect(await ensureSession(client({ getSession: withSession(null), signInAnonymously }), true)).toBe('signed_in');
+    expect(await ensureSession(client({ getSession: withSession(null), signInAnonymously }), () => true)).toBe('signed_in');
     expect(signInAnonymously).toHaveBeenCalledTimes(1);
-    expect(await ensureSession(client({ getSession: withSession(null), signInAnonymously }), false)).toBe('no_session');
+    expect(await ensureSession(client({ getSession: withSession(null), signInAnonymously }), () => false)).toBe('no_session');
     expect(signInAnonymously).toHaveBeenCalledTimes(1);
   });
 
@@ -29,15 +29,15 @@ describe('the guest sign-in', () => {
     const throwing = jest.fn(async () => {
       throw new Error('Keystore busy');
     });
-    expect(await ensureSession(client({ getSession: throwing, signInAnonymously }), true)).toBe('offline');
+    expect(await ensureSession(client({ getSession: throwing, signInAnonymously }), () => true)).toBe('offline');
     const erroring = jest.fn(async () => ({ data: { session: null }, error: new Error('storage') }));
-    expect(await ensureSession(client({ getSession: erroring, signInAnonymously }), true)).toBe('offline');
+    expect(await ensureSession(client({ getSession: erroring, signInAnonymously }), () => true)).toBe('offline');
     expect(signInAnonymously).not.toHaveBeenCalled();
   });
 
   it('a failed sign-in (offline) changes nothing', async () => {
     const auth = { getSession: withSession(null), signInAnonymously: jest.fn(async () => ({ data: {}, error: new Error('Network request failed') })) };
-    expect(await ensureSession(client(auth), true)).toBe('offline');
+    expect(await ensureSession(client(auth), () => true)).toBe('offline');
   });
 });
 

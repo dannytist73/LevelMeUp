@@ -21,8 +21,8 @@ export type NewEvent = DistributiveOmit<PhoneEvent, 'id'>;
 export type GameDeps = {
   local: Local;
   api: Api;
-  /** A guest sign-in; a new guest only when `allowNewGuest` (this phone holds no character and nothing unsent). */
-  ensureSession: (allowNewGuest: boolean) => Promise<SessionState>;
+  /** A guest sign-in; a new guest only when `allowNewGuest()` says so at that moment (an empty phone). */
+  ensureSession: (allowNewGuest: () => boolean) => Promise<SessionState>;
   sessionAlive: () => Promise<boolean>;
   signOut: () => Promise<void>;
   timeZone: () => string;
@@ -34,8 +34,9 @@ export type GameDeps = {
 export type Phase = 'loading' | 'ready' | 'not_started';
 export type Status = 'idle' | 'syncing' | 'offline' | 'retrying';
 
-export const NO_SESSION_TEXT =
-  "This phone can't read its guest sign-in right now. Your progress stays here, and LevelMeUp keeps trying.";
+export const SIGN_IN_LOST_TEXT =
+  "This phone lost its guest sign-in, so the System can't reach your character any more. You can start again as a new " +
+  "guest; the progress kept on this phone can't be recovered.";
 
 export type GameState = {
   phase: Phase;
@@ -45,14 +46,16 @@ export type GameState = {
   status: Status;
   lastSyncedAt: number | null;
   notices: Notice[];
-  /** Shown on Settings: a sync the server refused as malformed (a bug), or a sign-in that can't be read. */
+  /** The phone holds data but its guest sign-in is gone for good: only the player can choose to start again. */
+  signInLost: boolean;
+  /** Shown on Settings: a sync the server refused as malformed (a bug). */
   error: string | null;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
   startTestCharacter: (choices: unknown) => Promise<{ ok: true; source: 'claude' | 'template' } | { ok: false; code: string }>;
   deleteTestCharacter: () => Promise<{ ok: true } | { ok: false; code: string }>;
-  /** Development builds: forget this phone's character and sign-in and start as a new guest. */
+  /** Forget this phone's character and sign-in and start as a new guest (after the player confirms). */
   startOver: () => Promise<void>;
   dismissNotice: (eventId: string) => Promise<void>;
   stop: () => void;
@@ -83,16 +86,20 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       watchDayEnd(view);
     };
 
-    /** Each run gets a number; a run the scheduler gave up on (its deadline passed) may not write when it wakes up. */
+    /**
+     * Each run gets a number, and every exclusive section moves it on: a run the scheduler gave up on (its deadline
+     * passed) may not write, or make a guest, when it wakes up (M4 re-review).
+     */
     let generation = 0;
 
     const run = async (): Promise<SyncOutcome> => {
       const mine = ++generation;
       set({ status: 'syncing' });
       const held = await deps.local.snapshot();
-      const session = await deps.ensureSession(held.cached === null && held.pending.length === 0);
+      const empty = held.cached === null && held.pending.length === 0;
+      const session = await deps.ensureSession(() => empty && mine === generation);
       if (session === 'offline') return { kind: 'offline' };
-      if (session === 'no_session') return { kind: 'retry', code: 'no_session' };
+      if (session === 'no_session') return { kind: 'sign_in_lost' };
       const local = {
         pending: deps.local.pending,
         acknowledge: async (...args: Parameters<Local['acknowledge']>) => {
@@ -107,8 +114,15 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     const forget = async (): Promise<void> => {
       await deps.local.wipe();
       await deps.signOut();
-      await refresh({ phase: 'loading', status: 'idle', error: null });
+      await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
+
+    /** Exclusive work (no sync in flight) that also shuts out any sync abandoned at its deadline. */
+    const fenced = <T,>(fn: () => Promise<T>): Promise<T> =>
+      scheduler.exclusive(async () => {
+        generation++;
+        return fn();
+      });
 
     const handle = async (outcome: SyncOutcome): Promise<void> => {
       switch (outcome.kind) {
@@ -130,7 +144,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           set({ status: 'offline' });
           return;
         case 'retry':
-          set({ status: 'retrying', error: outcome.code === 'no_session' ? NO_SESSION_TEXT : get().error });
+          set({ status: 'retrying' });
+          return;
+        case 'sign_in_lost':
+          set({ status: 'idle', signInLost: true });
           return;
         case 'failed':
           set({ status: 'idle', error: `The server refused a sync (${outcome.status} ${outcome.code}).` });
@@ -147,6 +164,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       status: 'idle',
       lastSyncedAt: null,
       notices: [],
+      signInLost: false,
       error: null,
 
       boot: async () => {
@@ -164,8 +182,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       syncNow: () => scheduler.request(),
 
       startTestCharacter: (choices) =>
-        scheduler.exclusive(async () => {
-          const signedIn = await deps.ensureSession(get().cached === null && get().pending.length === 0);
+        fenced(async () => {
+          const signedIn = await deps.ensureSession(() => get().cached === null && get().pending.length === 0);
           if (signedIn !== 'signed_in') return { ok: false as const, code: signedIn === 'offline' ? 'network' : 'no_session' };
           const started = await deps.api.onboarding(choices);
           if (!started.ok) return { ok: false as const, code: started.code };
@@ -175,7 +193,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         }),
 
       deleteTestCharacter: async () => {
-        const result = await scheduler.exclusive(async () => {
+        const result = await fenced(async () => {
           const deleted = await deps.api.deleteAccount();
           if (!deleted.ok) return { ok: false as const, code: deleted.code };
           await forget();
@@ -186,7 +204,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       startOver: async () => {
-        await scheduler.exclusive(forget);
+        await fenced(forget);
         await scheduler.request();
       },
 

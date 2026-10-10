@@ -18,6 +18,9 @@ export type RawSql = Omit<Sql, 'transaction'>;
  * Every statement and transaction on one connection, one at a time, in the order asked (M4 code review: a second
  * connection for transactions made concurrent writes fail with "database is locked"). A transaction holds the queue
  * from BEGIN to COMMIT, so nothing can interleave with it and nothing waits on a lock.
+ *
+ * Rule: inside a transaction, use only the `tx` it is given. Awaiting the outer `Sql` (or anything that uses it) from
+ * a transaction callback would wait for the transaction itself, forever.
  */
 export function serialized(raw: RawSql): Sql {
   let tail: Promise<unknown> = Promise.resolve();
@@ -32,6 +35,13 @@ export function serialized(raw: RawSql): Sql {
     all: (text, params) => raw.all(text, params),
     transaction: () => Promise.reject(new Error('transactions do not nest')),
   };
+  const rollbackQuietly = async (): Promise<void> => {
+    try {
+      await raw.exec('rollback');
+    } catch {
+      // The transaction may already be gone; the original error is the one that matters.
+    }
+  };
   return {
     exec: (text) => queue(() => raw.exec(text)),
     run: (text, params) => queue(() => raw.run(text, params)),
@@ -41,11 +51,12 @@ export function serialized(raw: RawSql): Sql {
         await raw.exec('begin immediate');
         try {
           await fn(inside);
+          await raw.exec('commit');
         } catch (error) {
-          await raw.exec('rollback');
+          // Also after a failed COMMIT, so the connection never stays inside an open transaction.
+          await rollbackQuietly();
           throw error;
         }
-        await raw.exec('commit');
       }),
   };
 }

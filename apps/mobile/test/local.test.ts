@@ -106,6 +106,26 @@ describe('the serialized connection', () => {
     await expect(sql.transaction((tx) => tx.transaction(async () => {}))).rejects.toThrow('transactions do not nest');
   });
 
+  it('a COMMIT that fails is rolled back, and the connection keeps working (M4 re-review)', async () => {
+    const { sql } = await fresh();
+    await sql.exec('create table t (n integer)');
+    const raw = rawNodeSql(sql.db);
+    let failCommit = true;
+    const flaky = serialized({
+      ...raw,
+      exec: async (text) => {
+        if (text === 'commit' && failCommit) {
+          failCommit = false;
+          throw new Error('SQLITE_FULL');
+        }
+        return raw.exec(text);
+      },
+    });
+    await expect(flaky.transaction((tx) => tx.run('insert into t values (1)'))).rejects.toThrow('SQLITE_FULL');
+    await flaky.transaction((tx) => tx.run('insert into t values (2)'));
+    expect(await flaky.all('select n from t')).toEqual([{ n: 2 }]);
+  });
+
   it('runs statements in the order asked, after any transaction in progress', async () => {
     const { sql } = await fresh();
     await sql.exec('create table t (n integer)');

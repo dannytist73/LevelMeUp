@@ -15,6 +15,7 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     status: 'idle',
     lastSyncedAt: null,
     notices: [],
+    signInLost: false,
     error: null,
     boot: jest.fn(async () => {}),
     enqueue: jest.fn(async () => {}),

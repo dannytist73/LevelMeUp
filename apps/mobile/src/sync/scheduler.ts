@@ -84,18 +84,22 @@ export function makeScheduler(
     return running;
   }
 
-  /** Runs `fn` with no sync in flight; sync requests made meanwhile run after it. */
+  /**
+   * Runs `fn` with no sync in flight; sync requests made meanwhile run after it. The gate closes before `fn` starts,
+   * so even its synchronous part can't start a sync.
+   * Rules: `fn` must not await `request()` or call `exclusive` (each would wait for `fn` itself), and `onOutcome` must
+   * not call `exclusive`.
+   */
   async function exclusive<T>(fn: () => Promise<T>): Promise<T> {
     while (held !== null) await held.then(() => undefined, () => undefined);
-    const section = (async () => {
-      while (running !== null) await running;
-      return fn();
-    })();
-    held = section;
+    let open!: () => void;
+    held = new Promise<void>((resolve) => (open = resolve));
     try {
-      return await section;
+      while (running !== null) await running;
+      return await fn();
     } finally {
       held = null;
+      open();
     }
   }
 

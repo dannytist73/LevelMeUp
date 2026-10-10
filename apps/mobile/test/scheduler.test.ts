@@ -124,6 +124,21 @@ describe('when syncs run', () => {
     scheduler.stop();
   });
 
+  it('a request made in the synchronous start of exclusive work waits for it (M4 re-review)', async () => {
+    const run = jest.fn(async () => synced);
+    const scheduler = makeScheduler(run, () => {});
+    let during = -1;
+    await scheduler.exclusive(async () => {
+      void scheduler.request(); // synchronous, before any await
+      await jest.advanceTimersByTimeAsync(0);
+      during = run.mock.calls.length;
+    });
+    await jest.advanceTimersByTimeAsync(0);
+    expect(during).toBe(0);
+    expect(run).toHaveBeenCalledTimes(1);
+    scheduler.stop();
+  });
+
   it('stop() cancels the pending retry and ignores later requests', async () => {
     const { run, scheduler } = harness([offline]);
     await scheduler.request();

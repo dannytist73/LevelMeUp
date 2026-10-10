@@ -1,12 +1,13 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version: the day's header and every quest of the day, with the §1.4
 // loading, empty and offline states. Quest actions, swap, hard day and the article reader arrive in M6–M8.
 import { CLASS_NAMES } from '@levelmeup/content';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
-import { useGame } from '../state/store.ts';
+import { SIGN_IN_LOST_TEXT, useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
@@ -37,6 +38,9 @@ export function Today({ onSettings, onDeveloper, now = Date.now }: TodayProps) {
   const notices = useGame((s) => s.notices);
   const syncNow = useGame((s) => s.syncNow);
   const dismissNotice = useGame((s) => s.dismissNotice);
+  const signInLost = useGame((s) => s.signInLost);
+  const startOver = useGame((s) => s.startOver);
+  const [confirming, setConfirming] = useState(false);
 
   const today = view?.today ?? null;
   const usable = today !== null && today.quests.length > 0 && Date.parse(today.endsAt!) > now();
@@ -52,7 +56,23 @@ export function Today({ onSettings, onDeveloper, now = Date.now }: TodayProps) {
   ));
 
   let body;
-  if (phase === 'not_started') {
+  if (signInLost) {
+    // M4 re-review: the sign-in is gone for good; starting again is the player's choice, confirmed, never automatic.
+    body = (
+      <View style={{ gap: 16 }}>
+        <NarrationBox>{SIGN_IN_LOST_TEXT}</NarrationBox>
+        {confirming ? (
+          <>
+            <Small tone="chalk">This clears the progress kept on this phone. It can't be undone.</Small>
+            <Button label="Yes, start again" variant="secondary" onPress={() => void startOver()} />
+            <Button label="Not now" variant="secondary" onPress={() => setConfirming(false)} />
+          </>
+        ) : (
+          <Button label="Start again as a new guest" variant="secondary" onPress={() => setConfirming(true)} />
+        )}
+      </View>
+    );
+  } else if (phase === 'not_started') {
     body = (
       <View style={{ gap: 16 }}>
         <NarrationBox>The System is waiting for you.</NarrationBox>
