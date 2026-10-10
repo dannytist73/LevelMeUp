@@ -1,6 +1,6 @@
 # LevelMeUp — MVP Design Spec
 
-**Date:** 2026-10-10 · **Status:** in progress, written section by section as the owner approves each one
+**Date:** 2026-10-10 · **Status:** all four sections approved in chat; full spec awaiting the owner's review
 **Inputs:** `docs/2026-10-10-discovery.md` (decisions 1–4), `docs/research/`
 
 ## Plain summary
@@ -24,8 +24,10 @@ The System "awakens" and interviews the player, asking only what changes their q
    reading habit and interests; main distractions; and so on.
 5. **Rhythm:** wake and sleep times set the personal day boundary (default 4 AM local; works for shift workers).
 6. **Time and difficulty:** minutes per day; gentle, steady or hard.
-7. **"When you slip, what helps?"** Suggests an accountability style; nothing activates.
-8. **Analysis scene:** one AI call. A rules-based profile is used if it fails or takes longer than 15 s.
+7. **"When you slip, what helps?"** Suggests an accountability style, shown on the reveal; nothing activates
+   (enabling goes through the Accountability Pact, §4.3).
+8. **Analysis scene:** the rules compute the character; one AI call writes its narrative. A template-written reveal
+   is used if the call fails or takes longer than 15 s (§4.2).
 9. **Character reveal:** class, stats, strengths, growth areas, starting routine, a short narrative, labelled
    "stats are game estimates". The player can change class and correct wrong assumptions.
 10. **Optional vow** (hold to accept), then Day 1, deliberately light.
@@ -55,7 +57,7 @@ achievements and history are both "looking back"; fewer tabs keep today's quests
 
 | Screen | Loading | Empty | Error |
 |---|---|---|---|
-| Onboarding analysis | The System "analysing" scene (max 15 s) | — | Rules-based profile, silently; the reveal still plays |
+| Onboarding analysis | The System "analysing" scene (max 15 s) | — | Template-written narrative, silently; the reveal still plays |
 | Today | Cached quests from the device shown at once; a quiet sync mark | Before the day's quests exist: "The System is preparing your trials" and a retry | Offline: cached quests stay usable; completions queue with a "will sync" mark. Never shown as failure |
 | Today: article card | Skeleton card | No article yet: an evergreen article from the library | Same as empty |
 | Character | Cached profile | — (always exists after onboarding) | Cached values with a "last synced" time |
@@ -101,7 +103,8 @@ typical 70%, struggling 40% completion) before anything is built on them.
 | Hard-day version | half, rounded up (minimum 5); still counts for the streak |
 | Reaching a new progression step (ladder rung) | +15 to that stat, once per rung |
 
-The day is capped at 1 core + 2 side quests + the article, so a full day is about 65 XP and a typical day about 45.
+The day is capped at 1 core + 2 side quests + the article (plus a recovery quest when one is owed, worth Discipline
+only), so a full day is about 65 XP and a typical day about 45.
 
 ### 2.3 Levels
 
@@ -112,8 +115,10 @@ XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach leve
 | 2 | 30 | day 1 | day 1–2 |
 | 5 | 240 | end of week 1 | about week 2 |
 | 10 | 990 | about 3 weeks | about day 40 |
-| 15 | 2,240 | about 6–7 weeks | — |
-| 20 | 3,990 | about 3 months | later, still climbing |
+| 15 | 2,240 | about 6 weeks | — |
+| 20 | 3,990 | about 2½–3 months | later, still climbing |
+
+The simulation passes if each target is met within ±20%; if not, the per-level step (20) is tuned, not the XP table.
 
 ### 2.4 Streaks and shields
 
@@ -121,7 +126,7 @@ XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach leve
 - Protected days pause the streak (no growth, no break): planned rest, sick or injured, emergency, travel, or a
   server-side outage (auto-protected, no question asked). More than 3 protected days in 14 → the System offers a
   lighter plan, never a penalty.
-- A plain miss: see §3.6 (recovery quest first, then a shield, then a reset).
+- A plain miss: see §3.7 (recovery quest first, then a shield, then a reset).
 - Shields: earn 1 per 7 streak days; hold at most 2.
 - Away for several days: one check-in covers the gap; the streak waits as "paused" until it is answered.
 
@@ -132,7 +137,7 @@ XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach leve
 | Warrior | Strength / Vitality | strength ladders, walks, a 5-minute read | Second Wind: once a week, make up a missed core quest the next day for full credit | Unbreakable: once a month, a plain miss doesn't cost a shield |
 | Mage | Wisdom / Focus | reading, notes, reflection, plus walks and mobility | Insight: choose tomorrow's article topic from 3 | Scholar's Path: set a book; reading quests track it to the end |
 | Rogue | Focus / Vitality | focus sessions, phone-free blocks, hardest task first, plus movement | Shadowstep: 2 swaps a day instead of 1 | Vanish: a planned phone-free block guarded by a timer |
-| Monk | Vitality / Wisdom | sleep routine, mobility, breathing, gentle walks | Stillness: one restoration day a week counts for the streak | Dawn Ritual: a morning routine bundle counts as the core quest |
+| Monk | Vitality / Wisdom | sleep routine, mobility, breathing, gentle walks | Stillness: once a week, a gentle restoration quest replaces the core quest and the day grows the streak (unlike a planned rest day, which only pauses it) | Dawn Ritual: a morning routine bundle counts as the core quest |
 
 - Quest mix: the core quest trains the main stat on about 4 days a week, the second stat on about 2, and a
   "balance" quest targets the weakest area about once a week. Nothing is locked.
@@ -221,16 +226,167 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 | Emergency, travel, a brutal day | paused | normal or lighter tomorrow |
 | It was too hard | paused | that ladder steps down |
 | I need a lighter load | paused | daily minutes drop, plan lightens |
-| I just didn't | recovery chance | a 5-minute recovery quest for tomorrow: done → streak survives (the missed day doesn't count) + Discipline; skipped → a shield is used; no shield → reset. Opted-in accountability applies only here (§4) |
+| I just didn't | recovery chance | a 5-minute recovery quest on the day of the check-in: done → streak survives (the missed day doesn't count) + Discipline; skipped → a shield is used; no shield → reset. Opted-in accountability applies only here (§4) |
 | (server outage or no quests generated) | paused automatically | not asked |
 
 - Paused days earn no XP and don't grow the streak, so excuses gain nothing; honesty plus a recovery quest earns
   Discipline.
 - 3+ recovery quests or 3+ protected days in 14 → the System offers a lighter plan.
 - A dismissed check-in comes back on the next open; the streak stays paused until it is answered.
+- The recovery quest is available until the end of the quest day on which the check-in is answered. A Warrior with
+  *Second Wind* available may instead redo the full missed core quest that day for its full XP.
 
 ### 3.8 Time zones and the day boundary
 
 - The quest day starts at the player's boundary in the phone's time zone at the moment the day starts.
 - A day lasts at least 20 and at most 28 hours (flights, DST).
 - A server job closes days hourly per time zone.
+
+## 4. Daily article, accountability and notifications (approved 2026-10-10)
+
+### 4.1 The daily article
+
+**Generation (scheduled, shared library, never per user and never on screen load)**
+- A nightly Supabase Cron job writes **2 articles** into a shared library, rotating through about 8 topic clusters:
+  discipline and habits, psychology, fitness and movement, sleep and recovery, focus, learning, philosophy,
+  history and decision-making. Model: Claude Opus 5.5 (owner's decision).
+- Each article is three steps:
+  1. **Research:** a call with web search and web fetch returns a structured brief: sources (URL, title) and key
+     facts, each fact tied to a source.
+  2. **Write:** structured output `{title, summary, reading_minutes, sections[], takeaways[], reflection_question,
+     source_ids[]}`, 800–1,200 words (5–7 min), in the house style: manhwa flavour, short sections, a strong opening,
+     memorable examples, occasional System commentary, practical lessons.
+  3. **Check (code):** the schema is valid; every factual claim's source id exists in the brief; **no quotes
+     attributed to real people** (MVP rule); a banned-phrase lint for robotic AI prose.
+- Only articles that pass are published. A failure is retried once the next night; readers never see it.
+- About 20 **evergreen** articles are generated and owner-reviewed before the pilot; they fill any gap (AI down,
+  budget cap hit, nothing unread).
+- Original explanations only; never reproduce copyrighted text.
+
+**Assignment**
+- When a day is created, it gets one unread published article: about 60% from the player's goals and class,
+  40% from other clusters. Stored on the day; never regenerated.
+- The app caches a few eligible unread articles so an offline-built day still has one.
+- Mage *Insight* (level 5): choose tomorrow's topic from 3.
+- The article quest: "read it and write one takeaway" = Wisdom, minor tier (10 XP). It counts as a quest for the
+  2-quest streak rule.
+
+**Cost control**
+- Every AI call logs model, tokens and cost.
+- A hard monthly cap (**$25**) is checked before each call; over the cap the job stops and the evergreen library
+  takes over.
+- Cost depends on articles per day, not on the number of users.
+
+### 4.2 Onboarding AI
+
+- The **rules** compute every number: class, stat estimates, starting rungs, difficulty, the suggested
+  accountability style.
+- One Claude call writes the **words**: the narrative, strengths and growth areas, in the chosen voice.
+  Structured output, validated; 15 s timeout.
+- On failure, a plainer template-written reveal shows the same character.
+
+### 4.3 Accountability (MVP levels 0–2)
+
+- **Off by default.** Enabled through the *Accountability Pact* screen (from Settings, or from the suggestion on
+  the reveal). It shows exactly what happens on a miss and previews the Shadow. It applies only to quest days that
+  start after it was enabled. Turning it off is instant, any time, and never affects progress.
+- **Trigger:** only the player's own check-in answer "I just didn't". Never a crash, a failed sync, missing data,
+  an unanswered check-in or a missed notification.
+
+| Level | On a confirmed miss |
+|---|---|
+| 0 | Nothing (default) |
+| 1 — The Shadow | A short dark scene; the Shadow claims the day; a creeping shadow mark on the character portrait until the recovery quest is cleared; an optional private "what got in the way?" note |
+| 2 — Trial of Stillness | Level 1, plus: on the quest day the check-in is answered, the two side quests stay sealed until a 10-minute in-app focus session is done (the timer pauses when the app leaves the foreground), and that evening brings a second, sterner reminder. The core quest, the recovery quest and the article are never sealed |
+
+- At most one consequence per quest day. After 3 consequences in 7 days, consequences pause and the System offers a
+  lighter plan.
+- Shadow lines are written in advance and reviewed: ominous, never insulting, never guilt about the player's
+  worth, never threatening anything real.
+- After the MVP: level 3 (Android app sealing, after the Find X9 spike), level 4 (iOS Screen Time, after Apple's
+  entitlement). A whole-phone lock: never.
+
+### 4.4 Notifications (local only in the MVP)
+
+- Morning briefing at the player's chosen time; optional evening reminder if the core quest isn't done (cancelled
+  on completion, rescheduled on app open); timer alerts.
+- MAINARC's pattern: a pure "plan" function decides which reminders should be pending; one file talks to the OS.
+- No exact alarms (a few minutes late is fine), so no `SCHEDULE_EXACT_ALARM`.
+- Permission denied: the app works fully; Settings explains what's missing; no nagging.
+
+### 4.5 Privacy
+
+- PAR-Q answers are never stored; only the result ("gentle start recommended").
+- Reflection notes are private to the player (RLS).
+- Account deletion removes every row and the auth user.
+- No ad or tracking SDKs.
+
+## 5. Acceptance criteria (the MVP is done when all of these are verified)
+
+**Onboarding**
+- A new player finishes onboarding without signing up; an anonymous user exists afterwards.
+- With the AI forced to fail or time out, the reveal still appears with the same rules-computed character.
+- Class and assumptions can be corrected on the reveal; corrections persist and change the next generated day.
+- A PAR-Q "yes" produces days with only gentle walking and mobility quests (test).
+- "Save your character" links Google or email without losing progress.
+
+**Days and quests**
+- Each quest day has exactly 1 core + 2 side quests + 1 article; concurrent requests create one day (database test).
+- Generated days respect the minutes budget, recovery rules and contraindication tags (unit tests).
+- Every quest card shows its "why"; swap, hard day and planned rest follow the §3.5 limits.
+- An offline-built day is accepted on sync when valid and replaced when not (test).
+
+**Completion, XP and progression**
+- The completion function has no XP parameter; players cannot insert or update XP, stats, levels or streaks directly
+  (database tests).
+- A repeated completion returns the same result with one ledger entry; completion outside the window is rejected;
+  an offline completion within 48 h is accepted; undo reverses it.
+- Level, stat and rank formulas match §2; the 90-day pacing simulation meets the §2.3 targets.
+- Ladder step-up/step-down rules match §3.3, including at most one step up per ladder per week (unit tests).
+
+**Streaks and the check-in**
+- Every check-in answer produces the §3.7 outcome; an outage day is protected without asking; a dismissed check-in
+  leaves the streak paused (unit tests).
+- Recovery quests, shields, protected-day limits and the "lighter plan" offers behave as specified.
+
+**Time**
+- Day boundaries are correct across time zones, both DST transitions, and travel east and west; days stay within
+  20–28 hours (unit tests).
+
+**Article**
+- The nightly job publishes only articles that pass the §4.1 checks; a failing article is never shown.
+- The assignment is stored on the day and never regenerated on load.
+- When the cap is reached or nothing is available, the evergreen library is used (test with mocked costs).
+
+**Accountability**
+- Off by default; enabling applies only to quest days that start afterwards; disabling is immediate.
+- Consequences fire only after "I just didn't"; never on technical failure or an unanswered check-in; at most one
+  per day; paused after 3 in 7 days; level 2 never seals the core quest, recovery quest or article (tests).
+
+**Notifications**
+- With permission denied the app is fully usable; reminders are cancelled when the core quest is completed.
+
+**Security and privacy**
+- RLS on every table: player A can neither read nor write player B's rows (database tests).
+- No service-role key or model-provider key in the app bundle or the repo (automated check).
+- Account deletion removes every row and the auth user; raw PAR-Q answers are never persisted.
+
+**Device (owner's Oppo Find X9, EAS APK)**
+- Onboarding, a full day, an offline completion with later sync, notifications, the largest font setting and
+  reduced motion are verified and recorded in `docs/device-verification-checklist.md`.
+
+## 6. Out of scope for the MVP
+
+App blocking (levels 3–4), iOS builds, Health Connect auto-verify, advanced classes and level 15 abilities,
+equipment and cosmetics, Hard Mode, seasons and leagues, friends and parties, push notifications from the server,
+AI-written briefings or Shadow lines, user-created quests, monetization, light theme, data export.
+
+## 7. Left for Phase 3 (architecture) and Phase 4 (design)
+
+- **Phase 3:** the database schema and RLS, the reward and close-day functions, the rules package layout, the AI
+  pipeline details (prompts, effort, retries), offline sync, testing and deployment practice, the Supabase hosting
+  choice for the pilot (discovery doc §2).
+- **Phase 4:** the visual direction and design system, the onboarding and reveal sequence, the Today, Character and
+  Chronicle screens, as a design canvas the owner approves before implementation.
+- **Content tasks inside the build plan:** the quest library (~70 templates), ~25 achievements, Shadow lines,
+  ~20 evergreen articles, class art.
