@@ -67,3 +67,82 @@ achievements and history are both "looking back"; fewer tabs keep today's quests
 - Sign-in with Google or email; anonymous play until then.
 - Honor-system completions plus in-app timers for focus and reading; Health Connect auto-verify after the MVP.
 - Class art from the Inkbound manhwa pipeline; a visual design canvas for onboarding and the reveal in Phase 4.
+
+## 2. Classes, stats, XP and levels (approved 2026-10-10)
+
+All numbers live in one server-side rules table and are checked by a 90-day pacing simulation (steady 90%,
+typical 70%, struggling 40% completion) before anything is built on them.
+
+### 2.1 Stats
+
+| Stat | Grows from |
+|---|---|
+| Strength | strength training |
+| Vitality | walking, endurance, mobility, sleep, recovery (absorbs Agility) |
+| Wisdom | reading, learning, reflection |
+| Focus | deep work, phone-free blocks |
+| Discipline | consistency only: +5 per day the core quest is done (any version), +5 per recovery quest, streak milestones 7/14/30/66/100 days = +20/+30/+50/+80/+100 |
+
+- Each quest instance awards XP once, to its primary stat (optionally split with a secondary; the split never adds
+  XP). Character XP = the sum of all stat XP. Nothing is double-counted.
+- Starting stat points come from onboarding estimates in a narrow band (3–8); the class's main stat gets +2.
+- Stat points = start + floor(sqrt(statXP / 10)): fast early, slower later.
+- Ranks by stat points: E < 10, D 10–14, C 15–24, B 25–39, A 40–59, S 60+ (about rank C after 3 months of steady
+  training in the main stat). Tuned by the simulation.
+- XP, levels and stats never decrease.
+
+### 2.2 XP per quest
+
+| Source | XP |
+|---|---|
+| Minor quest (about 5 min or very easy) | 10 |
+| Standard quest (10–20 min) | 20 |
+| Major quest (25–45 min) | 30 |
+| Hard-day version | half, rounded up (minimum 5); still counts for the streak |
+| Reaching a new progression step (ladder rung) | +15 to that stat, once per rung |
+
+The day is capped at 1 core + 2 side quests + the article, so a full day is about 65 XP and a typical day about 45.
+
+### 2.3 Levels
+
+XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach level N = 30(N−1) + 10(N−1)(N−2).
+
+| Level | Cumulative XP | Steady player | Struggling player |
+|---|---|---|---|
+| 2 | 30 | day 1 | day 1–2 |
+| 5 | 240 | end of week 1 | about week 2 |
+| 10 | 990 | about 3 weeks | about day 40 |
+| 15 | 2,240 | about 6–7 weeks | — |
+| 20 | 3,990 | about 3 months | later, still climbing |
+
+### 2.4 Streaks and shields
+
+- A streak day = the core quest done (any version) **or** any 2 quests done.
+- Protected days pause the streak (no growth, no break): planned rest, sick or injured, emergency, travel, or a
+  server-side outage (auto-protected, no question asked). More than 3 protected days in 14 → the System offers a
+  lighter plan, never a penalty.
+- A plain miss: see §3.6 (recovery quest first, then a shield, then a reset).
+- Shields: earn 1 per 7 streak days; hold at most 2.
+- Away for several days: one check-in covers the gap; the streak waits as "paused" until it is answered.
+
+### 2.5 Classes
+
+| Class | Main / second | Typical day | Level 5 ability | Level 10 ability |
+|---|---|---|---|---|
+| Warrior | Strength / Vitality | strength ladders, walks, a 5-minute read | Second Wind: once a week, make up a missed core quest the next day for full credit | Unbreakable: once a month, a plain miss doesn't cost a shield |
+| Mage | Wisdom / Focus | reading, notes, reflection, plus walks and mobility | Insight: choose tomorrow's article topic from 3 | Scholar's Path: set a book; reading quests track it to the end |
+| Rogue | Focus / Vitality | focus sessions, phone-free blocks, hardest task first, plus movement | Shadowstep: 2 swaps a day instead of 1 | Vanish: a planned phone-free block guarded by a timer |
+| Monk | Vitality / Wisdom | sleep routine, mobility, breathing, gentle walks | Stillness: one restoration day a week counts for the streak | Dawn Ritual: a morning routine bundle counts as the core quest |
+
+- Quest mix: the core quest trains the main stat on about 4 days a week, the second stat on about 2, and a
+  "balance" quest targets the weakest area about once a week. Nothing is locked.
+- Class change: at most once every 14 days; level, XP, stats and achievements are kept; abilities follow the new
+  class at the current level.
+- After the MVP: advanced classes via a 7-day Class Trial at level 20 (Ranger, Paladin, Sage, …), level 15 abilities,
+  equipment and cosmetics.
+
+### 2.6 Achievements and titles
+
+About 25 in the MVP across milestones, streaks, ladder rungs, class feats, articles read and comebacks (e.g.
+*Rise Again*: clear a recovery quest after a miss). Some grant a title shown under the name (e.g. *The Unbroken*,
+30-day streak).
