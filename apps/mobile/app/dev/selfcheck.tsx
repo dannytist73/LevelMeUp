@@ -9,7 +9,7 @@ import { expoCipherProbe } from '../../src/auth/expoCipher.ts';
 import { sqlProbe } from '../../src/data/expoSql.ts';
 import { contentProbe, runSelfCheck, uuidProbe, zoneProbe } from '../../src/dev/selfcheck.ts';
 import type { CheckLine } from '../../src/dev/selfcheck.ts';
-import { colors, space } from '../../src/theme/tokens.ts';
+import { space } from '../../src/theme/tokens.ts';
 import { Button } from '../../src/ui/Button.tsx';
 import { NightCard } from '../../src/ui/NightCard.tsx';
 import { ScreenScroll } from '../../src/ui/ScreenScroll.tsx';

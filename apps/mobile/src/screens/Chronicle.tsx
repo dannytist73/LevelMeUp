@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ServerState } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { space } from '../theme/tokens.ts';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';

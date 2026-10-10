@@ -10,7 +10,7 @@ import { useSize } from './useSize.ts';
 
 /** The font size that fits `natural` (its width at `size`) into `room`; never larger than `size`. */
 export function fittedSize(size: number, natural: number | null, room: number): number {
-  return natural === null || natural <= room ? size : Math.floor((size * room) / natural);
+  return natural === null || natural <= room ? size : Math.max(1, Math.floor((size * room) / natural));
 }
 
 export function OutlinedTitle({ text, size = 58 }: { text: string; size?: number }) {
@@ -26,7 +26,7 @@ export function OutlinedTitle({ text, size = 58 }: { text: string; size?: number
           {text}
         </Text>
       </View>
-      {box !== null && (
+      {box !== null && natural !== null && (
         <Svg width={box.width} height={box.height}>
           <SvgText x={4 + offset} y={baseline + offset} fontFamily={fonts.display} fontSize={fontSize} fill={colors.vermilion}>
             {text}

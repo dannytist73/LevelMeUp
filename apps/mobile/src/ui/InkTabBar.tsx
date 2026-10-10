@@ -1,7 +1,8 @@
 // The tab bar (visual spec §2, D1 Today): an ink bar under a 2 px chalk rule; the active tab has a 4 px vermilion top
 // bar and chalk text. Labels are single words, so wrapping could only break one mid-word ("CHARACT/ER" at the largest
 // font and display size, found on the emulator): a label grows with the font size while its tab has room, then shrinks
-// to fit it (never below 0.6×, far below what any of these words needs, so nothing is ever cut).
+// to fit it. Android shrinks as far as needed (its only floor is 4 px), so nothing is cut; `minimumFontScale` applies on
+// iOS only, where 0.6× is still far below what any of these words needs.
 import { Pressable, Text, View } from 'react-native';
 import { colors, fonts } from '../theme/tokens.ts';
 import { Icon } from './icons.tsx';

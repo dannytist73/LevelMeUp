@@ -149,6 +149,28 @@ describe('small pieces', () => {
     expect(fittedSize(58, 300, 400)).toBe(58);
     expect(fittedSize(58, null, 100)).toBe(58); // not measured yet
     expect(fittedSize(58, 400, 300)).toBe(43); // 400 × 43/58 ≈ 297, inside 300
+    expect(fittedSize(58, 400, 0)).toBe(1); // never zero or negative
+  });
+
+  it('the outlined title draws only once measured, then at the size that fits its box', async () => {
+    type Node = { type: string; props: Record<string, unknown>; children: (Node | string)[] | null };
+    /** The font size of each drawn SVG copy of the title. */
+    const drawnSizes = () => {
+      const sizes: unknown[] = [];
+      const walk = (node: Node | string | null) => {
+        if (node === null || typeof node === 'string') return;
+        if (node.type === 'RNSVGText') sizes.push((node.props.font as { fontSize?: unknown } | undefined)?.fontSize ?? node.props.fontSize);
+        node.children?.forEach(walk);
+      };
+      walk(screen.toJSON() as Node);
+      return sizes;
+    };
+    const layout = (width: number) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height: 70 } } });
+    await render(<OutlinedTitle text="INK PANEL" />);
+    await fireEvent(screen.getByRole('header', { name: 'INK PANEL' }), 'layout', layout(300));
+    expect(drawnSizes()).toEqual([]); // not measured yet: nothing drawn, so no clipped first frame
+    await fireEvent(screen.getByText('INK PANEL', { includeHiddenElements: true }), 'layout', layout(400));
+    expect(drawnSizes()).toEqual([41, 41, 41]); // three copies; room 300 − 8 − 5 = 287, 58 × 287/400 ≈ 41.6
   });
 
   it('a screen scroll shows its content, with a band behind the status bar that never takes touches', async () => {

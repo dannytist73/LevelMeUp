@@ -5,7 +5,7 @@ import { STATS } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { space } from '../theme/tokens.ts';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
