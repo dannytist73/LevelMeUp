@@ -215,12 +215,12 @@ completion. No exact alarms.
 | Pilot | One cloud Supabase project (§11 decision); migrations via `supabase db push`, functions via `supabase functions deploy`, secrets via `supabase secrets set` | EAS preview APK shared with friends (sideloaded) |
 | Public launch (later) | Pro plan; Turnstile; backups | Play closed test (12 testers × 14 days), privacy policy, data-safety form, a web page for account deletion |
 
-## 11. Decisions needed from the owner
+## 11. Owner decisions (2026-10-10)
 
-1. **Where the pilot's backend lives** (cost): a free Supabase project ($0; pauses after about a week without user
-   activity; 150 s function limit, which the Batch design tolerates) or a Pro-org project (about $10/month; never
-   pauses). Recommendation: free for the pilot, Pro before the public launch.
-2. **A private GitHub remote** for backup (and CI later): recommended; the owner creates it or approves `gh repo create`.
+1. **Pilot backend:** a **free** Supabase project for the pilot ($0; pauses after about a week without user
+   activity; 150 s function limit, which the Batch design tolerates). Move to the Pro org (about $10/month) before
+   the public launch. Creating the project still needs the owner's go-ahead at that milestone.
+2. **GitHub remote:** no preference, so the repo stays local for now. A private remote can be added on request.
 3. **Owner tasks, when their milestone arrives:** an Anthropic API key with a monthly spend limit; a Google Cloud
    OAuth client for Google sign-in (needs the app's signing fingerprint from EAS).
 
