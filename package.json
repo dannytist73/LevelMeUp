@@ -1,13 +1,20 @@
 {
   "name": "levelmeup",
   "private": true,
-  "workspaces": ["packages/*"],
-  "engines": { "node": ">=24" },
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "npm -ws test",
     "typecheck": "npm -ws run typecheck",
     "check:portable": "node packages/rules/scripts/portable-check.ts && node packages/content/scripts/portable-check.ts",
     "pacing": "node packages/rules/scripts/pacing-report.ts && node packages/content/scripts/campaign-report.ts",
     "content:review": "node packages/content/scripts/review.ts"
+  },
+  "devDependencies": {
+    "supabase": "2.118.0"
   }
 }
