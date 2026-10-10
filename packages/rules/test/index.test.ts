@@ -8,7 +8,8 @@ describe('public API', () => {
     'checkinOutcome', 'shouldOfferLighterPlan', 'recordCompletion', 'recordMiss', 'recordReentry', 'recordPain',
     'resumeAfterPain', 'stepDown', 'decideConsequence', 'isSealed', 'elapsedMs', 'questTimerDone', 'trialDone',
     'simulatePacing', 'meetsTargets', 'closedDayResolution', 'resolveCheckin', 'canonicalTimeZone', 'templateAllowed',
-    'effectiveRung', 'maxRungFor', 'abilityUnlocked', 'abilityReady', 'swapLimit',
+    'effectiveRung', 'maxRungFor', 'abilityUnlocked', 'abilityReady', 'swapLimit', 'buildDay',
+    'draftQuest', 'questReward',
   ])('exports %s', (name) => {
     expect(typeof (rules as Record<string, unknown>)[name]).toBe('function');
   });
