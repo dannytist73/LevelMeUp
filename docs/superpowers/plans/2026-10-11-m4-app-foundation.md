@@ -60,13 +60,13 @@ Two things only a real phone can prove get a self-check screen:
 
 ## Owner questions (recommendations in bold)
 
-1. **Move offline-built days from M4 to M6.** The spec's acceptance test stays; it's built with the quest screens.
+1. (Answered 2026-10-11: as recommended.) **Move offline-built days from M4 to M6.** The spec's acceptance test stays; it's built with the quest screens.
    The alternative keeps it in M4. That adds server work and a bigger phone cache, with nothing on screen yet that
    could use it.
-2. **Create an EAS project "levelmeup" on your Expo account (dannytist.73, already logged in on the laptop) and use
+2. (Answered 2026-10-11: yes.) **Create an EAS project "levelmeup" on your Expo account (dannytist.73, already logged in on the laptop) and use
    free cloud builds.** One development build is installed on the Find X9. After that, code changes reach the phone
    through Metro's tunnel without a new build, until a native module changes. Free plan; no cost.
-3. **A hidden developer screen in development builds.** It can create a test character on the live project (fixed
+3. (Answered 2026-10-11: yes.) **A hidden developer screen in development builds.** It can create a test character on the live project (fixed
    answers, through the real `lmu-onboarding`, so one Claude call) and delete it again. Your phone's test character
    is a real player row in `levelmeup` until you delete it. M5 replaces the screen with the real onboarding.
 
