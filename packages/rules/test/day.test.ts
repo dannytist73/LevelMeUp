@@ -102,7 +102,7 @@ describe('fitting the player (spec §3.3, §3.4)', () => {
   it('a rung too long for the day is built lower, and says why', () => {
     const day = buildDay(FIXTURE, dayInput({ dayNumber: 3, ladders: { push: newLadder(2) } }, { minutesPerDay: 10 }));
     expect(quest(day, 'core').templateId).toBe('push-0');
-    expect(quest(day, 'core').why).toEqual({ code: 'short_on_time' });
+    expect(quest(day, 'core').why).toEqual({ code: 'short_on_time', minutes: 10 });
   });
 
   it('a limitation caps a ladder and closes ladders whose first rung it rules out', () => {

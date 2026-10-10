@@ -96,7 +96,7 @@ describe('days built from the real library (spec §5 "Days and quests")', () => 
         for (const q of day.quests) {
           if (q.why.code === 'goal') expect(profile.goals).toContain(q.why.goal);
           for (const voice of VOICES) {
-            const line = renderWhy(q.why, voice, { classId: profile.classId, minutesPerDay: profile.minutesPerDay });
+            const line = renderWhy(q.why, voice, { classId: profile.classId });
             expect(line).not.toMatch(/[{}]/);
             expect(lintText(line)).toEqual([]);
           }

@@ -3,9 +3,11 @@ import {
   addRecovery, applyDawnRitual, applyHardDay, applyStillness, applySwap, checkProvisionalDay, restAllowed, swapOptions,
 } from '../src/adjust.ts';
 import { buildDay, draftQuest } from '../src/day.ts';
-import type { BuiltDay } from '../src/day.ts';
+import type { BuiltDay, DayInput } from '../src/day.ts';
 import { newLadder } from '../src/ladder.ts';
+import type { LadderState } from '../src/ladder.ts';
 import { templateById } from '../src/library.ts';
+import type { PlayerProfile } from '../src/library.ts';
 import { FIXTURE, dayInput } from './fixtures/library.ts';
 
 const quest = (day: BuiltDay, slot: string) => day.quests.find((q) => q.slot === slot)!;
@@ -30,6 +32,18 @@ describe('swap (spec §3.5)', () => {
     const day = withQuest(buildDay(FIXTURE, input), 'side2', 'reading-0'); // walk-0, mobility-0, reading-0
     const options = swapOptions(FIXTURE, input, day, 'core');
     expect(options.map((q) => q.templateId)).toEqual(['micro-water', 'focus-0']);
+  });
+
+  it("never offers the recovery quest's ladder", () => {
+    const day = withQuest(DAY_TWO, 'core', 'mobility-0'); // mobility-0, push-0, focus-0
+    expect(swapOptions(FIXTURE, dayInput(), day, 'core').map((q) => q.templateId)).toContain('walk-0');
+    const withRecovery = { ...day, quests: [...day.quests, draftQuest(templateById(FIXTURE, 'walk-0'), 'recovery', { code: 'second_wind' })] };
+    expect(swapOptions(FIXTURE, dayInput(), withRecovery, 'core').some((q) => q.templateId.startsWith('walk-'))).toBe(false);
+  });
+
+  it('offers nothing when no other quest fits the minutes left (the app then hides the swap)', () => {
+    const others = ['core', 'side2'].map((slot) => templateById(FIXTURE, quest(DAY_TWO, slot).templateId).minutes);
+    expect(swapOptions(FIXTURE, dayInput(), { ...DAY_TWO, budget: others[0]! + others[1]! }, 'side1')).toEqual([]);
   });
 
   it('applies only an offered option, to an open core or side quest', () => {
@@ -74,6 +88,9 @@ describe('planned rest (spec §3.5)', () => {
     expect(restAllowed([3, 5], 8)).toBe(false);
     expect(restAllowed([3, 5], 10)).toBe(true);
     expect(restAllowed([3, 5], 5)).toBe(true);
+    // Only the weeks around the day count: old rest days never block rest again, planned ones ahead do.
+    expect(restAllowed([1, 2, 3], 20)).toBe(true);
+    expect(restAllowed([21, 22], 20)).toBe(false);
     expect(() => restAllowed([], 0)).toThrow(RangeError);
   });
 });
@@ -106,14 +123,46 @@ describe('the recovery quest (spec §3.7)', () => {
     expect(() => addRecovery(FIXTURE, dayInput(), day, { kind: 'recovery' })).toThrow(RangeError);
   });
 
+  // A Warrior at level 5 who missed push-1 as yesterday's core, with the push ladder at rung 1.
+  const missedPush = (core = 'push-1', ladder: Partial<LadderState> = {}, profile: Partial<PlayerProfile> = {}): DayInput =>
+    dayInput(
+      { dayNumber: 10, history: [{ dayNumber: 9, quests: { core } }], ladders: { push: { ...newLadder(), rung: 1, ...ladder } } },
+      { level: 5, ...profile },
+    );
+  const secondWind = (input: DayInput, missedCore = 'push-1', day = buildDay(FIXTURE, input)) =>
+    addRecovery(FIXTURE, input, day, { kind: 'second_wind', missedCore, lastUsedDay: null });
+
   it('Second Wind redoes the missed core quest for its full XP plus the recovery Discipline', () => {
-    const input = dayInput({ dayNumber: 10 }, { level: 5 });
+    const input = missedPush();
     const day = buildDay(FIXTURE, input);
-    const redo = addRecovery(FIXTURE, input, day, { kind: 'second_wind', missedCore: 'push-1', lastUsedDay: null });
-    expect(quest(redo, 'recovery')).toMatchObject({ templateId: 'push-1', xp: { strength: 20, discipline: 5 }, why: { code: 'second_wind' } });
+    expect(quest(secondWind(input), 'recovery')).toMatchObject({ templateId: 'push-1', xp: { strength: 20, discipline: 5 }, why: { code: 'second_wind' } });
     expect(() => addRecovery(FIXTURE, input, day, { kind: 'second_wind', missedCore: 'push-1', lastUsedDay: 4 })).toThrow(RangeError);
-    expect(() => addRecovery(FIXTURE, dayInput({ dayNumber: 10 }), day, { kind: 'second_wind', missedCore: 'push-1', lastUsedDay: null })).toThrow(RangeError);
-    expect(() => addRecovery(FIXTURE, input, day, { kind: 'second_wind', missedCore: 'article', lastUsedDay: null })).toThrow(RangeError);
+    expect(() => secondWind(missedPush('push-1', {}, { level: 4 }))).toThrow(RangeError);
+    expect(() => secondWind(missedPush('article'), 'article')).toThrow(RangeError);
+  });
+
+  it("Second Wind redoes only yesterday's core quest", () => {
+    expect(() => secondWind(missedPush('squat-0'))).toThrow(/yesterday/);
+    expect(() => secondWind({ ...missedPush(), history: [] })).toThrow(/yesterday/);
+  });
+
+  it('Second Wind refuses a ladder paused for pain or closed to the player', () => {
+    expect(() => secondWind(missedPush('push-1', { paused: true }))).toThrow(RangeError);
+    expect(() => secondWind(missedPush('push-1', {}, { limitations: ['wrist'] }))).toThrow(RangeError);
+    expect(() => secondWind(missedPush('squat-1', {}, { ownProgram: true }), 'squat-1')).toThrow(RangeError);
+  });
+
+  it('Second Wind redoes the missed quest at the rung the ladder allows today', () => {
+    // A limitation added since caps the ladder below the missed rung (push-2 is tagged for knees).
+    expect(quest(secondWind(missedPush('push-2', { rung: 2 }, { limitations: ['knee'] }), 'push-2'), 'recovery').templateId).toBe('push-1');
+    // Yesterday's miss stepped the ladder down.
+    expect(quest(secondWind(missedPush('push-1', { rung: 0 })), 'recovery').templateId).toBe('push-0');
+  });
+
+  it("Second Wind refuses a ladder already in today's quests", () => {
+    const input = dayInput({ dayNumber: 10, history: [{ dayNumber: 9, quests: { core: 'walk-0' } }] }, { level: 5 });
+    const day = withQuest(buildDay(FIXTURE, input), 'side1', 'walk-0');
+    expect(() => secondWind(input, 'walk-0', day)).toThrow(/already/);
   });
 });
 

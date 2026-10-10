@@ -5,7 +5,7 @@ import { lintText } from '../src/lint.ts';
 import { VOICES } from '../src/types.ts';
 import { WHY_PLACEHOLDERS, WHY_TEXT, renderWhy } from '../src/why.ts';
 
-const CONTEXT = { classId: 'warrior' as const, minutesPerDay: 25 };
+const CONTEXT = { classId: 'warrior' as const };
 
 describe('why-lines (spec §3.2)', () => {
   it.each(WHY_CODES)('%s has a line in every voice, using only its placeholders', (code) => {
@@ -23,7 +23,7 @@ describe('why-lines (spec §3.2)', () => {
     expect(renderWhy({ code: 'balance', stat: 'focus' }, 'system', CONTEXT)).toBe('Balance quest: Focus is your lowest stat.');
     expect(renderWhy({ code: 'unlocked', previous: 'push-1' }, 'system', CONTEXT)).toBe('Unlocked: you cleared incline push-ups.');
     expect(renderWhy({ code: 'goal', goal: 'learn' }, 'system', CONTEXT)).toBe('Goal quest: reading and learning.');
-    expect(renderWhy({ code: 'short_on_time' }, 'system', CONTEXT)).toBe('Shortened to fit 25 minutes a day.');
+    expect(renderWhy({ code: 'short_on_time', minutes: 10 }, 'system', CONTEXT)).toBe("Shortened to fit today's 10 minutes.");
   });
 
   it('starts every sentence with a capital letter, even when a name opens it', () => {
@@ -37,7 +37,8 @@ describe('why-lines (spec §3.2)', () => {
       code === 'class_main' || code === 'class_second' || code === 'balance' ? { code, stat: 'wisdom' }
         : code === 'goal' ? { code, goal: 'body' }
           : code === 'unlocked' ? { code, previous: 'walk-0' }
-            : ({ code } as WhyReason));
+            : code === 'short_on_time' ? { code, minutes: 15 }
+              : ({ code } as WhyReason));
     for (const reason of reasons) {
       for (const voice of VOICES) expect(renderWhy(reason, voice, CONTEXT)).not.toMatch(/[{}]/);
     }

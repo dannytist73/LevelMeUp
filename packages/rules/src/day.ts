@@ -16,9 +16,11 @@ export type WhyReason =
   | { code: 'class_main' | 'class_second' | 'balance'; stat: TrainableStat }
   | { code: 'goal'; goal: Goal }
   | { code: 'unlocked'; previous: string }
+  /** `minutes`: the day's budget, which is 10 on a light day. */
+  | { code: 'short_on_time'; minutes: number }
   | {
       code:
-        | 'after_strength' | 'stepped_down' | 'gentle_start' | 'limits' | 'short_on_time' | 'light_day' | 'own_program'
+        | 'after_strength' | 'stepped_down' | 'gentle_start' | 'limits' | 'light_day' | 'own_program'
         | 'swap' | 'stillness' | 'dawn_ritual' | 'recovery' | 'second_wind' | 'article';
     };
 
@@ -282,7 +284,7 @@ function explain(ctx: DayContext, slot: Slot, choice: Choice, light: boolean): W
   if (slot === 'core' && light) return { code: 'light_day' };
   if (state !== null && template.ladder !== null && template.rung !== null) {
     if (capped === 'limits') return { code: 'limits' };
-    if (capped === 'time') return { code: 'short_on_time' };
+    if (capped === 'time') return { code: 'short_on_time', minutes: dayBudget(ctx.input) };
     if (template.rung > 0 && state.lastStepUpAt !== null && state.atRung.length === 0 && state.rung === state.highestRung) {
       return { code: 'unlocked', previous: ladderRungs(ctx.library, template.ladder)[template.rung - 1]!.id };
     }

@@ -73,7 +73,7 @@ export const WHY_TEXT: Readonly<Record<WhyCode, Readonly<Record<Voice, string>>>
   },
   short_on_time: {
     mentor: 'A shorter version, so the day fits your {minutes} minutes.',
-    system: 'Shortened to fit {minutes} minutes a day.',
+    system: "Shortened to fit today's {minutes} minutes.",
     questmaster: 'Cut to fit your {minutes} minutes. Make every one count.',
   },
   light_day: {
@@ -118,7 +118,7 @@ export const WHY_TEXT: Readonly<Record<WhyCode, Readonly<Record<Voice, string>>>
   },
 };
 
-export type WhyContext = { classId: ClassId; minutesPerDay: number };
+export type WhyContext = { classId: ClassId };
 
 const lowerFirst = (text: string): string => text.charAt(0).toLowerCase() + text.slice(1);
 const capitalizeSentences = (text: string): string =>
@@ -126,7 +126,8 @@ const capitalizeSentences = (text: string): string =>
 
 /** The why-line for a quest card in the player's voice. Quest names are lowercased mid-sentence. */
 export function renderWhy(reason: WhyReason, voice: Voice, context: WhyContext): string {
-  const values: Record<string, string> = { class: CLASS_NAMES[context.classId], minutes: String(context.minutesPerDay) };
+  const values: Record<string, string> = { class: CLASS_NAMES[context.classId] };
+  if ('minutes' in reason) values.minutes = String(reason.minutes);
   if ('stat' in reason) values.stat = STAT_NAMES[reason.stat];
   if ('goal' in reason) values.goal = GOAL_NAMES[reason.goal];
   if ('previous' in reason) values.previous = lowerFirst(authoredTemplate(reason.previous).name);

@@ -4,7 +4,8 @@ import { balanceChoice, bookFor, dayBudget, dayContext, draftQuest, ladderCandid
 import type { BuiltDay, DayInput, QuestDraft } from './day.ts';
 import { newLadder } from './ladder.ts';
 import {
-  allowedTopRung, findTemplate, ladderAllowed, ladderById, specialTemplate, templateAllowed, templateById, validateProfile,
+  allowedTopRung, findTemplate, ladderAllowed, ladderById, ladderRungs, specialTemplate, templateAllowed, templateById,
+  validateProfile,
 } from './library.ts';
 import type { QuestLibrary } from './library.ts';
 import type { Slot } from './types.ts';
@@ -27,7 +28,8 @@ function replaced(day: BuiltDay, quest: QuestDraft): BuiltDay {
 
 /**
  * What a swap can turn a quest into (spec §3.5): up to 2 quests of the same stat and 1 balance quest, each fitting the
- * minutes the other two quests leave. Yesterday's strength ladders and the after-strength rule still apply.
+ * minutes the other two quests leave. Yesterday's strength ladders and the after-strength rule still apply, and the
+ * recovery quest's ladder is never offered. Empty when nothing else fits.
  */
 export function swapOptions(library: QuestLibrary, input: DayInput, day: BuiltDay, slot: Slot): QuestDraft[] {
   if (!QUEST_SLOTS.includes(slot)) throw new RangeError(`only the core and side quests can be swapped, not ${slot}`);
@@ -35,7 +37,8 @@ export function swapOptions(library: QuestLibrary, input: DayInput, day: BuiltDa
   const current = templateById(library, questIn(day, slot).templateId);
   const others = QUEST_SLOTS.filter((s) => s !== slot).map((s) => templateById(library, questIn(day, s).templateId));
   const allowance = day.budget - others.reduce((sum, t) => sum + t.minutes, 0);
-  const used = new Set([current, ...others].map(useKey));
+  const recovery = day.quests.find((q) => q.slot === 'recovery');
+  const used = new Set([current, ...others, ...(recovery ? [templateById(library, recovery.templateId)] : [])].map(useKey));
   const noStrength = slot === 'core' && ctx.afterStrength;
   const sameStat = noStrength && current.stat === 'strength'
     ? []
@@ -86,9 +89,12 @@ export function applyHardDay(library: QuestLibrary, day: BuiltDay, completedSlot
 /** At most 2 planned rest days in any 7 consecutive quest days (spec §3.5). Rest protects the streak; nothing else. */
 export function restAllowed(restDays: readonly number[], dayNumber: number): boolean {
   if (!Number.isInteger(dayNumber) || dayNumber < 1) throw new RangeError(`dayNumber must be an integer of at least 1, got ${dayNumber}`);
-  const days = [...new Set([...restDays, dayNumber])].sort((a, b) => a - b);
-  for (let i = 0; i + REST_DAYS_PER_WEEK < days.length; i++) {
-    if (days[i + REST_DAYS_PER_WEEK]! - days[i]! < WEEK_QUEST_DAYS) return false;
+  const days = new Set([...restDays, dayNumber]);
+  // Every 7-day window that contains the day.
+  for (let start = dayNumber - WEEK_QUEST_DAYS + 1; start <= dayNumber; start++) {
+    let count = 0;
+    for (let d = start; d < start + WEEK_QUEST_DAYS; d++) if (days.has(d)) count++;
+    if (count > REST_DAYS_PER_WEEK) return false;
   }
   return true;
 }
@@ -120,7 +126,9 @@ export type RecoveryOption = { kind: 'recovery' } | { kind: 'second_wind'; misse
 
 /**
  * Adds the recovery quest owed after "I just didn't" (spec §3.7): the class's 5-minute quest for Discipline, or with
- * Second Wind (Warrior level 5, every 7 quest days) the missed core quest again, for its full XP plus that Discipline.
+ * Second Wind (Warrior level 5, every 7 quest days) yesterday's missed core quest again, for its full XP plus that
+ * Discipline. The redo follows the ladder as it is today: a ladder paused for pain or closed to the player refuses,
+ * and a missed rung above today's rung (after a step down or a new limitation) is redone at today's rung.
  */
 export function addRecovery(library: QuestLibrary, input: DayInput, day: BuiltDay, option: RecoveryOption): BuiltDay {
   validateProfile(input.profile);
@@ -131,11 +139,22 @@ export function addRecovery(library: QuestLibrary, input: DayInput, day: BuiltDa
     return { ...day, quests: [...day.quests, draftQuest(template, 'recovery', { code: 'recovery' })] };
   }
   if (!abilityReady('second_wind', classId, level, option.lastUsedDay, day.dayNumber)) throw new RangeError('Second Wind is not ready');
-  const missed = templateById(library, option.missedCore);
-  if ((missed.role !== 'ladder' && missed.role !== 'micro') || !templateAllowed(missed, input.profile)) {
-    throw new RangeError(`${missed.id} can't be redone with Second Wind`);
+  const yesterday = input.history.find((past) => past.dayNumber === day.dayNumber - 1);
+  if (yesterday?.quests.core !== option.missedCore) throw new RangeError(`${option.missedCore} was not yesterday's core quest`);
+  let redo = templateById(library, option.missedCore);
+  if (redo.role !== 'ladder' && redo.role !== 'micro') throw new RangeError(`${redo.id} can't be redone with Second Wind`);
+  if (redo.ladder !== null) {
+    const state = input.ladders[redo.ladder] ?? newLadder();
+    const rung = Math.min(redo.rung ?? 0, state.rung, allowedTopRung(library, redo.ladder, input.profile));
+    if (state.paused || rung < 0) throw new RangeError(`${redo.ladder} is not open to this player today`);
+    redo = ladderRungs(library, redo.ladder)[rung]!;
+  } else if (!templateAllowed(redo, input.profile)) {
+    throw new RangeError(`${redo.id} is not allowed for this player`);
   }
-  const quest = draftQuest(missed, 'recovery', { code: 'second_wind' });
+  if (day.quests.some((q) => useKey(templateById(library, q.templateId)) === useKey(redo))) {
+    throw new RangeError(`${useKey(redo)} is already in today's quests`);
+  }
+  const quest = draftQuest(redo, 'recovery', { code: 'second_wind' });
   const xp = { ...quest.xp, discipline: (quest.xp.discipline ?? 0) + DISCIPLINE_PER_RECOVERY };
   return { ...day, quests: [...day.quests, { ...quest, xp }] };
 }
