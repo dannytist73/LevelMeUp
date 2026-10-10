@@ -3,9 +3,15 @@ import { lintShadowLine } from '../src/lint.ts';
 import { SHADOW_LINES, SHADOW_MOMENTS, shadowLine } from '../src/shadow.ts';
 
 describe('the Shadow (spec §4.3, visual design §3)', () => {
-  it('keeps the two approved lines word for word', () => {
+  it('keeps the two approved lines (the mark line without its "Five minutes", see below)', () => {
     expect(SHADOW_LINES.claim).toContain('The day closed in silence, so I took it.');
-    expect(SHADOW_LINES.mark).toContain('It stays mine until you clear the recovery quest. Five minutes. Come and take it back.');
+    expect(SHADOW_LINES.mark).toContain('It stays mine until you clear the recovery quest. Come and take it back.');
+  });
+
+  it('promises no length for the recovery quest: with Second Wind it is the whole missed core', () => {
+    for (const moment of ['mark', 'release', 'evening'] as const) {
+      for (const line of SHADOW_LINES[moment]) expect(line).not.toMatch(/minute/i);
+    }
   });
 
   it.each(SHADOW_MOMENTS)('%s has at least 2 short lines that pass the Shadow lint', (moment) => {

@@ -77,9 +77,12 @@ After M2 (content and day building, plan `docs/superpowers/plans/2026-10-10-m2-c
 
 13. **Level step back to 20.** The campaign plays real built days: new players start every ladder at its first rung
     (mostly minor quests) and missed sessions step ladders down, so real days earn less than M1's model. With step 32,
-    15 targets were missed (struggling level 10 on day 66 against 48). Only steps 19 and 20 meet every target; 20 has
-    the larger worst-case margin (steady level 10 on day 17.7 against a minimum of 16.8; struggling level 10 on day
-    47.7 against a maximum of 48, 200 runs). The margins are under a day at both ends.
+    15 targets were missed (struggling level 10 on day 66 against 48). Only steps 19 and 20 meet every target, and both
+    only just: at 20 a struggling Mage reaches level 10 on day 47.8 against a maximum of 48 (400 runs; 800 runs agree
+    within 0.1). Blocks of 100 runs range from day 46.9 to 48.2, so the campaign test uses 400 runs: the targets
+    describe the average player. Step 19 moves the tight spot to steady level 10 (day 17.05 against a minimum of 16.8)
+    without widening it, and would change the approved boards' XP numbers. The gap is set by the content (struggling
+    players earn about 2.6–2.7× slower; the targets allow 2.86×), so a wider margin needs the base or the content.
 14. **Stat divisor 22, rank target judged on the average class** (owner's decision). No divisor puts every class's
     main stat at rank C within days 60–120: with divisor 10 a steady Mage reached it on day 25 (the daily article also
     trains Wisdom) and the average class on day 40. With 22 the average class reaches it on day 89 (target 72–108);

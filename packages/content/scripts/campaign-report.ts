@@ -5,7 +5,7 @@ import {
 import { LIBRARY } from '../src/index.ts';
 
 const show = (day: number | null | undefined): string => (day == null ? '—' : day.toFixed(1)).padStart(7);
-const runs = Number(process.argv[2] ?? 200);
+const runs = Number(process.argv[2] ?? 400);
 
 console.log(`Real days. Level curve ${LEVEL_CURVE.base} + ${LEVEL_CURVE.step} × (L − 1), stat divisor ${STAT_XP_DIVISOR}, ${runs} runs`);
 console.log(`${'persona'.padEnd(22)}${PACING_LEVELS.map((l) => `L${l}`.padStart(7)).join('')}  rank C`);

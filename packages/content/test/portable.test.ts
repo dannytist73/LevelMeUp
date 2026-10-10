@@ -18,7 +18,7 @@ function sourceFiles(dir: string): string[] {
 const IMPORT_FROM = /\b(?:import|export)\b[^'"]*?\bfrom\s*['"]([^'"]+)['"]/g;
 const PLATFORM_GLOBAL = /\b(?:process|Buffer|window|document|localStorage)\s*\.|\brequire\s*\(/;
 
-describe('the rules package stays portable (Node, Deno, Hermes)', () => {
+describe('the content package stays portable (Node, Deno, Hermes)', () => {
   const files = sourceFiles(SRC);
 
   it('has source files', () => {
@@ -34,6 +34,12 @@ describe('the rules package stays portable (Node, Deno, Hermes)', () => {
         const specifier = match[1] ?? '';
         expect(specifier.startsWith('./') || specifier.startsWith('../'), `bare import "${specifier}"`).toBe(true);
         expect(specifier.endsWith('.ts'), `missing .ts in "${specifier}"`).toBe(true);
+      }
+    });
+
+    it(`${name}: imports only types from the rules package`, () => {
+      for (const match of text.matchAll(IMPORT_FROM)) {
+        if ((match[1] ?? '').includes('/rules/')) expect(match[0], match[0]).toMatch(/^(?:import|export)\s+type\b/);
       }
     });
 

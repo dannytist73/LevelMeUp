@@ -57,6 +57,10 @@ describe('templates', () => {
       expect(hard.minutes).toBeGreaterThanOrEqual(1);
       expect(hard.minutes).toBeLessThanOrEqual(Math.max(2, Math.ceil(t.minutes / 2)));
       expect(volume(hard.condition)).toBeLessThanOrEqual(volume(t.condition));
+      // A habit or a single sentence is already the smallest step; anything counted gets smaller.
+      if (t.condition.kind !== 'habit' && t.condition.kind !== 'sentence') {
+        expect(hard.minutes < t.minutes || volume(hard.condition) < volume(t.condition), 'not smaller').toBe(true);
+      }
       if (hard.condition.kind === 'minutes') expect(hard.condition.minutes).toBe(hard.minutes);
     });
 

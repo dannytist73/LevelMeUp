@@ -54,7 +54,7 @@ export const WHY_TEXT: Readonly<Record<WhyCode, Readonly<Record<Voice, string>>>
   after_strength: {
     mentor: 'Yesterday was strength work, so today your muscles rest while you keep moving.',
     system: 'Recovery rule: walking or mobility after a strength day.',
-    questmaster: 'Yesterday you lifted. Today you march, and your muscles mend.',
+    questmaster: 'Yesterday you lifted. Today you move gently, and your muscles mend.',
   },
   stepped_down: {
     mentor: 'We stepped back one rung to rebuild. No rush.',

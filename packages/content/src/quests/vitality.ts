@@ -161,7 +161,7 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     ],
     safety: BRISK_SAFETY,
     voice: {
-      mentor: { title: 'Brisk walk', line: 'Half an hour of brisk walking. That is real training for your heart.' },
+      mentor: { title: 'Brisk walk', line: 'Half an hour of brisk walking. A full training session on your own two feet.' },
       system: { title: 'Brisk walk 30 minutes', line: 'Walk ladder, top rung. Thirty minutes, brisk pace.' },
       questmaster: { title: 'The great march', line: "Thirty minutes at a hunter's pace. The road is yours." },
     },
@@ -212,12 +212,13 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     hardDay: { minutes: 3, condition: minutes(3) },
     name: 'Hip and spine flow',
     steps: [
-      'On hands and knees, with a cushion under your knees, slowly arch and round your back 8 times.',
-      'Sit back toward your heels and rest your chest down for a few breaths.',
-      'Lying on your back, let both knees fall gently to one side, then the other, 5 times each.',
-      'Finish lying still for a few slow breaths.',
+      'Sit tall near the front of a sturdy chair, hands resting on your thighs.',
+      'Slowly arch your back and lift your chest, then round your back and lower your chin. Do this 8 times.',
+      'Still seated, turn gently to look over one shoulder, then the other, 5 times each.',
+      'Stand behind the chair, hold its back, and make slow hip circles, 5 each way.',
+      'Sit down and finish with a few slow breaths.',
     ],
-    safety: ['Move only as far as is comfortable.', 'Keep the movement slow; there is no need to push a stretch.'],
+    safety: ["Use a chair that won't slide.", 'Move only as far as is comfortable.', 'Keep the movement slow; there is no need to push a stretch.'],
     voice: {
       mentor: { title: 'Hip and spine flow', line: 'Slow, easy movement for your back and hips. Go at your own pace.' },
       system: { title: 'Hip and spine flow', line: 'Mobility ladder. Five minutes.' },
@@ -243,10 +244,11 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: [
       'Reach both arms overhead and stretch tall for a few breaths.',
       'Clasp your hands behind you to open your chest, then round forward to stretch your upper back.',
-      'Stretch the front and back of each thigh, holding each stretch for about 30 seconds.',
+      'Back of the thigh: put one heel on a low step, keep that leg straight and lean forward gently. About 30 seconds a side.',
+      'Front of the hip: step one foot back, tuck your hips under and stand tall. About 30 seconds a side.',
       'Finish with gentle hip and ankle circles.',
     ],
-    safety: ['Stretch to mild tension, never to pain.', 'Hold a wall or chair for balance when standing on one leg.'],
+    safety: ['Stretch to mild tension, never to pain.', 'Hold a wall or chair for balance whenever you need it.'],
     voice: {
       mentor: { title: 'Full-body stretch', line: 'Eight minutes, head to toe. Breathe slowly into each stretch.' },
       system: { title: 'Full-body stretch', line: 'Mobility ladder. Eight minutes, whole body.' },
@@ -459,7 +461,7 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     exercise: null,
     gentle: false,
     contraindications: [],
-    hardDay: { minutes: 2, condition: minutes(2) },
+    hardDay: { minutes: 1, condition: minutes(1) },
     name: 'Box breathing',
     steps: [
       'Sit comfortably and breathe in through your nose for a count of 4.',

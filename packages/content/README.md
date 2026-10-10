@@ -42,9 +42,10 @@ instance stores the version it was built from.
 | `text.test.ts` | name, steps, safety and the three voices' lengths and rules; the lint on every string |
 | `why.test.ts`, `achievements.test.ts`, `shadow.test.ts` | Their words, placeholders, reachability and the approved Shadow lines |
 | `days.test.ts` | 21,500 days built from the real library for 1,024 player profiles: shape, budget, limitations, gentle start, own program, recovery rules, why-lines, class mix |
-| `campaign.test.ts` | Pacing on real built days meets the level targets, and the average class reaches rank C in about 3 months |
+| `fuzz.test.ts` | 10,000 seeded random player states (messy histories, paused ladders, light days): builds, swaps on normal and hard days, the offline check and Second Wind keep every rule |
+| `campaign.test.ts` | Pacing on real built days (400 runs) meets the level targets, and the average class reaches rank C in about 3 months |
 
-The content suite runs in about 5 seconds.
+The content suite runs in about 20 seconds, most of it the campaign.
 
 ## Commands (from the repo root)
 
