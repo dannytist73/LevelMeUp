@@ -131,13 +131,13 @@ need (pending check-ins, queued streak days, ability use, achievement counters).
 1. (M3, answered: yes, 2026-10-11) Can undoing a same-day mis-tap take back a level-up it caused? **Yes: it corrects an error; it
    isn't a penalty.** The level-up screen should then not have been celebrated, so M6 shows level-ups after a short
    delay.
-2. (M7) Deleting a signed-in account that the wedding site may share: **delete all LevelMeUp data and keep the
+2. (M7; answered: as recommended, 2026-10-11) Deleting a signed-in account that the wedding site may share: **delete all LevelMeUp data and keep the
    sign-in**, and say so on the delete screen. The alternative deletes the sign-in too, which would also sign a wedding
    admin out of the wedding site if they used the same Google account.
 3. (M3, answered: yes, 2026-10-11) Testing on the live project: **pgTAP inside transactions that always roll back, plus up to 6
    temporary anonymous players per live test run, deleted at the end.** Claude Code's safety screen blocks writes to
    the live database until the owner allows them (see "Permissions" below).
-4. (M7) Two missed days in a row while the first check-in is unanswered: **one check-in and one recovery quest cover
+4. (M7; answered: as recommended, 2026-10-11) Two missed days in a row while the first check-in is unanswered: **one check-in and one recovery quest cover
    both** (what the M1 rules do: "one answer covers the whole gap"). Answering after the first miss would instead ask
    twice, so strictly the delay changes the result; the alternative queues every day behind any pending check-in and
    asks about each miss in turn. Spec §3.7 needs rewording either way.
