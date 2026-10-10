@@ -146,3 +146,91 @@ XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach leve
 About 25 in the MVP across milestones, streaks, ladder rungs, class feats, articles read and comebacks (e.g.
 *Rise Again*: clear a recovery quest after a miss). Some grant a title shown under the name (e.g. *The Unbroken*,
 30-day streak).
+
+## 3. Daily quest generation and fair failure (approved 2026-10-10)
+
+### 3.1 The quest library
+
+- About 10 authored **ladders** (ordered rungs, easy → hard), about 70 templates in total:
+  push, squat, core, walk, mobility, reading, insight, focus, phone-free, sleep and breathing.
+- A template has: ladder and rung, stat (and optional secondary split), effort tier (minor/standard/major),
+  estimated minutes, completion type (tap / timer / rep log / short text), a measurable condition, instructions,
+  safety notes, contraindication tags (knee, back, shoulder, wrist, …), class affinity, a linked hard-day version,
+  and title/description text in each of the three voices (mentor, system, questmaster).
+- Text is drafted once at authoring time (Claude) and reviewed by the owner; a fitness professional skimming the
+  strength ladders before the pilot is recommended. No AI call is made when a day is generated.
+- Players who already follow a training program get "complete your own planned session (≥ N min)" as their
+  strength quest instead of beginner ladders.
+
+### 3.2 Generating a day (deterministic, a pure TypeScript rules package)
+
+1. Day type: normal, planned rest, hard day (chosen at the briefing), or re-entry after time away.
+2. Core quest: the class mix from §2.5, with recovery rules (no strength pattern on consecutive days; walking or
+   mobility after a strength day).
+3. Two side quests: one goal-aligned, one balance. Core + sides fit the player's stated minutes per day.
+4. Text: the template's variant in the player's voice.
+5. The server creates the day once (`unique (user_id, quest_day, slot)`). A new day opened offline is built on the
+   phone with the same package, marked provisional, and checked by the server on sync (slot count, templates
+   allowed by the player's ladder state, rewards taken from the server's table).
+
+Every quest card shows **why it was picked** (e.g. "You cleared incline push-ups 3 times, so knee push-ups unlocked").
+
+### 3.3 Progression (performance-based, never calendar-based)
+
+After a completion, one optional tap: Easy / Right (default) / Too hard.
+
+- **Step up** after 3 completions at the rung within 14 days, the last 2 not "too hard"; 2 "easy" ratings step up
+  sooner. Difficulty shifts the bar: gentle 4, steady 3, hard 2. At most one step up per ladder per week.
+- **Step down** after "too hard" (offered immediately), 2 misses of that ladder in 7 days, or re-entry after
+  5+ days away (first session one rung lower).
+- **"I felt pain"** pauses that ladder without penalty and swaps in rest or gentle movement; persistent pain → the
+  System suggests a professional; resuming starts one rung lower.
+
+### 3.4 Safety
+
+- Onboarding includes the PAR-Q screening. Any "yes" → the gentlest walking and mobility ladders only, plus a
+  suggestion to check with a doctor before harder training.
+- Reported limitations exclude templates with matching contraindication tags.
+- Every exercise quest shows "stop if you feel sharp pain, dizziness or chest pain" and an "I felt pain" button.
+- The app states it is not medical advice.
+
+### 3.5 Adjusting the day
+
+- Swap: 1 per day (2 for Rogue level 5+), to an alternative for the same stat or a balance quest.
+- Hard day: every quest becomes its hard-day version; half XP; the streak counts.
+- Planned rest: up to 2 days a week (set weekly or at the briefing); beyond that the System suggests fewer minutes.
+
+### 3.6 Completion
+
+- Types: tap; in-app timer (complete at ≥ 80% of the target, computed from timestamps, survives the screen being
+  off); rep log; one written sentence.
+- The client sends `{quest_instance_id, client_event_id, completed_at, payload}`. A Postgres function checks
+  ownership and the open window, then awards XP once in one transaction. A repeat returns the same result.
+- Offline completions sync later and are accepted up to 48 h after the day closed if `completed_at` falls inside
+  the day.
+- Undo the same day (mis-taps): a reversing ledger entry.
+
+### 3.7 The missed-day check-in
+
+When a closed day's core quest was not done (and no hard-day version or protection applies), the next open asks
+"The day closed. What happened?"
+
+| Answer | Streak | Next |
+|---|---|---|
+| Sick or injured | paused | lighter tomorrow; injury pauses that ladder |
+| Emergency, travel, a brutal day | paused | normal or lighter tomorrow |
+| It was too hard | paused | that ladder steps down |
+| I need a lighter load | paused | daily minutes drop, plan lightens |
+| I just didn't | recovery chance | a 5-minute recovery quest for tomorrow: done → streak survives (the missed day doesn't count) + Discipline; skipped → a shield is used; no shield → reset. Opted-in accountability applies only here (§4) |
+| (server outage or no quests generated) | paused automatically | not asked |
+
+- Paused days earn no XP and don't grow the streak, so excuses gain nothing; honesty plus a recovery quest earns
+  Discipline.
+- 3+ recovery quests or 3+ protected days in 14 → the System offers a lighter plan.
+- A dismissed check-in comes back on the next open; the streak stays paused until it is answered.
+
+### 3.8 Time zones and the day boundary
+
+- The quest day starts at the player's boundary in the phone's time zone at the moment the day starts.
+- A day lasts at least 20 and at most 28 hours (flights, DST).
+- A server job closes days hourly per time zone.
