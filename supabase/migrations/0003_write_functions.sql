@@ -66,6 +66,8 @@ returns jsonb language plpgsql security definer set search_path = levelmeup, pg_
 declare
   day bigint;
 begin
+  -- Two onboarding requests at once: the second waits here, then sees the first one's profile.
+  perform pg_advisory_xact_lock(hashtextextended('lmu-start:' || p_user::text, 0));
   if exists (select 1 from levelmeup.profiles where user_id = p_user) then raise exception 'lmu:already_started'; end if;
   if (p_day ->> 'dayNumber')::int <> 1 then raise exception 'lmu:out_of_order'; end if;
 
