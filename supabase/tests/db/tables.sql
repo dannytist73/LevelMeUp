@@ -106,7 +106,7 @@ begin
     format('insert into levelmeup.quest_days (user_id, day_number, starts_at, ends_at, time_zone, budget, light, content_version) values (%L, 1, now(), now() + interval ''1 day'', ''UTC'', 25, false, 1)', a),
     '23505', null, 'one row per quest day');
   return next throws_ok(
-    format('insert into levelmeup.quest_instances (day_id, user_id, slot, template_id, stat, tier, minutes, completion, condition, xp, why) values (%s, %L, ''side1'', ''x'', ''focus'', ''minor'', 2, ''tap'', ''{}'', ''{}'', ''{}'')', b_day, a),
+    format('insert into levelmeup.quest_instances (day_id, user_id, slot, template_id, stat, tier, minutes, completion, condition, xp, why) values (%s, %L, ''side1'', ''x'', ''focus'', ''minor'', 2, ''tap'', ''{}'', ''{"focus": 10}'', ''{}'')', b_day, a),
     '23503', null, 'a quest belongs to a day of the same player');
   return next throws_ok(format('insert into levelmeup.checkins (user_id, day_id, gap_from, gap_to) values (%L, null, null, null)', a), '23514', null, 'a check-in is for a day or a gap');
   return next throws_ok(format('update levelmeup.quest_instances set rating = %L where user_id = %L', 'easy', a), '23514', null, 'only a completed quest has a rating');

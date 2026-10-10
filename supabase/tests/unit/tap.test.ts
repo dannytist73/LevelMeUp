@@ -74,6 +74,27 @@ describe('reading pgTAP output', () => {
     expect(result.failures[0]).toContain('Test died: P0001: boom');
   });
 
+  it('reads rows that hold several lines (the shape the live project returns)', () => {
+    const rows = [
+      '# Subtest: lmu_test.test_a()',
+      '    ok 1 - first',
+      '    not ok 2 - second\n    # Failed test 2: "second"\n    #       caught: 23514\n    #       wanted: 23503',
+      '    1..2',
+      '    # Looks like you failed 1 test of 2',
+      'not ok 1 - lmu_test.test_a\n# Failed test 1: "lmu_test.test_a"',
+      '# Subtest: lmu_test.test_b()',
+      '    ok 1 - third',
+      '    1..1',
+      'ok 2 - lmu_test.test_b',
+      '1..2',
+      '# Looks like you failed 1 test of 2',
+    ];
+    const result = parseTap(rows);
+    expect(result).toMatchObject({ ok: false, functions: 2, assertions: 3 });
+    expect(result.failures[0]).toBe('lmu_test.test_a: not ok 2 - second\n# Failed test 2: "second"\n#       caught: 23514\n#       wanted: 23503');
+    expect(result.failures.some((f) => f.startsWith('plan'))).toBe(false);
+  });
+
   it('fails on empty output', () => {
     expect(parseTap([]).ok).toBe(false);
   });

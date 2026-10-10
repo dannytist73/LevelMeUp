@@ -18,7 +18,7 @@ export function wrapTestFile(sql: string, helpers = ''): string {
 
 export type TapResult = { ok: boolean; functions: number; assertions: number; failures: string[] };
 
-/** Reads `runtests()` output: one subtest per test function, each with its assertions and plan. */
+/** Reads `runtests()` rows: one subtest per test function, each with its assertions and plan. */
 export function parseTap(lines: readonly string[]): TapResult {
   const failures: string[] = [];
   let functions = 0;
@@ -31,7 +31,8 @@ export function parseTap(lines: readonly string[]): TapResult {
     pending = null;
   };
 
-  for (const raw of lines) {
+  // One row can hold several lines (an assertion with its diagnostics).
+  for (const raw of lines.flatMap((row) => row.split('\n'))) {
     const line = raw.replace(/\s+$/, '');
     const subtest = /^# Subtest: (.+?)(?:\(\))?$/.exec(line);
     if (subtest) {
@@ -44,6 +45,10 @@ export function parseTap(lines: readonly string[]): TapResult {
       flush();
       assertions++;
       if (nested[2]) pending = [nested[1]!];
+      continue;
+    }
+    if (/^\s+1\.\.\d+$/.test(line)) {
+      flush();
       continue;
     }
     const comment = /^\s+(#.*)$/.exec(line);
