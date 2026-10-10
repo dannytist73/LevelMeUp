@@ -1,12 +1,11 @@
 // Database rows and what the rules make of them. Pure: no database access here.
 import {
-  CLASSES, STATS, TRAINABLE_STATS, levelForXp, levelProgress, newLadder, rankFor, statPoints, xpToNextPoint,
+  STATS, TRAINABLE_STATS, levelForXp, levelProgress, newLadder, rankFor, statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  AbilityId, AchievementProgress, ClassId, DayWindow, Difficulty, Goal, LadderState, Limitation, PastDay, PlayerProfile,
-  Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
+  AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Goal, LadderState, Limitation,
+  PastDay, PlayerProfile, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
 } from '../../../packages/rules/src/index.ts';
-import type { Condition, CompletionType } from '../../../packages/rules/src/index.ts';
 
 /** Bigint ids arrive as strings from postgres.js. */
 export type Id = number | string;
@@ -209,7 +208,53 @@ export function achievementProgress(c: CharacterRow, ladders: Readonly<Record<st
   };
 }
 
-/** The class's main stat, for the reveal and the views. */
-export function mainStat(classId: ClassId): TrainableStat {
-  return CLASSES[classId].main;
+export type Snapshot = {
+  profile: ProfileRow;
+  character: CharacterRow;
+  ladders: LadderRow[];
+  /** The latest days, in any order. */
+  days: DayRow[];
+  instances: InstanceRow[];
+  /** Unanswered check-ins. */
+  checkins: CheckinRow[];
+  earned: string[];
+};
+
+const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];
+const iso = (d: Date | null): string | null => (d === null ? null : d.toISOString());
+
+/** The phone's copy of the player's state (the `lmu-sync` and `lmu-onboarding` responses). */
+export function stateView(s: Snapshot) {
+  const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
+  const today = days[0] ?? null;
+  const questsOf = (day: DayRow) => s.instances.filter((q) => String(q.day_id) === String(day.id));
+  return {
+    profile: {
+      name: s.profile.name, voice: s.profile.voice, classId: s.profile.class_id, timeZone: s.profile.time_zone,
+      boundaryMinutes: s.profile.boundary_minutes, minutesPerDay: s.profile.minutes_per_day, difficulty: s.profile.difficulty,
+      goals: s.profile.goals, limitations: s.profile.limitations, gentleStart: s.profile.gentle_start, ownProgram: s.profile.own_program,
+      book: s.profile.book, reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
+    },
+    character: characterView(s.character),
+    today: today === null ? null : {
+      id: Number(today.id), dayNumber: today.day_number, startsAt: iso(today.starts_at), endsAt: iso(today.ends_at),
+      timeZone: today.time_zone, budget: today.budget, light: today.light, hardDay: today.hard_day, protection: today.protection,
+      status: today.status,
+      quests: questsOf(today)
+        .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))
+        .map((q) => ({
+          id: Number(q.id), slot: q.slot, templateId: q.template_id, ladder: q.ladder_id, rung: q.rung, stat: q.stat, tier: q.tier,
+          minutes: q.minutes, completion: q.completion, condition: q.condition, hardDay: q.hard_day, xp: q.xp, why: q.why,
+          book: q.book, completedAt: iso(q.completed_at), rating: q.rating,
+        })),
+    },
+    checkinsDue: s.checkins
+      .filter((c) => c.answer === null)
+      .map((c) => ({ id: Number(c.id), dayId: c.day_id === null ? null : Number(c.day_id), gapFrom: c.gap_from, gapTo: c.gap_to })),
+    recentDays: days.slice(1).map((d) => ({
+      dayNumber: d.day_number, startsAt: iso(d.starts_at), status: d.status, resolution: d.resolution,
+      cleared: questsOf(d).filter((q) => q.completed_at !== null).length,
+    })),
+    achievements: [...s.earned].sort(),
+  };
 }

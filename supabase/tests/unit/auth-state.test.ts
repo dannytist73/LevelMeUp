@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { newLadder } from '../../../packages/rules/src/index.ts';
 import { playerFromAuthHeader } from '../../functions/_shared/auth.ts';
 import { readJson } from '../../functions/_shared/http.ts';
-import { achievementProgress, characterView, pastDays, toProfile } from '../../functions/_shared/state.ts';
-import { DAY1, characterRow, dayRow, instanceRows, profileRow } from './fixtures.ts';
+import { achievementProgress, characterView, pastDays, stateView, toProfile } from '../../functions/_shared/state.ts';
+import { DAY1, characterRow, dayRow, instanceRows, manilaDay, profileRow } from './fixtures.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 12);
 const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
@@ -69,5 +69,28 @@ describe('what the rules make of the rows', () => {
       walk: { ...newLadder(2), highestRung: 3 },
     });
     expect(progress).toMatchObject({ questsCleared: 4, bestStreak: 7, highestRungs: { walk: 3 }, bestRank: 'E', abilitiesUsed: ['second_wind'] });
+  });
+});
+
+describe('the state the phone receives', () => {
+  it('shows today with its quests in slot order, earlier days, pending check-ins and achievements', () => {
+    const day2 = { ...DAY1, dayNumber: 2, startsAt: new Date(manilaDay(2).startsAt).toISOString(), endsAt: new Date(manilaDay(2).endsAt).toISOString() };
+    const view = stateView({
+      profile: profileRow(),
+      character: characterRow({ xp_vitality: 20 }),
+      ladders: [],
+      days: [dayRow(DAY1, 1, { status: 'closed', resolution: 'streak_day' }), dayRow(day2, 2)],
+      instances: [...instanceRows(DAY1, 1, ['core']), ...instanceRows(day2, 2).reverse()],
+      checkins: [{ id: '7', day_id: null, gap_from: 3, gap_to: 4, answer: null }],
+      earned: ['level-5', 'first-trial'],
+    });
+    expect(view.today).toMatchObject({ id: 2, dayNumber: 2, status: 'open' });
+    expect(view.today!.quests.map((q) => q.slot)).toEqual(DAY1.quests.map((q) => q.slot));
+    expect(view.today!.quests[0]).toMatchObject({ id: 200, completedAt: null });
+    expect(view.recentDays).toEqual([{ dayNumber: 1, startsAt: DAY1.startsAt, status: 'closed', resolution: 'streak_day', cleared: 1 }]);
+    expect(view.checkinsDue).toEqual([{ id: 7, dayId: null, gapFrom: 3, gapTo: 4 }]);
+    expect(view.achievements).toEqual(['first-trial', 'level-5']);
+    expect(view.character.totalXp).toBe(20);
+    expect(view.profile).toMatchObject({ classId: 'warrior', minutesPerDay: 25 });
   });
 });

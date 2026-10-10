@@ -1,0 +1,58 @@
+// POST /functions/v1/lmu-onboarding — the player's choices become a character and day 1 (spec §1.1, §4.2).
+import type postgres from 'npm:postgres@3.4.9';
+import { LIBRARY } from '../../../packages/content/src/index.ts';
+import { playerFromAuthHeader } from '../_shared/auth.ts';
+import { REVEAL_MODEL, claudeConfigured, writeReveal } from '../_shared/claude.ts';
+import { db, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
+import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
+import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../_shared/onboarding.ts';
+import type { Choices, Reveal } from '../_shared/onboarding.ts';
+import { stateView } from '../_shared/state.ts';
+
+/** Claude calls per player for the reveal, lifetime (architecture §8). */
+const AI_CAP = 3;
+
+async function reveal(userId: string, choices: Choices): Promise<Reveal> {
+  const fallback = templateReveal(choices);
+  if (!claudeConfigured()) return fallback;
+  let callId: string;
+  try {
+    callId = one(await db()<{ id: string }[]>`select levelmeup.reserve_ai_call(${userId}::uuid, 'onboarding', ${REVEAL_MODEL}, ${AI_CAP}) as id`).id;
+  } catch (error) {
+    if (lmuCode(error) === 'ai_cap') return fallback;
+    throw error;
+  }
+  const call = await writeReveal(revealFacts(choices));
+  const parsed = 'value' in call ? parseReveal(call.value) : null;
+  const status = parsed !== null ? 'ok' : 'error' in call ? 'failed' : 'fallback';
+  await db()`select levelmeup.finish_ai_call(${callId}::bigint, ${status}, ${'value' in call ? call.inputTokens : null}::int,
+    ${'value' in call ? call.outputTokens : null}::int, null, ${'error' in call ? call.error : parsed === null ? 'invalid reveal' : null})`;
+  return parsed ?? fallback;
+}
+
+Deno.serve(async (req) => {
+  const player = playerFromAuthHeader(req.headers.get('authorization'), Date.now());
+  if (isProblem(player)) return problemResponse(player);
+  const body = await readJson(req);
+  if (isProblem(body)) return problemResponse(body);
+  const choices = parseOnboarding(body);
+  if (isProblem(choices)) return problemResponse(choices);
+
+  try {
+    const existing = await db().begin((tx) => loadSnapshot(tx, player.userId));
+    if (existing !== null) return problemResponse(problem(409, 'already_started'));
+    const words = await reveal(player.userId, choices);
+    const args = startArgs(choices, words, Date.now(), LIBRARY);
+    const snapshot = await db().begin(async (tx) => {
+      const j = (value: unknown) => tx.json(value as postgres.JSONValue);
+      await tx`select levelmeup.start_player(${player.userId}::uuid, ${j(args.profile)}::jsonb, ${j(args.character)}::jsonb,
+        ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
+      return loadSnapshot(tx, player.userId);
+    });
+    return json(201, { reveal: words, state: stateView(snapshot!) });
+  } catch (error) {
+    if (lmuCode(error) === 'already_started') return problemResponse(problem(409, 'already_started'));
+    console.error('lmu-onboarding failed', error);
+    return problemResponse(problem(500, 'internal'));
+  }
+});
