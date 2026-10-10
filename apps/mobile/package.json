@@ -7,8 +7,8 @@
     "start": "expo start --dev-client --tunnel",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "check:bundle": "node scripts/scan-bundle.mts",
-    "fonts": "node scripts/subset-fonts.mts"
+    "check:bundle": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/scan-bundle.mts",
+    "fonts": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/subset-fonts.mts"
   },
   "dependencies": {
     "@levelmeup/content": "^0.1.0",
