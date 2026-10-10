@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "LevelMeUp",
+    "slug": "levelmeup",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "levelmeup",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E0E10",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#0E0E10"
+        }
+      ],
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.dannytist.levelmeup",
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "backgroundColor": "#0E0E10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}
