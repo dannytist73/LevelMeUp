@@ -54,6 +54,16 @@ describe('migrations stay inside the levelmeup schema (architecture §12)', () =
     }
   });
 
+  it('functions never stay executable by everyone: each migration that creates one is followed by the revoke', () => {
+    // 0001's per-schema default privileges can't remove Postgres's global "everyone may execute" (see 0005).
+    const REVOKE = /revoke\s+all\s+on\s+all\s+functions\s+in\s+schema\s+levelmeup\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i;
+    MIGRATIONS.forEach(({ name, sql }, i) => {
+      if (!/\bcreate\s+(?:or\s+replace\s+)?function\b/i.test(stripComments(sql))) return;
+      const later = MIGRATIONS.slice(i).map((m) => stripComments(m.sql));
+      expect(later.some((text) => REVOKE.test(text)), `${name} creates functions`).toBe(true);
+    });
+  });
+
   it('the completion window in SQL matches the rules (5 minutes of clock skew, 48 hours late)', () => {
     const all = MIGRATIONS.map((m) => stripComments(m.sql)).join('\n');
     expect(CLOCK_SKEW_MS).toBe(5 * 60_000);

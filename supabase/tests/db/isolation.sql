@@ -80,6 +80,6 @@ begin
     'lmu_player with a wedding admin''s claims is refused on public.invites');
   return next throws_ok($q$ set local role lmu_player; select count(*) from public.rsvps $q$, '42501', null,
     'and on public.rsvps');
-  return next throws_ok($q$ set local role lmu_service; set local role authenticated $q$, '42501', null,
-    'lmu_service cannot switch to authenticated');
+  -- Whether lmu_service can `set role authenticated` can't be tried here: Postgres checks SET ROLE against the
+  -- session's login role (postgres in this test). test_lmu_roles checks the membership itself (pg_has_role … 'SET').
 end $$;
