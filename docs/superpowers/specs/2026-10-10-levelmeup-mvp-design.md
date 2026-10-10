@@ -220,8 +220,8 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
 
 ### 3.7 The missed-day check-in
 
-When a closed day's core quest was not done (and no hard-day version or protection applies), the next open asks
-"The day closed. What happened?"
+When a closed day's core quest was not done (and no hard-day version or protection applies, and it isn't a streak
+day through any 2 quests, §2.4), the next open asks "The day closed. What happened?"
 
 | Answer | Streak | Next |
 |---|---|---|
@@ -235,14 +235,15 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 - Paused days earn no XP and don't grow the streak, so excuses gain nothing; honesty plus a recovery quest earns
   Discipline.
 - 3+ recovery quests or 3+ days protected by a check-in answer in 14 → the System offers a lighter plan.
-- A dismissed check-in comes back on the next open; the streak stays paused until it is answered.
+- A dismissed check-in comes back on the next open; the streak stays paused until it is answered, and later days
+  are applied to the streak only after it (in quest-day order), so delaying the answer changes nothing.
 - The recovery quest is available until the end of the quest day on which the check-in is answered. A Warrior with
   *Second Wind* available may instead redo the full missed core quest that day for its full XP.
 
 ### 3.8 Time zones and the day boundary
 
 - The quest day starts at the player's boundary in the phone's time zone at the moment the day starts.
-- A day lasts at least 20 and at most 28 hours (flights, DST).
+- A day lasts at least 20 and at most 28 hours (flights, DST); day 1 is the exception below (6 to 30 hours).
 - A day is closed once its stored end time has passed, evaluated whenever the server looks at the player's state
   (lazy closing; architecture §4.3). No hourly job is needed.
 - Day 1 starts when onboarding ends and runs to the first boundary at least 6 hours away, so a late-night start
@@ -296,8 +297,9 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 ### 4.3 Accountability (MVP levels 0–2)
 
 - **Off by default.** Enabled through the *Accountability Pact* screen (from Settings, or from the suggestion on
-  the reveal). It shows exactly what happens on a miss and previews the Shadow. It applies only to quest days that
-  start after it was enabled. Turning it off is instant, any time, and never affects progress.
+  the reveal). It shows exactly what happens on a miss and previews the Shadow. It applies only from the quest
+  day after the one in progress when it is signed, never today's (signed during onboarding, from day 2). Turning it
+  off is instant, any time, and never affects progress.
 - **Trigger:** only the player's own check-in answer "I just didn't". Never a crash, a failed sync, missing data,
   an unanswered check-in or a missed notification.
 
@@ -358,8 +360,8 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 - Recovery quests, shields, protected-day limits and the "lighter plan" offers behave as specified.
 
 **Time**
-- Day boundaries are correct across time zones, both DST transitions, and travel east and west; days stay within
-  20–28 hours (unit tests).
+- Day boundaries are correct across time zones, both DST transitions, and travel east and west; days after day 1
+  stay within 20–28 hours (unit tests).
 
 **Article**
 - The nightly job publishes only articles that pass the §4.1 checks; a failing article is never shown.
