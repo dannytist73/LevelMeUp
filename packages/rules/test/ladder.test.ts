@@ -119,23 +119,29 @@ describe('stepping up (spec §3.3)', () => {
 
 describe('stepping down', () => {
   it('2 misses within 7 days step down', () => {
-    const first = recordMiss(newLadder(2), 0);
+    const first = recordMiss(newLadder(2), { at: 0, rung: 2 });
     expect(first.steppedDown).toBe(false);
-    const second = recordMiss(first.state, 3 * DAY_MS);
+    const second = recordMiss(first.state, { at: 3 * DAY_MS, rung: 2 });
     expect(second.steppedDown).toBe(true);
     expect(second.state.rung).toBe(1);
   });
 
   it('misses 8 days apart do not, in either order', () => {
-    const first = recordMiss(newLadder(2), 0);
-    expect(recordMiss(first.state, 8 * DAY_MS).steppedDown).toBe(false);
-    const later = recordMiss(newLadder(2), 10 * DAY_MS);
-    expect(recordMiss(later.state, 2 * DAY_MS).steppedDown).toBe(false);
+    const first = recordMiss(newLadder(2), { at: 0, rung: 2 });
+    expect(recordMiss(first.state, { at: 8 * DAY_MS, rung: 2 }).steppedDown).toBe(false);
+    const later = recordMiss(newLadder(2), { at: 10 * DAY_MS, rung: 2 });
+    expect(recordMiss(later.state, { at: 2 * DAY_MS, rung: 2 }).steppedDown).toBe(false);
   });
 
   it('the same missed day recorded twice is one miss', () => {
-    const first = recordMiss(newLadder(2), 0);
-    expect(recordMiss(first.state, 0).steppedDown).toBe(false);
+    const first = recordMiss(newLadder(2), { at: 0, rung: 2 });
+    expect(recordMiss(first.state, { at: 0, rung: 2 }).steppedDown).toBe(false);
+  });
+
+  it('a miss of a quest built at another rung is ignored, like a completion', () => {
+    const first = recordMiss(newLadder(2), { at: 0, rung: 1 });
+    expect(first.state.misses).toEqual([]);
+    expect(recordMiss(first.state, { at: DAY_MS, rung: 1 }).steppedDown).toBe(false);
   });
 
   it('coming back after 5 or more days away starts one rung lower', () => {
@@ -161,8 +167,8 @@ describe('pain (spec §3.3, §3.4)', () => {
 
   it('a paused ladder records no misses or re-entry, so resuming is only ever one rung lower', () => {
     let paused = recordPain(newLadder(3)).state;
-    paused = recordMiss(paused, 0).state;
-    paused = recordMiss(paused, DAY_MS).state;
+    paused = recordMiss(paused, { at: 0, rung: 3 }).state;
+    paused = recordMiss(paused, { at: DAY_MS, rung: 3 }).state;
     paused = recordReentry(paused, 20 * DAY_MS, 0).state;
     expect(paused.rung).toBe(3);
     expect(resumeAfterPain(paused).state.rung).toBe(2);

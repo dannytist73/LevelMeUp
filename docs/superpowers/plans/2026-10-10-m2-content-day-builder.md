@@ -919,6 +919,14 @@ describe('the core quest follows the class (spec §2.5)', () => {
     expect(day.quests.some((q) => q.ladder === 'push' || q.ladder === 'squat')).toBe(false);
   });
 
+  it('yesterday strength ladders rest even when nothing else would keep them out', () => {
+    // Walk is paused, so mobility is the core and the body goal has only strength ladders left.
+    const history = [{ dayNumber: 7, quests: { core: 'push-1', side1: 'squat-0' } }];
+    const day = buildDay(FIXTURE, dayInput({ dayNumber: 8, history, ladders: { walk: { ...newLadder(), paused: true } } }));
+    expect(quest(day, 'core').templateId).toBe('mobility-0');
+    expect(day.quests.some((q) => q.ladder === 'push' || q.ladder === 'squat')).toBe(false);
+  });
+
   it('a core that is not strength work is left alone after a strength day', () => {
     const mage = buildDay(FIXTURE, dayInput({ dayNumber: 8, history: [{ dayNumber: 7, quests: { core: 'push-0' } }] }, { classId: 'mage', goals: ['learn'] }));
     expect(quest(mage, 'core').templateId).toBe('reading-0');

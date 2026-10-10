@@ -95,12 +95,13 @@ export function stepDown(state: LadderState): LadderChange {
 }
 
 /**
- * 2 missed sessions of this ladder within 7 days step it down. One record per quest day, measured from the latest
- * missed day like completions. A ladder paused for pain records nothing.
+ * 2 missed sessions of this ladder within 7 days step it down. Like completions, a miss counts only for a quest built
+ * at the current rung; one record per quest day, measured from the latest missed day. A ladder paused for pain records
+ * nothing.
  */
-export function recordMiss(state: LadderState, at: number): LadderChange {
-  if (state.paused) return unchanged(state);
-  const all = [...state.misses.filter((t) => t !== at), at].sort((a, b) => a - b);
+export function recordMiss(state: LadderState, miss: { at: number; rung: number }): LadderChange {
+  if (state.paused || miss.rung !== state.rung) return unchanged(state);
+  const all = [...state.misses.filter((t) => t !== miss.at), miss.at].sort((a, b) => a - b);
   const latest = all[all.length - 1]!;
   const misses = all.filter((t) => latest - t < MISS_WINDOW_MS);
   if (misses.length >= MISSES_FOR_STEP_DOWN) return stepDown(state);

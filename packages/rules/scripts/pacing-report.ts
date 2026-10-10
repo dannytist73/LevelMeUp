@@ -4,6 +4,7 @@ import { PACING_LEVELS, PACING_PROFILES, meetsTargets, simulatePacing } from '..
 
 const show = (day: number | null | undefined): string => (day == null ? '—' : day.toFixed(1)).padStart(7);
 
+console.log('M1 simplified model (a standard core every day, no misses). The real-day campaign below decides the curve.');
 console.log(`Level curve: ${LEVEL_CURVE.base} + ${LEVEL_CURVE.step} × (L − 1)`);
 console.log(`Mean day each level is reached (200 runs):\n${'profile'.padEnd(11)}${PACING_LEVELS.map((l) => `L${l}`.padStart(7)).join('')}`);
 for (const [name, rate] of Object.entries(PACING_PROFILES)) {

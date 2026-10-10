@@ -43,6 +43,10 @@ First build task (a spike): prove a module with relative `.ts` imports and no np
 Fallback if Deno bundling can't reach `packages/`: a `sync-shared` script copies both packages into
 `supabase/functions/_shared/` and a test fails if the copies differ.
 
+`packages/content` imports only the rules' types (`import type … from '../../rules/src/index.ts'`), which are erased at
+runtime, so it has no runtime dependency on the rules; copied side by side as `_shared/rules` and `_shared/content`,
+the relative paths still resolve (M2).
+
 ## 2. Mobile app
 
 | Concern | Choice | Why |

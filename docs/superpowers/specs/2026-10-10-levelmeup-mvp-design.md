@@ -89,9 +89,12 @@ typical 70%, struggling 40% completion) before anything is built on them.
 - Each quest instance awards XP once, to its primary stat (optionally split with a secondary; the split never adds
   XP). Character XP = the sum of all stat XP. Nothing is double-counted.
 - Starting stat points come from onboarding estimates in a narrow band (3–8); the class's main stat gets +2.
-- Stat points = start + floor(sqrt(statXP / 10)): fast early, slower later.
+- Stat points = start + floor(sqrt(statXP / 22)): fast early, slower later. (The divisor was 10 until M2's campaign
+  on real built days; see below.)
 - Ranks by stat points: E < 10, D 10–14, C 15–24, B 25–39, A 40–59, S 60+ (about rank C after 3 months of steady
-  training in the main stat). Tuned by the simulation.
+  training in the main stat). Tuned by the simulation, and judged on the average class (owner's decision, M2): with
+  divisor 22 the average class reaches rank C on about day 89, a Mage on about day 55 (the daily article also trains
+  Wisdom) and a Rogue on about day 126. Each class must land between 6 weeks and 5 months.
 - XP, levels and stats never decrease.
 
 ### 2.2 XP per quest
@@ -109,19 +112,23 @@ only), so a full day is about 65 XP and a typical day about 45.
 
 ### 2.3 Levels
 
-XP to go from level L to L+1 = 30 + 32 × (L − 1). Cumulative XP to reach level N = 30(N−1) + 16(N−1)(N−2).
-The step was 20 in the first draft; the pacing simulation (`npm run pacing`) showed that was too fast and tuned it
-to 32 (M1, `packages/rules`).
+XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach level N = 30(N−1) + 10(N−1)(N−2).
+M1's simplified pacing model (a standard core quest every day) moved the step to 32. M2 re-ran the check on real
+built days, where new players start every ladder at its first rung and missed sessions step ladders down; real days
+earn less, and only steps 19 and 20 meet every target, so the step is back at 20 (`npm run pacing`).
 
 | Level | Cumulative XP | Steady player | Struggling player |
 |---|---|---|---|
 | 2 | 30 | day 1 | day 1–2 |
-| 5 | 312 | end of week 1 | about week 2 |
-| 10 | 1,422 | about 3 weeks | about day 40 |
-| 15 | 3,332 | about 6 weeks | — |
-| 20 | 6,042 | about 2½–3 months | later, still climbing |
+| 5 | 240 | end of week 1 | about week 2 |
+| 10 | 990 | about 3 weeks | about day 40 |
+| 15 | 2,240 | about 6 weeks | — |
+| 20 | 3,990 | about 2½–3 months | later, still climbing |
 
-The simulation passes if each target is met within ±20%; if not, the per-level step (now 32) is tuned, not the XP table.
+The check passes if each target is met within ±20%; if not, the per-level step (now 20) is tuned, not the XP table.
+On real days (four class personas at 25 minutes, 400 runs) steady players reach level 10 on days 17.7–18.2 and
+struggling players on days 46.9–47.8. The struggling target (at most day 48) passes only just; a wider margin needs
+the base (30) or the content, not the step.
 
 ### 2.4 Streaks and shields
 
@@ -148,6 +155,9 @@ The simulation passes if each target is met within ±20%; if not, the per-level 
   class at the current level.
 - After the MVP: advanced classes via a 7-day Class Trial at level 20 (Ranger, Paladin, Sage, …), level 15 abilities,
   equipment and cosmetics.
+- Limits count quest days, so DST and travel can't shift them (M2): "once a week" means every 7 quest days, "once a
+  month" every 30. Second Wind puts the missed core quest in the recovery slot for its full XP plus the recovery's
+  Discipline +5. Insight (M8), Vanish (M6) and Unbreakable (M7) get their screens later; their rules exist now.
 
 ### 2.6 Achievements and titles
 
@@ -169,6 +179,11 @@ About 25 in the MVP across milestones, streaks, ladder rungs, class feats, artic
   strength ladders before the pilot is recommended. No AI call is made when a day is generated.
 - Players who already follow a training program get "complete your own planned session (≥ N min)" as their
   strength quest instead of beginner ladders.
+- **Built in M2** (`packages/content`): 12 ladders (the 11 above plus "own program") and 74 templates. Each template
+  has a plain name shared by all voices, short steps, safety notes, and a title and one line per voice; the hard-day
+  version is part of the template. A standard quest takes at least 8 minutes and a major one at least 23; a minor
+  quest may take longer when it is very easy (phone-free blocks). Tiny standalone quests (a glass of water, two pages,
+  tomorrow's hardest task) keep 10-minute days possible.
 
 ### 3.2 Generating a day (deterministic, a pure TypeScript rules package)
 
@@ -182,6 +197,18 @@ About 25 in the MVP across milestones, streaks, ladder rungs, class feats, artic
    allowed by the player's ladder state, rewards taken from the server's table).
 
 Every quest card shows **why it was picked** (e.g. "You cleared incline push-ups 3 times, so knee push-ups unlocked").
+
+How M2 builds it (`packages/rules`, `buildDay`):
+- **Budget:** the player picks 10, 15, 25 or 40 minutes (default 25). Core and side quests fit it; the article and the
+  recovery quest sit outside it. Each side quest keeps 2 minutes free and the core gets the rest. Light days (day 1,
+  the first day back after 5+ days away, the day after a sick or injured check-in) have 10 minutes.
+- **Core:** a 7-day pattern by day number: main, second, main, balance, main, second, main. The day after a strength
+  core never has another: where the pattern asks for strength, the core is walking or mobility. No strength ladder
+  is built two days running in any slot. Ladders the class prefers come first, and the least recently built wins.
+- **Sides:** side 1 serves one of the player's goals (two goals take turns); side 2 trains the weakest stat not
+  already in the day. A quest built below the player's rung to fit a side slot doesn't count for that ladder.
+- **New players start every ladder at its first rung** until onboarding (M5) sets starting rungs, so early days are
+  short and mostly minor quests.
 
 ### 3.3 Progression (performance-based, never calendar-based)
 
@@ -197,16 +224,21 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
 ### 3.4 Safety
 
 - Onboarding includes the PAR-Q screening. Any "yes" → the gentlest walking and mobility ladders only, plus a
-  suggestion to check with a doctor before harder training.
-- Reported limitations exclude templates with matching contraindication tags.
+  suggestion to check with a doctor before harder training. Read as: the only *exercise* quests are gentle walking
+  and mobility rungs; reading, focus, breathing and sleep quests stay (M2).
+- Reported limitations exclude templates with matching contraindication tags. A ladder closes from its first tagged
+  rung up, so nobody climbs past an exercise they shouldn't do.
 - Every exercise quest shows "stop if you feel sharp pain, dizziness or chest pain" and an "I felt pain" button.
 - The app states it is not medical advice.
 
 ### 3.5 Adjusting the day
 
 - Swap: 1 per day (2 for Rogue level 5+), to an alternative for the same stat or a balance quest.
-- Hard day: every quest becomes its hard-day version; half XP; the streak counts.
+- Hard day: every quest becomes its hard-day version; half XP; the streak counts. Only open core and side quests
+  change; completed quests, the article and the recovery quest keep their reward (M2).
 - Planned rest: up to 2 days a week (set weekly or at the briefing); beyond that the System suggests fewer minutes.
+  "A week" is any 7 consecutive quest days. A planned rest day only protects the streak; its quests stay as a bonus
+  (M2).
 
 ### 3.6 Completion
 
