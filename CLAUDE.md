@@ -23,6 +23,11 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
   **Never run `supabase db push`** (the project's migration history belongs to the wedding repo); deploy migrations
   with this repo's `db:deploy` runner. LevelMeUp's names start with `lmu-` (functions, cron) and `LMU_` (secrets).
   Architecture §12 has the full sharing rules. Remote changes need the owner's yes at each milestone.
+- **The backend is live (since M3); there is no local database.** Call the Supabase CLI only through
+  `scripts/sb.ts` (an allow list pinned to the project). Never add a `supabase/config.toml`, never `link`, never
+  `config push`, `db reset`, `migration repair` or `functions deploy --prune`. Commands (details in
+  `supabase/README.md`): `npm run db:deploy` (migrations), `npm run db:test` (pgTAP, always rolled back),
+  `npm run deploy:functions`, `npm run test:live` (temporary players, always deleted), `npm run check:functions`.
 
 ## 1. Think Before Coding
 

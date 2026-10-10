@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "types": [
+      "node"
+    ],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "tests",
+    "vitest.config.ts",
+    "../scripts",
+    "functions/_shared"
+  ],
+  "exclude": [
+    "functions/_shared/db.ts",
+    "functions/_shared/claude.ts",
+    "functions/_shared/session.ts"
+  ]
+}

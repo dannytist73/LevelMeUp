@@ -1,13 +1,30 @@
 {
   "name": "levelmeup",
   "private": true,
-  "workspaces": ["packages/*"],
-  "engines": { "node": ">=24" },
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "supabase"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "npm -ws test",
     "typecheck": "npm -ws run typecheck",
     "check:portable": "node packages/rules/scripts/portable-check.ts && node packages/content/scripts/portable-check.ts",
     "pacing": "node packages/rules/scripts/pacing-report.ts && node packages/content/scripts/campaign-report.ts",
-    "content:review": "node packages/content/scripts/review.ts"
+    "content:review": "node packages/content/scripts/review.ts",
+    "sb": "node scripts/sb.ts",
+    "db:deploy": "node scripts/db-deploy.ts",
+    "db:test": "node scripts/db-test.ts",
+    "check:functions": "deno check --config supabase/deno.check.json supabase/functions/lmu-onboarding/index.ts supabase/functions/lmu-sync/index.ts supabase/functions/lmu-account-delete/index.ts",
+    "deploy:functions": "node scripts/sb.ts functions deploy lmu-onboarding lmu-sync lmu-account-delete --project-ref knlgpcwoaaygncmlnbsm --use-api",
+    "lmu:password": "node scripts/lmu-service-password.ts",
+    "test:live": "npm -w supabase run test:live"
+  },
+  "devDependencies": {
+    "deno": "^2.9.6",
+    "supabase": "2.118.0"
   }
 }

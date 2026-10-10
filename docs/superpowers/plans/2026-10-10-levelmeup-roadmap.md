@@ -15,13 +15,13 @@ guesses). Only milestone 1's plan exists today.
 |---|---|---|---|
 | 1 | **Rules core** | The pure TypeScript rulebook: levels, stats and ranks, XP, quest-day windows and time zones, streaks and shields, the check-in, ladders, consequence eligibility, timers, and the pacing simulation that tunes the level curve. About 165 unit tests. | `2026-10-10-m1-rules-core.md` |
 | 2 | **Content and day building** | `packages/content`: about 10 ladders and 70 quest templates in three voices, achievements, Shadow lines, a banned-phrase lint. The day builder (spec §3.2), class abilities that shape a day, swap / hard day / rest limits, and the pacing check re-run with real generated days. The owner reviews the content. | `2026-10-10-m2-content-day-builder.md` |
-| 3 | **Database and server (local)** | Local Supabase in Docker (project id `levelmeup`, 55xxx ports); spike: Edge Functions importing the rules package; the `levelmeup` schema, RLS, `apply_outcome` and pgTAP tests; the `lmu_service` role with wedding-isolation tests; the `db:deploy` runner; `lmu-sync`, `lmu-onboarding` (Claude mocked, template fallback), `lmu-account-delete`; lazy day closing; idempotency and concurrency tests. | later |
-| 4 | **App foundation** | The Expo SDK 57 app; spike: Metro (and Hermes `Intl`) with the rules package; the Ink Panel components (Latin-subset fonts, slanted panels, narration boxes, stamps, tab bar); navigation; SQLite cache and outbox; anonymous sign-in; the sync client; a development build on the Find X9 talking to the laptop's Supabase. | later |
+| 3 | **Database and server (live)** | Built live on the DNA Wedding project (owner's decision, no Docker): the `levelmeup` schema at migration 0005 (incl. the code review's `lmu_player` role), RLS, the write functions and pgTAP tests (run in rolled-back transactions); `lmu_service` with wedding-isolation tests; the CLI guard and the `db:deploy` / `db:test` runners; `lmu-sync` (complete, undo, rate; lazy day closing), `lmu-onboarding` (template reveal until the Claude key exists), `lmu-account-delete`; live tests incl. concurrency. **Done 2026-10-10.** | `2026-10-10-m3-database-server.md` |
+| 4 | **App foundation** | The Expo SDK 57 app; spike: Metro (and Hermes `Intl`) with the rules package; the Ink Panel components (Latin-subset fonts, slanted panels, narration boxes, stamps, tab bar); navigation; SQLite cache and outbox; anonymous sign-in; the sync client; a development build on the Find X9 talking to the live project; the `provisional_day` event (offline days) on the server. | later |
 | 5 | **Onboarding** | The 10 onboarding screens, the safety check, the reveal with its template fallback, the vow, "save your character" with Google (spike: linking a Google sign-in to the anonymous user). | later |
-| 6 | **The daily loop** | Today, quest screens (tap, timer, rep log, one sentence), quest cleared, swap / hard day / rest, the pain flow, level-ups, Character, Chronicle, achievements. | later |
-| 7 | **Missed days and accountability** | The check-in, recovery quest, Second Wind, the Shadow, the Accountability Pact, the Trial of Stillness, local notifications, Settings and account deletion. | later |
+| 6 | **The daily loop** | Today, quest screens (tap, timer, rep log, one sentence), quest cleared, swap / hard day / rest, the pain flow, level-ups, Character, Chronicle, achievements; the `swap`, `hard_day`, `plan_rest`, `pain` and `class_change` events on the server. | later |
+| 7 | **Missed days and accountability** | The check-in, recovery quest, Second Wind, the Shadow, the Accountability Pact, the Trial of Stillness, local notifications, Settings and account deletion; the `checkin` and `accountability_set` events, applying the streak days queued behind a check-in (`streak_applied = false`). | later |
 | 8 | **Articles** | The Batch API pipeline (`lmu-articles-tick` on Supabase Cron), the checks, the $25 cap, about 20 owner-reviewed evergreen articles, the reader and the takeaway quest; spike: the real cost of one article. | later |
-| 9 | **Pilot release** | Deploy to the DNA Wedding project (each remote change confirmed with the owner), the note in `wedding-site/CLAUDE.md` (owner's OK first), class art, the EAS preview APK, the device checklist on the Find X9. | later |
+| 9 | **Pilot release** | Class art, the EAS preview APK, the device checklist on the Find X9, the Claude key for the reveal (owner task). The backend is already live since M3. | later |
 
 ## Carried forward from the M1 code review
 
@@ -48,13 +48,24 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M7 | Wire Unbreakable (`abilityReady('unbreakable', …)` → `shieldWaived`), the recovery quest (`addRecovery`) and the Shadow's lines (`shadowLine`). Add a `secondWindRedo` check (the redo, or null) so the app offers Second Wind only when `addRecovery` would accept it. History must store each slot's final template (after swaps, Stillness, Dawn Ritual). If the owner wants "Five minutes." back in the approved mark line, show that line only with the plain recovery quest. |
 | M8 | Reuse `lintText` for articles; the shaming list may need an article variant (an article can discuss failure). Insight. |
 
+## Carried forward from M3
+
+| Milestone | Item |
+|---|---|
+| Owner | Decided 2026-10-11 (M3 plan questions): undo may take back a level-up it caused (built that way); deleting a Google-linked account deletes all LevelMeUp data and keeps the shared sign-in, and the delete screen says so (M7); two missed days in a row share one check-in and one recovery quest, and spec §3.7's "delaying the answer changes nothing" is reworded in M7 to exclude that case. Add `LMU_ANTHROPIC_API_KEY` (with a spend limit) to switch the reveal from the template to Claude. |
+| M4 | The phone sends events, then reads `state` from `lmu-sync`; ids are numbers, times are ISO strings in responses and epoch milliseconds in events. Add the `provisional_day` event with `checkProvisionalDay`. Errors the client must handle: `session_ended` (401: the sign-in is gone; only then sign out), `auth_unavailable` and `busy` (503: retry later), per-event codes such as `event_reused`, `bad_payload`, `timer_short`, `day_closed` (show, then drop the event from the outbox). |
+| M6 | Level-ups are shown a moment after a completion, because a same-day undo can take one back. Ladder changes (and the step-down offer after "too hard") arrive when the day closes. Show `newAchievements` from the sync reply. |
+| M7 | Answering a check-in must replay the closed days queued behind it (`streak_applied = false`) in day order with `applyDay`, including away days (from jumps in day numbers): a missed day or away run in the queue then opens its own check-in, exactly as if the first answer had come at once. A pending check-in covers later unanswered days and away days only while nothing is queued behind it (code review fix, M3). |
+| M8 | `ai_generations.cost_usd` is not filled yet; add the model's prices when the article budget is built. |
+| Before launch | Per-player request rate limits for the functions (events per sync are capped at 50 today). |
+
 ## Spikes and where they run
 
 | Spike (architecture §13) | Milestone |
 |---|---|
-| 1. Shared rules package in Deno and Metro | M1 enforces Deno-style imports and proves plain Node ESM; M3 proves Deno, M4 proves Metro and Hermes |
+| 1. Shared rules package in Deno and Metro | M1 enforces Deno-style imports and proves plain Node ESM; M3 proved the Edge Runtime; M4 proves Metro and Hermes |
 | 2. Anonymous → Google linking | M5 |
 | 3. Real cost of one batch article with web search | M8 |
-| 4. Phone reaching the laptop's Supabase over the LAN | M4 |
-| 5. `db:deploy` leaves the wedding's migration history alone | M3 (locally), again before the M9 deploy |
-| 6. `lmu_service` is refused on the wedding's tables | M3 |
+| 4. Phone reaching the laptop's Supabase over the LAN | Dropped: development uses the live project (M3) |
+| 5. `db:deploy` leaves the wedding's migration history alone | Passed in M3 (checked on every deploy) |
+| 6. `lmu_service` is refused on the wedding's tables | Passed in M3 (DB test) |
