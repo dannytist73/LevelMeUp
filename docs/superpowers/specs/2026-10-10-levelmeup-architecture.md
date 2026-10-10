@@ -55,11 +55,11 @@ the relative paths still resolve (M2).
 | Framework | Expo SDK 57, React Native 0.86, React 19.2, TypeScript | Current stable (30 Jun 2026); proven on the Find X9 |
 | Navigation | expo-router (3 tabs + stacks for onboarding, quest detail, settings) | Same as MAINARC |
 | Animation | Reanimated 4 + react-native-svg; Skia only if Phase 4 needs glow/particles | UI-thread animation, reduced-motion path |
-| Local data | expo-sqlite + Drizzle | Offline cache and outbox; MAINARC's pattern |
+| Local data | expo-sqlite, two plain tables (`cache`, `outbox`) | Offline cache and outbox; no ORM for two JSON tables (M4; MAINARC also dropped drizzle-kit's migrator) |
 | State | Zustand | Same as MAINARC |
-| Supabase | @supabase/supabase-js, session in secure storage | Official SDK |
+| Supabase | @supabase/supabase-js with the project's publishable key; the session sealed with AES-256-GCM (expo-crypto), the key in expo-secure-store, sealed values in expo-sqlite's key-value store | Official SDK; SecureStore alone holds about 2 KB, less than a session with a linked Google account |
 | Notifications | expo-notifications, local only; MAINARC's plan/seam pattern | §4.4 of the spec |
-| Builds | EAS: a development client APK and preview APKs; never Expo Go | Expo Go crashes on the Find X9 |
+| Builds | EAS cloud: a development client APK (Metro over `--tunnel`) and preview APKs; never Expo Go | Expo Go crashes on the Find X9; local Gradle builds fail on the Windows laptop (paths over 260 characters) |
 | Tests | Jest + React Native Testing Library; device checklist | ninety-day's practice |
 
 ## 3. Data model (Postgres)
@@ -201,7 +201,8 @@ template narrative is used; the player never sees an error.
 - Every action is written to the outbox and applied to the cache immediately (optimistic), using the rules package to
   show the reward. On app foreground or reconnect: flush the outbox through `sync`, then replace the cache with the
   server's state. The server's numbers win.
-- Offline on a new day: the phone builds a provisional day with the rules package and cached state, and sends it as
+- Offline on a new day (built in M6, moved from M4 with the owner's OK on 2026-10-11; until then the app shows "The
+  System is preparing your trials" with a retry): the phone builds a provisional day with the rules package and cached state, and sends it as
   a `provisional_day` event. The server accepts it if every quest is allowed by the player's ladder state and slot
   rules (XP always from the server's tables); otherwise it builds its own day and re-maps completions by slot.
 - Single device per player in the MVP; a second device just gets the server state on sign-in.
@@ -244,7 +245,7 @@ completion. No exact alarms.
 
 | Stage | Backend | App |
 |---|---|---|
-| Development | The live DNA Wedding project, `levelmeup` schema (owner's decision for M3, 2026-10-10; no Docker). Tests never leave data behind (§9) | EAS development-client APK on the Find X9, pointed at the live project |
+| Development | The live DNA Wedding project, `levelmeup` schema (owner's decision for M3, 2026-10-10; no Docker). Tests never leave data behind (§9) | EAS development-client APK on the Find X9 (EAS project `@dannytist.73/levelmeup`), pointed at the live project; Metro reaches it with `npm run app` (`--tunnel`) |
 | Pilot | DNA Wedding project, `levelmeup` schema (§12) | EAS preview APK shared with friends (sideloaded) |
 | Public launch (later) | Decide: stay in the shared project or move to LevelMeUp's own (§12); Turnstile; custom SMTP | Play closed test (12 testers × 14 days), privacy policy, data-safety form, a web page for account deletion |
 
@@ -287,7 +288,9 @@ launch.
 
 ## 13. Spikes before the main build
 
-Results so far: 1 (Deno half) passed in M3: a deployed function imported both packages from `packages/` by
+Results so far: 1 (Metro half) passed in M4: `expo export --platform android` bundles both packages with their `.ts`
+import specifiers and Hermes compiles them, with no `metro.config.js`, and Jest loads them too; the Hermes runtime half
+is the device self-check (device checklist, M4 row 3). 1 (Deno half) passed in M3: a deployed function imported both packages from `packages/` by
 relative path and matched Node's answers, time zones included. 5 passed in M3: `db:deploy` applied 0001–0003 and
 the wedding's history stayed `20260928000100/200/300`. 6 passed in M3 as a DB test (real `set role lmu_service` and
 `lmu_player` attempts, with forged admin claims, are refused on `public.invites`) and live (the functions log in as

@@ -28,6 +28,10 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
   `config push`, `db reset`, `migration repair` or `functions deploy --prune`. Commands (details in
   `supabase/README.md`): `npm run db:deploy` (migrations), `npm run db:test` (pgTAP, always rolled back),
   `npm run deploy:functions`, `npm run test:live` (temporary players, always deleted), `npm run check:functions`.
+- **The app** is `apps/mobile` (since M4; details in `apps/mobile/README.md`). `npm run app` starts Metro for the
+  development build (`--tunnel`); `npm run check:bundle` fails if a secret is in the app bundle; EAS builds run in the
+  cloud with `npx eas-cli@latest build --platform android --profile development` from `apps/mobile` (never Expo Go,
+  never a bare `npx eas-cli`). The app ships only the publishable key (`src/config.ts`); never put another key there.
 
 ## 1. Think Before Coding
 
