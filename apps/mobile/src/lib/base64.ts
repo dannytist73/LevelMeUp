@@ -41,6 +41,11 @@ export function utf8ToBase64(text: string): string {
 }
 
 export function base64ToUtf8(base64: string): string {
+  return utf8Text([...base64ToBytes(base64)]);
+}
+
+/** expo-crypto's `AESSealedData.fromCombined` takes only bytes on Android, despite its types (found on the emulator). */
+export function base64ToBytes(base64: string): Uint8Array {
   const clean = base64.replace(/=+$/, '');
   const bytes: number[] = [];
   let buffer = 0;
@@ -55,5 +60,5 @@ export function base64ToUtf8(base64: string): string {
       bytes.push((buffer >> bits) & 0xff);
     }
   }
-  return utf8Text(bytes);
+  return Uint8Array.from(bytes);
 }

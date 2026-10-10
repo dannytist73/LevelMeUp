@@ -2,7 +2,7 @@
 import { AESEncryptionKey, AESKeySize, AESSealedData, aesDecryptAsync, aesEncryptAsync } from 'expo-crypto';
 import type { Probe } from '../dev/selfcheck.ts';
 import { cipherProbe } from '../dev/selfcheck.ts';
-import { base64ToUtf8, utf8ToBase64 } from '../lib/base64.ts';
+import { base64ToBytes, base64ToUtf8, utf8ToBase64 } from '../lib/base64.ts';
 import type { Cipher } from './sessionStorage.ts';
 
 export const expoCipher: Cipher = {
@@ -12,7 +12,7 @@ export const expoCipher: Cipher = {
     return sealed.combined('base64');
   },
   open: async (key, sealed) => {
-    const plain = await aesDecryptAsync(AESSealedData.fromCombined(sealed), await AESEncryptionKey.import(key, 'base64'), { output: 'base64' });
+    const plain = await aesDecryptAsync(AESSealedData.fromCombined(base64ToBytes(sealed)), await AESEncryptionKey.import(key, 'base64'), { output: 'base64' });
     return base64ToUtf8(plain);
   },
 };
