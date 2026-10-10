@@ -193,12 +193,14 @@ Hard Mode → seasons, friends/parties → monetization → light theme.
 
 ## 9. Open questions
 
-Asked in chat on 2026-10-10 (answers recorded here when given):
+Asked and answered in chat on 2026-10-10:
 
-1. Who is it for first: a pilot for you and a few friends, a public Play launch, or both stores?
-2. What happens to MAINARC: replaced by this app, evolved into it, or kept separate?
-3. How far does accountability go in the MVP?
-4. The AI budget and model.
+| # | Question | Decision |
+|---|---|---|
+| 1 | Who is the first release for? | **Pilot, then public.** Free Android pilot (sideloaded APK) for Danny and a few friends; public Play launch once the loop is proven; monetization decided before launch. |
+| 2 | What happens to MAINARC? | **Replaced.** LevelMeUp becomes the one app: a fresh repo with Supabase from day one, copying MAINARC's proven parts (Oppo build setup, notification pattern, Health Connect steps, streak shields). No nutrition/TDEE scope. |
+| 3 | Accountability in the MVP? | **In-app first.** Levels 0–2 in the MVP. Android app blocking is the next milestone, after a 1–2 day spike on the Find X9. |
+| 4 | AI model and budget? | **Claude Opus 5.5**, about $10–25/month, articles in a shared library, a hard monthly cap in code. Needs a pay-as-you-go API key (Danny to create when we wire up AI). |
 
 Deferred to Phase 2 with a default (say if you disagree): five stats as above; 3 + Monk classes; day boundary 4 AM
 adjustable; honor-system completions plus timers (Health Connect auto-verify later); tone picked in onboarding
