@@ -36,10 +36,10 @@ describe('a player from onboarding to a cleared quest', () => {
       .toMatchObject({ status: 400, body: { error: 'bad_field', detail: 'goals' } });
   });
 
-  it('onboarding makes the character and a light day 1 (template reveal: no Claude key yet)', async () => {
+  it('onboarding makes the character and a light day 1, with the reveal written by Claude', async () => {
     const res = await call('lmu-onboarding', a.token, ONBOARDING);
     expect(res.status).toBe(201);
-    expect(res.body.reveal.source).toBe('template');
+    expect(res.body.reveal).toMatchObject({ source: 'claude', narrative: expect.any(String), strengths: expect.any(Array), growth: expect.any(Array) });
     state = res.body.state;
     expect(state.profile).toMatchObject({ name: 'Live Test', classId: 'warrior', voice: 'system' });
     expect(state.character).toMatchObject({ totalXp: 0, level: 1 });
