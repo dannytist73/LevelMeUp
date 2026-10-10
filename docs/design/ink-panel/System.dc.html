@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ink Panel design system</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1200px; min-height: 1080px; box-sizing: border-box; display: flex; flex-direction: column; gap: 36px; padding: 48px 56px 56px; background: #0E0E10; color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <header style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 28px 32px 32px; background-color: #1A1A1E; background-image: radial-gradient(rgba(241,236,225,0.13) 1.1px, transparent 1.6px); background-size: 7px 7px; clip-path: polygon(0 0, 100% 0, 100% 78%, 0 100%)">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.2em; color: #A8A196">LEVELMEUP · DESIGN SYSTEM · DARK ONLY</span>
+      <h1 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 76px; line-height: 1; color: #F1ECE1; text-shadow: -3px -3px 0 #151515, 3px -3px 0 #151515, -3px 3px 0 #151515, 3px 3px 0 #151515, 7px 7px 0 #E0452B">INK PANEL</h1>
+    </div>
+    <p style="max-width: 440px; margin: 0 0 18px; font-size: 15px; line-height: 1.55; color: #C9C2B6">Every screen reads like a page of a manhwa: night-dark ground, paper panels for the thing to do now, ink borders, halftone, and red stamps for rewards.</p>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px">
+
+    <section aria-label="Colour" style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0 0 6px; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 22px; letter-spacing: 0.06em">COLOUR</h2>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; box-sizing: border-box; border: 2px solid #4A4A50; background: #0E0E10"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">NIGHT · #0E0E10</span><span style="font-size: 13px; color: #A8A196">App background</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; box-sizing: border-box; border: 2px solid #4A4A50; background: #18181B"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">PANEL · #18181B</span><span style="font-size: 13px; color: #A8A196">Cards on the night</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; box-sizing: border-box; border: 2px solid #4A4A50; background-color: #1A1A1E; background-image: radial-gradient(rgba(241,236,225,0.18) 1.1px, transparent 1.6px); background-size: 7px 7px"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">HALFTONE · #1A1A1E</span><span style="font-size: 13px; color: #A8A196">Headers and scenes, 7 px dots</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #4A4A50"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">LINE · #4A4A50</span><span style="font-size: 13px; color: #A8A196">Quiet borders</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #E8E1D3"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">PAPER · #E8E1D3</span><span style="font-size: 13px; color: #A8A196">The panel you act on now (dimmed for night use)</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; box-sizing: border-box; border: 2px solid #4A4A50; background: #151515"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">INK · #151515</span><span style="font-size: 13px; color: #A8A196">Text and borders on paper</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #F1ECE1"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">CHALK · #F1ECE1</span><span style="font-size: 13px; color: #A8A196">Text and borders on the night</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #E0452B"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">VERMILION · #E0452B</span><span style="font-size: 13px; color: #A8A196">XP bars, panel offsets (never text)</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #C2321C"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">SEAL · #C2321C</span><span style="font-size: 13px; color: #A8A196">Commitment buttons, white text</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #F0765E"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">EMBER · #F0765E</span><span style="font-size: 13px; color: #A8A196">Red text and stamps on the night</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #B02E1A"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">SEAL TEXT · #B02E1A</span><span style="font-size: 13px; color: #A8A196">Red labels on paper</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: center"><span style="flex: none; width: 44px; height: 44px; background: #A8A196"></span><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.06em">ASH · #A8A196</span><span style="font-size: 13px; color: #A8A196">Secondary text on the night</span></div></div>
+    </section>
+
+    <section aria-label="Type and rules" style="display: flex; flex-direction: column; gap: 18px">
+      <h2 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 22px; letter-spacing: 0.06em">TYPE</h2>
+      <div style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; border-bottom: 2px solid #4A4A50">
+        <span style="font-family: 'Black Han Sans', sans-serif; font-size: 56px; line-height: 1">DAY 12</span>
+        <span style="font-size: 13px; color: #A8A196">Black Han Sans · display, headings, labels, numbers</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; border-bottom: 2px solid #4A4A50">
+        <p style="margin: 0; font-size: 15px; font-weight: 500; line-height: 1.55">Your trials are set. Clear the core quest and today counts, whatever else happens.</p>
+        <span style="font-size: 13px; color: #A8A196">Gothic A1 · body in regular, medium, bold</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; font-size: 13px; color: #C9C2B6">
+        <span>Display 58</span><span>Body 15</span>
+        <span>Title 34</span><span>Small 14</span>
+        <span>Heading 22</span><span>Meta 13</span>
+        <span>Label 13, tracked</span><span>Caption 12</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px 16px 16px; background: #E8E1D3; color: #151515; clip-path: polygon(0 10px, 100% 0, 100% 100%, 0 100%)">
+        <h3 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 15px; letter-spacing: 0.12em; color: #B02E1A">HOUSE RULES</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Paper holds the thing to do now. Everything else sits on the night.</p>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Red means reward or commitment. Never an error, never a failure.</p>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">The System speaks in narration boxes; the Shadow in ember ones. Ominous, never insulting.</p>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">44 px targets, 4.5:1 contrast, no cut-off text, scales with the phone's font size.</p>
+      </div>
+    </section>
+
+    <section aria-label="Components" style="display: flex; flex-direction: column; gap: 22px">
+      <h2 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 22px; letter-spacing: 0.06em">PIECES</h2>
+      <div style="position: relative; margin-top: 6px; padding: 18px 14px 12px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515">
+        <span style="position: absolute; top: -13px; left: 10px; padding: 2px 9px; border: 2px solid #E8E1D3; background: #151515; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.14em">SYSTEM</span>
+        <p style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.45">Narration box: the System's voice.</p>
+      </div>
+      <div style="position: relative; padding: 18px 14px 12px; border: 2px solid #F0765E; background: #050506">
+        <span style="position: absolute; top: -13px; left: 10px; padding: 2px 9px; background: #F0765E; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.14em">THE SHADOW</span>
+        <p style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.45">Ember box: the Shadow's voice.</p>
+      </div>
+      <div style="position: relative; margin-right: 14px">
+        <div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #E0452B; clip-path: polygon(0 14px, 100% 0, 100% 100%, 0 100%)"></div>
+        <div style="position: relative; display: flex; flex-direction: column; gap: 4px; padding: 24px 14px 14px; background: #E8E1D3; color: #151515; clip-path: polygon(0 14px, 100% 0, 100% 100%, 0 100%)">
+          <span style="font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.12em; color: #B02E1A">QUEST PANEL</span>
+          <span style="font-family: 'Black Han Sans', sans-serif; font-size: 22px">Cut corner, red offset</span>
+        </div>
+        <div style="position: absolute; top: -16px; right: -12px; width: 54px; height: 54px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #F1ECE1; border-radius: 50%; background: #C2321C; color: #FFFFFF; transform: rotate(-10deg)">
+          <span style="font-family: 'Black Han Sans', sans-serif; font-size: 18px; line-height: 1">+20</span>
+          <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.16em">XP</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <button style="height: 48px; border: 0; background: #E8E1D3; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 16px; letter-spacing: 0.12em">CONTINUE</button>
+        <button style="height: 48px; border: 2px solid #F1ECE1; background: #C2321C; color: #FFFFFF; font-family: 'Black Han Sans', sans-serif; font-size: 16px; letter-spacing: 0.12em">ACCEPT CLASS</button>
+        <button style="height: 48px; border: 2px solid #F1ECE1; background: transparent; color: #F1ECE1; font-size: 14px; font-weight: 700">Secondary action</button>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+        <span style="padding: 4px 9px; background: #E8E1D3; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em">STRENGTH</span>
+        <span style="padding: 3px 8px; border: 1.5px solid #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em">TIMER</span>
+        <span style="width: 30px; height: 30px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid #F0765E; border-radius: 50%; color: #F0765E; font-family: 'Black Han Sans', sans-serif; font-size: 16px; transform: rotate(-8deg)">D</span>
+        <span style="padding: 4px 10px; border: 2px solid #F0765E; color: #F0765E; font-family: 'Black Han Sans', sans-serif; font-size: 13px; letter-spacing: 0.08em; transform: rotate(-6deg)">CLEARED +20</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 14px; border-top: 2px solid #4A4A50">
+        <h3 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 15px; letter-spacing: 0.12em; color: #A8A196">MOTION</h3>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #C9C2B6">Panels slam in (180 ms). Stamps thud down (scale 1.3 to 1). Speed lines only on reveals and level-ups. Reduced motion: fades only.</p>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

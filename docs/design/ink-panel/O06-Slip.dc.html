@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding 6: When you slip</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 844px; box-sizing: border-box; display: flex; flex-direction: column; padding: 18px 20px 28px; background: #0E0E10; color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <div style="display: flex; align-items: center; gap: 12px">
+    <button aria-label="Back" style="flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <div aria-hidden="true" style="flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+      <span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E0452B"></span>
+    </div>
+  </div>
+
+  <div style="position: relative; margin-top: 30px; padding: 22px 16px 14px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515">
+    <span style="position: absolute; top: -14px; left: 12px; padding: 3px 10px; border: 2px solid #E8E1D3; background: #151515; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 13px; letter-spacing: 0.14em">SYSTEM</span>
+    <p style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-size: 26px; line-height: 1.15">Everyone slips. When you do, what gets you back?</p>
+  </div>
+
+  <div role="group" aria-label="What helps after a slip" style="display: flex; flex-direction: column; gap: 12px; margin-top: 26px">
+    <button aria-pressed="false" style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.03em">A kind nudge</span>
+      <span style="font-size: 13px; line-height: 1.4; color: #C9C2B6">A reminder, then a fresh start.</span>
+    </button>
+    <button aria-pressed="false" style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.03em">A smaller plan</span>
+      <span style="font-size: 13px; line-height: 1.4; color: #C9C2B6">Shrink the day, keep the streak alive.</span>
+    </button>
+    <div style="position: relative; margin-right: 6px">
+      <div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #E0452B"></div>
+      <button aria-pressed="true" style="position: relative; width: 100%; display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 2px solid #151515; background: #E8E1D3; color: #151515; text-align: left">
+        <span style="font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.03em">Real stakes</span>
+        <span style="font-size: 13px; font-weight: 500; line-height: 1.4; color: #3A362F">A challenge that costs me something if I skip.</span>
+      </button>
+    </div>
+    <button aria-pressed="false" style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.03em">Space</span>
+      <span style="font-size: 13px; line-height: 1.4; color: #C9C2B6">Leave me be. I'll come back on my own.</span>
+    </button>
+  </div>
+
+  <p style="display: flex; gap: 10px; align-items: flex-start; margin: 22px 0 20px; padding: 12px 14px; border: 2px dashed #4A4A50; font-size: 13px; line-height: 1.5; color: #C9C2B6">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F1ECE1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+    <span>This only shapes my suggestion. Nothing turns on until you sign the Pact yourself.</span>
+  </p>
+
+  <button style="margin-top: auto; height: 56px; border: 0; background: #E8E1D3; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.16em">CONTINUE</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

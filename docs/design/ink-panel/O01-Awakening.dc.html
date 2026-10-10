@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding 1: Awakening</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button,input{font:inherit}
+button{cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; padding: 18px 20px 28px; background-color: #121215; background-image: repeating-conic-gradient(from 0deg at 50% 30%, rgba(241,236,225,0.06) 0deg 1.2deg, transparent 1.2deg 8deg); color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 4px">
+    <span style="height: 4px; background: #E0452B"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 22px; margin-top: 70px">
+    <div style="align-self: flex-start; padding: 10px 14px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515; font-size: 15px; font-weight: 700; transform: rotate(-1.5deg)">…signal found.</div>
+    <div style="align-self: flex-end; max-width: 250px; padding: 10px 14px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515; font-size: 15px; font-weight: 700; line-height: 1.45">A new player has been detected.</div>
+    <div style="position: relative; margin-top: 8px; padding: 22px 16px 16px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515">
+      <span style="position: absolute; top: -14px; left: 12px; padding: 3px 10px; border: 2px solid #E8E1D3; background: #151515; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 13px; letter-spacing: 0.14em">SYSTEM</span>
+      <p style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-size: 27px; line-height: 1.15">Before your trials begin, I need to know who you are.</p>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 40px">
+    <label for="player-name" style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.14em; color: #A8A196">WHAT SHOULD I CALL YOU?</label>
+    <input id="player-name" type="text" value="Danny" autocomplete="given-name" style="height: 56px; box-sizing: border-box; padding: 0 16px; border: 2px solid #F1ECE1; border-radius: 0; background: #18181B; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 24px; letter-spacing: 0.04em">
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto">
+    <button style="height: 56px; border: 0; background: #E8E1D3; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.16em">AWAKEN</button>
+    <p style="margin: 0; text-align: center; font-size: 13px; line-height: 1.45; color: #A8A196">No account needed. You can save your character later.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

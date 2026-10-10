@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding 10: Save your character</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; padding: 28px 20px 28px; background: #0E0E10; color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <div style="position: relative; margin-top: 24px; padding: 22px 16px 14px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515">
+    <span style="position: absolute; top: -14px; left: 12px; padding: 3px 10px; border: 2px solid #E8E1D3; background: #151515; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 13px; letter-spacing: 0.14em">SYSTEM</span>
+    <p style="margin: 0; font-size: 15px; font-weight: 500; line-height: 1.5">Your character lives only on this phone for now.</p>
+  </div>
+
+  <div style="position: relative; margin: 40px 6px 0 0">
+    <div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #E0452B; clip-path: polygon(0 18px, 100% 0, 100% 100%, 0 100%)"></div>
+    <section aria-label="Save your character" style="position: relative; display: flex; flex-direction: column; gap: 12px; padding: 34px 18px 18px; background: #E8E1D3; color: #151515; clip-path: polygon(0 18px, 100% 0, 100% 100%, 0 100%)">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.16em; color: #B02E1A">SAVE YOUR CHARACTER</span>
+      <h1 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 30px; line-height: 1.1">Link Google and nothing gets lost.</h1>
+      <p style="margin: 0; font-size: 15px; font-weight: 500; line-height: 1.5; color: #3A362F">A new or lost phone won't cost you your level, stats or streak. Everything so far stays exactly as it is.</p>
+      <button style="height: 54px; border: 0; background: #151515; color: #E8E1D3; font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 0.08em">CONTINUE WITH GOOGLE</button>
+    </section>
+  </div>
+
+  <section aria-label="Day 1" style="display: flex; flex-direction: column; gap: 6px; margin-top: 28px; padding: 14px 16px; border: 2px solid #4A4A50; background: #18181B">
+    <span style="font-family: 'Black Han Sans', sans-serif; font-size: 15px; letter-spacing: 0.1em">DAY 1 IS LIGHT ON PURPOSE</span>
+    <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #C9C2B6">Short quests, about 10 minutes in all. The climb starts tomorrow.</p>
+  </section>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: auto">
+    <button style="height: 54px; border: 2px solid #E8E1D3; background: transparent; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 0.1em">NOT NOW · BEGIN DAY 1</button>
+    <p style="margin: 0; text-align: center; font-size: 13px; color: #A8A196">You can save any time in Settings.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

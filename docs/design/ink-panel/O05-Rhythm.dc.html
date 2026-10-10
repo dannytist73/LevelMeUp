@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding 5: Rhythm and effort</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button,input{font:inherit}
+button{cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 844px; box-sizing: border-box; display: flex; flex-direction: column; padding: 18px 20px 28px; background: #0E0E10; color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <div style="display: flex; align-items: center; gap: 12px">
+    <button aria-label="Back" style="flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <div aria-hidden="true" style="flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+      <span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E0452B"></span><span style="height: 4px; background: #2A2A2F"></span>
+    </div>
+  </div>
+
+  <div style="position: relative; margin-top: 30px; padding: 22px 16px 14px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515">
+    <span style="position: absolute; top: -14px; left: 12px; padding: 3px 10px; border: 2px solid #E8E1D3; background: #151515; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 13px; letter-spacing: 0.14em">SYSTEM</span>
+    <p style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-size: 26px; line-height: 1.15">Your day, your pace.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="wake" style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.12em; color: #A8A196">WAKE UP</label>
+      <input id="wake" type="time" value="06:30" style="height: 54px; box-sizing: border-box; padding: 0 14px; border: 2px solid #F1ECE1; border-radius: 0; background: #18181B; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 22px; color-scheme: dark">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="sleep" style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.12em; color: #A8A196">SLEEP</label>
+      <input id="sleep" type="time" value="22:30" style="height: 54px; box-sizing: border-box; padding: 0 14px; border: 2px solid #F1ECE1; border-radius: 0; background: #18181B; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 22px; color-scheme: dark">
+    </div>
+  </div>
+  <p style="margin: 10px 0 0; font-size: 13px; line-height: 1.45; color: #C9C2B6">Your quest day turns over at 4:00 AM, while you're asleep.</p>
+
+  <div role="group" aria-labelledby="q-minutes" style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px">
+    <span id="q-minutes" style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.12em; color: #A8A196">MINUTES A DAY</span>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+      <button aria-pressed="false" style="height: 48px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 18px">10</button>
+      <button aria-pressed="false" style="height: 48px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 18px">15</button>
+      <button aria-pressed="true" style="height: 48px; border: 2px solid #E8E1D3; background: #E8E1D3; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 18px">25</button>
+      <button aria-pressed="false" style="height: 48px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 18px">40</button>
+    </div>
+  </div>
+
+  <div role="group" aria-labelledby="q-difficulty" style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px">
+    <span id="q-difficulty" style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.12em; color: #A8A196">DIFFICULTY</span>
+    <button aria-pressed="false" style="min-height: 58px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 16px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 18px; letter-spacing: 0.05em">GENTLE</span>
+      <span style="font-size: 13px; color: #C9C2B6">Small steps, slow climb</span>
+    </button>
+    <button aria-pressed="true" style="min-height: 58px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 16px; border: 2px solid #E8E1D3; background: #E8E1D3; color: #151515; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 18px; letter-spacing: 0.05em">STEADY</span>
+      <span style="font-size: 13px; font-weight: 500; color: #3A362F">Step up when you're ready</span>
+    </button>
+    <button aria-pressed="false" style="min-height: 58px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 16px; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 18px; letter-spacing: 0.05em">HARD</span>
+      <span style="font-size: 13px; color: #C9C2B6">Faster climb, bigger asks</span>
+    </button>
+  </div>
+  <p style="margin: 12px 0 20px; font-size: 13px; line-height: 1.45; color: #C9C2B6">Hard days and rest days are always one tap away.</p>
+
+  <button style="margin-top: auto; height: 56px; border: 0; background: #E8E1D3; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.16em">CONTINUE</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

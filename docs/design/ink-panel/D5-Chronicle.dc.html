@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chronicle</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1300px; box-sizing: border-box; display: flex; flex-direction: column; background: #0E0E10; color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <header style="display: flex; justify-content: space-between; align-items: center; padding: 18px 20px 0">
+    <h1 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 34px; letter-spacing: 0.03em">CHRONICLE</h1>
+    <button aria-label="Settings" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 2px solid #F1ECE1; background: transparent; color: #F1ECE1">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 20px 20px 0">
+    <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; background: #E8E1D3; color: #151515">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 34px; line-height: 1">9</span>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em">STREAK</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 2px solid #4A4A50">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 34px; line-height: 1">9</span>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: #A8A196">BEST</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 2px solid #4A4A50">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 34px; line-height: 1">1<span style="font-size: 18px; color: #A8A196"> / 2</span></span>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: #A8A196">SHIELDS</span>
+    </div>
+  </div>
+
+  <section aria-label="October 2026" style="display: flex; flex-direction: column; gap: 10px; margin: 26px 20px 0">
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <button aria-label="Previous month" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+      <h2 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 20px; letter-spacing: 0.08em">OCTOBER 2026</h2>
+      <button aria-label="Next month" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+    </div>
+    <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; text-align: center; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.08em; color: #A8A196">
+      <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; font-family: 'Black Han Sans', sans-serif; font-size: 16px">
+      <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #6A665E">28</span>
+      <span aria-label="29 September, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">29</span>
+      <span aria-label="30 September, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">30</span>
+      <span aria-label="1 October, paused" style="height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid #A8A196; background-image: repeating-linear-gradient(135deg, rgba(241,236,225,0.30) 0 2px, transparent 2px 7px)">1</span>
+      <span aria-label="2 October, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">2</span>
+      <span aria-label="3 October, hard day" style="position: relative; height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515"><span aria-hidden="true" style="position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 14px solid #151515; border-left: 14px solid transparent"></span>3</span>
+      <span aria-label="4 October, planned rest" style="height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px dashed #A8A196">4</span>
+
+      <span aria-label="5 October, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">5</span>
+      <span aria-label="6 October, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">6</span>
+      <span aria-label="7 October, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">7</span>
+      <span aria-label="8 October, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">8</span>
+      <span aria-label="9 October, cleared" style="height: 44px; display: flex; align-items: center; justify-content: center; background: #E8E1D3; color: #151515">9</span>
+      <span aria-label="10 October, today" style="height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 3px solid #E0452B">10</span>
+      <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">11</span>
+
+      <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">12</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">13</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">14</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">15</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">16</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">17</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">18</span>
+      <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">19</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">20</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">21</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">22</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">23</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">24</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">25</span>
+      <span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">26</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">27</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">28</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">29</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">30</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #8A857C">31</span><span style="height: 44px; display: flex; align-items: center; justify-content: center; color: #6A665E">1</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 4px; font-size: 12px; font-weight: 500; color: #C9C2B6">
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; background: #E8E1D3"></span>Cleared</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="position: relative; width: 14px; height: 14px; background: #E8E1D3"><span style="position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 7px solid #151515; border-left: 7px solid transparent"></span></span>Hard day</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #A8A196; background-image: repeating-linear-gradient(135deg, rgba(241,236,225,0.4) 0 1px, transparent 1px 4px)"></span>Paused</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px dashed #A8A196"></span>Rest</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #E0452B"></span>Today</span>
+    </div>
+  </section>
+
+  <section aria-label="Growth since day 1" style="display: flex; flex-direction: column; gap: 12px; margin: 28px 20px 0; padding: 16px; border: 2px solid #F1ECE1; background: #18181B">
+    <h2 style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 18px; letter-spacing: 0.06em">SINCE DAY 1 · TUE 29 SEP</h2>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; text-align: center">
+      <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #F0765E">+3</span><span style="font-size: 11px; font-weight: 700; color: #C9C2B6">STR</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #F0765E">+3</span><span style="font-size: 11px; font-weight: 700; color: #C9C2B6">VIT</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #F0765E">+2</span><span style="font-size: 11px; font-weight: 700; color: #C9C2B6">WIS</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #F0765E">+2</span><span style="font-size: 11px; font-weight: 700; color: #C9C2B6">FOC</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Black Han Sans', sans-serif; font-size: 22px; color: #F0765E">+2</span><span style="font-size: 11px; font-weight: 700; color: #C9C2B6">DIS</span></div>
+    </div>
+    <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #A8A196">5 levels gained, 21 quests cleared, 1 ladder step up.</p>
+  </section>
+
+  <section aria-label="Past readings" style="display: flex; flex-direction: column; gap: 0; margin: 26px 20px 28px">
+    <h2 style="display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 18px; letter-spacing: 0.06em">PAST READINGS<span style="flex: 1; height: 2px; background: #F1ECE1"></span></h2>
+    <a href="#r1" style="min-height: 56px; display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #26262B; color: #F1ECE1; text-decoration: none">
+      <span style="flex: none; width: 52px; font-family: 'Black Han Sans', sans-serif; font-size: 13px; color: #A8A196">FRI 9</span>
+      <span style="flex: 1; font-size: 15px; font-weight: 700; line-height: 1.35">The quiet power of a fixed wake time</span>
+    </a>
+    <a href="#r2" style="min-height: 56px; display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #26262B; color: #F1ECE1; text-decoration: none">
+      <span style="flex: none; width: 52px; font-family: 'Black Han Sans', sans-serif; font-size: 13px; color: #A8A196">THU 8</span>
+      <span style="flex: 1; font-size: 15px; font-weight: 700; line-height: 1.35">What your muscles do on rest days</span>
+    </a>
+    <a href="#r3" style="min-height: 56px; display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #26262B; color: #F1ECE1; text-decoration: none">
+      <span style="flex: none; width: 52px; font-family: 'Black Han Sans', sans-serif; font-size: 13px; color: #A8A196">WED 7</span>
+      <span style="flex: 1; font-size: 15px; font-weight: 700; line-height: 1.35">Why your phone wins the first ten minutes</span>
+    </a>
+  </section>
+
+  <nav aria-label="Main" style="margin-top: auto; display: flex; padding: 0 8px 8px; border-top: 2px solid #F1ECE1; background: #0A0A0B">
+    <button style="flex: 1; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; border-top: 4px solid transparent; background: transparent; color: #A8A196; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+      TODAY
+    </button>
+    <button style="flex: 1; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; border-top: 4px solid transparent; background: transparent; color: #A8A196; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      CHARACTER
+    </button>
+    <button aria-current="page" style="flex: 1; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; border-top: 4px solid #E0452B; background: transparent; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+      CHRONICLE
+    </button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

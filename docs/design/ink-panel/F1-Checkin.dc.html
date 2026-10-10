@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Missed-day check-in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; padding: 22px 20px 24px; background: #0E0E10; color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <div style="display: flex; justify-content: space-between; align-items: center">
+    <span style="font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 0.14em; color: #A8A196">DAY 13 · SUN 11 OCT</span>
+    <span style="padding: 4px 10px; border: 2px solid #A8A196; font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em; background-image: repeating-linear-gradient(135deg, rgba(241,236,225,0.18) 0 2px, transparent 2px 7px)">STREAK 9 · PAUSED</span>
+  </div>
+
+  <div style="position: relative; margin-top: 34px; padding: 22px 16px 16px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515">
+    <span style="position: absolute; top: -14px; left: 12px; padding: 3px 10px; border: 2px solid #E8E1D3; background: #151515; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 13px; letter-spacing: 0.14em">SYSTEM</span>
+    <p style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-size: 28px; line-height: 1.12">The day closed. What happened?</p>
+    <p style="margin: 8px 0 0; font-size: 14px; font-weight: 500; line-height: 1.45; color: #3A362F">Yesterday's core quest wasn't cleared. There's no wrong answer, and paused days earn nothing either way.</p>
+  </div>
+
+  <div role="group" aria-label="What happened" style="display: flex; flex-direction: column; gap: 10px; margin-top: 26px">
+    <button style="display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; border: 2px solid #4A4A50; background: #18181B; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 0.02em">I was sick or injured</span>
+      <span style="font-size: 13px; color: #A8A196">Streak paused · lighter tomorrow</span>
+    </button>
+    <button style="display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; border: 2px solid #4A4A50; background: #18181B; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 0.02em">Emergency, travel or a brutal day</span>
+      <span style="font-size: 13px; color: #A8A196">Streak paused</span>
+    </button>
+    <button style="display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; border: 2px solid #4A4A50; background: #18181B; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 0.02em">It was too hard</span>
+      <span style="font-size: 13px; color: #A8A196">Streak paused · that quest steps down</span>
+    </button>
+    <button style="display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; border: 2px solid #4A4A50; background: #18181B; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 0.02em">I need a lighter load</span>
+      <span style="font-size: 13px; color: #A8A196">Streak paused · fewer minutes a day</span>
+    </button>
+    <button style="display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; border: 2px solid #E8E1D3; background: #18181B; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 0.02em">I just didn't</span>
+      <span style="font-size: 13px; color: #F0765E">A 5-minute recovery quest today keeps your streak</span>
+    </button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: auto">
+    <button style="height: 44px; padding: 0 16px; border: 0; background: transparent; color: #F1ECE1; font-size: 14px; font-weight: 700; text-decoration: underline">Answer later</button>
+    <span style="font-size: 12px; color: #A8A196">Your streak stays paused until you answer.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

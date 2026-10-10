@@ -5,9 +5,6 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
 
 **Tradeoff:** these rules bias toward caution over speed. For trivial tasks, use judgment.
 
-> **Status: draft (2026-10-10, Phase 1 discovery).** The stack, schema and specs below are proposals until
-> the owner approves them. Update this file when they are locked; delete this note then.
-
 ## 0. What this project is
 
 - An anime/manhwa-style RPG self-improvement app: real-life daily quests, a class, stats, XP and levels,
@@ -16,9 +13,16 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
 - Research and decisions live in `docs/`: `docs/research/` (reference apps, platform feasibility),
   `docs/superpowers/specs/` (approved designs), `docs/superpowers/plans/` (build plans). Read the relevant spec and
   plan before touching anything. The plan is the source of truth for file layout, names, and signatures.
-- Proposed stack (pending approval): Expo + React Native + expo-router + TypeScript + Reanimated, same as the
-  owner's KAI and ninety-day apps; Supabase (Postgres, Auth, RLS, Edge Functions); Claude API server-side only.
+- Approved specs (2026-10-10): `2026-10-10-levelmeup-mvp-design.md` (what), `…-architecture.md` (how),
+  `…-visual-design.md` (look; board sources in `docs/design/ink-panel/`).
+- Stack: Expo SDK 57 + React Native + expo-router + TypeScript + Reanimated, same base as the owner's MAINARC and
+  ninety-day apps; Supabase (Postgres, Auth, RLS, Edge Functions); Claude API server-side only.
   Android first, tested on the owner's Oppo Find X9 via EAS APK builds (Expo Go crashes on that phone).
+- **Supabase is shared with the live wedding site** (DNA Wedding project). LevelMeUp lives only in the `levelmeup`
+  schema; never create, change or drop anything in `public` or in the wedding's functions, secrets or cron jobs.
+  **Never run `supabase db push`** (the project's migration history belongs to the wedding repo); deploy migrations
+  with this repo's `db:deploy` runner. LevelMeUp's names start with `lmu-` (functions, cron) and `LMU_` (secrets).
+  Architecture §12 has the full sharing rules. Remote changes need the owner's yes at each milestone.
 
 ## 1. Think Before Coding
 

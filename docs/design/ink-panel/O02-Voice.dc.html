@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding 2: Voice</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Gothic+A1:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0E10}
+a{color:#F1ECE1}a:hover{color:#FFFFFF}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; padding: 18px 20px 28px; background: #0E0E10; color: #F1ECE1; font-family: 'Gothic A1', system-ui, sans-serif">
+
+  <div style="display: flex; align-items: center; gap: 12px">
+    <button aria-label="Back" style="flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 2px solid #4A4A50; background: transparent; color: #F1ECE1">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <div aria-hidden="true" style="flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+      <span style="height: 4px; background: #E8E1D3"></span><span style="height: 4px; background: #E0452B"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span><span style="height: 4px; background: #2A2A2F"></span>
+    </div>
+  </div>
+
+  <div style="position: relative; margin-top: 34px; padding: 22px 16px 14px; border: 2px solid #151515; box-shadow: 0 0 0 2px #E8E1D3; background: #E8E1D3; color: #151515">
+    <span style="position: absolute; top: -14px; left: 12px; padding: 3px 10px; border: 2px solid #E8E1D3; background: #151515; color: #F1ECE1; font-family: 'Black Han Sans', sans-serif; font-size: 13px; letter-spacing: 0.14em">SYSTEM</span>
+    <p style="margin: 0; font-family: 'Black Han Sans', sans-serif; font-size: 26px; line-height: 1.15">Danny. How should I speak to you?</p>
+    <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.45; color: #4F493F">You can change this any time in Settings.</p>
+  </div>
+
+  <div role="group" aria-label="Voice" style="display: flex; flex-direction: column; gap: 16px; margin-top: 30px">
+    <button aria-pressed="false" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 2px solid #4A4A50; background: #18181B; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 20px; letter-spacing: 0.06em">MENTOR</span>
+      <span style="font-size: 15px; line-height: 1.45; color: #C9C2B6">"Good work today. Let's keep the next step small."</span>
+    </button>
+    <div style="position: relative; margin-right: 6px">
+      <div aria-hidden="true" style="position: absolute; inset: 0; transform: translate(6px, 6px); background: #E0452B"></div>
+      <button aria-pressed="true" style="position: relative; width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 2px solid #151515; background: #E8E1D3; color: #151515; text-align: left">
+        <span style="display: flex; justify-content: space-between; align-items: center; width: 100%">
+          <span style="font-family: 'Black Han Sans', sans-serif; font-size: 20px; letter-spacing: 0.06em">SYSTEM</span>
+          <span style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: #151515; color: #E8E1D3">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </span>
+        </span>
+        <span style="font-size: 15px; font-weight: 500; line-height: 1.45">"Core quest available. Reward: 20 XP."</span>
+      </button>
+    </div>
+    <button aria-pressed="false" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 2px solid #4A4A50; background: #18181B; color: #F1ECE1; text-align: left">
+      <span style="font-family: 'Black Han Sans', sans-serif; font-size: 20px; letter-spacing: 0.06em">QUESTMASTER</span>
+      <span style="font-size: 15px; line-height: 1.45; color: #C9C2B6">"Your trial is waiting. Rise and clear it."</span>
+    </button>
+  </div>
+
+  <button style="margin-top: auto; height: 56px; border: 0; background: #E8E1D3; color: #151515; font-family: 'Black Han Sans', sans-serif; font-size: 19px; letter-spacing: 0.16em">CONTINUE</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
