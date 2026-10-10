@@ -59,7 +59,7 @@ export type BuiltDay = {
   quests: readonly QuestDraft[];
 };
 
-/** A recent day, by the template each slot was built with. */
+/** A recent day: each slot's final template, after any swap, Stillness, Dawn Ritual or Second Wind. */
 export type PastDay = { dayNumber: number; quests: Readonly<Partial<Record<Slot, string>>> };
 
 export type DayInput = {

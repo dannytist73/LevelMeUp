@@ -126,8 +126,9 @@ earn less, and only steps 19 and 20 meet every target, so the step is back at 20
 | 20 | 3,990 | about 2½–3 months | later, still climbing |
 
 The check passes if each target is met within ±20%; if not, the per-level step (now 20) is tuned, not the XP table.
-On real days (four class personas at 25 minutes, 200 runs) steady players reach level 10 on days 17.7–18.3 and
-struggling players on days 46.7–47.7, so the margins are under a day at both ends.
+On real days (four class personas at 25 minutes, 400 runs) steady players reach level 10 on days 17.7–18.2 and
+struggling players on days 46.9–47.8. The struggling target (at most day 48) passes only just; a wider margin needs
+the base (30) or the content, not the step.
 
 ### 2.4 Streaks and shields
 

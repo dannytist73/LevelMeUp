@@ -77,7 +77,8 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
   answer; "Delete account" is plain text with a confirm step.
 - **Voices:** the System speaks in narration boxes; the Shadow only in Shadow boxes, ominous and never insulting. The
   approved Shadow lines: "The day closed in silence, so I took it." / "It stays mine until you clear the recovery
-  quest. Five minutes. Come and take it back."
+  quest. Come and take it back." (M2 dropped "Five minutes." from the second: with Second Wind the recovery quest is
+  the whole missed core quest.)
 - **No fake status bar**, no emoji, icons are simple stroke icons.
 - **Accessibility:** 44 px targets, 4.5:1 contrast, no truncation, layouts grow with the phone's font size, real
   buttons and inputs with labels. Hold-to-confirm buttons (vow, Pact) offer a tap-then-confirm path when a screen
