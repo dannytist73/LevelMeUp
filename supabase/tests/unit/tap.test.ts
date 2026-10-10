@@ -14,6 +14,12 @@ describe('running a DB test file (db:test)', () => {
     expect(sql).toContain("select * from runtests('lmu_test'::name, '^test');");
     expect(parts.at(-1)).toBe('rollback;');
   });
+
+  it('runs the shared helpers before the file', () => {
+    const sql = wrapTestFile('-- the file', '-- the helpers');
+    expect(sql.indexOf('-- the helpers')).toBeGreaterThan(sql.indexOf('create schema lmu_test;'));
+    expect(sql.indexOf('-- the helpers')).toBeLessThan(sql.indexOf('-- the file'));
+  });
 });
 
 describe('reading pgTAP output', () => {

@@ -1,13 +1,14 @@
 /**
- * The DB test file inside a transaction that always rolls back. pgTAP itself is created inside it (when the project
- * doesn't have it), so nothing test-related is ever left in the shared database.
+ * The DB test file, after the shared helpers, inside a transaction that always rolls back. pgTAP itself is created
+ * inside it (when the project doesn't have it), so nothing test-related is ever left in the shared database.
  */
-export function wrapTestFile(sql: string): string {
+export function wrapTestFile(sql: string, helpers = ''): string {
   return [
     'begin;',
     'create extension if not exists pgtap with schema extensions;',
     'create schema lmu_test;',
     'set local search_path = lmu_test, extensions, public;',
+    ...(helpers.trim() === '' ? [] : [helpers.trimEnd()]),
     sql.trimEnd(),
     "select * from runtests('lmu_test'::name, '^test');",
     'rollback;',

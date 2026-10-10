@@ -15,13 +15,14 @@ const RESIDUE = `select exists (select 1 from pg_namespace where nspname = 'lmu_
 type Residue = { test_schema: boolean; pgtap: boolean; test_users: number };
 
 const before = query<Residue>([RESIDUE])[0]!;
-const files = readdirSync(DIR).filter((name) => name.endsWith('.sql') && name.includes(filter)).sort();
+const helpers = readFileSync(join(DIR, '_helpers.sql'), 'utf8');
+const files = readdirSync(DIR).filter((name) => name.endsWith('.sql') && !name.startsWith('_') && name.includes(filter)).sort();
 const tmp = mkdtempSync(join(tmpdir(), 'lmu-dbtest-'));
 let failed = 0;
 try {
   for (const name of files) {
     const file = join(tmp, name);
-    writeFileSync(file, wrapTestFile(readFileSync(join(DIR, name), 'utf8')));
+    writeFileSync(file, wrapTestFile(readFileSync(join(DIR, name), 'utf8'), helpers));
     let result;
     try {
       result = parseTap(query<{ runtests: string }>(['-f', file]).map((row) => row.runtests));
