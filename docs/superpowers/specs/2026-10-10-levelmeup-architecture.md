@@ -125,9 +125,11 @@ last line of defence.
 ### 4.3 Days, time zones and lazy closing
 
 - A day row stores `starts_at` and `ends_at` (absolute times), computed by the rules from the player's boundary and
-  the phone's time zone at creation, clamped to 20–28 hours.
-- A day counts as closed once `now() > ends_at`. Whenever `sync` runs, it evaluates closed days in order: done,
-  protected (including any day in `day_failures`), or "check-in due".
+  the phone's time zone at creation, clamped to 20–28 hours (day 1: 6–30 hours). The server always recomputes them
+  with the rules; it never trusts a window from a provisional day built on the phone.
+- A day covers `[starts_at, ends_at)` and counts as closed once `now() >= ends_at` (the rules' `isClosed`). Whenever
+  `sync` runs, it evaluates closed days in order with the rules' `closedDayResolution`: done, protected (including
+  any day in `day_failures`), or "check-in due". While a check-in is pending, later days wait for it.
 - The phone always sends its queued events **before** asking for check-ins, so an offline completion is never
   mistaken for a miss. Offline completions are accepted until `ends_at + 48 h`.
 - Days the player never opened the app on are "away" days, covered by one gap check-in (spec §2.4).

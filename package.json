@@ -1,0 +1,12 @@
+{
+  "name": "levelmeup",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "npm -w @levelmeup/rules test",
+    "typecheck": "npm -w @levelmeup/rules run typecheck",
+    "check:portable": "node packages/rules/scripts/portable-check.ts",
+    "pacing": "node packages/rules/scripts/pacing-report.ts"
+  }
+}

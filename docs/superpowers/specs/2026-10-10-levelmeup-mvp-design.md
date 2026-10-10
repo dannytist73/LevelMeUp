@@ -109,24 +109,26 @@ only), so a full day is about 65 XP and a typical day about 45.
 
 ### 2.3 Levels
 
-XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach level N = 30(N−1) + 10(N−1)(N−2).
+XP to go from level L to L+1 = 30 + 32 × (L − 1). Cumulative XP to reach level N = 30(N−1) + 16(N−1)(N−2).
+The step was 20 in the first draft; the pacing simulation (`npm run pacing`) showed that was too fast and tuned it
+to 32 (M1, `packages/rules`).
 
 | Level | Cumulative XP | Steady player | Struggling player |
 |---|---|---|---|
 | 2 | 30 | day 1 | day 1–2 |
-| 5 | 240 | end of week 1 | about week 2 |
-| 10 | 990 | about 3 weeks | about day 40 |
-| 15 | 2,240 | about 6 weeks | — |
-| 20 | 3,990 | about 2½–3 months | later, still climbing |
+| 5 | 312 | end of week 1 | about week 2 |
+| 10 | 1,422 | about 3 weeks | about day 40 |
+| 15 | 3,332 | about 6 weeks | — |
+| 20 | 6,042 | about 2½–3 months | later, still climbing |
 
-The simulation passes if each target is met within ±20%; if not, the per-level step (20) is tuned, not the XP table.
+The simulation passes if each target is met within ±20%; if not, the per-level step (now 32) is tuned, not the XP table.
 
 ### 2.4 Streaks and shields
 
 - A streak day = the core quest done (any version) **or** any 2 quests done.
 - Protected days pause the streak (no growth, no break): planned rest, sick or injured, emergency, travel, or a
-  server-side outage (auto-protected, no question asked). More than 3 protected days in 14 → the System offers a
-  lighter plan, never a penalty.
+  server-side outage (auto-protected, no question asked). 3 or more days protected by a check-in answer in 14 days
+  → the System offers a lighter plan, never a penalty (planned rest and server outages don't count).
 - A plain miss: see §3.7 (recovery quest first, then a shield, then a reset).
 - Shields: earn 1 per 7 streak days; hold at most 2.
 - Away for several days: one check-in covers the gap; the streak waits as "paused" until it is answered.
@@ -218,8 +220,8 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
 
 ### 3.7 The missed-day check-in
 
-When a closed day's core quest was not done (and no hard-day version or protection applies), the next open asks
-"The day closed. What happened?"
+When a closed day's core quest was not done (and no hard-day version or protection applies, and it isn't a streak
+day through any 2 quests, §2.4), the next open asks "The day closed. What happened?"
 
 | Answer | Streak | Next |
 |---|---|---|
@@ -232,17 +234,22 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 
 - Paused days earn no XP and don't grow the streak, so excuses gain nothing; honesty plus a recovery quest earns
   Discipline.
-- 3+ recovery quests or 3+ protected days in 14 → the System offers a lighter plan.
-- A dismissed check-in comes back on the next open; the streak stays paused until it is answered.
+- 3+ recovery quests or 3+ days protected by a check-in answer in 14 → the System offers a lighter plan.
+- A dismissed check-in comes back on the next open; the streak stays paused until it is answered, and later days
+  are applied to the streak only after it (in quest-day order), so delaying the answer changes nothing.
 - The recovery quest is available until the end of the quest day on which the check-in is answered. A Warrior with
   *Second Wind* available may instead redo the full missed core quest that day for its full XP.
 
 ### 3.8 Time zones and the day boundary
 
 - The quest day starts at the player's boundary in the phone's time zone at the moment the day starts.
-- A day lasts at least 20 and at most 28 hours (flights, DST).
+- A day lasts at least 20 and at most 28 hours (flights, DST); day 1 is the exception below (6 to 30 hours).
 - A day is closed once its stored end time has passed, evaluated whenever the server looks at the player's state
   (lazy closing; architecture §4.3). No hourly job is needed.
+- Day 1 starts when onboarding ends and runs to the first boundary at least 6 hours away, so a late-night start
+  still gets a real day.
+- After travel, a day ends at the first boundary at least 20 hours after it starts, capped at 28 hours; the
+  boundary re-syncs within a few days.
 
 ## 4. Daily article, accountability and notifications (approved 2026-10-10)
 
@@ -290,8 +297,9 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 ### 4.3 Accountability (MVP levels 0–2)
 
 - **Off by default.** Enabled through the *Accountability Pact* screen (from Settings, or from the suggestion on
-  the reveal). It shows exactly what happens on a miss and previews the Shadow. It applies only to quest days that
-  start after it was enabled. Turning it off is instant, any time, and never affects progress.
+  the reveal). It shows exactly what happens on a miss and previews the Shadow. It applies only from the quest
+  day after the one in progress when it is signed, never today's (signed during onboarding, from day 2). Turning it
+  off is instant, any time, and never affects progress.
 - **Trigger:** only the player's own check-in answer "I just didn't". Never a crash, a failed sync, missing data,
   an unanswered check-in or a missed notification.
 
@@ -352,8 +360,8 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 - Recovery quests, shields, protected-day limits and the "lighter plan" offers behave as specified.
 
 **Time**
-- Day boundaries are correct across time zones, both DST transitions, and travel east and west; days stay within
-  20–28 hours (unit tests).
+- Day boundaries are correct across time zones, both DST transitions, and travel east and west; days after day 1
+  stay within 20–28 hours (unit tests).
 
 **Article**
 - The nightly job publishes only articles that pass the §4.1 checks; a failing article is never shown.
