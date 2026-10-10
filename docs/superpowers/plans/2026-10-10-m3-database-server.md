@@ -156,7 +156,7 @@ scripts/
   lib/                             pure helpers the scripts share (tested): guard, plan, tap parsing, scram
 supabase/
   package.json                     @levelmeup/server workspace: vitest (unit + lint), live tests, deno check
-  config.toml                      project_id "levelmeup"; [functions.lmu-*] verify_jwt = true; nothing else is pushed
+  deno.check.json                  `deno check` settings only (the deploy uses the CLI's defaults: verify_jwt = true)
   migrations/
     0001_levelmeup_schema.sql      schema, schema_migrations, lmu_service, base grants
     0002_player_tables.sql         tables, RLS, read policies, grants
@@ -281,7 +281,8 @@ codes to event rejections. Every function except `delete_player` bumps `characte
 | `complete_quest(p_user, p_event uuid, p_instance bigint, p_completed_at timestamptz, p_rating text, p_payload jsonb) → jsonb` | same event → stored result; else marks the instance, writes ledger rows from the snapshot (`quest`, key = event id), adds stat XP, `quests_cleared + 1`, stores the event | `not_found` (missing or another player's), `already_completed`, `day_closed`, `outside_day`, `too_late` (> ends_at + 48 h), `future` (> now + 5 min) |
 | `undo_quest(p_user, p_event, p_instance) → jsonb` | reverses the snapshot (`undo`, key = event id), clears completion, `quests_cleared − 1` | `not_found`, `not_completed`, `day_closed` (also after ends_at) |
 | `rate_quest(p_user, p_event, p_instance, p_rating) → jsonb` | sets the rating | `not_found`, `not_completed`, `day_closed`, `bad_rating` |
-| `advance(p_user, p_version int, p_outcome jsonb) → jsonb` | closes days, records a gap check-in, upserts ladder states, writes rung/discipline/milestone ledger rows, sets streak fields and counters, stores earned achievements, creates the next day and its quests | `conflict` (version), `not_open`, `not_ended`, `out_of_order`, `day_exists`, `overlap` |
+| `advance(p_user, p_version int, p_outcome jsonb) → jsonb` | closes days, records a gap check-in, upserts ladder states, writes rung/discipline/milestone ledger rows, sets streak fields and counters, creates the next day and its quests | `conflict` (version), `not_open`, `not_ended`, `out_of_order`, `day_exists`, `overlap`, `bad_ledger` |
+| `award_achievements(p_user, p_ids text[]) → int` | stores earned achievements (once each) | — |
 | `delete_player(p_user) → jsonb` | deletes every LevelMeUp row of the player, returns counts | — |
 
 `p_outcome` shape (built by `_shared/advance.ts`, validated in SQL by the guards above):
@@ -295,7 +296,6 @@ type Outcome = {
   ledger: { sourceType: 'rung' | 'discipline' | 'milestone'; sourceId: string; stat: Stat; amount: number }[];
   streak: StreakState;
   counters: { hardDaysCleared: number; comebacks: number };   // increments
-  achievements: string[];
   newDay: { dayNumber: number; startsAt: string; endsAt: string; timeZone: string; budget: number; light: boolean;
             comeback: boolean; protection: 'no_quests' | null; contentVersion: number;
             quests: InstanceDraft[] } | null;
@@ -337,8 +337,9 @@ Functions:
   independently; results `{ id, ok, result | code }`) → `planAdvance` + `advance` (retry on conflict) →
   achievements → `{ results, state: { profile, character, today, checkinsDue, recentDays } }`. 404
   `not_started` before onboarding.
-- `lmu-account-delete` (POST `{ confirm: "DELETE" }`): auth → `delete_player` → anonymous players: Auth admin
-  delete (service role from the function's environment) → `{ deleted: counts }`.
+- `lmu-account-delete` (POST `{ confirm: "DELETE" }`): auth → `delete_player` → asks Auth (admin API, service role
+  from the function's environment) whether the player is still anonymous, and only then deletes the sign-in →
+  `{ deleted: counts, signIn: 'deleted' | 'kept' }`.
 
 ---
 
@@ -480,8 +481,9 @@ Functions:
 ### Task 10: I/O modules and the three functions
 
 **Files:** Create `_shared/db.ts`, `_shared/claude.ts`, `lmu-onboarding/index.ts`, `lmu-sync/index.ts`,
-`lmu-account-delete/index.ts`, `supabase/config.toml`; add `deno` 2.9.6 and a `check:functions` script
-(`deno check supabase/functions/*/index.ts`).
+`lmu-account-delete/index.ts`, `supabase/deno.check.json`; add `deno` 2.9.6 and a `check:functions` script. No
+`config.toml`: the CLI's defaults (verify_jwt = true) are what LevelMeUp needs, and a config file invites a
+`supabase config push` that would change the wedding's settings.
 
 - [ ] Write them per "Server code"; `deno check` passes; Vitest unit suite still passes.
 - [ ] Deploy with `npm run deploy:functions` (guarded; deploys exactly the three names). Commit.
