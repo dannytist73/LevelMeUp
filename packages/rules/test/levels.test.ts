@@ -42,5 +42,6 @@ describe('level curve (spec §2.3)', () => {
     expect(() => levelForXp(Number.NaN)).toThrow(RangeError);
     expect(() => xpToNextLevel(0)).toThrow(RangeError);
     expect(() => cumulativeXpForLevel(1.5)).toThrow(RangeError);
+    expect(() => levelForXp(100, { base: 0, step: 0 })).toThrow(RangeError);
   });
 });

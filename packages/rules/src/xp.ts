@@ -7,6 +7,7 @@ export type XpByStat = Partial<Record<Stat, number>>;
 /** XP for one quest instance; the hard-day version pays half, rounded up, at least 5. */
 export function questXp(tier: Tier, options: { hardDay?: boolean } = {}): number {
   const full = XP_BY_TIER[tier];
+  if (full === undefined) throw new RangeError(`unknown tier ${tier}`);
   return options.hardDay ? Math.max(HARD_DAY_MIN_XP, Math.ceil(full / 2)) : full;
 }
 
@@ -25,7 +26,8 @@ export function splitXp(amount: number, primary: Stat, split?: XpSplit): XpBySta
   // Round away floating-point noise first, so 100 × 0.07 gives 7, not 8.
   const primaryXp = Math.ceil(Math.round(amount * split.primaryShare * 1e6) / 1e6);
   result[primary] = primaryXp;
-  result[split.secondary] = amount - primaryXp;
+  // A secondary share that rounds to nothing is left out rather than recorded as 0 XP.
+  if (amount > primaryXp) result[split.secondary] = amount - primaryXp;
   return result;
 }
 

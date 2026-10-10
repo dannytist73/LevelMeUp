@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HOUR_MS } from '../src/constants.ts';
 import {
   acceptsCompletion,
+  canonicalTimeZone,
   firstDayWindow,
   isClosed,
   isValidTimeZone,
@@ -44,6 +45,12 @@ describe('time-zone helpers', () => {
   it('finds the next boundary at or after an instant', () => {
     expect(nextBoundaryAtOrAfter('Asia/Manila', FOUR_AM, iso('2026-10-09T20:00:00Z'))).toBe(iso('2026-10-09T20:00:00Z'));
     expect(nextBoundaryAtOrAfter('Asia/Manila', FOUR_AM, iso('2026-10-09T20:00:01Z'))).toBe(iso('2026-10-10T20:00:00Z'));
+  });
+
+  it('stores zone names in their canonical spelling', () => {
+    expect(canonicalTimeZone('asia/manila')).toBe('Asia/Manila');
+    expect(() => canonicalTimeZone('Mars/Olympus')).toThrow(RangeError);
+    expect(firstDayWindow(iso('2026-10-10T07:00:00Z'), 'ASIA/MANILA', FOUR_AM).timeZone).toBe('Asia/Manila');
   });
 
   it('validates zone names and boundaries', () => {

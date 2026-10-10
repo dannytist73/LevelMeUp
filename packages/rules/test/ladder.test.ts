@@ -77,6 +77,26 @@ describe('stepping up (spec §3.3)', () => {
     expect(last(complete(newLadder(), days, { maxRung: 0 })).state.atRung).toHaveLength(14);
   });
 
+  it('counts each quest day once: a duplicate never steps up, and recording a day again replaces its rating', () => {
+    expect(complete(newLadder(), [0, 0], { difficulty: 'hard' }).some((c) => c.steppedUp)).toBe(false);
+    expect(complete(newLadder(), [0, 0, 0]).some((c) => c.steppedUp)).toBe(false);
+    const rated = recordCompletion(last(complete(newLadder(), [0])).state, { at: 0, rating: 'too_hard', difficulty: 'steady', maxRung: 10 });
+    expect(rated.state.atRung).toEqual([{ at: 0, rating: 'too_hard' }]);
+  });
+
+  it('ignores a late completion from before the last step-up (it belongs to the old rung), but still offers a step down', () => {
+    const up = last(complete(newLadder(), [3, 4], { difficulty: 'hard' }));
+    expect(up.steppedUp).toBe(true);
+    const late = recordCompletion(up.state, { at: 2 * DAY_MS, rating: 'too_hard', difficulty: 'hard', maxRung: 10 });
+    expect(late.state).toEqual(up.state);
+    expect(late.offerStepDown).toBe(true);
+  });
+
+  it('rejects an unknown rating or difficulty', () => {
+    expect(() => recordCompletion(newLadder(), { at: 0, rating: 'meh' as Rating, difficulty: 'steady', maxRung: 10 })).toThrow(RangeError);
+    expect(() => recordCompletion(newLadder(), { at: 0, rating: 'easy', difficulty: 'brutal' as Difficulty, maxRung: 10 })).toThrow(RangeError);
+  });
+
   it('judges a late-synced completion by its quest day, measured from the latest quest day', () => {
     expect(complete(newLadder(), [0, 20, 10]).map((c) => c.steppedUp)).toEqual([false, false, false]);
     const close = complete(newLadder(), [5, 12, 10]);
@@ -94,9 +114,16 @@ describe('stepping down', () => {
     expect(second.state.rung).toBe(1);
   });
 
-  it('misses 8 days apart do not', () => {
+  it('misses 8 days apart do not, in either order', () => {
     const first = recordMiss(newLadder(2), 0);
     expect(recordMiss(first.state, 8 * DAY_MS).steppedDown).toBe(false);
+    const later = recordMiss(newLadder(2), 10 * DAY_MS);
+    expect(recordMiss(later.state, 2 * DAY_MS).steppedDown).toBe(false);
+  });
+
+  it('the same missed day recorded twice is one miss', () => {
+    const first = recordMiss(newLadder(2), 0);
+    expect(recordMiss(first.state, 0).steppedDown).toBe(false);
   });
 
   it('coming back after 5 or more days away starts one rung lower', () => {
@@ -118,5 +145,14 @@ describe('pain (spec §3.3, §3.4)', () => {
     expect(recordCompletion(paused, { at: 0, rating: 'easy', difficulty: 'hard', maxRung: 10 }).state).toEqual(paused);
     const resumed = resumeAfterPain(paused).state;
     expect(resumed).toMatchObject({ paused: false, rung: 2 });
+  });
+
+  it('a paused ladder records no misses or re-entry, so resuming is only ever one rung lower', () => {
+    let paused = recordPain(newLadder(3)).state;
+    paused = recordMiss(paused, 0).state;
+    paused = recordMiss(paused, DAY_MS).state;
+    paused = recordReentry(paused, 20 * DAY_MS, 0).state;
+    expect(paused.rung).toBe(3);
+    expect(resumeAfterPain(paused).state.rung).toBe(2);
   });
 });

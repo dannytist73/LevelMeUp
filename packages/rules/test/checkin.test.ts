@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DAY_MS } from '../src/constants.ts';
 import { CHECKIN_ANSWERS, checkinOutcome, shouldOfferLighterPlan } from '../src/checkin.ts';
-import type { LighterPlanEvent } from '../src/checkin.ts';
+import type { CheckinAnswer, LighterPlanEvent } from '../src/checkin.ts';
 
 const PROTECTED = {
   resolution: 'protected',
@@ -39,6 +39,10 @@ describe('check-in answers (spec §3.7)', () => {
 
   it('I just didn\'t: a recovery chance with a recovery quest', () => {
     expect(checkinOutcome('just_didnt')).toEqual({ ...PROTECTED, resolution: 'recovery_chance', recoveryQuest: true });
+  });
+
+  it('rejects an unknown answer', () => {
+    expect(() => checkinOutcome('bogus' as CheckinAnswer)).toThrow(RangeError);
   });
 });
 

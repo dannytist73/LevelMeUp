@@ -41,14 +41,26 @@ function unchanged(state: LadderState): LadderChange {
   return { state, steppedUp: false, steppedDown: false, newHighestRung: false, offerStepDown: false };
 }
 
+const RATINGS: readonly Rating[] = ['easy', 'right', 'too_hard'];
+
+/**
+ * Records one completion of this ladder. One record per quest day: recording the same day again replaces it (a
+ * duplicate or a changed rating), and a completion from before the last step-up belongs to the old rung and is ignored.
+ */
 export function recordCompletion(
   state: LadderState,
   completion: { at: number; rating: Rating; difficulty: Difficulty; maxRung: number },
 ): LadderChange {
+  if (!RATINGS.includes(completion.rating)) throw new RangeError(`unknown rating ${completion.rating}`);
+  if (STEP_UP_BAR[completion.difficulty] === undefined) throw new RangeError(`unknown difficulty ${completion.difficulty}`);
   if (state.paused) return unchanged(state);
+  const offerStepDown = completion.rating === 'too_hard' && state.rung > 0;
+  if (state.lastStepUpAt !== null && completion.at <= state.lastStepUpAt) return { ...unchanged(state), offerStepDown };
   // Sorted by quest day and measured from the latest one, so a late-synced completion counts on its own day.
   // Only the 14-day window is kept: older completions can never count again, and the saved state stays small.
-  const all = [...state.atRung, { at: completion.at, rating: completion.rating }].sort((a, b) => a.at - b.at);
+  const all = [...state.atRung.filter((c) => c.at !== completion.at), { at: completion.at, rating: completion.rating }].sort(
+    (a, b) => a.at - b.at,
+  );
   const latest = all[all.length - 1]!.at;
   const recent = all.filter((c) => latest - c.at < STEP_UP_WINDOW_MS);
   const lastTwoFine = recent.slice(-2).every((c) => c.rating !== 'too_hard');
@@ -67,7 +79,7 @@ export function recordCompletion(
       offerStepDown: false,
     };
   }
-  return { ...unchanged({ ...state, atRung: recent }), offerStepDown: completion.rating === 'too_hard' && state.rung > 0 };
+  return { ...unchanged({ ...state, atRung: recent }), offerStepDown };
 }
 
 export function stepDown(state: LadderState): LadderChange {
@@ -81,15 +93,22 @@ export function stepDown(state: LadderState): LadderChange {
   };
 }
 
-/** 2 missed sessions of this ladder within 7 days step it down. */
+/**
+ * 2 missed sessions of this ladder within 7 days step it down. One record per quest day, measured from the latest
+ * missed day like completions. A ladder paused for pain records nothing.
+ */
 export function recordMiss(state: LadderState, at: number): LadderChange {
-  const misses = [...state.misses, at].filter((t) => at - t < MISS_WINDOW_MS);
+  if (state.paused) return unchanged(state);
+  const all = [...state.misses.filter((t) => t !== at), at].sort((a, b) => a - b);
+  const latest = all[all.length - 1]!;
+  const misses = all.filter((t) => latest - t < MISS_WINDOW_MS);
   if (misses.length >= MISSES_FOR_STEP_DOWN) return stepDown(state);
   return unchanged({ ...state, misses });
 }
 
-/** Back after 5 or more days away: the first session is one rung lower. */
+/** Back after 5 or more days away: the first session is one rung lower. A paused ladder already resumes lower. */
 export function recordReentry(state: LadderState, at: number, lastActiveAt: number): LadderChange {
+  if (state.paused) return unchanged(state);
   return at - lastActiveAt >= REENTRY_AWAY_MS ? stepDown(state) : unchanged(state);
 }
 

@@ -36,6 +36,7 @@ const OUTCOMES: Readonly<Record<CheckinAnswer, CheckinOutcome>> = {
 };
 
 export function checkinOutcome(answer: CheckinAnswer): CheckinOutcome {
+  if (!CHECKIN_ANSWERS.includes(answer)) throw new RangeError(`unknown check-in answer ${answer}`);
   return { ...OUTCOMES[answer] };
 }
 

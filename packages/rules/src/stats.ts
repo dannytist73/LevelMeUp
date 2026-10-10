@@ -32,13 +32,15 @@ export function rankFor(points: number): Rank {
 
 /** Starting points from onboarding estimates: rounded, kept in 3–8, then +2 on the class's main stat. */
 export function startingStats(estimates: StatMap, classId: ClassId): StatMap {
+  const classInfo = CLASSES[classId];
+  if (classInfo === undefined) throw new RangeError(`unknown class ${classId}`);
   const result = {} as StatMap;
   for (const stat of STATS) {
     const estimate = estimates[stat];
     if (!Number.isFinite(estimate)) throw new RangeError(`estimate for ${stat} must be a number, got ${estimate}`);
     result[stat] = Math.min(START_STAT_MAX, Math.max(START_STAT_MIN, Math.round(estimate)));
   }
-  result[CLASSES[classId].main] += CLASS_MAIN_STAT_BONUS;
+  result[classInfo.main] += CLASS_MAIN_STAT_BONUS;
   return result;
 }
 

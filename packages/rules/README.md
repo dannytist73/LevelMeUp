@@ -40,9 +40,9 @@ npm run pacing          # pacing table and the level steps that meet every targe
 
 ## Decisions made while building M1
 
-1. Level step 32 instead of the spec's 20, found by the pacing simulation (`npm run pacing`). It is the only step
-   from 20 to 40 that meets every target: 31 reaches level 5 slightly too early for steady players, 33 reaches
-   level 10 too late for struggling players.
+1. Level step 32 instead of the spec's 20, found by the pacing simulation (`npm run pacing`). Only 31 and 32 fit
+   the targets (at 200 runs only 32 does; 31 sits right on the steady level-5 edge), and 33 reaches level 10 too late
+   for struggling players. The margins are small, so M2's re-run with real days may need retuning.
 2. Day 1 runs from the end of onboarding to the first boundary at least 6 h away.
 3. After travel, a day ends at the first boundary at least 20 h after it starts, capped at 28 h.
 4. Lighter-plan offers count check-in-protected days only (not planned rest or outages); 3 or more in 14 days.
@@ -51,3 +51,15 @@ npm run pacing          # pacing table and the level steps that meet every targe
 7. Ladder completions are kept sorted by quest day and only those inside the 14-day window are stored; the window
    is measured from the latest quest day, so a late-synced completion can't stretch it.
 8. XP splits round away floating-point noise before rounding up (100 × 0.07 is 7, not 8).
+
+After the M1 code review:
+
+9. Closed days apply to the streak in quest-day order. `closedDayResolution` decides each one (streak day,
+   protected without asking, or check-in due); while a check-in is pending, later days wait and `resolveCheckin`
+   answers it, so delaying the answer can't change the result.
+10. Ladders keep one record per quest day (a repeat replaces it, e.g. a changed rating), ignore completions from
+    before the last step-up, and record nothing while paused for pain.
+11. The Pact covers quest days from `appliesFrom`, the quest day after the one in progress when it was signed
+    ("never today's"). A level 2 seal lasts only for the quest day the check-in was answered.
+12. Unknown answers, ratings, tiers, classes and Pact levels throw instead of passing through; zone names are stored
+    in their canonical spelling; `src` is type-checked without Node's types (`tsconfig.src.json`).

@@ -10,6 +10,10 @@ describe('timers', () => {
     expect(elapsedMs([])).toBe(0);
   });
 
+  it('ignores segments without real times, so an endless segment never completes a timer', () => {
+    expect(elapsedMs([{ start: 0, end: Number.POSITIVE_INFINITY }, { start: Number.NaN, end: 60_000 }])).toBe(0);
+  });
+
   it('completes a quest timer at 80 % of its target', () => {
     expect(questTimerDone(8 * MINUTE_MS, 10 * MINUTE_MS)).toBe(true);
     expect(questTimerDone(8 * MINUTE_MS - 1, 10 * MINUTE_MS)).toBe(false);

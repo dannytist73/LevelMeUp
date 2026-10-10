@@ -32,8 +32,47 @@ export function isStreakDay(day: { coreDone: boolean; questsDone: number }): boo
   return day.coreDone || day.questsDone >= 2;
 }
 
+/** Why a day was protected without asking: planned rest, a server outage, or no quests were generated. */
+export type Protection = 'planned_rest' | 'outage' | 'no_quests';
+
+export type ClosedDay = { coreDone: boolean; questsDone: number; protection: Protection | null };
+
+/**
+ * How a closed day enters the streak (architecture §4.3). Only a day that is neither a streak day nor protected asks
+ * the check-in, so a crash, an outage or missing data can never become a miss on its own.
+ */
+export function closedDayResolution(day: ClosedDay): DayResolution {
+  if (isStreakDay(day)) return { kind: 'streak_day' };
+  if (day.protection !== null) return { kind: 'protected' };
+  return { kind: 'awaiting_checkin' };
+}
+
+const NOTHING = { milestoneXp: 0, shieldEarned: false, shieldUsed: false, reset: false };
+
+/**
+ * Applies the next closed day. Days must be applied in quest-day order. While a check-in is pending, later days wait:
+ * another unanswered day only widens the gap (one check-in covers it), and anything else throws until the check-in
+ * is resolved with `resolveCheckin`, so delaying the answer can't change the result.
+ */
 export function applyDay(state: StreakState, resolution: DayResolution): StreakChange {
-  const nothing = { milestoneXp: 0, shieldEarned: false, shieldUsed: false, reset: false };
+  if (state.awaitingCheckin) {
+    if (resolution.kind === 'awaiting_checkin') return { ...NOTHING, state };
+    throw new Error('a check-in is pending: resolve it before applying later days');
+  }
+  return applyResolution(state, resolution);
+}
+
+/** Resolves the pending check-in (one answer covers the whole gap): protected, or a miss once its recovery window ends. */
+export function resolveCheckin(
+  state: StreakState,
+  resolution: Extract<DayResolution, { kind: 'protected' } | { kind: 'miss' }>,
+): StreakChange {
+  if (!state.awaitingCheckin) throw new Error('no check-in is pending');
+  return applyResolution(state, resolution);
+}
+
+function applyResolution(state: StreakState, resolution: DayResolution): StreakChange {
+  const nothing = NOTHING;
   switch (resolution.kind) {
     case 'streak_day': {
       const current = state.current + 1;

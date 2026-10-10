@@ -5,23 +5,24 @@ export type LocalParts = { year: number; month: number; day: number; hour: numbe
 /** One quest day: absolute instants (epoch ms) plus the zone its end was computed in. */
 export type DayWindow = { startsAt: number; endsAt: number; timeZone: string };
 
+/** Cached by canonical zone name only, so variant spellings sent by a phone can't grow the cache. */
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
 function formatterFor(timeZone: string): Intl.DateTimeFormat {
-  let formatter = formatters.get(timeZone);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      hourCycle: 'h23',
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-    });
-    formatters.set(timeZone, formatter);
-  }
+  const cached = formatters.get(timeZone);
+  if (cached) return cached;
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
+  const canonical = formatter.resolvedOptions().timeZone;
+  if (!formatters.has(canonical)) formatters.set(canonical, formatter);
   return formatter;
 }
 
@@ -32,6 +33,11 @@ export function isValidTimeZone(timeZone: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** The canonical spelling of a zone name ("asia/manila" gives "Asia/Manila"); throws RangeError for an unknown zone. */
+export function canonicalTimeZone(timeZone: string): string {
+  return formatterFor(timeZone).resolvedOptions().timeZone;
 }
 
 /** The wall-clock reading in `timeZone` (an IANA name such as "Asia/Manila") at the instant `utcMs`. */
@@ -88,7 +94,7 @@ export function firstDayWindow(nowMs: number, timeZone: string, boundaryMinutes:
   return {
     startsAt: nowMs,
     endsAt: nextBoundaryAtOrAfter(timeZone, boundaryMinutes, nowMs + FIRST_DAY_MIN_MS),
-    timeZone,
+    timeZone: canonicalTimeZone(timeZone),
   };
 }
 
@@ -99,7 +105,7 @@ export function firstDayWindow(nowMs: number, timeZone: string, boundaryMinutes:
 export function nextDayWindow(previous: DayWindow, timeZone: string, boundaryMinutes: number): DayWindow {
   const startsAt = previous.endsAt;
   const boundary = nextBoundaryAtOrAfter(timeZone, boundaryMinutes, startsAt + MIN_DAY_MS);
-  return { startsAt, endsAt: Math.min(boundary, startsAt + MAX_DAY_MS), timeZone };
+  return { startsAt, endsAt: Math.min(boundary, startsAt + MAX_DAY_MS), timeZone: canonicalTimeZone(timeZone) };
 }
 
 /**

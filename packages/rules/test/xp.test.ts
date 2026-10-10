@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Tier } from '../src/types.ts';
 import { questXp, splitXp, totalXp } from '../src/xp.ts';
 
 describe('quest XP (spec §2.2)', () => {
@@ -25,6 +26,14 @@ describe('XP splits', () => {
 
   it('is not thrown off by floating-point noise (100 × 0.07 is 7.000000000000001 in JS)', () => {
     expect(splitXp(100, 'strength', { secondary: 'vitality', primaryShare: 0.07 })).toEqual({ strength: 7, vitality: 93 });
+  });
+
+  it('leaves out a secondary share that rounds to nothing', () => {
+    expect(splitXp(1, 'strength', { secondary: 'vitality', primaryShare: 0.7 })).toEqual({ strength: 1 });
+  });
+
+  it('rejects an unknown tier', () => {
+    expect(() => questXp('epic' as Tier)).toThrow(RangeError);
   });
 
   it('rejects nonsense splits', () => {

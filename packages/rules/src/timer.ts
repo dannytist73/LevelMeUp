@@ -2,9 +2,14 @@ import { TIMER_COMPLETE_FRACTION, TRIAL_FOCUS_MS } from './constants.ts';
 
 export type Segment = { start: number; end: number };
 
-/** Total time covered by the segments; overlaps count once, so duplicated segments can't inflate a timer. */
+/**
+ * Total time covered by the segments; overlaps count once, so duplicated segments can't inflate a timer.
+ * Segments without real start and end times count for nothing.
+ */
 export function elapsedMs(segments: readonly Segment[]): number {
-  const sorted = segments.filter((s) => s.end > s.start).sort((a, b) => a.start - b.start);
+  const sorted = segments
+    .filter((s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.end > s.start)
+    .sort((a, b) => a.start - b.start);
   let total = 0;
   let coveredUntil = Number.NEGATIVE_INFINITY;
   for (const segment of sorted) {

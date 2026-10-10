@@ -1,9 +1,9 @@
 import { LEVEL_BASE, LEVEL_STEP } from './constants.ts';
 
 /** XP from level L to L+1 is base + step × (L − 1). */
-export type LevelCurve = { base: number; step: number };
+export type LevelCurve = { readonly base: number; readonly step: number };
 
-export const LEVEL_CURVE: LevelCurve = { base: LEVEL_BASE, step: LEVEL_STEP };
+export const LEVEL_CURVE: LevelCurve = Object.freeze({ base: LEVEL_BASE, step: LEVEL_STEP });
 
 export type LevelProgress = { level: number; xpIntoLevel: number; xpForLevel: number };
 
@@ -24,6 +24,10 @@ export function cumulativeXpForLevel(level: number, curve: LevelCurve = LEVEL_CU
 export function levelForXp(totalXp: number, curve: LevelCurve = LEVEL_CURVE): number {
   if (!Number.isFinite(totalXp) || totalXp < 0) {
     throw new RangeError(`totalXp must be a non-negative number, got ${totalXp}`);
+  }
+  // A curve whose levels cost nothing would never stop climbing.
+  if (!(curve.base > 0 && curve.step >= 0 && Number.isFinite(curve.base + curve.step))) {
+    throw new RangeError(`the level curve needs base > 0 and step >= 0, got ${curve.base} and ${curve.step}`);
   }
   let level = 1;
   while (cumulativeXpForLevel(level + 1, curve) <= totalXp) level++;
