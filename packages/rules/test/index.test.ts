@@ -7,7 +7,8 @@ describe('public API', () => {
     'firstDayWindow', 'nextDayWindow', 'isClosed', 'acceptsCompletion', 'isValidTimeZone', 'applyDay', 'isStreakDay',
     'checkinOutcome', 'shouldOfferLighterPlan', 'recordCompletion', 'recordMiss', 'recordReentry', 'recordPain',
     'resumeAfterPain', 'stepDown', 'decideConsequence', 'isSealed', 'elapsedMs', 'questTimerDone', 'trialDone',
-    'simulatePacing', 'meetsTargets', 'closedDayResolution', 'resolveCheckin', 'canonicalTimeZone',
+    'simulatePacing', 'meetsTargets', 'closedDayResolution', 'resolveCheckin', 'canonicalTimeZone', 'templateAllowed',
+    'effectiveRung', 'maxRungFor',
   ])('exports %s', (name) => {
     expect(typeof (rules as Record<string, unknown>)[name]).toBe('function');
   });
