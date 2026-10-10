@@ -56,9 +56,10 @@ After the M1 code review:
 
 9. Closed days apply to the streak in quest-day order. `closedDayResolution` decides each one (streak day,
    protected without asking, or check-in due); while a check-in is pending, later days wait and `resolveCheckin`
-   answers it, so delaying the answer can't change the result.
-10. Ladders keep one record per quest day (a repeat replaces it, e.g. a changed rating), ignore completions from
-    before the last step-up, and record nothing while paused for pain.
+   answers it, so delaying the answer can't change the result. A miss can only come from `resolveCheckin`.
+10. Ladders keep one record per quest day (a repeat replaces it, e.g. a changed rating), count a completion only
+    if its quest was built at the current rung (so a late sync from before a step up or down can't count), and
+    record nothing while paused for pain.
 11. The Pact covers quest days from `appliesFrom`, the quest day after the one in progress when it was signed
     ("never today's"). A level 2 seal lasts only for the quest day the check-in was answered.
 12. Unknown answers, ratings, tiers, classes and Pact levels throw instead of passing through; zone names are stored

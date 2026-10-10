@@ -42,20 +42,21 @@ function unchanged(state: LadderState): LadderChange {
 }
 
 const RATINGS: readonly Rating[] = ['easy', 'right', 'too_hard'];
+const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
 
 /**
- * Records one completion of this ladder. One record per quest day: recording the same day again replaces it (a
- * duplicate or a changed rating), and a completion from before the last step-up belongs to the old rung and is ignored.
+ * Records one completion of this ladder. `rung` is the rung the quest was built at: a completion done at another rung
+ * (a late sync from before a step up or down) is ignored. One record per quest day: recording the same day again
+ * replaces it (a duplicate or a changed rating).
  */
 export function recordCompletion(
   state: LadderState,
-  completion: { at: number; rating: Rating; difficulty: Difficulty; maxRung: number },
+  completion: { at: number; rung: number; rating: Rating; difficulty: Difficulty; maxRung: number },
 ): LadderChange {
   if (!RATINGS.includes(completion.rating)) throw new RangeError(`unknown rating ${completion.rating}`);
-  if (STEP_UP_BAR[completion.difficulty] === undefined) throw new RangeError(`unknown difficulty ${completion.difficulty}`);
-  if (state.paused) return unchanged(state);
+  if (!DIFFICULTIES.includes(completion.difficulty)) throw new RangeError(`unknown difficulty ${completion.difficulty}`);
+  if (state.paused || completion.rung !== state.rung) return unchanged(state);
   const offerStepDown = completion.rating === 'too_hard' && state.rung > 0;
-  if (state.lastStepUpAt !== null && completion.at <= state.lastStepUpAt) return { ...unchanged(state), offerStepDown };
   // Sorted by quest day and measured from the latest one, so a late-synced completion counts on its own day.
   // Only the 14-day window is kept: older completions can never count again, and the saved state stays small.
   const all = [...state.atRung.filter((c) => c.at !== completion.at), { at: completion.at, rating: completion.rating }].sort(

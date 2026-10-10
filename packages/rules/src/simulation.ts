@@ -3,8 +3,7 @@ import { newLadder, recordCompletion } from './ladder.ts';
 import type { LadderState } from './ladder.ts';
 import { LEVEL_CURVE, cumulativeXpForLevel } from './levels.ts';
 import type { LevelCurve } from './levels.ts';
-import { applyDay, isStreakDay, newStreak } from './streak.ts';
-import type { DayResolution } from './streak.ts';
+import { applyDay, isStreakDay, newStreak, resolveCheckin } from './streak.ts';
 import type { Tier } from './types.ts';
 import { questXp } from './xp.ts';
 
@@ -68,21 +67,18 @@ function simulateRun(rate: number, seed: number, days: number, curve: LevelCurve
       xp += questXp(quest.tier);
       if (quest.isCore) coreDone = true;
       if (quest.ladder) {
-        const change = recordCompletion(ladders.get(quest.ladder) ?? newLadder(), {
-          at,
-          rating: 'right',
-          difficulty: 'steady',
-          maxRung: 99,
-        });
+        const ladder = ladders.get(quest.ladder) ?? newLadder();
+        const change = recordCompletion(ladder, { at, rung: ladder.rung, rating: 'right', difficulty: 'steady', maxRung: 99 });
         ladders.set(quest.ladder, change.state);
         if (change.newHighestRung) xp += RUNG_BONUS_XP;
       }
     }
     if (coreDone) xp += DISCIPLINE_PER_CORE_DAY;
-    const resolution: DayResolution = isStreakDay({ coreDone, questsDone: done })
-      ? { kind: 'streak_day' }
-      : { kind: 'miss', recovered: false, shieldWaived: false };
-    const change = applyDay(streak, resolution);
+    // A day that isn't a streak day is answered "I just didn't" and the recovery quest is skipped.
+    const closed = applyDay(streak, isStreakDay({ coreDone, questsDone: done }) ? { kind: 'streak_day' } : { kind: 'awaiting_checkin' });
+    const change = closed.state.awaitingCheckin
+      ? resolveCheckin(closed.state, { kind: 'miss', recovered: false, shieldWaived: false })
+      : closed;
     streak = change.state;
     xp += change.milestoneXp;
     for (const level of levels) {

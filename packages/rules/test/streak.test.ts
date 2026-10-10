@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyDay, closedDayResolution, isStreakDay, newStreak, resolveCheckin } from '../src/streak.ts';
-import type { StreakState } from '../src/streak.ts';
+import type { CheckinResolution, ClosedDayResolution, StreakState } from '../src/streak.ts';
 
 const streakDays = (count: number, from: StreakState = newStreak()) => {
   let state = from;
@@ -93,6 +93,14 @@ describe('days apply in order (spec §3.7: the streak stays paused until the che
 
   it('only a pending check-in can be resolved', () => {
     expect(() => resolveCheckin(sixDays, { kind: 'protected' })).toThrow(/no check-in is pending/);
+  });
+
+  it('a miss only comes from a check-in answer, and each step takes only its own kinds', () => {
+    const miss = { kind: 'miss', recovered: false, shieldWaived: false } as unknown as ClosedDayResolution;
+    expect(() => applyDay(sixDays, miss)).toThrow(RangeError);
+    const pending = applyDay(sixDays, { kind: 'awaiting_checkin' }).state;
+    expect(() => resolveCheckin(pending, { kind: 'streak_day' } as unknown as CheckinResolution)).toThrow(RangeError);
+    expect(() => applyDay(sixDays, { kind: 'bogus' } as unknown as ClosedDayResolution)).toThrow(RangeError);
   });
 });
 

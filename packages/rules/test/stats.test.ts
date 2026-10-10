@@ -51,5 +51,6 @@ describe('starting stats', () => {
   it('rejects a missing estimate or an unknown class', () => {
     expect(() => startingStats({ strength: Number.NaN, vitality: 5, wisdom: 5, focus: 5, discipline: 5 }, 'monk')).toThrow(RangeError);
     expect(() => startingStats({ strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 5 }, 'paladin' as ClassId)).toThrow(RangeError);
+    expect(() => startingStats({ strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 5 }, '__proto__' as ClassId)).toThrow(RangeError);
   });
 });

@@ -32,8 +32,8 @@ export function rankFor(points: number): Rank {
 
 /** Starting points from onboarding estimates: rounded, kept in 3–8, then +2 on the class's main stat. */
 export function startingStats(estimates: StatMap, classId: ClassId): StatMap {
+  if (!Object.keys(CLASSES).includes(classId)) throw new RangeError(`unknown class ${classId}`);
   const classInfo = CLASSES[classId];
-  if (classInfo === undefined) throw new RangeError(`unknown class ${classId}`);
   const result = {} as StatMap;
   for (const stat of STATS) {
     const estimate = estimates[stat];

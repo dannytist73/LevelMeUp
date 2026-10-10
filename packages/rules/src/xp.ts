@@ -6,8 +6,8 @@ export type XpByStat = Partial<Record<Stat, number>>;
 
 /** XP for one quest instance; the hard-day version pays half, rounded up, at least 5. */
 export function questXp(tier: Tier, options: { hardDay?: boolean } = {}): number {
+  if (!Object.keys(XP_BY_TIER).includes(tier)) throw new RangeError(`unknown tier ${tier}`);
   const full = XP_BY_TIER[tier];
-  if (full === undefined) throw new RangeError(`unknown tier ${tier}`);
   return options.hardDay ? Math.max(HARD_DAY_MIN_XP, Math.ceil(full / 2)) : full;
 }
 

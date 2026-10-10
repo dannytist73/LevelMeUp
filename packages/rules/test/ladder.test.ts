@@ -12,7 +12,7 @@ const complete = (
   const changes: LadderChange[] = [];
   let current = state;
   for (const day of days) {
-    const change = recordCompletion(current, { at: day * DAY_MS, rating, difficulty, maxRung });
+    const change = recordCompletion(current, { at: day * DAY_MS, rung: current.rung, rating, difficulty, maxRung });
     changes.push(change);
     current = change.state;
   }
@@ -40,7 +40,7 @@ describe('stepping up (spec §3.3)', () => {
   it('never steps up while either of the last 2 completions was "too hard", and offers a step down', () => {
     let state = newLadder(2);
     state = last(complete(state, [0, 1])).state;
-    const tooHard = recordCompletion(state, { at: 2 * DAY_MS, rating: 'too_hard', difficulty: 'steady', maxRung: 10 });
+    const tooHard = recordCompletion(state, { at: 2 * DAY_MS, rung: 2, rating: 'too_hard', difficulty: 'steady', maxRung: 10 });
     expect(tooHard.steppedUp).toBe(false);
     expect(tooHard.offerStepDown).toBe(true);
     const after = complete(tooHard.state, [3, 4]);
@@ -48,7 +48,7 @@ describe('stepping up (spec §3.3)', () => {
   });
 
   it('does not offer a step down from the bottom rung', () => {
-    expect(recordCompletion(newLadder(), { at: 0, rating: 'too_hard', difficulty: 'steady', maxRung: 10 }).offerStepDown).toBe(false);
+    expect(recordCompletion(newLadder(), { at: 0, rung: 0, rating: 'too_hard', difficulty: 'steady', maxRung: 10 }).offerStepDown).toBe(false);
   });
 
   it('ignores completions older than 14 days', () => {
@@ -80,21 +80,33 @@ describe('stepping up (spec §3.3)', () => {
   it('counts each quest day once: a duplicate never steps up, and recording a day again replaces its rating', () => {
     expect(complete(newLadder(), [0, 0], { difficulty: 'hard' }).some((c) => c.steppedUp)).toBe(false);
     expect(complete(newLadder(), [0, 0, 0]).some((c) => c.steppedUp)).toBe(false);
-    const rated = recordCompletion(last(complete(newLadder(), [0])).state, { at: 0, rating: 'too_hard', difficulty: 'steady', maxRung: 10 });
+    const rated = recordCompletion(last(complete(newLadder(), [0])).state, { at: 0, rung: 0, rating: 'too_hard', difficulty: 'steady', maxRung: 10 });
     expect(rated.state.atRung).toEqual([{ at: 0, rating: 'too_hard' }]);
   });
 
-  it('ignores a late completion from before the last step-up (it belongs to the old rung), but still offers a step down', () => {
+  it('ignores a completion done at another rung: a late sync from before a step-up can\'t count at the new rung', () => {
     const up = last(complete(newLadder(), [3, 4], { difficulty: 'hard' }));
     expect(up.steppedUp).toBe(true);
-    const late = recordCompletion(up.state, { at: 2 * DAY_MS, rating: 'too_hard', difficulty: 'hard', maxRung: 10 });
-    expect(late.state).toEqual(up.state);
-    expect(late.offerStepDown).toBe(true);
+    const late = recordCompletion(up.state, { at: 2 * DAY_MS, rung: 0, rating: 'easy', difficulty: 'hard', maxRung: 10 });
+    expect(late).toMatchObject({ state: up.state, steppedUp: false, offerStepDown: false });
+  });
+
+  it('a "too hard" session offers one step down; once taken, the same session recorded later offers nothing more', () => {
+    const offered = recordCompletion(newLadder(2), { at: 0, rung: 2, rating: 'too_hard', difficulty: 'steady', maxRung: 10 });
+    expect(offered.offerStepDown).toBe(true);
+    const down = stepDown(offered.state);
+    expect(down.state.rung).toBe(1);
+    const atClose = recordCompletion(down.state, { at: 0, rung: 2, rating: 'too_hard', difficulty: 'steady', maxRung: 10 });
+    expect(atClose).toMatchObject({ state: down.state, offerStepDown: false });
+  });
+
+  it('rejects names that only exist on every object, such as "constructor"', () => {
+    expect(() => recordCompletion(newLadder(), { at: 0, rung: 0, rating: 'easy', difficulty: 'constructor' as Difficulty, maxRung: 10 })).toThrow(RangeError);
   });
 
   it('rejects an unknown rating or difficulty', () => {
-    expect(() => recordCompletion(newLadder(), { at: 0, rating: 'meh' as Rating, difficulty: 'steady', maxRung: 10 })).toThrow(RangeError);
-    expect(() => recordCompletion(newLadder(), { at: 0, rating: 'easy', difficulty: 'brutal' as Difficulty, maxRung: 10 })).toThrow(RangeError);
+    expect(() => recordCompletion(newLadder(), { at: 0, rung: 0, rating: 'meh' as Rating, difficulty: 'steady', maxRung: 10 })).toThrow(RangeError);
+    expect(() => recordCompletion(newLadder(), { at: 0, rung: 0, rating: 'easy', difficulty: 'brutal' as Difficulty, maxRung: 10 })).toThrow(RangeError);
   });
 
   it('judges a late-synced completion by its quest day, measured from the latest quest day', () => {
@@ -142,7 +154,7 @@ describe('pain (spec §3.3, §3.4)', () => {
   it('pauses the ladder without penalty, ignores completions while paused, and resumes one rung lower', () => {
     const paused = recordPain(newLadder(3)).state;
     expect(paused.paused).toBe(true);
-    expect(recordCompletion(paused, { at: 0, rating: 'easy', difficulty: 'hard', maxRung: 10 }).state).toEqual(paused);
+    expect(recordCompletion(paused, { at: 0, rung: 3, rating: 'easy', difficulty: 'hard', maxRung: 10 }).state).toEqual(paused);
     const resumed = resumeAfterPain(paused).state;
     expect(resumed).toMatchObject({ paused: false, rung: 2 });
   });

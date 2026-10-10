@@ -34,6 +34,8 @@ describe('XP splits', () => {
 
   it('rejects an unknown tier', () => {
     expect(() => questXp('epic' as Tier)).toThrow(RangeError);
+    expect(() => questXp('constructor' as Tier)).toThrow(RangeError);
+    expect(() => questXp('toString' as Tier, { hardDay: true })).toThrow(RangeError);
   });
 
   it('rejects nonsense splits', () => {
