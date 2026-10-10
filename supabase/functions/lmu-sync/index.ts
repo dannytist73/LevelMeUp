@@ -45,9 +45,14 @@ async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
     });
     return { id: event.id, ok: true, result };
   } catch (error) {
-    const code = lmuCode(error) ?? badData(error);
-    if (code === null) throw error;
-    return { id: event.id, ok: false, code };
+    const code = lmuCode(error);
+    if (code !== null) return { id: event.id, ok: false, code };
+    if (badData(error)) {
+      // Logged: a server bug can look like bad data too, and the player's completion would otherwise vanish quietly.
+      console.error('lmu-sync: the database refused an event', event.type, (error as { code?: string }).code, (error as Error).message);
+      return { id: event.id, ok: false, code: 'bad_payload' };
+    }
+    throw error;
   }
 }
 
@@ -55,9 +60,9 @@ async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
  * An event whose data Postgres refuses (SQLSTATE class 22) is rejected on its own, so one bad event can't fail every
  * retry of the phone's outbox. Anything else is a real failure and fails the sync.
  */
-function badData(error: unknown): string | null {
+function badData(error: unknown): boolean {
   const sqlstate = (error as { code?: unknown }).code;
-  return typeof sqlstate === 'string' && sqlstate.startsWith('22') ? 'bad_payload' : null;
+  return typeof sqlstate === 'string' && sqlstate.startsWith('22');
 }
 
 /** Closes ended days and builds the next one; recomputes from fresh state if another write got there first. */

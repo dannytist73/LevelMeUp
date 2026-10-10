@@ -250,6 +250,7 @@ begin
     return next ok(not has_function_privilege('authenticated', f.oid, 'EXECUTE'), format('players cannot run %s', f.proname));
     return next ok(not has_function_privilege('anon', f.oid, 'EXECUTE'), format('anon cannot run %s', f.proname));
     return next is(has_function_privilege('lmu_service', f.oid, 'EXECUTE'), f.prosecdef, format('lmu_service runs %s only if it is an entry point', f.proname));
+    return next is(has_function_privilege('lmu_player', f.oid, 'EXECUTE'), f.proname = 'player_id', format('lmu_player runs %s only if it is player_id', f.proname));
     return next ok(f.proconfig @> array['search_path=levelmeup, pg_temp'], format('%s pins its search path', f.proname));
   end loop;
 end $$;

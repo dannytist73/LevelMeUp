@@ -28,15 +28,17 @@ model keys never leave Supabase.
   There is deliberately no `config.toml`.
 - Migrations are `migrations/NNNN_name.sql`, numbered in order, and never edited after they are applied (the
   runner refuses a changed checksum). A lint keeps them inside `levelmeup`: no `public.`, no `drop schema`/`role`, no
-  transaction control, every `security definer` function with `set search_path = levelmeup, pg_temp`.
+  transaction control, every `security definer` function with `set search_path = levelmeup, pg_temp`, and every
+  migration that creates functions followed by `revoke all on all functions in schema levelmeup from public, anon,
+  authenticated` (Postgres lets everyone execute a new function by default).
 - DB tests are `tests/db/*.sql` defining `lmu_test.test_*` functions; `_helpers.sql` runs first. A lint forbids
   transaction control, role changes and writes to `public` in them. Test players use ids `00000000-0000-4000-8000-…`.
 
 ## How it fits together
 
 - **Reads** run as the player: `lmu_service` sets the player's claims and `set local role lmu_player`, so row level
-  security decides. `lmu_player` can read LevelMeUp's tables and nothing else; neither role can become the project's
-  `authenticated` users, so no claims reach the wedding's data. Every function also confirms the session with
+  security decides. `lmu_player` can read LevelMeUp's tables and none of the project's other data; neither role can
+  become the project's `authenticated` users, so no claims reach the wedding's data. Every function also confirms the session with
   Supabase Auth. **Writes** go only through the `security definer` functions in `0003`–`0004` (executable only by
   `lmu_service`), which lock the player's character row, re-check every guard and raise `lmu:<code>`.
 - `functions/_shared/` holds pure modules (tested in Node with the real quest library: `advance.ts` closes days and

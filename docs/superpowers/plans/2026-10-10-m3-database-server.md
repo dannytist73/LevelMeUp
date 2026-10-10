@@ -99,9 +99,12 @@ need (pending check-ins, queued streak days, ability use, achievement counters).
    an offline completion always lands before its day closes. At close: ladder completions and misses (only for
    quests built at the ladder's current rung, with the final rating, default `right`), rung bonuses (+15, once per
    rung, ledger key `rung:<ladder>:<rung>`), Discipline +5 if the core was done, the streak via `closedDayResolution`
-   and `applyDay`. While a check-in is pending, later days store their resolution with `streak_applied = false`
-   (applied in order when M7 answers the check-in). Away days (no day row) are one gap check-in. The first day back
-   after 5+ days away is light and its ladders get `recordReentry`.
+   and `applyDay`. While a check-in is pending, a later streak or protected day is queued (`streak_applied = false`)
+   and, once one day is queued, every later day and away run is queued too (code review: answering late must change
+   nothing); M7 replays the queue when the check-in is answered. With nothing queued, a pending check-in covers later
+   unanswered days and away days (the rules' "one answer covers the whole gap"; owner question 4). Away days (no day
+   row) are otherwise one gap check-in. The first day back after 5+ days away (measured in time, like
+   `recordReentry`) is light and its ladders get `recordReentry`.
 7. **Completions** (spec §3.6): accepted if `acceptsCompletion` holds and the day is still open; tap needs nothing,
    timer needs segments with `elapsedMs` (clamped to the day and to the time received) ≥ 80 % of the target, reps
    need 1–20 set counts of 0–999 with at least one above 0, text needs 1–280 characters after trimming. The XP is the
@@ -125,15 +128,19 @@ need (pending check-ins, queued streak days, ability use, achievement counters).
 
 ## Owner questions (answers needed by the milestone shown; recommendations in bold)
 
-1. (M3, needed now) Can undoing a same-day mis-tap take back a level-up it caused? **Yes: it corrects an error; it
+1. (M3, answered: yes, 2026-10-11) Can undoing a same-day mis-tap take back a level-up it caused? **Yes: it corrects an error; it
    isn't a penalty.** The level-up screen should then not have been celebrated, so M6 shows level-ups after a short
    delay.
 2. (M7) Deleting a signed-in account that the wedding site may share: **delete all LevelMeUp data and keep the
    sign-in**, and say so on the delete screen. The alternative deletes the sign-in too, which would also sign a wedding
    admin out of the wedding site if they used the same Google account.
-3. (M3, needed now) Testing on the live project: **pgTAP inside transactions that always roll back, plus up to 6
+3. (M3, answered: yes, 2026-10-11) Testing on the live project: **pgTAP inside transactions that always roll back, plus up to 6
    temporary anonymous players per live test run, deleted at the end.** Claude Code's safety screen blocks writes to
    the live database until the owner allows them (see "Permissions" below).
+4. (M7) Two missed days in a row while the first check-in is unanswered: **one check-in and one recovery quest cover
+   both** (what the M1 rules do: "one answer covers the whole gap"). Answering after the first miss would instead ask
+   twice, so strictly the delay changes the result; the alternative queues every day behind any pending check-in and
+   asks about each miss in turn. Spec §3.7 needs rewording either way.
 
 ## Permissions the build needs
 
@@ -163,12 +170,15 @@ supabase/
     0001_levelmeup_schema.sql      schema, schema_migrations, lmu_service, base grants
     0002_player_tables.sql         tables, RLS, read policies, grants
     0003_write_functions.sql       security definer write functions
+    0004_player_role.sql           code review: lmu_player for reads, delete lock, event-id reuse refused
+    0005_function_rights.sql       revoke the execute everyone gets on new functions
   tests/
     db/*.sql                       pgTAP test functions (lmu_test.test_*) — no transaction control inside
     unit/*.test.ts                 Vitest: scripts/lib, _shared pure modules, migration and test lints
     live/*.test.ts                 Vitest: the deployed functions (npm run test:live only)
   functions/
-    _shared/                       http, auth, db (postgres.js), state, advance, events, onboarding, claude
+    _shared/                       http, auth, session (Auth check), db (postgres.js), state, advance, events,
+                                   onboarding, drafts, claude
     lmu-onboarding/index.ts
     lmu-sync/index.ts
     lmu-account-delete/index.ts
@@ -518,7 +528,7 @@ Functions:
 
 ## Done when
 
-- The live project has the `levelmeup` schema at migration 0003, every DB test passes there, and the residue check
+- The live project has the `levelmeup` schema at migration 0005, every DB test passes there, and the residue check
   shows nothing left behind.
 - Neither `lmu_service` nor `lmu_player` can read or write any wedding table, even with forged admin claims (DB
   tests); the wedding's migration history is unchanged.

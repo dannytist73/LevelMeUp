@@ -26,7 +26,7 @@ export function checkCliArgs(args: readonly string[], readFile: (path: string) =
   if (refs.length !== 1 || refs[0] !== PROJECT_REF) return `every command needs exactly --project-ref ${PROJECT_REF}`;
   const words = args.filter((a, i) => !a.startsWith('-') && args[i - 1] !== '--project-ref');
   const [group, command, ...rest] = words;
-  const has = (flag: string): boolean => args.includes(flag);
+  const has = (flag: string): boolean => args.some((a) => a === flag || a.startsWith(`${flag}=`));
 
   switch (`${group} ${command}`) {
     case 'db query':

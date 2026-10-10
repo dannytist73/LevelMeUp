@@ -45,6 +45,8 @@ describe('the Supabase CLI guard (shared project safety rails)', () => {
     [['secrets', 'set', 'LMU_X=1', ...R]],
     [['secrets', 'set', '--env-file', 'lmu.env', 'SUPABASE_URL=https://evil', ...R]],
     [['functions', 'deploy', 'lmu-sync', '--no-verify-jwt', ...R, '--use-api']],
+    [['functions', 'deploy', 'lmu-sync', '--no-verify-jwt=true', ...R, '--use-api']],
+    [['functions', 'deploy', 'lmu-sync', '--prune=true', ...R, '--use-api']],
     [['secrets', 'set', '--env-file', 'mixed.env', ...R]],
     [['secrets', 'set', '--env-file', 'empty.env', ...R]],
     [['secrets', 'unset', 'SUPABASE_URL', ...R]],

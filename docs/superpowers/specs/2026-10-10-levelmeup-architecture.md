@@ -71,7 +71,9 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
   LevelMeUp's Edge Functions.
 - Reads inside those functions run **as the player**: role `lmu_player` with the player's id in
   `request.jwt.claims`, so RLS policies (`user_id = levelmeup.player_id()`) enforce ownership. `lmu_player` can read
-  LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (M3 code review, migration 0004).
+  LevelMeUp's tables and none of the project's other data (it can still call the few functions everyone may call,
+  such as the wedding's `is_admin()`, which open nothing), so no claims can reach the wedding's data (M3 code review,
+  migration 0004).
 - Writes go only through the `security definer` functions in migrations 0003–0004 (executable only by
   `lmu_service`). "Server-only" below means exactly that.
 
@@ -116,13 +118,14 @@ are rejected and reported back; they never partially apply.
 
 ### 4.2 How a write happens
 
-1. The function reads the player's id **from the verified JWT**, never from the body.
+1. The function reads the player's id **from the verified JWT** (confirmed with Supabase Auth), never from the body.
 2. It loads the state it needs and runs the rules package to compute the outcome.
-3. It calls one `security definer` SQL function (`levelmeup.apply_outcome`, executable only by LevelMeUp's
-   service role, §12) that, in one transaction: locks the affected rows, re-checks the guard conditions (instance not
-   already completed, day still within its window, event id not seen), writes the ledger, updates the caches, and
-   records the event.
-4. A repeated `client_event_id` returns the stored result without changing anything.
+3. It calls one `security definer` SQL function (`complete_quest`, `undo_quest`, `rate_quest`, `advance`, …,
+   executable only by `lmu_service`, §12) that, in one transaction: locks the player's character row, re-checks the
+   guard conditions (instance not already completed, day still within its window, version unchanged), writes the
+   ledger, updates the caches, and records the event.
+4. A repeated `client_event_id` returns the stored result without changing anything; the same id for another action
+   or quest is refused (`event_reused`).
 
 Concurrency: day creation uses `insert … on conflict do nothing` on `(user_id, quest_day)` and then reads the row,
 so two simultaneous requests get the same day. Completions lock the instance row; the ledger's unique keys are the
@@ -135,7 +138,9 @@ last line of defence.
   with the rules; it never trusts a window from a provisional day built on the phone.
 - A day covers `[starts_at, ends_at)` and counts as closed once `now() >= ends_at` (the rules' `isClosed`). Whenever
   `sync` runs, it evaluates closed days in order with the rules' `closedDayResolution`: done, protected (including
-  any day in `day_failures`), or "check-in due". While a check-in is pending, later days wait for it.
+  a day protected with `no_quests`), or "check-in due". While a check-in is pending, later days wait for it: a streak
+  or protected day is queued (`streak_applied = false`), and once one is queued every later day is too, so answering
+  late changes nothing; a missed day right after the pending one widens it (one answer covers the gap).
 - The phone always sends its queued events **before** asking for check-ins, so an offline completion is never
   mistaken for a miss. Offline completions are accepted until `ends_at + 48 h`.
 - Days the player never opened the app on are "away" days, covered by one gap check-in (spec §2.4).
