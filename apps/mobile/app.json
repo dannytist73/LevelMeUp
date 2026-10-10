@@ -44,7 +44,11 @@
       "predictiveBackGestureEnabled": false
     },
     "extra": {
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "d3dec5d4-7d00-4aa6-b3e9-9555f85cbf74"
+      }
+    },
+    "owner": "dannytist.73"
   }
 }
