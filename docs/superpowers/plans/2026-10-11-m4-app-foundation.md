@@ -936,8 +936,9 @@ Each component is drawn from the board sources in `docs/design/ink-panel/` (exac
 - Create: `apps/mobile/scripts/scan-bundle.ts`, `apps/mobile/scripts/scan.ts` (pure), `apps/mobile/test/scan.test.ts`.
 
 - [ ] **Tests first** (`scan.test.ts`). `findSecrets(text)` flags `sk-ant-…`, `sb_secret_…`, `service_role`,
-  `postgres://u:longpassword@h` and a JWT whose payload role is `service_role` or `authenticated`. It ignores
-  `sb_publishable_…` and a JWT whose role is `anon`.
+  a Postgres URL with a user and password, and a JWT whose payload role is `service_role` or `authenticated`. It
+  ignores `sb_publishable_…` and a JWT whose role is `anon`. The samples are assembled at runtime (for example
+  `'sk-' + 'ant-' + 'x'.repeat(20)`), so the repo's own secrets test never sees a key-shaped string in git.
 - [ ] **Implement.** `scan-bundle.ts` runs `npx expo export --platform android --output-dir <tmp>`, reads every
   output file as latin1, runs `findSecrets`, prints the files and the hits (never a full secret, first 8 characters
   only), exits 1 on any hit, and deletes `<tmp>`. App script: `"check:bundle": "node scripts/scan-bundle.ts"`.
