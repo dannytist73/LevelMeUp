@@ -12,6 +12,8 @@ const env = Object.fromEntries(
 );
 export const URL_BASE = env.LMU_SUPABASE_URL!;
 export const ANON_KEY = env.LMU_SUPABASE_ANON_KEY!;
+/** The key the app ships with (M4): public by design, unlike the service role. */
+export const PUBLISHABLE_KEY = env.LMU_SUPABASE_PUBLISHABLE_KEY!;
 const MAX_PLAYERS = 6;
 
 export type Player = { id: string; token: string };
