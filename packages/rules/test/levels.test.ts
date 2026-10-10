@@ -8,8 +8,8 @@ describe('level curve (spec §2.3)', () => {
     expect([2, 5, 10, 15, 20].map((level) => cumulativeXpForLevel(level, SPEC_CURVE))).toEqual([30, 240, 990, 2240, 3990]);
   });
 
-  it('uses the tuned step by default', () => {
-    expect([2, 5, 10, 15, 20].map((level) => cumulativeXpForLevel(level))).toEqual([30, 312, 1422, 3332, 6042]);
+  it('uses that curve by default: the campaign on real days confirmed step 20', () => {
+    expect(LEVEL_CURVE).toEqual(SPEC_CURVE);
   });
 
   it('level 1 needs nothing and level 2 needs the base', () => {

@@ -8,9 +8,10 @@ export const HARD_DAY_MIN_XP = 5;
 export const RUNG_BONUS_XP = 15;
 
 // Levels (spec §2.3): XP from level L to L+1 = LEVEL_BASE + LEVEL_STEP × (L − 1).
-// LEVEL_STEP was tuned from the spec's 20 by the pacing simulation (Task 12).
+// M1's simplified pacing model tuned LEVEL_STEP to 32; M2's campaign on real built days (campaign.ts) showed real
+// days earn less and brought it back to the spec's 20.
 export const LEVEL_BASE = 30;
-export const LEVEL_STEP = 32;
+export const LEVEL_STEP = 20;
 
 // Stats and ranks (spec §2.1)
 export const START_STAT_MIN = 3;

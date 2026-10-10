@@ -109,19 +109,22 @@ only), so a full day is about 65 XP and a typical day about 45.
 
 ### 2.3 Levels
 
-XP to go from level L to L+1 = 30 + 32 × (L − 1). Cumulative XP to reach level N = 30(N−1) + 16(N−1)(N−2).
-The step was 20 in the first draft; the pacing simulation (`npm run pacing`) showed that was too fast and tuned it
-to 32 (M1, `packages/rules`).
+XP to go from level L to L+1 = 30 + 20 × (L − 1). Cumulative XP to reach level N = 30(N−1) + 10(N−1)(N−2).
+M1's simplified pacing model (a standard core quest every day) moved the step to 32. M2 re-ran the check on real
+built days, where new players start every ladder at its first rung and missed sessions step ladders down; real days
+earn less, and only steps 19 and 20 meet every target, so the step is back at 20 (`npm run pacing`).
 
 | Level | Cumulative XP | Steady player | Struggling player |
 |---|---|---|---|
 | 2 | 30 | day 1 | day 1–2 |
-| 5 | 312 | end of week 1 | about week 2 |
-| 10 | 1,422 | about 3 weeks | about day 40 |
-| 15 | 3,332 | about 6 weeks | — |
-| 20 | 6,042 | about 2½–3 months | later, still climbing |
+| 5 | 240 | end of week 1 | about week 2 |
+| 10 | 990 | about 3 weeks | about day 40 |
+| 15 | 2,240 | about 6 weeks | — |
+| 20 | 3,990 | about 2½–3 months | later, still climbing |
 
-The simulation passes if each target is met within ±20%; if not, the per-level step (now 32) is tuned, not the XP table.
+The check passes if each target is met within ±20%; if not, the per-level step (now 20) is tuned, not the XP table.
+On real days (four class personas at 25 minutes, 200 runs) steady players reach level 10 on days 17.7–18.3 and
+struggling players on days 46.7–47.7, so the margins are under a day at both ends.
 
 ### 2.4 Streaks and shields
 

@@ -15,3 +15,4 @@ export * from './abilities.ts';
 export * from './day.ts';
 export * from './adjust.ts';
 export * from './achievements.ts';
+export * from './campaign.ts';

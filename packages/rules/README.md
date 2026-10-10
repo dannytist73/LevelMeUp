@@ -40,9 +40,8 @@ npm run pacing          # pacing table and the level steps that meet every targe
 
 ## Decisions made while building M1
 
-1. Level step 32 instead of the spec's 20, found by the pacing simulation (`npm run pacing`). Only 31 and 32 fit
-   the targets (at 200 runs only 32 does; 31 sits right on the steady level-5 edge), and 33 reaches level 10 too late
-   for struggling players. The margins are small, so M2's re-run with real days may need retuning.
+1. Level step 32 instead of the spec's 20, found by the simplified pacing model. Superseded in M2 (decision 13): on
+   real built days the step is back at 20.
 2. Day 1 runs from the end of onboarding to the first boundary at least 6 h away.
 3. After travel, a day ends at the first boundary at least 20 h after it starts, capped at 28 h.
 4. Lighter-plan offers count check-in-protected days only (not planned rest or outages); 3 or more in 14 days.
