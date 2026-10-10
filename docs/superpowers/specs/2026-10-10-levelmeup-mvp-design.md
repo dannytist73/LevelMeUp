@@ -240,7 +240,8 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 
 - The quest day starts at the player's boundary in the phone's time zone at the moment the day starts.
 - A day lasts at least 20 and at most 28 hours (flights, DST).
-- A server job closes days hourly per time zone.
+- A day is closed once its stored end time has passed, evaluated whenever the server looks at the player's state
+  (lazy closing; architecture §4.3). No hourly job is needed.
 
 ## 4. Daily article, accountability and notifications (approved 2026-10-10)
 
