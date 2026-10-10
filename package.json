@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "supabase"
+    "supabase",
+    "apps/*"
   ],
   "engines": {
     "node": ">=24"
@@ -21,10 +22,18 @@
     "check:functions": "deno check --config supabase/deno.check.json supabase/functions/lmu-onboarding/index.ts supabase/functions/lmu-sync/index.ts supabase/functions/lmu-account-delete/index.ts",
     "deploy:functions": "node scripts/sb.ts functions deploy lmu-onboarding lmu-sync lmu-account-delete --project-ref knlgpcwoaaygncmlnbsm --use-api",
     "lmu:password": "node scripts/lmu-service-password.ts",
-    "test:live": "npm -w supabase run test:live"
+    "test:live": "npm -w supabase run test:live",
+    "app": "npm -w @levelmeup/mobile run start",
+    "check:bundle": "npm -w @levelmeup/mobile run check:bundle"
   },
   "devDependencies": {
     "deno": "^2.9.6",
-    "supabase": "2.118.0"
+    "supabase": "2.118.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   }
 }

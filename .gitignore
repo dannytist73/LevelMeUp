@@ -7,3 +7,10 @@ coverage/
 .DS_Store
 packages/content/out/
 supabase/.temp/
+
+# Expo app
+apps/mobile/.expo/
+apps/mobile/dist/
+apps/mobile/android/
+apps/mobile/ios/
+*.apk

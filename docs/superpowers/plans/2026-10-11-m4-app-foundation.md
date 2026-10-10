@@ -939,6 +939,9 @@ Each component is drawn from the board sources in `docs/design/ink-panel/` (exac
   a Postgres URL with a user and password, and a JWT whose payload role is `service_role` or `authenticated`. It
   ignores `sb_publishable_…` and a JWT whose role is `anon`. The samples are assembled at runtime (for example
   `'sk-' + 'ant-' + 'x'.repeat(20)`), so the repo's own secrets test never sees a key-shaped string in git.
+  *(As built: the bare word `service_role` is not flagged, since library code may mention it; a service-role key is
+  caught as a JWT with that role, or as `sb_secret_…`. The scan reads the JS bundle before Hermes compiles it, because
+  the bytecode packs strings together and neighbours looked like a key.)*
 - [ ] **Implement.** `scan-bundle.ts` runs `npx expo export --platform android --output-dir <tmp>`, reads every
   output file as latin1, runs `findSecrets`, prints the files and the hits (never a full secret, first 8 characters
   only), exits 1 on any hit, and deletes `<tmp>`. App script: `"check:bundle": "node scripts/scan-bundle.ts"`.
