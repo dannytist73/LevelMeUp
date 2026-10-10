@@ -1,12 +1,16 @@
 // Stamps (visual spec §1.3, §2): a seal-red circle for XP rewards and an ember outline for marks such as CLEARED. Always
 // rotated a little, never more than 12°. Red means reward here, never a warning.
-import { Text, View } from 'react-native';
+import { Text, View, useWindowDimensions } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { colors, fonts } from '../theme/tokens.ts';
 
 export const clampRotation = (degrees: number): number => Math.max(-12, Math.min(12, degrees));
 
-export function XpStamp({ xp, size = 66, rotate = -10, style }: { xp: number; size?: number; rotate?: number; style?: StyleProp<ViewStyle> }) {
+/** The stamp's text grows with the phone's font size (up to 1.2×), and the circle grows with it. */
+const STAMP_MAX_SCALE = 1.2;
+
+export function XpStamp({ xp, size: base = 66, rotate = -10, style }: { xp: number; size?: number; rotate?: number; style?: StyleProp<ViewStyle> }) {
+  const size = Math.round(base * Math.min(useWindowDimensions().fontScale || 1, STAMP_MAX_SCALE));
   return (
     <View
       accessible
@@ -20,10 +24,10 @@ export function XpStamp({ xp, size = 66, rotate = -10, style }: { xp: number; si
         style,
       ]}
     >
-      <Text allowFontScaling={false} style={{ fontFamily: fonts.display, fontSize: Math.round(size * 0.35), lineHeight: Math.round(size * 0.37), color: colors.white }}>
+      <Text maxFontSizeMultiplier={STAMP_MAX_SCALE} style={{ fontFamily: fonts.display, fontSize: Math.round(base * 0.35), lineHeight: Math.round(base * 0.37), color: colors.white }}>
         +{xp}
       </Text>
-      <Text allowFontScaling={false} style={{ fontFamily: fonts.bodyBold, fontSize: Math.round(size * 0.15), letterSpacing: 1.6, color: colors.white }}>
+      <Text maxFontSizeMultiplier={STAMP_MAX_SCALE} style={{ fontFamily: fonts.bodyBold, fontSize: Math.round(base * 0.15), letterSpacing: 1.6, color: colors.white }}>
         XP
       </Text>
     </View>

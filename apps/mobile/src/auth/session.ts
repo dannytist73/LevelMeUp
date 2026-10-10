@@ -2,12 +2,27 @@
 import { isAuthApiError } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-/** True when there is a session afterwards; false when signing in failed (offline): the app stays local and retries. */
-export async function ensureSession(client: SupabaseClient): Promise<boolean> {
-  const { data } = await client.auth.getSession();
-  if (data.session !== null) return true;
+/**
+ * - `signed_in`: there is a session (now or from before).
+ * - `offline`: the session couldn't be read or made right now; try again later, change nothing.
+ * - `no_session`: there is none and `allowNewGuest` is false: this phone holds a character or unsent actions, so a new
+ *   guest would orphan them (M4 code review). The app keeps its data and keeps trying.
+ */
+export type SessionState = 'signed_in' | 'offline' | 'no_session';
+
+export async function ensureSession(client: SupabaseClient, allowNewGuest: boolean): Promise<SessionState> {
+  let session: unknown;
+  try {
+    const { data, error } = await client.auth.getSession();
+    if (error !== null) return 'offline';
+    session = data.session;
+  } catch {
+    return 'offline'; // the stored session couldn't be read (a vault error): keep it
+  }
+  if (session !== null) return 'signed_in';
+  if (!allowNewGuest) return 'no_session';
   const { error } = await client.auth.signInAnonymously();
-  return error === null;
+  return error === null ? 'signed_in' : 'offline';
 }
 
 /**
@@ -15,7 +30,11 @@ export async function ensureSession(client: SupabaseClient): Promise<boolean> {
  * refuses to refresh the session. A network error or an Auth outage is never treated as a deleted account.
  */
 export async function sessionAlive(client: SupabaseClient): Promise<boolean> {
-  const { error } = await client.auth.refreshSession();
-  if (error === null) return true;
-  return !(isAuthApiError(error) && [400, 401, 403, 404].includes(error.status));
+  try {
+    const { error } = await client.auth.refreshSession();
+    if (error === null) return true;
+    return !(isAuthApiError(error) && [400, 401, 403, 404].includes(error.status));
+  } catch {
+    return true;
+  }
 }

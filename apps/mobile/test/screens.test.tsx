@@ -76,7 +76,7 @@ describe('Today', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
-  it.each(['offline', 'retrying'] as const)('nothing cached and %s: "preparing" with a retry that syncs', async (status) => {
+  it.each(['offline', 'retrying', 'idle'] as const)('nothing cached and %s: "preparing" with a retry that syncs', async (status) => {
     const { store } = await renderToday({ phase: 'loading', view: null, status });
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(store.getState().syncNow).toHaveBeenCalled();

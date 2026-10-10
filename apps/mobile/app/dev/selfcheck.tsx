@@ -37,7 +37,7 @@ export default function SelfCheck() {
       {lines?.map((line) => (
         <NightCard key={line.name} quiet={line.ok}>
           <View style={{ gap: 2 }}>
-            <Body weight="bold" tone={line.ok ? 'chalk' : 'ember'}>{`${line.ok ? 'PASS' : 'FAIL'} · ${line.name}`}</Body>
+            <Body weight="bold">{`${line.ok ? 'PASS' : 'FAIL'} · ${line.name}`}</Body>
             <Meta>{line.detail}</Meta>
           </View>
         </NightCard>

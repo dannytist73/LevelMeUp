@@ -23,7 +23,7 @@ export async function createAppStore() {
   return createGameStore({
     local: makeLocal(sql),
     api: makeApi(supabase),
-    ensureSession: () => ensureSession(supabase),
+    ensureSession: (allowNewGuest) => ensureSession(supabase, allowNewGuest),
     sessionAlive: () => sessionAlive(supabase),
     signOut: async () => {
       await supabase.auth.signOut({ scope: 'local' });

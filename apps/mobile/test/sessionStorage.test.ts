@@ -62,6 +62,15 @@ describe('the sealed session storage', () => {
     expect(f.blobs.has('sb-auth')).toBe(false);
   });
 
+  it('a vault that fails to answer keeps the session and says so (M4 code review: never delete on a passing error)', async () => {
+    const f = fakes();
+    await makeSessionStorage(f.vault, f.store, f.cipher).setItem('sb-auth', 'x');
+    const flaky: Vault = { get: jest.fn(async () => { throw new Error('KeyStore busy'); }), set: f.vault.set };
+    await expect(makeSessionStorage(flaky, f.store, f.cipher).getItem('sb-auth')).rejects.toThrow('KeyStore busy');
+    expect(f.blobs.has('sb-auth')).toBe(true);
+    expect(await makeSessionStorage(f.vault, f.store, f.cipher).getItem('sb-auth')).toBe('x');
+  });
+
   it('a value sealed under another key also reads as no session', async () => {
     const f = fakes();
     f.blobs.set('sb-auth', 'sealed(other):00');

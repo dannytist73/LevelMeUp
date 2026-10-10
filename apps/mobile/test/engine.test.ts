@@ -2,7 +2,7 @@
 import { makeLocal, migrate } from '../src/data/local.ts';
 import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Call } from '../src/net/api.ts';
-import { BATCH, syncOnce } from '../src/sync/engine.ts';
+import { BATCH, MAX_BODY_BYTES, fitBody, syncOnce } from '../src/sync/engine.ts';
 import type { SyncDeps } from '../src/sync/engine.ts';
 import { nodeSql } from './support/nodeSql.ts';
 
@@ -76,6 +76,10 @@ describe('one sync run', () => {
       newAchievements: ['first-trial'],
     });
     expect(await local.pending(10)).toEqual([]);
+    expect((await local.snapshot()).notices).toEqual([
+      { eventId: ev(1).id, code: 'day_closed' },
+      { eventId: ev(2).id, code: 'unsupported_event' },
+    ]);
   });
 
   it('an event the reply does not mention stays in the outbox (the server is idempotent, it is safe to resend)', async () => {
@@ -116,5 +120,34 @@ describe('one sync run', () => {
     deps.local = { ...local, acknowledge: async () => { throw new Error('disk full'); } };
     await expect(syncOnce(deps)).rejects.toThrow('disk full');
     expect(await local.pending(10)).toHaveLength(1);
+  });
+});
+
+describe('request size (M4 code review: the server refuses bodies over 64 KB)', () => {
+  const timer = (n: number): PhoneEvent => ({
+    id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`,
+    type: 'complete',
+    instanceId: n,
+    completedAt: Date.UTC(2026, 9, 11),
+    rating: null,
+    payload: { segments: Array.from({ length: 100 }, (_, i) => ({ start: 1_790_000_000_000 + i, end: 1_790_000_000_500 + i })) },
+  });
+
+  it('a batch of large events is cut to fit, oldest first; one event always goes', () => {
+    const events = Array.from({ length: BATCH }, (_, i) => timer(i + 1));
+    const fitted = fitBody(events, 'Asia/Manila');
+    expect(fitted.length).toBeGreaterThan(0);
+    expect(fitted.length).toBeLessThan(BATCH);
+    expect(Buffer.byteLength(JSON.stringify({ timeZone: 'Asia/Manila', events: fitted }))).toBeLessThanOrEqual(MAX_BODY_BYTES);
+    expect(fitted).toEqual(events.slice(0, fitted.length));
+    expect(fitBody([timer(1)], 'Asia/Manila')).toHaveLength(1);
+  });
+
+  it('a 413 halves the batch and tries again instead of getting stuck', async () => {
+    const { local, sent, deps } = await setup([{ ok: false, status: 413, code: 'too_large' }, applyAll]);
+    for (let n = 1; n <= 4; n++) await local.enqueue(ev(n), n);
+    expect(await syncOnce(deps)).toMatchObject({ kind: 'synced' });
+    expect(sent.map((b) => b.length)).toEqual([4, 2, 2]);
+    expect(await local.pending(10)).toEqual([]);
   });
 });

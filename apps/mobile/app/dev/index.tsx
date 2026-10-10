@@ -25,6 +25,8 @@ export default function Developer() {
   const enqueue = useGame((s) => s.enqueue);
   const startTestCharacter = useGame((s) => s.startTestCharacter);
   const deleteTestCharacter = useGame((s) => s.deleteTestCharacter);
+  const startOver = useGame((s) => s.startOver);
+  const error = useGame((s) => s.error);
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
@@ -33,6 +35,8 @@ export default function Developer() {
     setBusy(true);
     try {
       setMessage(await work());
+    } catch (e) {
+      setMessage(`Failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setBusy(false);
     }
@@ -44,7 +48,7 @@ export default function Developer() {
       <Button label="Back" variant="secondary" onPress={() => router.back()} />
       <Title>Developer</Title>
       <Small>{`Phase ${phase} · sync ${status} · ${pending.length} waiting · zone ${deviceZone()}`}</Small>
-      {message !== null && <Body tone="ember">{message}</Body>}
+      {message !== null && <Body weight="bold">{message}</Body>}
 
       <SectionTitle title="Test character" />
       {phase !== 'ready' ? (
@@ -67,12 +71,12 @@ export default function Developer() {
               <Button
                 label="Complete (sample)"
                 variant="secondary"
-                onPress={() => void enqueue({ type: 'complete', instanceId: q.id, completedAt: Date.now(), rating: null, payload: samplePayload(q, today, Date.now()) })}
+                onPress={() => void act(async () => (await enqueue({ type: 'complete', instanceId: q.id, completedAt: Date.now(), rating: null, payload: samplePayload(q, today, Date.now()) }), 'Queued.'))}
               />
             ) : (
               <View style={{ gap: 8 }}>
-                <Button label="Undo" variant="secondary" onPress={() => void enqueue({ type: 'undo', instanceId: q.id })} />
-                <Button label="Rate easy" variant="secondary" onPress={() => void enqueue({ type: 'rate', instanceId: q.id, rating: 'easy' })} />
+                <Button label="Undo" variant="secondary" onPress={() => void act(async () => (await enqueue({ type: 'undo', instanceId: q.id }), 'Queued.'))} />
+                <Button label="Rate easy" variant="secondary" onPress={() => void act(async () => (await enqueue({ type: 'rate', instanceId: q.id, rating: 'easy' }), 'Queued.'))} />
               </View>
             )}
           </NightCard>
@@ -84,6 +88,18 @@ export default function Developer() {
       {notices.map((n) => (
         <Meta key={n.eventId}>{`Refused: ${n.code}`}</Meta>
       ))}
+
+      {error !== null && (
+        <>
+          <Small>{error}</Small>
+          <Button
+            label="Start over as a new guest"
+            variant="secondary"
+            disabled={busy}
+            onPress={() => void act(async () => (await startOver(), 'Started over. A new guest signs in on the next sync.'))}
+          />
+        </>
+      )}
 
       <SectionTitle title="Checks" />
       <Button label="Self-check" variant="secondary" onPress={() => router.push('/dev/selfcheck')} />

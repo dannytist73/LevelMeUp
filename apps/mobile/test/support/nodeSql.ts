@@ -1,28 +1,30 @@
-// `Sql` over Node's built-in SQLite, so the phone's queries run for real in Jest (test files: @jest-environment node).
+// `Sql` over Node's built-in SQLite, through the same `serialized` queue the phone uses, so the phone's queries and
+// their ordering run for real in Jest (test files: @jest-environment node).
 import { DatabaseSync } from 'node:sqlite';
-import type { Sql, SqlValue } from '../../src/data/sql.ts';
+import { serialized } from '../../src/data/sql.ts';
+import type { RawSql, Sql, SqlValue } from '../../src/data/sql.ts';
 
-export function nodeSql(path = ':memory:'): Sql & { db: DatabaseSync } {
-  const db = new DatabaseSync(path);
-  const sql: Sql & { db: DatabaseSync } = {
-    db,
+/** Node's SQLite answers at once; a tick of delay per statement lets tests interleave operations like the phone does. */
+const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+export function rawNodeSql(db: DatabaseSync): RawSql {
+  return {
     exec: async (text) => {
+      await tick();
       db.exec(text);
     },
     run: async (text, params: readonly SqlValue[] = []) => {
+      await tick();
       db.prepare(text).run(...params);
     },
-    all: async <T,>(text: string, params: readonly SqlValue[] = []) => db.prepare(text).all(...params) as T[],
-    transaction: async (fn) => {
-      db.exec('begin immediate');
-      try {
-        await fn(sql);
-        db.exec('commit');
-      } catch (error) {
-        db.exec('rollback');
-        throw error;
-      }
+    all: async <T,>(text: string, params: readonly SqlValue[] = []) => {
+      await tick();
+      return db.prepare(text).all(...params) as T[];
     },
   };
-  return sql;
+}
+
+export function nodeSql(path = ':memory:'): Sql & { db: DatabaseSync } {
+  const db = new DatabaseSync(path);
+  return { ...serialized(rawNodeSql(db)), db };
 }

@@ -66,6 +66,8 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M5 | Replace the developer screen's test character with the real onboarding (`not_started` → onboarding). The phone's character state already arrives with `stateView`; the reveal words are in `profile.reveal`. |
 | M6 | `provisional_day`: the phone needs the ladder states and the last 7 days' templates in its cache (today `stateView` sends neither), and completions on a provisional day must target `{ dayNumber, slot }` until the server gives instance ids. Show `newAchievements` (the sync engine already collects them). Replace the developer screen's sample completions with the quest screens. |
 | M6 | Character and Chronicle are minimal in M4 (stats list, recent days list); the boards' portrait, class path, calendar and growth arrive with M6. |
+| M7 | A player-facing way out when the phone can no longer read its guest sign-in (the store then keeps the character and outbox and retries, and says so; only the developer screen can "start over" today). Saving to Google (M5) makes this rare. |
+| M9 | The developer routes (`app/dev/`) are unreachable in release builds but still bundled, with the self-check's test cases; exclude them from the pilot build. `OutlinedTitle` draws one SVG line that doesn't wrap: keep it to short words (it's only in the kit today). |
 | Before launch | `npm audit` (2026-10-11): 67 advisories, all in Expo SDK 57's toolchain (Jest, Metro, the Expo CLI, ngrok, config plugins); none fixable without a Jest 30 that jest-expo 57 doesn't support. Only `decode-uri-component` (via expo-router's query-string, moderate: slow parsing of malformed percent-encoded links) ships in the app. Re-run on the next Expo SDK. |
 
 ## Spikes and where they run

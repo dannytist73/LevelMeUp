@@ -40,7 +40,8 @@ export function Today({ onSettings, onDeveloper, now = Date.now }: TodayProps) {
 
   const today = view?.today ?? null;
   const usable = today !== null && today.quests.length > 0 && Date.parse(today.endsAt!) > now();
-  const canRetry = status === 'offline' || status === 'retrying';
+  // Spec §1.4: the empty state always offers a retry, except while a sync is already running.
+  const canRetry = status !== 'syncing';
   const mark = syncMark(status);
 
   const noticeBoxes = notices.map((n) => (

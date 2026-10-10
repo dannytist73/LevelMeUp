@@ -21,7 +21,8 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     syncNow: jest.fn(async () => {}),
     startTestCharacter: jest.fn(async () => ({ ok: true as const, source: 'template' as const })),
     deleteTestCharacter: jest.fn(async () => ({ ok: true as const })),
-    dismissNotice: jest.fn(),
+    startOver: jest.fn(async () => {}),
+    dismissNotice: jest.fn(async () => {}),
     stop: jest.fn(),
     ...over,
   }));

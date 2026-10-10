@@ -80,6 +80,50 @@ describe('when syncs run', () => {
     scheduler.stop();
   });
 
+  it('a run that never settles counts as a retry after the deadline, so syncing can\'t get stuck (M4 code review)', async () => {
+    const seen: SyncOutcome[] = [];
+    const run = jest.fn().mockReturnValueOnce(new Promise(() => {})).mockResolvedValue(synced);
+    const scheduler = makeScheduler(run, (o) => void seen.push(o), 120_000);
+    const first = scheduler.request();
+    await jest.advanceTimersByTimeAsync(120_000);
+    await first;
+    expect(seen).toEqual([{ kind: 'retry', code: 'timeout' }]);
+    await scheduler.request();
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(seen[1]).toEqual(synced);
+    scheduler.stop();
+  });
+
+  it('exclusive work waits for the run in flight, and runs requested meanwhile wait for it', async () => {
+    const order: string[] = [];
+    let finish!: () => void;
+    const run = jest.fn(() => {
+      order.push('run starts');
+      return new Promise<SyncOutcome>((resolve) => (finish = () => {
+        order.push('run ends');
+        resolve(synced);
+      }));
+    });
+    const scheduler = makeScheduler(run, () => {});
+    const inFlight = scheduler.request();
+    const work = scheduler.exclusive(async () => {
+      order.push('exclusive');
+      void scheduler.request(); // asked for during the exclusive work
+      await jest.advanceTimersByTimeAsync(0);
+      order.push('exclusive done');
+      return 7;
+    });
+    await jest.advanceTimersByTimeAsync(0);
+    finish();
+    expect(await work).toBe(7);
+    await inFlight;
+    await jest.advanceTimersByTimeAsync(0);
+    finish();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(order).toEqual(['run starts', 'run ends', 'exclusive', 'exclusive done', 'run starts', 'run ends']);
+    scheduler.stop();
+  });
+
   it('stop() cancels the pending retry and ignores later requests', async () => {
     const { run, scheduler } = harness([offline]);
     await scheduler.request();

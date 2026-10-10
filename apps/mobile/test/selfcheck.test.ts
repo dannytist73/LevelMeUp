@@ -5,7 +5,7 @@ import {
 import type { Probe } from '../src/dev/selfcheck.ts';
 
 const intlZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
-const memorySql: Probe = { name: 'SQLite round trip', run: () => 'in-memory fake' }; // the real probe arrives in Task 7
+const memorySql: Probe = { name: 'SQLite round trip', run: () => 'in-memory fake' }; // the device's probe is data/expoSql.ts
 
 describe('the developer self-check', () => {
   it('passes every line in Node with working probes', async () => {

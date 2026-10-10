@@ -7,21 +7,37 @@ function client(auth: Record<string, jest.Mock>) {
   return { auth } as unknown as SupabaseClient;
 }
 
+const withSession = (session: unknown) => jest.fn(async () => ({ data: { session }, error: null }));
+
 describe('the guest sign-in', () => {
-  it('signs in anonymously only when there is no session', async () => {
-    const signInAnonymously = jest.fn(async () => ({ data: {}, error: null }));
-    expect(await ensureSession(client({ getSession: jest.fn(async () => ({ data: { session: {} } })), signInAnonymously }))).toBe(true);
+  it('uses the session there is, without signing in again', async () => {
+    const signInAnonymously = jest.fn();
+    expect(await ensureSession(client({ getSession: withSession({}), signInAnonymously }), true)).toBe('signed_in');
     expect(signInAnonymously).not.toHaveBeenCalled();
-    expect(await ensureSession(client({ getSession: jest.fn(async () => ({ data: { session: null } })), signInAnonymously }))).toBe(true);
+  });
+
+  it('signs in a new guest only when the phone holds nothing (M4 code review)', async () => {
+    const signInAnonymously = jest.fn(async () => ({ data: {}, error: null }));
+    expect(await ensureSession(client({ getSession: withSession(null), signInAnonymously }), true)).toBe('signed_in');
+    expect(signInAnonymously).toHaveBeenCalledTimes(1);
+    expect(await ensureSession(client({ getSession: withSession(null), signInAnonymously }), false)).toBe('no_session');
     expect(signInAnonymously).toHaveBeenCalledTimes(1);
   });
 
-  it('reports false when signing in fails (offline): the app stays local-only and retries', async () => {
-    const auth = {
-      getSession: jest.fn(async () => ({ data: { session: null } })),
-      signInAnonymously: jest.fn(async () => ({ data: {}, error: new Error('Network request failed') })),
-    };
-    expect(await ensureSession(client(auth))).toBe(false);
+  it('a session that cannot be read right now is kept: offline, no new guest', async () => {
+    const signInAnonymously = jest.fn();
+    const throwing = jest.fn(async () => {
+      throw new Error('Keystore busy');
+    });
+    expect(await ensureSession(client({ getSession: throwing, signInAnonymously }), true)).toBe('offline');
+    const erroring = jest.fn(async () => ({ data: { session: null }, error: new Error('storage') }));
+    expect(await ensureSession(client({ getSession: erroring, signInAnonymously }), true)).toBe('offline');
+    expect(signInAnonymously).not.toHaveBeenCalled();
+  });
+
+  it('a failed sign-in (offline) changes nothing', async () => {
+    const auth = { getSession: withSession(null), signInAnonymously: jest.fn(async () => ({ data: {}, error: new Error('Network request failed') })) };
+    expect(await ensureSession(client(auth), true)).toBe('offline');
   });
 });
 
@@ -34,9 +50,10 @@ describe('is the sign-in really gone? (asked before wiping anything on session_e
     }
   });
 
-  it('no when the refresh works, fails on the network, or Auth has a server error', async () => {
+  it('no when the refresh works, fails on the network, throws, or Auth has a server error', async () => {
     expect(await sessionAlive(refreshing(null))).toBe(true);
     expect(await sessionAlive(refreshing(new Error('Network request failed')))).toBe(true);
     expect(await sessionAlive(refreshing(new AuthApiError('upstream', 503, undefined)))).toBe(true);
+    expect(await sessionAlive(client({ refreshSession: jest.fn(async () => { throw new Error('vault'); }) }))).toBe(true);
   });
 });

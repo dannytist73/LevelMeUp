@@ -1,7 +1,9 @@
 // Where supabase-js keeps the sign-in (architecture §4.4, M4 plan decision 7). SecureStore holds only an AES key (its
 // values are limited to about 2 KB and a session with a linked Google account is bigger); each value is sealed with
-// AES-256-GCM and kept in the SQLite key-value store. A value that can't be opened reads as "no session", so the app
-// signs in again instead of crashing.
+// AES-256-GCM and kept in the SQLite key-value store.
+// M4 code review: a sealed value is discarded only when it can never be opened again (the vault says the key is gone,
+// or the key in hand doesn't open it). An error reading the vault may pass, so it is thrown: the session is kept and
+// the next sync tries again.
 
 export type Vault = { get(): Promise<string | null>; set(key: string): Promise<void> };
 export type Blobs = {
@@ -29,12 +31,15 @@ export function makeSessionStorage(vault: Vault, blobs: Blobs, cipher: Cipher): 
     async getItem(name) {
       const sealed = await blobs.getItem(name);
       if (sealed === null) return null;
+      key ??= await vault.get(); // throws on a vault error: keep the value, try again later
+      if (key === null) {
+        await blobs.removeItem(name); // the key is gone for good, so is this value
+        return null;
+      }
       try {
-        key ??= await vault.get();
-        if (key === null) throw new Error('no key');
         return await cipher.open(key, sealed);
       } catch {
-        await blobs.removeItem(name);
+        await blobs.removeItem(name); // sealed under another key, or damaged
         return null;
       }
     },
