@@ -83,13 +83,24 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       watchDayEnd(view);
     };
 
+    /** Each run gets a number; a run the scheduler gave up on (its deadline passed) may not write when it wakes up. */
+    let generation = 0;
+
     const run = async (): Promise<SyncOutcome> => {
+      const mine = ++generation;
       set({ status: 'syncing' });
       const held = await deps.local.snapshot();
       const session = await deps.ensureSession(held.cached === null && held.pending.length === 0);
       if (session === 'offline') return { kind: 'offline' };
       if (session === 'no_session') return { kind: 'retry', code: 'no_session' };
-      return syncOnce({ local: deps.local, api: deps.api, timeZone: deps.timeZone, now: deps.now, sessionAlive: deps.sessionAlive });
+      const local = {
+        pending: deps.local.pending,
+        acknowledge: async (...args: Parameters<Local['acknowledge']>) => {
+          if (mine !== generation) throw new Error('abandoned'); // a newer run owns the cache now; resending is safe
+          return deps.local.acknowledge(...args);
+        },
+      };
+      return syncOnce({ local, api: deps.api, timeZone: deps.timeZone, now: deps.now, sessionAlive: deps.sessionAlive });
     };
 
     /** Forgets this phone's data and sign-in; the next sync starts a new guest. */

@@ -203,6 +203,27 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('a run given up after its deadline can\'t write its late answer over a newer one', async () => {
+    let lateAnswer: (() => void) | null = null;
+    const hung = () => new Promise<Call<SyncResponse>>((resolve) => (lateAnswer = () => resolve(ok({ ...SERVER, achievements: ['stale'] }))));
+    const { store, local } = await setup([hung, ok(SERVER)]);
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
+    try {
+      const first = store.getState().boot();
+      while (lateAnswer === null) await settle();
+      await jest.advanceTimersByTimeAsync(120_000); // the scheduler gives up on the hung run
+      await first;
+      await store.getState().syncNow(); // a newer run stores the current state
+      expect((await local.load())?.state.achievements).toEqual([]);
+      (lateAnswer as () => void)(); // the old run wakes up
+      for (let i = 0; i < 20; i++) await settle();
+      expect((await local.load())?.state.achievements).toEqual([]);
+    } finally {
+      store.getState().stop();
+      jest.useRealTimers();
+    }
+  });
+
   it('starting over forgets this phone\'s data and sign-in', async () => {
     const { store, local, deps } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
     await local.acknowledge([], [], SERVER, 1);
