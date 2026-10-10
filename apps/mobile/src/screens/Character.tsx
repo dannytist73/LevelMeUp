@@ -2,13 +2,14 @@
 // achievements and class change arrive in M6.
 import { CLASS_NAMES, STAT_NAMES } from '@levelmeup/content';
 import { STATS } from '@levelmeup/rules';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
+import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { MarkStamp } from '../ui/Stamp.tsx';
 import { Caption, Heading, Label, Meta, Title } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
@@ -22,7 +23,7 @@ export function Character() {
   const stale = status === 'offline' || status === 'retrying';
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.night }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
         <Label>Character</Label>
         {view !== null && (
@@ -56,6 +57,6 @@ export function Character() {
         )}
         {stale && <Caption>{lastSynced(lastSyncedAt, view?.profile.timeZone ?? 'UTC')}</Caption>}
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

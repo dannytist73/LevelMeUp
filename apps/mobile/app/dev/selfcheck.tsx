@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 import { getCalendars } from 'expo-localization';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { expoCipherProbe } from '../../src/auth/expoCipher.ts';
 import { sqlProbe } from '../../src/data/expoSql.ts';
@@ -12,6 +12,7 @@ import type { CheckLine } from '../../src/dev/selfcheck.ts';
 import { colors, space } from '../../src/theme/tokens.ts';
 import { Button } from '../../src/ui/Button.tsx';
 import { NightCard } from '../../src/ui/NightCard.tsx';
+import { ScreenScroll } from '../../src/ui/ScreenScroll.tsx';
 import { Body, Meta, Title } from '../../src/ui/Text.tsx';
 
 export default function SelfCheck() {
@@ -30,7 +31,7 @@ export default function SelfCheck() {
 
   const failed = lines?.filter((l) => !l.ok).length ?? 0;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.night }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 12 }}>
+    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 12 }}>
       <Button label="Back" variant="secondary" onPress={() => router.back()} />
       <Title>Self-check</Title>
       <Body>{lines === null ? 'Running…' : failed === 0 ? `All ${lines.length} checks passed.` : `${failed} of ${lines.length} checks FAILED.`}</Body>
@@ -42,6 +43,6 @@ export default function SelfCheck() {
           </View>
         </NightCard>
       ))}
-    </ScrollView>
+    </ScreenScroll>
   );
 }

@@ -2,7 +2,7 @@
 // loading, empty and offline states. Quest actions, swap, hard day and the article reader arrive in M6–M8.
 import { CLASS_NAMES } from '@levelmeup/content';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
@@ -13,6 +13,7 @@ import { Button } from '../ui/Button.tsx';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Caption, Display, Heading, Label, Small } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
@@ -117,7 +118,7 @@ export function Today({ onSettings, onDeveloper, now = Date.now }: TodayProps) {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.night }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <View style={{ flexShrink: 1, gap: 2 }}>
@@ -168,6 +169,6 @@ export function Today({ onSettings, onDeveloper, now = Date.now }: TodayProps) {
         {noticeBoxes}
         {body}
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

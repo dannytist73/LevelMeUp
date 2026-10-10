@@ -8,7 +8,8 @@ import { Icon } from '../src/ui/icons.tsx';
 import { InkTabBar } from '../src/ui/InkTabBar.tsx';
 import { NarrationBox } from '../src/ui/NarrationBox.tsx';
 import { NightCard } from '../src/ui/NightCard.tsx';
-import { OutlinedTitle } from '../src/ui/OutlinedTitle.tsx';
+import { OutlinedTitle, fittedSize } from '../src/ui/OutlinedTitle.tsx';
+import { ScreenScroll } from '../src/ui/ScreenScroll.tsx';
 import { SectionTitle } from '../src/ui/SectionTitle.tsx';
 import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { SlantPanel, slantPoints } from '../src/ui/SlantPanel.tsx';
@@ -143,6 +144,18 @@ describe('small pieces', () => {
     await render(<OutlinedTitle text="Ink Panel" />);
     expect(screen.getByRole('header', { name: 'Ink Panel' })).toBeTruthy();
   });
+
+  it('the outlined title keeps its size when it fits and shrinks to fit when it does not', () => {
+    expect(fittedSize(58, 300, 400)).toBe(58);
+    expect(fittedSize(58, null, 100)).toBe(58); // not measured yet
+    expect(fittedSize(58, 400, 300)).toBe(43); // 400 × 43/58 ≈ 297, inside 300
+  });
+
+  it('a screen scroll shows its content, with a band behind the status bar that never takes touches', async () => {
+    await render(<ScreenScroll><Text>Quest</Text></ScreenScroll>);
+    expect(screen.getByText('Quest')).toBeTruthy();
+    expect(screen.getByTestId('status-band').props.pointerEvents).toBe('none');
+  });
 });
 
 describe('XpBar', () => {
@@ -173,6 +186,10 @@ describe('InkTabBar', () => {
     expect(screen.getByRole('tab', { name: 'Today' }).props.accessibilityState).toMatchObject({ selected: false });
     expect(flat(screen.getByRole('tab', { name: 'Character' }).props.style)).toMatchObject({ borderTopColor: colors.vermilion, borderTopWidth: 4 });
     for (const tab of all) expect(flat(tab.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    // single words: wrapping broke CHARACTER mid-word at the largest font and display size (emulator), so they shrink to fit
+    for (const label of ['Today', 'Character', 'Chronicle']) {
+      expect(screen.getByText(label).props).toMatchObject({ numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.6 });
+    }
     await fireEvent.press(screen.getByRole('tab', { name: 'Chronicle' }));
     expect(onSelect).toHaveBeenCalledWith('chronicle');
   });

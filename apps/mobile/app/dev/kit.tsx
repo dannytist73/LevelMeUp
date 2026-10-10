@@ -1,6 +1,6 @@
 // The component kit, mirroring the System board (docs/design/ink-panel/System.dc.html), for the device check.
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '../../src/theme/tokens.ts';
 import { Button } from '../../src/ui/Button.tsx';
@@ -12,6 +12,7 @@ import { InkTabBar } from '../../src/ui/InkTabBar.tsx';
 import { NarrationBox } from '../../src/ui/NarrationBox.tsx';
 import { NightCard } from '../../src/ui/NightCard.tsx';
 import { OutlinedTitle } from '../../src/ui/OutlinedTitle.tsx';
+import { ScreenScroll } from '../../src/ui/ScreenScroll.tsx';
 import { SectionTitle } from '../../src/ui/SectionTitle.tsx';
 import { SlamIn } from '../../src/ui/SlamIn.tsx';
 import { SlantPanel } from '../../src/ui/SlantPanel.tsx';
@@ -32,7 +33,7 @@ export default function Kit() {
   const [replay, setReplay] = useState(0);
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32, gap: 28 }}>
+      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32, gap: 28 }}>
         <HalftoneHeader>
           <Label>LevelMeUp · design system · dark only</Label>
           <OutlinedTitle text="INK PANEL" />
@@ -100,7 +101,7 @@ export default function Kit() {
         </View>
 
         <InkTabBar tabs={TABS} active={tab} onSelect={setTab} />
-      </ScrollView>
+      </ScreenScroll>
     </View>
   );
 }

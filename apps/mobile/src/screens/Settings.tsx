@@ -1,11 +1,12 @@
 // Settings (spec §1.3, S1 board), M4's version: the guest account line, sync status, the not-medical-advice line and the
 // version. Game settings, notifications, the Pact, saving the character and deletion arrive in M5–M7.
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
+import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
 import { lastSynced, syncMark } from './syncLine.ts';
@@ -23,7 +24,7 @@ export function Settings({ onBack, onDeveloper, version, deviceZone }: SettingsP
   const mark = syncMark(status);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.night }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 24 }}>
+    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Pressable
           accessibilityRole="button"
@@ -62,6 +63,6 @@ export function Settings({ onBack, onDeveloper, version, deviceZone }: SettingsP
       </View>
 
       {onDeveloper !== undefined && <Button label="Developer" variant="secondary" onPress={onDeveloper} />}
-    </ScrollView>
+    </ScreenScroll>
   );
 }

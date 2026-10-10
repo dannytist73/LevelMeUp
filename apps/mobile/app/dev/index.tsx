@@ -3,7 +3,7 @@
 import { authoredTemplate } from '@levelmeup/content';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { samplePayload } from '../../src/dev/samplePayload.ts';
 import { testChoices } from '../../src/dev/testCharacter.ts';
@@ -12,6 +12,7 @@ import { useGame } from '../../src/state/store.ts';
 import { colors, fonts, space } from '../../src/theme/tokens.ts';
 import { Button } from '../../src/ui/Button.tsx';
 import { NightCard } from '../../src/ui/NightCard.tsx';
+import { ScreenScroll } from '../../src/ui/ScreenScroll.tsx';
 import { SectionTitle } from '../../src/ui/SectionTitle.tsx';
 import { Body, Meta, Small, Title } from '../../src/ui/Text.tsx';
 
@@ -44,7 +45,7 @@ export default function Developer() {
 
   const today = view?.today ?? null;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.night }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 20 }}>
+    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 20 }}>
       <Button label="Back" variant="secondary" onPress={() => router.back()} />
       <Title>Developer</Title>
       <Small>{`Phase ${phase} · sync ${status} · ${pending.length} waiting · zone ${deviceZone()}`}</Small>
@@ -130,6 +131,6 @@ export default function Developer() {
           />
         </>
       )}
-    </ScrollView>
+    </ScreenScroll>
   );
 }

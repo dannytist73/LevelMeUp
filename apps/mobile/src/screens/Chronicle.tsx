@@ -1,6 +1,6 @@
 // Chronicle (spec §1.3, D5 board), M4's version: the streak and the recent days as a list. The calendar, growth since
 // day 1 and past readings arrive in M6.
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ServerState } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
@@ -9,6 +9,7 @@ import { colors, space } from '../theme/tokens.ts';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
+import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Caption, Label, Meta, Small, Title } from '../ui/Text.tsx';
 import { lastSynced } from './syncLine.ts';
@@ -31,7 +32,7 @@ export function Chronicle() {
   const streak = view?.character.streak;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.night }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
         <Label>Chronicle</Label>
         {streak !== undefined && (
@@ -60,6 +61,6 @@ export function Chronicle() {
         )}
         {stale && <Caption>{lastSynced(lastSyncedAt, view?.profile.timeZone ?? 'UTC')}</Caption>}
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }
