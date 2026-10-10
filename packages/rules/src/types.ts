@@ -18,3 +18,12 @@ export type Difficulty = 'gentle' | 'steady' | 'hard';
 export type Slot = 'core' | 'side1' | 'side2' | 'article' | 'recovery';
 
 export type Rank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+
+/**
+ * Onboarding goals (spec §1.1 beat 3): a stronger body, more energy and better sleep, read and learn, focus and beat
+ * distraction, build a routine.
+ */
+export type Goal = 'body' | 'energy' | 'learn' | 'focus' | 'routine';
+
+/** Limitations a player can report in onboarding (board 4: knees, lower back, shoulders, wrists). */
+export type Limitation = 'knee' | 'back' | 'shoulder' | 'wrist';

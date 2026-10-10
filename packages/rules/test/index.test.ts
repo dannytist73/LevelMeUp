@@ -15,5 +15,8 @@ describe('public API', () => {
   it('exports the constants', () => {
     expect(rules.XP_BY_TIER.standard).toBe(20);
     expect(rules.LEVEL_CURVE).toEqual({ base: rules.LEVEL_BASE, step: rules.LEVEL_STEP });
+    expect(rules.MINUTES_OPTIONS).toEqual([10, 15, 25, 40]);
+    expect(rules.CORE_MIX.filter((m) => m === 'main')).toHaveLength(4);
+    expect(rules.TRAINABLE_STATS).toEqual(['strength', 'vitality', 'wisdom', 'focus']);
   });
 });
