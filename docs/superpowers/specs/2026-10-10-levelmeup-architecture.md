@@ -8,7 +8,8 @@
 - **App:** Expo SDK 57 + React Native, the same base that already builds and runs on your Oppo (MAINARC, ninety-day).
 - **Backend:** the existing **DNA Wedding** Supabase project (owner's decision, 2026-10-10), in its own
   `levelmeup` schema next to the wedding's `public` tables. $0 extra; Pro, so it never pauses. LevelMeUp gets a
-  database role that cannot see the wedding's tables (§12). Development runs in Docker on the laptop for $0.
+  database role that cannot see the wedding's tables (§12). Development also runs on that live project (owner's
+  decision for M3, 2026-10-10): no laptop database.
 - **One rulebook, two places:** the game rules (XP, levels, streaks, ladders, building a day, time zones) are one
   plain TypeScript package. The server uses it as the referee; the phone uses it to show rewards instantly and to
   build a day offline. The server's answer always wins.
@@ -226,8 +227,8 @@ completion. No exact alarms.
 |---|---|---|
 | Rules | Vitest | levels, stats, ranks, ladders, day building, check-in outcomes, streaks/shields, abilities, time zones and DST, the 90-day pacing simulation |
 | Content | Vitest | every template valid (ladder, rung, three voices, hard-day link, safety notes), achievements reachable, banned-phrase lint on all player-facing text |
-| Database | pgTAP (`supabase test db`) | RLS, column grants, `apply_outcome` guards, idempotency, cascading deletes |
-| Edge Functions | Deno tests against local Supabase, Claude mocked | event handling, parallel day creation (10 simultaneous requests → one day), cap enforcement, fallbacks |
+| Database | pgTAP via `npm run db:test`, on the live project inside transactions that always roll back | RLS, grants, wedding isolation, the write functions' guards, idempotency, cascading deletes |
+| Edge Functions | Vitest on the pure server modules (`supabase/tests/unit`); `npm run test:live` against the deployed functions with temporary anonymous players, deleted at the end | event handling, day closing, payload checks, parallel onboarding and completions, cap enforcement, fallbacks |
 | App | Jest + React Native Testing Library | outbox, optimistic updates, key screens' states |
 | Device | `docs/device-verification-checklist.md` on the Find X9 | the spec §5 device list |
 
@@ -235,7 +236,7 @@ completion. No exact alarms.
 
 | Stage | Backend | App |
 |---|---|---|
-| Development | Local Supabase in Docker (`supabase start`, project id `levelmeup`, ports moved to the 55xxx range so it can run beside the wedding site's local stack); Claude calls use a dev key with a low cap, or mocks | EAS development-client APK on the Find X9, pointed at the laptop's LAN address |
+| Development | The live DNA Wedding project, `levelmeup` schema (owner's decision for M3, 2026-10-10; no Docker). Tests never leave data behind (§9) | EAS development-client APK on the Find X9, pointed at the live project |
 | Pilot | DNA Wedding project, `levelmeup` schema (§12) | EAS preview APK shared with friends (sideloaded) |
 | Public launch (later) | Decide: stay in the shared project or move to LevelMeUp's own (§12); Turnstile; custom SMTP | Play closed test (12 testers × 14 days), privacy policy, data-safety form, a web page for account deletion |
 
@@ -255,8 +256,9 @@ is needed. What the two apps share, and how LevelMeUp stays out of the wedding's
 
 | Shared thing | How LevelMeUp handles it |
 |---|---|
-| Database | Everything in the `levelmeup` schema. The schema isn't exposed through the Data API. Functions connect as `lmu_service`, which has no rights on `public`. |
-| **Migration history** | The CLI keeps one migration history per project. If LevelMeUp used `supabase db push`, the wedding repo's next push would fail on versions it doesn't know, and vice versa. So LevelMeUp **never uses `db push`** against the project. A small `db:deploy` script applies LevelMeUp's migration files with `supabase db query` and records them in `levelmeup.schema_migrations`. The wedding repo's history stays untouched. |
+| Database | Everything in the `levelmeup` schema. The schema isn't exposed through the Data API. Functions connect as `lmu_service` (`noinherit`; it holds `authenticated` only to switch to it for player reads, never by itself), which has no rights on any wedding table (DB test). It can run one wedding function, `is_admin()`, which is open to everyone and always answers false for it. |
+| **Migration history** | The CLI keeps one migration history per project. If LevelMeUp used `supabase db push`, the wedding repo's next push would fail on versions it doesn't know, and vice versa. So LevelMeUp **never uses `db push`** against the project. `npm run db:deploy` applies LevelMeUp's migration files with `supabase db query --linked` and records them in `levelmeup.schema_migrations`, and checks the wedding's history is unchanged afterwards. |
+| CLI commands | Every CLI call from LevelMeUp's scripts goes through `scripts/sb.ts`, an allow list: `db query --linked`, deploying or deleting named `lmu-` functions, `LMU_` secrets from an env file, all pinned to this project. It refuses `db push`, `db reset`, `config push`, `migration repair`, `link`, `--prune` and everything else. LevelMeUp has no `config.toml`, so nothing can push its settings over the wedding's. |
 | Edge Functions | All names prefixed `lmu-` (`lmu-sync`, `lmu-onboarding`, `lmu-account-delete`, `lmu-articles-tick`), deployed by name. |
 | Secrets | Prefixed `LMU_` (e.g. `LMU_ANTHROPIC_API_KEY`, `LMU_DB_URL`). |
 | Cron | One job, `lmu-articles-tick`. |
@@ -267,8 +269,8 @@ is needed. What the two apps share, and how LevelMeUp stays out of the wedding's
 **When the schema is first deployed:** add a short note to `wedding-site/CLAUDE.md`, with the owner's OK, saying
 the project also hosts `levelmeup`. Never drop it, and never `migration repair` versions you don't recognise.
 
-**Credentials:** `lmu_service`'s password is generated by a script the owner runs once. The script stores it
-directly as a Supabase secret and never prints it.
+**Credentials:** `npm run lmu:password` gives `lmu_service` a random password: Postgres receives only its SCRAM
+verifier, and the pooler URL goes straight into the `LMU_DB_URL` secret. Nothing is printed (run 2026-10-10).
 
 **Before the public launch, decide:** stay in the shared project (then the wedding tables get dropped when the
 wedding site retires) or move LevelMeUp to its own project. Moving means exporting the `levelmeup` schema and the
@@ -276,6 +278,11 @@ LevelMeUp users from the shared user list. That's easy with pilot-sized numbers 
 launch.
 
 ## 13. Spikes before the main build
+
+Results so far: 1 (Deno half) passed in M3: a deployed function imported both packages from `packages/` by
+relative path and matched Node's answers, time zones included. 5 passed in M3: `db:deploy` applied 0001–0003 and
+the wedding's history stayed `20260928000100/200/300`. 6 passed in M3 as a DB test (a real `set role lmu_service`
+is refused on `public.invites`) and live (the functions log in as `lmu_service` through the pooler).
 
 1. Shared rules/content packages import in both Metro/Jest and Deno (§1.1).
 2. Anonymous → Google linking with supabase-js on Android (§4.4).
