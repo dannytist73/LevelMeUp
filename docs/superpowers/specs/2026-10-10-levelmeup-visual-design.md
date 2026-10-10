@@ -114,6 +114,10 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
 | Accountability Pact | §4.3 | Levels 0–2 in full, the five rules, hold to sign; starts with tomorrow's quest day |
 | Settings | §1.3, §4.4–4.5 | Guest save card, game settings, notifications, Pact, delete account, not-medical-advice note |
 
+The mock XP numbers on the Quest cleared and Character boards ("Lv 6 · 62 / 130") use the first-draft level curve.
+With the tuned curve (step 32, M1) level 6 needs 190 XP; the app always computes these numbers from
+`packages/rules`, never from the boards.
+
 ### 4.2 Not drawn; built from the same parts
 
 The focus-goal branch question (same layout as Body), the safety-check questions, the rep-log and timer quest
