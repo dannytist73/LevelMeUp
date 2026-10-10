@@ -66,7 +66,8 @@ achievements and history are both "looking back"; fewer tabs keep today's quests
 
 ### 1.5 Defaults (owner did not object)
 
-- Sign-in with Google or email; anonymous play until then.
+- Sign-in with Google; anonymous play until then. Email is added once a custom SMTP sender exists (before the
+  public launch): the shared project's built-in sender only mails team members (architecture §4.4).
 - Honor-system completions plus in-app timers for focus and reading; Health Connect auto-verify after the MVP.
 - Class art from the Inkbound manhwa pipeline; a visual design canvas for onboarding and the reveal in Phase 4.
 
@@ -329,7 +330,7 @@ When a closed day's core quest was not done (and no hard-day version or protecti
 - With the AI forced to fail or time out, the reveal still appears with the same rules-computed character.
 - Class and assumptions can be corrected on the reveal; corrections persist and change the next generated day.
 - A PAR-Q "yes" produces days with only gentle walking and mobility quests (test).
-- "Save your character" links Google or email without losing progress.
+- "Save your character" links Google without losing progress.
 
 **Days and quests**
 - Each quest day has exactly 1 core + 2 side quests + 1 article; concurrent requests create one day (database test).
