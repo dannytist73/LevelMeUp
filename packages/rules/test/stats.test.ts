@@ -3,22 +3,22 @@ import { rankFor, startingStats, statPoints, xpToNextPoint } from '../src/stats.
 import type { ClassId } from '../src/types.ts';
 
 describe('stat points (spec §2.1)', () => {
-  it('adds floor(sqrt(statXp / 10)) to the starting points', () => {
+  it('adds floor(sqrt(statXp / 22)) to the starting points', () => {
     expect(statPoints(8, 0)).toBe(8);
-    expect(statPoints(8, 9)).toBe(8);
-    expect(statPoints(8, 10)).toBe(9);
-    expect(statPoints(8, 150)).toBe(11);
-    expect(statPoints(8, 159)).toBe(11);
-    expect(statPoints(8, 160)).toBe(12);
+    expect(statPoints(8, 21)).toBe(8);
+    expect(statPoints(8, 22)).toBe(9);
+    expect(statPoints(8, 198)).toBe(11);
+    expect(statPoints(8, 351)).toBe(11);
+    expect(statPoints(8, 352)).toBe(12);
     // Another divisor, for tuning sweeps.
     expect(statPoints(5, 400, 40)).toBe(8);
   });
 
   it('says how much stat XP the next point needs', () => {
-    expect(xpToNextPoint(0)).toBe(10);
-    expect(xpToNextPoint(40)).toBe(50);
-    expect(xpToNextPoint(150)).toBe(10);
-    expect(xpToNextPoint(160)).toBe(90);
+    expect(xpToNextPoint(0)).toBe(22);
+    expect(xpToNextPoint(40)).toBe(48);
+    expect(xpToNextPoint(342)).toBe(10);
+    expect(xpToNextPoint(352)).toBe(198);
   });
 
   it('rejects invalid input', () => {

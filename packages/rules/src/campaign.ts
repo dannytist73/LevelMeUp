@@ -26,11 +26,12 @@ export const PERSONAS: readonly Persona[] = [
 export const PERSONA_ESTIMATES: StatMap = { strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 4 };
 
 /**
- * Spec §2.1: about rank C (15 points) in the main stat after 3 months of steady play. ±20 % gives days 72–108 for the
- * mean over the personas; each persona must land within days 60–120, since classes train their main stat at
- * different rates by design.
+ * Spec §2.1: about rank C (15 points) in the main stat after 3 months of steady play, judged on the average class
+ * (owner's decision, M2): ±20 % gives days 72–108 for the mean over the personas. Classes train their main stat at
+ * different rates by design (the daily article also trains Wisdom), so each persona only has to land between
+ * 6 weeks and 5 months.
  */
-export const RANK_TARGET = { points: 15, meanMinDay: 72, meanMaxDay: 108, eachMinDay: 60, eachMaxDay: 120 } as const;
+export const RANK_TARGET = { points: 15, meanMinDay: 72, meanMaxDay: 108, eachMinDay: 42, eachMaxDay: 150 } as const;
 
 export type CampaignOptions = { runs?: number; days?: number; curve?: LevelCurve; divisor?: number };
 export type CampaignResult = { levels: Record<number, number | null>; rankDay: number | null };
@@ -100,9 +101,12 @@ function runCampaign(library: QuestLibrary, persona: Persona, rate: number, seed
   return { levelDay, rankDay };
 }
 
-/** Mean day each level (and the main stat's rank C) is reached over `runs` seeded runs; null if any run never does. */
+/**
+ * Mean day each level (and the main stat's rank C) is reached over `runs` seeded runs; null if any run never does.
+ * The default 180 days runs past the slowest class's rank C.
+ */
 export function campaignPacing(library: QuestLibrary, persona: Persona, rate: number, options: CampaignOptions = {}): CampaignResult {
-  const { runs = 200, days = 120, curve = LEVEL_CURVE, divisor = STAT_XP_DIVISOR } = options;
+  const { runs = 200, days = 180, curve = LEVEL_CURVE, divisor = STAT_XP_DIVISOR } = options;
   const totals = new Map<number, number>();
   const unreached = new Set<number>();
   let rankTotal = 0;

@@ -17,7 +17,8 @@ export const LEVEL_STEP = 20;
 export const START_STAT_MIN = 3;
 export const START_STAT_MAX = 8;
 export const CLASS_MAIN_STAT_BONUS = 2;
-export const STAT_XP_DIVISOR = 10;
+// Tuned on real built days (campaign.ts): the average class reaches rank C in its main stat on about day 89.
+export const STAT_XP_DIVISOR = 22;
 /** Lowest stat points for each rank, highest rank first. */
 export const RANK_FLOORS: ReadonlyArray<readonly [Rank, number]> = [
   ['S', 60],

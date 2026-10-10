@@ -89,9 +89,12 @@ typical 70%, struggling 40% completion) before anything is built on them.
 - Each quest instance awards XP once, to its primary stat (optionally split with a secondary; the split never adds
   XP). Character XP = the sum of all stat XP. Nothing is double-counted.
 - Starting stat points come from onboarding estimates in a narrow band (3–8); the class's main stat gets +2.
-- Stat points = start + floor(sqrt(statXP / 10)): fast early, slower later.
+- Stat points = start + floor(sqrt(statXP / 22)): fast early, slower later. (The divisor was 10 until M2's campaign
+  on real built days; see below.)
 - Ranks by stat points: E < 10, D 10–14, C 15–24, B 25–39, A 40–59, S 60+ (about rank C after 3 months of steady
-  training in the main stat). Tuned by the simulation.
+  training in the main stat). Tuned by the simulation, and judged on the average class (owner's decision, M2): with
+  divisor 22 the average class reaches rank C on about day 89, a Mage on about day 55 (the daily article also trains
+  Wisdom) and a Rogue on about day 126. Each class must land between 6 weeks and 5 months.
 - XP, levels and stats never decrease.
 
 ### 2.2 XP per quest

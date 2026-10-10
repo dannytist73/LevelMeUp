@@ -42,7 +42,7 @@ instance stores the version it was built from.
 | `text.test.ts` | name, steps, safety and the three voices' lengths and rules; the lint on every string |
 | `why.test.ts`, `achievements.test.ts`, `shadow.test.ts` | Their words, placeholders, reachability and the approved Shadow lines |
 | `days.test.ts` | 21,500 days built from the real library for 1,024 player profiles: shape, budget, limitations, gentle start, own program, recovery rules, why-lines, class mix |
-| `campaign.test.ts` | Pacing on real built days meets the level targets (the rank target waits for the owner's decision) |
+| `campaign.test.ts` | Pacing on real built days meets the level targets, and the average class reaches rank C in about 3 months |
 
 The content suite runs in about 5 seconds.
 

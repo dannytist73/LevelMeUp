@@ -80,9 +80,11 @@ After M2 (content and day building, plan `docs/superpowers/plans/2026-10-10-m2-c
     15 targets were missed (struggling level 10 on day 66 against 48). Only steps 19 and 20 meet every target; 20 has
     the larger worst-case margin (steady level 10 on day 17.7 against a minimum of 16.8; struggling level 10 on day
     47.7 against a maximum of 48, 200 runs). The margins are under a day at both ends.
-14. **Rank target: owner's decision pending.** No stat divisor puts every class's main stat at rank C within days
-    60–120: with divisor 10 a steady Mage reaches it on day 25 (the daily article also trains Wisdom) and a Rogue on
-    day 58. The campaign test checks the level targets only until the owner decides.
+14. **Stat divisor 22, rank target judged on the average class** (owner's decision). No divisor puts every class's
+    main stat at rank C within days 60–120: with divisor 10 a steady Mage reached it on day 25 (the daily article also
+    trains Wisdom) and the average class on day 40. With 22 the average class reaches it on day 89 (target 72–108);
+    Mage 55, Monk 76, Warrior 99, Rogue 126 (400 runs). Each class must land between days 42 and 150, which catches a
+    class that stops ranking up.
 15. **Budget:** core and side quests fit the player's minutes (10/15/25/40); the article and the recovery quest sit
     outside it. Each side quest keeps 2 minutes free and the core gets the rest. Light days (day 1, re-entry, after a
     sick or injured check-in) have 10 minutes.

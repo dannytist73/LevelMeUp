@@ -40,7 +40,6 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | Milestone | Item |
 |---|---|
-| Owner | **Rank target decision.** No stat divisor puts every class's main stat at rank C in 60–120 days (divisor 10: Mage day 25, Monk 36, Warrior 42, Rogue 58; divisor 22: mean 89 but Mage 56, Rogue 127). Options: judge "about 3 months" on the average class and set the divisor near 22; narrow the gap between classes first; or keep 10. Then re-enable the rank check in `packages/content/test/campaign.test.ts`. |
 | Owner | Review the words on the content review page; a fitness professional skims the strength, walking and mobility ladders before the pilot (spec §3.1). |
 | M3 | Accept an offline-built day with `checkProvisionalDay`, then re-draft every quest from the server's tables (`draftQuest`). Compute `dayNumber` (every quest day since day 1, away days included). Keep each ability's last-use day and the achievement counters. Record ladder completions and misses only for quests built at the ladder's current rung (`recordMiss` takes the rung). Decide whether a Second Wind redo counts for its ladder. Store `CONTENT_VERSION` on each quest instance. |
 | M3 | Pacing margins are under a day at both ends (steady level 10 on day 17.7 against a minimum of 16.8; struggling level 10 on day 47.7 against a maximum of 48). Re-run `npm run pacing` whenever quests, tiers or ladder rules change. |
