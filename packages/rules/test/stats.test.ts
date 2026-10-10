@@ -10,6 +10,8 @@ describe('stat points (spec §2.1)', () => {
     expect(statPoints(8, 150)).toBe(11);
     expect(statPoints(8, 159)).toBe(11);
     expect(statPoints(8, 160)).toBe(12);
+    // Another divisor, for tuning sweeps.
+    expect(statPoints(5, 400, 40)).toBe(8);
   });
 
   it('says how much stat XP the next point needs', () => {
@@ -21,6 +23,7 @@ describe('stat points (spec §2.1)', () => {
 
   it('rejects invalid input', () => {
     expect(() => statPoints(-1, 0)).toThrow(RangeError);
+    expect(() => statPoints(5, 400, 0)).toThrow(RangeError);
     expect(() => statPoints(5, -10)).toThrow(RangeError);
     expect(() => xpToNextPoint(Number.NaN)).toThrow(RangeError);
   });

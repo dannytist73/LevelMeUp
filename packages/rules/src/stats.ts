@@ -9,11 +9,12 @@ import {
 } from './constants.ts';
 import type { ClassId, Rank, StatMap } from './types.ts';
 
-/** Points shown for a stat: the starting estimate plus floor(√(statXp / 10)). Fast early, slower later. */
-export function statPoints(start: number, statXp: number): number {
+/** Points shown for a stat: the starting estimate plus floor(√(statXp / divisor)). Fast early, slower later. */
+export function statPoints(start: number, statXp: number, divisor: number = STAT_XP_DIVISOR): number {
   if (!Number.isInteger(start) || start < 0) throw new RangeError(`start must be a non-negative integer, got ${start}`);
   assertStatXp(statXp);
-  return start + Math.floor(Math.sqrt(statXp / STAT_XP_DIVISOR));
+  if (!(divisor > 0 && Number.isFinite(divisor))) throw new RangeError(`divisor must be a positive number, got ${divisor}`);
+  return start + Math.floor(Math.sqrt(statXp / divisor));
 }
 
 /** Stat XP still needed before the next point. */
