@@ -14,7 +14,7 @@ guesses). Only milestone 1's plan exists today.
 | # | Milestone | Ends with | Plan |
 |---|---|---|---|
 | 1 | **Rules core** | The pure TypeScript rulebook: levels, stats and ranks, XP, quest-day windows and time zones, streaks and shields, the check-in, ladders, consequence eligibility, timers, and the pacing simulation that tunes the level curve. About 165 unit tests. | `2026-10-10-m1-rules-core.md` |
-| 2 | **Content and day building** | `packages/content`: about 10 ladders and 70 quest templates in three voices, achievements, Shadow lines, a banned-phrase lint. The day builder (spec §3.2), class abilities that shape a day, swap / hard day / rest limits, and the pacing check re-run with real generated days. The owner reviews the content. | later |
+| 2 | **Content and day building** | `packages/content`: about 10 ladders and 70 quest templates in three voices, achievements, Shadow lines, a banned-phrase lint. The day builder (spec §3.2), class abilities that shape a day, swap / hard day / rest limits, and the pacing check re-run with real generated days. The owner reviews the content. | `2026-10-10-m2-content-day-builder.md` |
 | 3 | **Database and server (local)** | Local Supabase in Docker (project id `levelmeup`, 55xxx ports); spike: Edge Functions importing the rules package; the `levelmeup` schema, RLS, `apply_outcome` and pgTAP tests; the `lmu_service` role with wedding-isolation tests; the `db:deploy` runner; `lmu-sync`, `lmu-onboarding` (Claude mocked, template fallback), `lmu-account-delete`; lazy day closing; idempotency and concurrency tests. | later |
 | 4 | **App foundation** | The Expo SDK 57 app; spike: Metro (and Hermes `Intl`) with the rules package; the Ink Panel components (Latin-subset fonts, slanted panels, narration boxes, stamps, tab bar); navigation; SQLite cache and outbox; anonymous sign-in; the sync client; a development build on the Find X9 talking to the laptop's Supabase. | later |
 | 5 | **Onboarding** | The 10 onboarding screens, the safety check, the reveal with its template fallback, the vow, "save your character" with Google (spike: linking a Google sign-in to the anonymous user). | later |
@@ -35,6 +35,19 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M3 | Spec question to settle before writing `undo`: can undoing a same-day mis-tap reverse a level-up it caused? (Recommendation: yes; it corrects an error, it isn't a penalty.) |
 | M4 | Run the fixed DST and travel expectations from `packages/rules/test/time.test.ts` on Hermes on the Find X9. |
 | M7 | Give the lighter-plan offer a cooldown (or remember a dismissal) so it isn't shown on every open. Confirm the consequence pause (now a rolling 7 days) is what the owner wants. |
+
+## Carried forward from M2
+
+| Milestone | Item |
+|---|---|
+| Owner | **Rank target decision.** No stat divisor puts every class's main stat at rank C in 60–120 days (divisor 10: Mage day 25, Monk 36, Warrior 42, Rogue 58; divisor 22: mean 89 but Mage 56, Rogue 127). Options: judge "about 3 months" on the average class and set the divisor near 22; narrow the gap between classes first; or keep 10. Then re-enable the rank check in `packages/content/test/campaign.test.ts`. |
+| Owner | Review the words on the content review page; a fitness professional skims the strength, walking and mobility ladders before the pilot (spec §3.1). |
+| M3 | Accept an offline-built day with `checkProvisionalDay`, then re-draft every quest from the server's tables (`draftQuest`). Compute `dayNumber` (every quest day since day 1, away days included). Keep each ability's last-use day and the achievement counters. Record ladder completions and misses only for quests built at the ladder's current rung (`recordMiss` takes the rung). Decide whether a Second Wind redo counts for its ladder. Store `CONTENT_VERSION` on each quest instance. |
+| M3 | Pacing margins are under a day at both ends (steady level 10 on day 17.7 against a minimum of 16.8; struggling level 10 on day 47.7 against a maximum of 48). Re-run `npm run pacing` whenever quests, tiers or ladder rules change. |
+| M5 | Onboarding sets starting rungs from the training answer (until then everyone starts at the first rung, so early days are short), requires 1–2 goals, and decides whether equipment changes anything (no template uses equipment yet). |
+| M6 | Show why-lines (`renderWhy`) and quest summaries (`questSummary`); Scholar's Path progress to the end of the book; Vanish. |
+| M7 | Wire Unbreakable (`abilityReady('unbreakable', …)` → `shieldWaived`), the recovery quest (`addRecovery`) and the Shadow's lines (`shadowLine`). |
+| M8 | Reuse `lintText` for articles; the shaming list may need an article variant (an article can discuss failure). Insight. |
 
 ## Spikes and where they run
 
