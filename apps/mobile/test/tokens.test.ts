@@ -13,7 +13,8 @@ describe('the Ink Panel colours', () => {
 
   // Every text pairing the boards use (visual spec §1.1).
   const pairs: [ColorName, ColorName][] = [
-    ['paper', 'ink'], ['paper', 'sealText'], ['seal', 'white'],
+    ['paper', 'ink'], ['paper', 'sealText'], ['paper', 'inkSoft'], ['paper', 'inkMuted'], ['seal', 'white'], ['ink', 'chalk'],
+    ['tabBar', 'chalk'], ['tabBar', 'ash'],
     ['night', 'chalk'], ['night', 'ash'], ['night', 'ashLight'], ['night', 'ember'],
     ['panel', 'chalk'], ['panel', 'ash'], ['panel', 'ashLight'], ['halftone', 'chalk'], ['halftone', 'ash'], ['void', 'ember'],
   ];

@@ -33,6 +33,15 @@ export const colors = {
   /** The Shadow's scene background. */
   void: '#050506',
   white: '#FFFFFF',
+  // Board values the spec's token table leaves out (D1 Today):
+  /** Secondary text on paper (a quest's target). */
+  inkSoft: '#3A362F',
+  /** Quiet text on paper (the safety line). */
+  inkMuted: '#5A544A',
+  /** The border of a cleared side quest. */
+  lineSoft: '#3A3A40',
+  /** The tab bar. */
+  tabBar: '#0A0A0B',
 } as const;
 
 export type ColorName = keyof typeof colors;
