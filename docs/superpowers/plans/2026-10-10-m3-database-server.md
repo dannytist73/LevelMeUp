@@ -80,9 +80,10 @@ need (pending check-ins, queued streak days, ability use, achievement counters).
    - A DB-test lint fails if a test file contains `begin`, `commit`, `rollback`, `savepoint` or `end;` at statement
      level, so a test can never escape its transaction.
 2. **`lmu_service`** is `nologin noinherit` until its password script runs; it has `usage` on `levelmeup`, `execute`
-   on the write functions, and `authenticated` **with inherit false, set true**, so it gets player rights only after
-   `set local role authenticated` with the player's claims. A DB test proves it has no table privilege on any
-   wedding table.
+   on the write functions, and `lmu_player` **with inherit false, set true**, so it gets player rights only after
+   `set local role lmu_player` with the player's claims. *(Code review, migration 0004: it first held
+   `authenticated`, which would have let it act as any user of the shared project, wedding admins included.)*
+   DB tests prove neither role has a privilege on any wedding table, even with forged admin claims.
 3. **Password handling.** `scripts/lmu-service-password.ts` generates a random password, sends Postgres only its
    SCRAM-SHA-256 verifier (`alter role … password 'SCRAM-SHA-256$4096:…'`, so the plain password never reaches SQL
    logs), stores `LMU_DB_URL` (transaction pooler, port 6543, user `lmu_service.<ref>`) with `supabase secrets set
@@ -111,12 +112,13 @@ need (pending check-ins, queued streak days, ability use, achievement counters).
    once the interview mapping is designed. The reveal's words come from Claude only when `LMU_ANTHROPIC_API_KEY`
    exists (not yet: owner task); otherwise, and on any failure or after 12 s, a template reveal. At most 3 Claude
    calls per player, enforced in SQL.
-9. **Account deletion (M3 version).** Deletes every LevelMeUp row, then deletes the sign-in only for anonymous
-   players. A signed-in (Google-linked) player may share the sign-in with the wedding site; what to do there is owner
+9. **Account deletion (M3 version).** Deletes every LevelMeUp row, then deletes the sign-in only when it had a
+   LevelMeUp character and Auth says it is still anonymous (a wedding guest's anonymous sign-in is never touched). A signed-in (Google-linked) player may share the sign-in with the wedding site; what to do there is owner
    question 2, needed by M7. In M3 every player is anonymous.
-10. **JWT handling.** The gateway verifies the JWT (`verify_jwt = true`); the function also requires
-    `role = authenticated`, a UUID `sub` and an unexpired `exp`, and takes the player id only from there. The anon
-    key itself is refused (403).
+10. **JWT handling.** The gateway verifies the JWT (`verify_jwt = true`; the CLI guard refuses `--no-verify-jwt`);
+    the function also requires `role = authenticated`, a UUID `sub` and an unexpired `exp`, then confirms the session
+    with Supabase Auth (`/auth/v1/user`), and takes the player id only from there. The anon key is refused (403); a
+    deleted player's token is refused at once (401 `session_ended`).
 11. **Achievement counters start now.** `quests_cleared` moves with completions and undos; hard days cleared,
     comebacks and the best rank update at close; earned achievements are stored when `newAchievements` reports them.
     Showing them is M6.
@@ -518,7 +520,7 @@ Functions:
 
 - The live project has the `levelmeup` schema at migration 0003, every DB test passes there, and the residue check
   shows nothing left behind.
-- `lmu_service` can't read or write any wedding table (DB test + live spike 6); the wedding's migration history is
-  unchanged.
+- Neither `lmu_service` nor `lmu_player` can read or write any wedding table, even with forged admin claims (DB
+  tests); the wedding's migration history is unchanged.
 - The three functions are deployed; every live test passes; no test player is left behind.
 - No secret is in the repo (scanned) or printed; `LMU_DB_URL` exists only as a project secret.

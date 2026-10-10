@@ -60,11 +60,20 @@ export function eventId(): string {
   return crypto.randomUUID();
 }
 
+/** Whether Supabase Auth still accepts the player's token (false once the sign-in is deleted). */
+export async function signedIn(player: Player): Promise<boolean> {
+  const res = await fetch(`${URL_BASE}/auth/v1/user`, { headers: { apikey: ANON_KEY, authorization: `Bearer ${player.token}` } });
+  return res.ok;
+}
+
 afterAll(async () => {
   const failures: string[] = [];
   for (const player of created.splice(0)) {
     const res = await call('lmu-account-delete', player.token, { confirm: 'DELETE' });
-    if (res.status !== 200 || res.body.signIn !== 'deleted') failures.push(`${player.id}: ${res.status} ${JSON.stringify(res.body)}`);
+    const deleted = res.status === 200 && res.body.signIn === 'deleted';
+    const alreadyGone = res.status === 401 && res.body.error === 'session_ended';
+    if (!deleted && !alreadyGone) failures.push(`${player.id}: ${res.status} ${JSON.stringify(res.body)}`);
+    if (await signedIn(player)) failures.push(`${player.id}: the sign-in still exists`);
   }
   if (failures.length > 0) throw new Error(`test players left behind:\n${failures.join('\n')}`);
 });

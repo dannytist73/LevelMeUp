@@ -55,7 +55,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Owner | Questions in the M3 plan: undo may take back a level-up it caused (recommended yes; built that way); deleting a Google-linked account keeps the shared sign-in (decide by M7). Add `LMU_ANTHROPIC_API_KEY` (with a spend limit) to switch the reveal from the template to Claude. |
 | M4 | The phone sends events, then reads `state` from `lmu-sync`; ids are numbers, times are ISO strings in responses and epoch milliseconds in events. Add the `provisional_day` event with `checkProvisionalDay`. |
 | M6 | Level-ups are shown a moment after a completion, because a same-day undo can take one back. Ladder changes (and the step-down offer after "too hard") arrive when the day closes. Show `newAchievements` from the sync reply. |
-| M7 | Answering a check-in must apply the closed days queued behind it (`streak_applied = false`) in order, and clear `awaiting_checkin`. A pending check-in covers later unanswered days and away days (only the first gets a `checkins` row). |
+| M7 | Answering a check-in must replay the closed days queued behind it (`streak_applied = false`) in day order with `applyDay`, including away days (from jumps in day numbers): a missed day or away run in the queue then opens its own check-in, exactly as if the first answer had come at once. A pending check-in covers later unanswered days and away days only while nothing is queued behind it (code review fix, M3). |
 | M8 | `ai_generations.cost_usd` is not filled yet; add the model's prices when the article budget is built. |
 | Before launch | Per-player request rate limits for the functions (events per sync are capped at 50 today). |
 

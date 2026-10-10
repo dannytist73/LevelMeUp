@@ -34,6 +34,7 @@ export function checkCliArgs(args: readonly string[], readFile: (path: string) =
       return null;
     case 'functions deploy': {
       if (has('--prune')) return '--prune would delete the wedding\'s functions';
+      if (has('--no-verify-jwt')) return 'LevelMeUp\'s functions always verify the JWT at the gateway';
       if (!has('--use-api')) return 'deploy with --use-api';
       const names = args.filter((a, i) => LMU_FUNCTION.test(a) && args[i - 1] !== '--project-ref');
       if (names.length === 0) return 'name the lmu- functions to deploy';
@@ -49,6 +50,7 @@ export function checkCliArgs(args: readonly string[], readFile: (path: string) =
     case 'secrets set': {
       const at = args.indexOf('--env-file');
       if (at === -1 || args[at + 1] === undefined) return 'set secrets with --env-file, never on the command line';
+      if (rest.some((w) => w !== args[at + 1])) return 'set secrets only from the env file, never on the command line';
       let names: string[];
       try {
         names = envFileNames(readFile(args[at + 1]!));

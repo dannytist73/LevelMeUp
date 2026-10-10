@@ -1,6 +1,6 @@
 // The deployed functions on the live project (npm run test:live). Every player created here is deleted at the end.
 import { describe, expect, it } from 'vitest';
-import { ANON_KEY, ONBOARDING, call, eventId, newPlayer, sync } from './helpers.ts';
+import { ANON_KEY, ONBOARDING, call, eventId, newPlayer, signedIn, sync } from './helpers.ts';
 import type { Player } from './helpers.ts';
 
 const quest = (state: any, slot: string) => state.today.quests.find((q: any) => q.slot === slot);
@@ -146,6 +146,16 @@ describe('account deletion', () => {
     expect(await call('lmu-account-delete', e.token, {})).toMatchObject({ status: 400, body: { error: 'confirm' } });
     const res = await call('lmu-account-delete', e.token, { confirm: 'DELETE' });
     expect(res).toMatchObject({ status: 200, body: { signIn: 'deleted', deleted: expect.objectContaining({ profile: 1, days: 1 }) } });
-    expect(await sync(e)).toMatchObject({ status: 404, body: { error: 'not_started' } });
+    expect(await signedIn(e)).toBe(false);
+    expect(await sync(e)).toMatchObject({ status: 401, body: { error: 'session_ended' } });
+  });
+
+  it('keeps a sign-in that never had a LevelMeUp character (it may be a wedding guest\'s)', async () => {
+    const f = await newPlayer();
+    const res = await call('lmu-account-delete', f.token, { confirm: 'DELETE' });
+    expect(res).toMatchObject({ status: 200, body: { signIn: 'kept', deleted: expect.objectContaining({ profile: 0 }) } });
+    expect(await signedIn(f)).toBe(true);
+    // Make it LevelMeUp's, so the clean-up at the end can remove it.
+    expect((await call('lmu-onboarding', f.token, ONBOARDING)).status).toBe(201);
   });
 });

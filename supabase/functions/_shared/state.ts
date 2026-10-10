@@ -218,6 +218,8 @@ export type Snapshot = {
   /** Unanswered check-ins. */
   checkins: CheckinRow[];
   earned: string[];
+  /** A closed day is waiting behind a pending check-in (`streak_applied = false`), possibly older than `days`. */
+  queued: boolean;
 };
 
 const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];

@@ -26,6 +26,7 @@
   ],
   "exclude": [
     "functions/_shared/db.ts",
-    "functions/_shared/claude.ts"
+    "functions/_shared/claude.ts",
+    "functions/_shared/session.ts"
   ]
 }

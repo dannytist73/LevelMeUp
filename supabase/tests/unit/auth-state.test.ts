@@ -83,6 +83,7 @@ describe('the state the phone receives', () => {
       instances: [...instanceRows(DAY1, 1, ['core']), ...instanceRows(day2, 2).reverse()],
       checkins: [{ id: '7', day_id: null, gap_from: 3, gap_to: 4, answer: null }],
       earned: ['level-5', 'first-trial'],
+      queued: false,
     });
     expect(view.today).toMatchObject({ id: 2, dayNumber: 2, status: 'open' });
     expect(view.today!.quests.map((q) => q.slot)).toEqual(DAY1.quests.map((q) => q.slot));

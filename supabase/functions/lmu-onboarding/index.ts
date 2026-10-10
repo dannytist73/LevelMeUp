@@ -1,12 +1,12 @@
 // POST /functions/v1/lmu-onboarding — the player's choices become a character and day 1 (spec §1.1, §4.2).
 import type postgres from 'npm:postgres@3.4.9';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { playerFromAuthHeader } from '../_shared/auth.ts';
 import { REVEAL_MODEL, claudeConfigured, writeReveal } from '../_shared/claude.ts';
 import { db, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../_shared/onboarding.ts';
 import type { Choices, Reveal } from '../_shared/onboarding.ts';
+import { authenticate } from '../_shared/session.ts';
 import { stateView } from '../_shared/state.ts';
 
 /** Claude calls per player for the reveal, lifetime (architecture §8). */
@@ -31,7 +31,7 @@ async function reveal(userId: string, choices: Choices): Promise<Reveal> {
 }
 
 Deno.serve(async (req) => {
-  const player = playerFromAuthHeader(req.headers.get('authorization'), Date.now());
+  const player = await authenticate(req);
   if (isProblem(player)) return problemResponse(player);
   const body = await readJson(req);
   if (isProblem(body)) return problemResponse(body);
@@ -42,9 +42,11 @@ Deno.serve(async (req) => {
     const existing = await db().begin((tx) => loadSnapshot(tx, player.userId));
     if (existing !== null) return problemResponse(problem(409, 'already_started'));
     const words = await reveal(player.userId, choices);
-    const args = startArgs(choices, words, Date.now(), LIBRARY);
     const snapshot = await db().begin(async (tx) => {
       const j = (value: unknown) => tx.json(value as postgres.JSONValue);
+      // Day 1 starts on the database clock, the one every later check uses.
+      const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
+      const args = startArgs(choices, words, now.getTime(), LIBRARY);
       await tx`select levelmeup.start_player(${player.userId}::uuid, ${j(args.profile)}::jsonb, ${j(args.character)}::jsonb,
         ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
       return loadSnapshot(tx, player.userId);

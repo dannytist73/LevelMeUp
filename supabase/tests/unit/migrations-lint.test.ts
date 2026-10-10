@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CLOCK_SKEW_MS, LATE_SYNC_MS } from '../../../packages/rules/src/index.ts';
 import { stripBodies, stripComments, topLevelStatements } from '../../../scripts/lib/sql.ts';
 
 const DIR = join(import.meta.dirname, '..', '..');
@@ -39,17 +40,36 @@ describe('migrations stay inside the levelmeup schema (architecture §12)', () =
     expect(code).not.toMatch(/\bpublic\s*\./i);
     expect(code).not.toMatch(/\bdrop\s+schema\b/i);
     expect(code).not.toMatch(/\bdrop\s+role\b/i);
+    expect(code).not.toMatch(/\b(in|on)\s+schema\s+public\b/i);
+    expect(code).not.toMatch(/\b(create|drop|alter)\s+extension\b/i);
+    expect(code).not.toMatch(/\balter\s+(database|system)\b/i);
     for (const statement of topLevelStatements(sql)) expect(statement).not.toMatch(TRANSACTION_CONTROL);
   });
 
-  it.each(MIGRATIONS)('$name creates objects only in levelmeup, and only the lmu_service role', ({ sql }) => {
+  it.each(MIGRATIONS)('$name changes only LevelMeUp\'s roles and default privileges', ({ sql }) => {
+    const code = stripBodies(sql);
+    for (const match of code.matchAll(/\balter\s+role\s+(\S+)/gi)) expect(['lmu_service', 'lmu_player']).toContain(match[1]);
+    for (const statement of topLevelStatements(sql).filter((s) => /^alter\s+default\s+privileges\b/i.test(s))) {
+      expect(statement).toMatch(/\bin\s+schema\s+levelmeup\b/i);
+    }
+  });
+
+  it('the completion window in SQL matches the rules (5 minutes of clock skew, 48 hours late)', () => {
+    const all = MIGRATIONS.map((m) => stripComments(m.sql)).join('\n');
+    expect(CLOCK_SKEW_MS).toBe(5 * 60_000);
+    expect(LATE_SYNC_MS).toBe(48 * 3_600_000);
+    expect(all).toMatch(/p_completed_at > now\(\) \+ interval '5 minutes'/);
+    expect(all).toMatch(/now\(\) > d\.ends_at \+ interval '48 hours'/);
+  });
+
+  it.each(MIGRATIONS)('$name creates objects only in levelmeup, and only LevelMeUp\'s roles', ({ sql }) => {
     const code = stripBodies(sql);
     for (const match of code.matchAll(CREATES)) {
       const [, kind, name, on] = match;
       const target = kind!.toLowerCase() === 'policy' || kind!.toLowerCase() === 'index' || kind!.toLowerCase() === 'trigger' ? on : name;
       expect(target ?? '', `${kind} ${name}`).toMatch(/^levelmeup\./);
     }
-    for (const match of code.matchAll(/\bcreate\s+role\s+(\S+)/gi)) expect(match[1]).toBe('lmu_service');
+    for (const match of code.matchAll(/\bcreate\s+role\s+(\S+)/gi)) expect(['lmu_service', 'lmu_player']).toContain(match[1]);
   });
 
   it.each(MIGRATIONS)('$name pins the search path of every security definer function', ({ sql }) => {

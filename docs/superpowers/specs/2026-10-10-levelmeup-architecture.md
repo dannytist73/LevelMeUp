@@ -69,10 +69,11 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 
 - The schema is **not exposed through the Data API**, so the app can't query it directly; all access goes through
   LevelMeUp's Edge Functions.
-- Reads inside those functions run **as the player** (role `authenticated` with the player's JWT claims), so RLS
-  policies (`user_id = auth.uid()`) enforce ownership.
-- Writes go only through `levelmeup.apply_outcome` (`security definer`, not executable by `anon` or
-  `authenticated`). "Server-only" below means exactly that.
+- Reads inside those functions run **as the player**: role `lmu_player` with the player's id in
+  `request.jwt.claims`, so RLS policies (`user_id = levelmeup.player_id()`) enforce ownership. `lmu_player` can read
+  LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (M3 code review, migration 0004).
+- Writes go only through the `security definer` functions in migrations 0003–0004 (executable only by
+  `lmu_service`). "Server-only" below means exactly that.
 
 | Table | Purpose | Player access |
 |---|---|---|
@@ -210,10 +211,12 @@ completion. No exact alarms.
 
 - RLS on every table; pgTAP tests prove player A can't read or write player B's rows and players can't write
   server-only tables.
-- **Wedding isolation:** LevelMeUp's functions connect as `lmu_service`, a role with rights on the `levelmeup`
-  schema only. pgTAP proves it can't read or write any wedding table, and that `anon`/`authenticated` can't reach
-  `levelmeup` except through the player-scoped reads. LevelMeUp's SQL functions pin `search_path = levelmeup, pg_temp`.
-- Edge Functions take the player id only from the JWT; all writes go through `apply_outcome`.
+- **Wedding isolation:** LevelMeUp's functions connect as `lmu_service`, which can switch only to `lmu_player`.
+  Neither role has any privilege on a wedding table or can become `authenticated`; pgTAP proves it, including with
+  claims forged to look like a wedding admin's. The project's own `anon` and `authenticated` users can't reach
+  `levelmeup` at all. LevelMeUp's SQL functions pin `search_path = levelmeup, pg_temp`.
+- Edge Functions take the player id only from the JWT, which the gateway verifies and Supabase Auth confirms again
+  in the function (`_shared/session.ts`); all writes go through the `levelmeup` functions.
 - No service-role key or Anthropic key in the app or the repo (an automated check scans the app bundle and the git
   tree for key patterns).
 - Inputs are schema-validated at the Edge Function boundary; text fields have length limits.
@@ -256,7 +259,7 @@ is needed. What the two apps share, and how LevelMeUp stays out of the wedding's
 
 | Shared thing | How LevelMeUp handles it |
 |---|---|
-| Database | Everything in the `levelmeup` schema. The schema isn't exposed through the Data API. Functions connect as `lmu_service` (`noinherit`; it holds `authenticated` only to switch to it for player reads, never by itself), which has no rights on any wedding table (DB test). It can run one wedding function, `is_admin()`, which is open to everyone and always answers false for it. |
+| Database | Everything in the `levelmeup` schema. The schema isn't exposed through the Data API. Functions connect as `lmu_service` (`noinherit`), which can switch only to `lmu_player` for player reads; neither role has any right on a wedding table, and neither can become `authenticated` (DB tests, including forged admin claims). Both can run the wedding's `is_admin()`, which is open to everyone, but its answer opens nothing to them. |
 | **Migration history** | The CLI keeps one migration history per project. If LevelMeUp used `supabase db push`, the wedding repo's next push would fail on versions it doesn't know, and vice versa. So LevelMeUp **never uses `db push`** against the project. `npm run db:deploy` applies LevelMeUp's migration files with `supabase db query --linked` and records them in `levelmeup.schema_migrations`, and checks the wedding's history is unchanged afterwards. |
 | CLI commands | Every CLI call from LevelMeUp's scripts goes through `scripts/sb.ts`, an allow list: `db query --linked`, deploying or deleting named `lmu-` functions, `LMU_` secrets from an env file, all pinned to this project. It refuses `db push`, `db reset`, `config push`, `migration repair`, `link`, `--prune` and everything else. LevelMeUp has no `config.toml`, so nothing can push its settings over the wedding's. |
 | Edge Functions | All names prefixed `lmu-` (`lmu-sync`, `lmu-onboarding`, `lmu-account-delete`, `lmu-articles-tick`), deployed by name. |
@@ -281,8 +284,9 @@ launch.
 
 Results so far: 1 (Deno half) passed in M3: a deployed function imported both packages from `packages/` by
 relative path and matched Node's answers, time zones included. 5 passed in M3: `db:deploy` applied 0001–0003 and
-the wedding's history stayed `20260928000100/200/300`. 6 passed in M3 as a DB test (a real `set role lmu_service`
-is refused on `public.invites`) and live (the functions log in as `lmu_service` through the pooler).
+the wedding's history stayed `20260928000100/200/300`. 6 passed in M3 as a DB test (real `set role lmu_service` and
+`lmu_player` attempts, with forged admin claims, are refused on `public.invites`) and live (the functions log in as
+`lmu_service` through the pooler).
 
 1. Shared rules/content packages import in both Metro/Jest and Deno (§1.1).
 2. Anonymous → Google linking with supabase-js on Android (§4.4).

@@ -65,6 +65,36 @@ describe('closing days and building the next one (architecture §4.3)', () => {
     expect(away.newDay!.dayNumber).toBe(5);
   });
 
+  it('pending check-in → streak day → missed day: the missed day waits too (answering late changes nothing)', () => {
+    const day2Window = manilaDay(2);
+    const day2 = { ...DAY1, dayNumber: 2, startsAt: new Date(day2Window.startsAt).toISOString(), endsAt: new Date(day2Window.endsAt).toISOString() };
+    const input = afterDay1(['core'], day2Window.endsAt + HOUR, {
+      character: characterRow({ awaiting_checkin: true, streak_current: 2, streak_best: 2 }),
+      days: [dayRow(DAY1, 1), dayRow(day2, 2)],
+      instances: [...instanceRows(DAY1, 1, ['core']), ...instanceRows(day2, 2)],
+    });
+    const out = planAdvance(input)!;
+    expect(out.close).toEqual([
+      { dayId: 1, resolution: 'streak_day', streakApplied: false, checkin: false },
+      { dayId: 2, resolution: 'awaiting_checkin', streakApplied: false, checkin: false },
+    ]);
+    expect(out.streak).toEqual({ current: 2, best: 2, shields: 0, awaitingCheckin: true });
+    expect(out.newDay!.dayNumber).toBe(3);
+  });
+
+  it('once a day waits from an earlier sync, every later day waits, missed or not', () => {
+    const out = planAdvance(afterDay1([], day1End, { queued: true, character: characterRow({ awaiting_checkin: true }) }))!;
+    expect(out.close).toEqual([{ dayId: 1, resolution: 'awaiting_checkin', streakApplied: false, checkin: false }]);
+  });
+
+  it('away days behind a waiting day wait too: no gap check-in now', () => {
+    const now = manilaDay(5).startsAt + HOUR;
+    const out = planAdvance(afterDay1(['core'], now, { queued: true, character: characterRow({ awaiting_checkin: true }) }))!;
+    expect(out.gap).toBeNull();
+    expect(out.newDay!.dayNumber).toBe(5);
+    expect(out.streak.awaitingCheckin).toBe(true);
+  });
+
   it('3 away days are one gap check-in, counted in the day number', () => {
     const now = manilaDay(5).startsAt + 3 * HOUR;
     const out = planAdvance(afterDay1(['core'], now))!;
@@ -116,6 +146,8 @@ describe('closing days and building the next one (architecture §4.3)', () => {
   it('a day the builder cannot make is protected automatically, with no quests', () => {
     const out = planAdvance(afterDay1(['core'], day1End, { profile: profileRow(undefined, { goals: [] }) }))!;
     expect(out.newDay).toMatchObject({ dayNumber: 2, protection: 'no_quests', quests: [] });
+    expect(out.buildError).toMatch(/\S/);
+    expect(planAdvance(afterDay1(['core'], day1End))!.buildError).toBeNull();
   });
 
   it('an absence longer than the day-by-day count starts a fresh day from now', () => {

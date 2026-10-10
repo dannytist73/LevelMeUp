@@ -265,3 +265,18 @@ begin
   return next matches(lmu_test.try_service(format('select levelmeup.add_xp(%L, ''{"strength": 100}'', 1)', a)), '^42501',
     'lmu_service cannot call the internal helpers');
 end $$;
+
+create function lmu_test.test_event_ids_cannot_be_reused() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  core bigint := lmu_test.quest(a, 'core');
+  side bigint := lmu_test.quest(a, 'side1');
+begin
+  perform levelmeup.complete_quest(a, lmu_test.ev(1), core, now(), null, null);
+  return next throws_ok(format('select levelmeup.complete_quest(%L, %L, %s, now(), null, null)', a, lmu_test.ev(1), side),
+    'P0001', 'lmu:event_reused', 'the same event id for another quest is refused');
+  return next throws_ok(format('select levelmeup.undo_quest(%L, %L, %s)', a, lmu_test.ev(1), core),
+    'P0001', 'lmu:event_reused', 'the same event id for another action is refused');
+  return next is((select completed_at is not null from levelmeup.quest_instances where id = core), true, 'and the first action stands');
+  return next is((select completed_at from levelmeup.quest_instances where id = side), null, 'and the other quest is untouched');
+end $$;

@@ -1,6 +1,10 @@
 -- Helpers shared by every DB test file: scripts/db-test.ts runs this file first inside each file's transaction.
 -- Test players use ids 00000000-0000-4000-8000-…, test events 00000000-0000-4000-9000-…
 
+-- postgres may act as LevelMeUp's roles in this transaction only (the rollback removes these grants).
+grant lmu_service to postgres with set true, inherit false;
+grant lmu_player to postgres with set true, inherit false;
+
 create function lmu_test.uid(p_n int) returns uuid language sql immutable as $$
   select ('00000000-0000-4000-8000-' || lpad(p_n::text, 12, '0'))::uuid
 $$;
@@ -9,12 +13,13 @@ create function lmu_test.ev(p_n int) returns uuid language sql immutable as $$
   select ('00000000-0000-4000-9000-' || lpad(p_n::text, 12, '0'))::uuid
 $$;
 
--- Runs p_sql as the player (role authenticated with their claims). Null when it worked, else 'SQLSTATE: message'.
+-- Runs p_sql as the player (role lmu_player with their claims, as db.ts does).
+-- Null when it worked, else 'SQLSTATE: message'.
 -- The role always comes back to postgres: `reset role` on success, the block's rollback on error.
 create function lmu_test.try_as(p_user uuid, p_sql text) returns text language plpgsql as $$
 begin
-  perform set_config('request.jwt.claims', json_build_object('sub', p_user, 'role', 'authenticated')::text, true);
-  set local role authenticated;
+  perform set_config('request.jwt.claims', json_build_object('sub', p_user)::text, true);
+  set local role lmu_player;
   execute p_sql;
   reset role;
   return null;
@@ -26,8 +31,8 @@ create function lmu_test.count_as(p_user uuid, p_sql text) returns bigint langua
 declare
   n bigint;
 begin
-  perform set_config('request.jwt.claims', json_build_object('sub', p_user, 'role', 'authenticated')::text, true);
-  set local role authenticated;
+  perform set_config('request.jwt.claims', json_build_object('sub', p_user)::text, true);
+  set local role lmu_player;
   execute format('select count(*) from (%s) q', p_sql) into n;
   reset role;
   return n;
@@ -43,10 +48,9 @@ exception when others then
   return sqlstate || ': ' || sqlerrm;
 end $$;
 
--- lmu_service's view: grants postgres the role for this transaction only, then runs p_sql as lmu_service.
+-- lmu_service's view.
 create function lmu_test.try_service(p_sql text) returns text language plpgsql as $$
 begin
-  grant lmu_service to postgres with set true, inherit false;
   return lmu_test.try_role('lmu_service', p_sql);
 end $$;
 

@@ -16,6 +16,8 @@ export type AdvanceInput = {
   /** The player's latest days (at least the last 7 and every open one). */
   days: readonly DayRow[];
   instances: readonly InstanceRow[];
+  /** A closed day already waits behind the pending check-in (Snapshot.queued). */
+  queued: boolean;
   /** The phone's time zone now, canonical. */
   timeZone: string;
   nowMs: number;
@@ -28,9 +30,15 @@ export type LedgerLine = { sourceType: 'rung' | 'discipline' | 'milestone'; sour
 export type ClosedDayOutcome = {
   dayId: number;
   resolution: 'streak_day' | 'protected' | 'awaiting_checkin';
-  /** False while an earlier check-in is pending: the day waits, in order, for M7's answer. */
+  /**
+   * False when the day waits, in order, for the pending check-in's answer (M7 applies it then). Once one day waits,
+   * every later day waits too, so answering late gives the same result as answering at once (spec §3.7).
+   */
   streakApplied: boolean;
-  /** This day opens a check-in (an already pending one covers later unanswered days). */
+  /**
+   * This day opens a check-in. A pending one covers later unanswered days only while nothing waits behind it; a
+   * missed day after a waiting day gets its check-in when M7 replays the queue.
+   */
   checkin: boolean;
 };
 
@@ -43,13 +51,14 @@ export type Outcome = {
   streak: StreakState;
   counters: { hardDaysCleared: number; comebacks: number };
   newDay: DayDraft | null;
+  /** Why the new day has no quests, for the function's log (not stored). */
+  buildError: string | null;
 };
 
 /** Slots that count toward "any 2 quests" (spec §2.4); a recovery quest answers an earlier miss instead. */
 const STREAK_SLOTS: readonly Slot[] = ['core', 'side1', 'side2', 'article'];
 /** Away days counted one by one; a longer absence starts a fresh day from now. */
 const MAX_AWAY_DAYS = 400;
-const COMEBACK_AWAY_DAYS = REENTRY_AWAY_MS / DAY_MS;
 
 export function planAdvance(input: AdvanceInput): Outcome | null {
   const { library, nowMs, profile } = input;
@@ -71,6 +80,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   };
   const rulesProfile = () => toProfile(profile, start, xp);
   let streak = streakState(input.character);
+  let queued = input.queued;
   const close: ClosedDayOutcome[] = [];
   const counters = { hardDaysCleared: 0, comebacks: 0 };
 
@@ -84,8 +94,9 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
 
     let streakApplied = true;
     let checkin = false;
-    if (streak.awaitingCheckin && resolution.kind !== 'awaiting_checkin') {
+    if (queued || (streak.awaitingCheckin && resolution.kind !== 'awaiting_checkin')) {
       streakApplied = false;
+      queued = true;
     } else {
       checkin = resolution.kind === 'awaiting_checkin' && !streak.awaitingCheckin;
       const change = applyDay(streak, resolution);
@@ -121,6 +132,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   const running = days.some((d) => (d.status === 'open' && !close.some((c) => c.dayId === Number(d.id))));
   let newDay: DayDraft | null = null;
   let gap: Outcome['gap'] = null;
+  let buildError: string | null = null;
   if (!running) {
     const last = days[days.length - 1]!;
     let window: DayWindow = nextDayWindow(dayWindow(last), input.timeZone, profile.boundary_minutes);
@@ -135,11 +147,14 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     }
     const dayNumber = last.day_number + 1 + away;
 
-    if (away > 0 && !streak.awaitingCheckin) {
+    // Away days are one gap check-in; a pending check-in covers them; behind a waiting day they wait too (M7 replays
+    // them from the jump in day numbers).
+    if (away > 0 && !streak.awaitingCheckin && !queued) {
       streak = applyDay(streak, { kind: 'awaiting_checkin' }).state;
       gap = { from: last.day_number + 1, to: dayNumber - 1 };
     }
-    const comeback = away >= COMEBACK_AWAY_DAYS;
+    // Measured in time, like recordReentry, so a light comeback day and the rung step-down always come together.
+    const comeback = window.startsAt - last.ends_at.getTime() >= REENTRY_AWAY_MS;
     if (comeback) {
       for (const id of Object.keys(ladders)) {
         const change = recordReentry(ladders[id]!, window.startsAt, last.ends_at.getTime());
@@ -155,9 +170,10 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
       const built = buildDay(library, { dayNumber, profile: rulesProfile(), ladders, history, light: comeback, articleId: null });
       quests = built.quests.map((q) => toDraft(library, q));
       budget = built.budget;
-    } catch {
+    } catch (error) {
       // A day that can't be built is protected automatically (spec §3.7): never a miss the player didn't cause.
       protection = 'no_quests';
+      buildError = error instanceof Error ? error.message : String(error);
     }
     newDay = {
       dayNumber,
@@ -175,5 +191,5 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   }
 
   if (close.length === 0 && newDay === null) return null;
-  return { close, gap, ladders: changed, ledger, streak, counters, newDay };
+  return { close, gap, ladders: changed, ledger, streak, counters, newDay, buildError };
 }

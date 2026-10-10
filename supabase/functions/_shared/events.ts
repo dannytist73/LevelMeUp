@@ -12,6 +12,12 @@ const MAX_SEGMENTS = 100;
 const MAX_SETS = 20;
 const MAX_REPS = 999;
 const MAX_SENTENCE = 280;
+/** Times a phone can send: whole milliseconds between 2026 and 2100 (SQL checks the real window). */
+const EARLIEST_MS = Date.UTC(2026, 0, 1);
+const LATEST_MS = Date.UTC(2100, 0, 1);
+const isTime = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= EARLIEST_MS && (v as number) <= LATEST_MS;
+/** Control characters (Postgres refuses \u0000 in jsonb; a sentence has no line breaks). */
+const CONTROL = /\p{Cc}/u;
 
 export type CompleteEvent = { id: string; type: 'complete'; instanceId: number; completedAt: number; rating: Rating | null; payload: unknown };
 export type UndoEvent = { id: string; type: 'undo'; instanceId: number };
@@ -30,7 +36,7 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
   if (!isInstanceId(raw.instanceId)) return { id, code: 'bad_event' };
   switch (raw.type) {
     case 'complete': {
-      if (typeof raw.completedAt !== 'number' || !Number.isFinite(raw.completedAt)) return { id, code: 'bad_event' };
+      if (!isTime(raw.completedAt)) return { id, code: 'bad_event' };
       const rating = raw.rating ?? null;
       if (rating !== null && !RATINGS.includes(rating as Rating)) return { id, code: 'bad_rating' };
       return { id, type: 'complete', instanceId: raw.instanceId, completedAt: raw.completedAt, rating: rating as Rating | null, payload: raw.payload ?? {} };
@@ -93,13 +99,14 @@ export function checkCompletionPayload(
       if (!isObject(payload) || !Array.isArray(payload.segments) || payload.segments.length > MAX_SEGMENTS) return { code: 'bad_payload' };
       const from = day.starts_at.getTime();
       const until = Math.min(day.ends_at.getTime(), receivedAt + CLOCK_SKEW_MS);
-      const segments: Segment[] = [];
+      const sent: Segment[] = [];
       for (const s of payload.segments) {
-        if (!isObject(s) || typeof s.start !== 'number' || typeof s.end !== 'number') return { code: 'bad_payload' };
-        segments.push({ start: Math.max(s.start, from), end: Math.min(s.end, until) });
+        if (!isObject(s) || !isTime(s.start) || !isTime(s.end)) return { code: 'bad_payload' };
+        sent.push({ start: s.start, end: s.end });
       }
-      if (!questTimerDone(elapsedMs(segments), timerTargetMs(instance))) return { code: 'timer_short' };
-      return { payload: { segments: payload.segments } };
+      const counted = sent.map((s) => ({ start: Math.max(s.start, from), end: Math.min(s.end, until) }));
+      if (!questTimerDone(elapsedMs(counted), timerTargetMs(instance))) return { code: 'timer_short' };
+      return { payload: { segments: sent } };
     }
     case 'reps': {
       if (!isObject(payload) || !Array.isArray(payload.sets)) return { code: 'bad_payload' };
@@ -112,7 +119,7 @@ export function checkCompletionPayload(
     case 'text': {
       if (!isObject(payload) || typeof payload.text !== 'string') return { code: 'bad_payload' };
       const text = payload.text.trim();
-      if (text.length < 1 || text.length > MAX_SENTENCE) return { code: 'bad_payload' };
+      if (text.length < 1 || text.length > MAX_SENTENCE || CONTROL.test(text)) return { code: 'bad_payload' };
       return { payload: { text } };
     }
     default:

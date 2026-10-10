@@ -63,7 +63,7 @@ export const DAY1: DayDraft = startArgs(choices(), templateReveal(choices()), ON
 export function afterDay1(done: readonly Slot[], nowMs: number, over: Partial<AdvanceInput> = {}): AdvanceInput {
   return {
     profile: profileRow(), character: characterRow(), ladders: [], days: [dayRow(DAY1, 1)], instances: instanceRows(DAY1, 1, done),
-    timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION, ...over,
+    queued: false, timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION, ...over,
   };
 }
 

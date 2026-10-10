@@ -46,6 +46,14 @@ describe('the sync body', () => {
     ]);
   });
 
+  it('a completion time must be whole milliseconds in a sane range (an invalid date would fail every retry)', () => {
+    for (const completedAt of [1e16, start + 0.5, Date.UTC(2020, 0, 1), Number.NaN, '2026-10-10']) {
+      const body = parseSyncBody({ timeZone: 'UTC', events: [{ id: ID, type: 'complete', instanceId: 1, completedAt }] });
+      if (isProblem(body)) throw new Error('unexpected problem');
+      expect(body.rejected).toEqual([{ id: ID, code: 'bad_event' }]);
+    }
+  });
+
   it('a completion carries its time, optional rating and payload', () => {
     const body = parseSyncBody({ timeZone: 'UTC', events: [{ id: ID.toUpperCase(), type: 'complete', instanceId: 9, completedAt: start, rating: 'too_hard' }] });
     if (isProblem(body)) throw new Error('unexpected problem');
@@ -83,9 +91,15 @@ describe('completion payloads (spec §3.6)', () => {
     expect(timerTargetMs({ condition: { kind: 'habit' }, minutes: 5 })).toBe(5 * MIN);
   });
 
+  it('stores only each segment\'s start and end', () => {
+    const sent = { segments: [{ start: start + MIN, end: start + 9 * MIN, note: 'a\u0000b' }] };
+    expect(check(timer, sent)).toEqual({ payload: { segments: [{ start: start + MIN, end: start + 9 * MIN }] } });
+  });
+
   it('rejects malformed timers', () => {
     expect(check(timer, {})).toEqual({ code: 'bad_payload' });
     expect(check(timer, { segments: [{ start: 'a', end: 2 }] })).toEqual({ code: 'bad_payload' });
+    expect(check(timer, { segments: [{ start: start, end: 1e300 }] })).toEqual({ code: 'bad_payload' });
     expect(check(timer, { segments: Array.from({ length: 101 }, () => ({ start, end: start + 1 })) })).toEqual({ code: 'bad_payload' });
   });
 
@@ -104,6 +118,8 @@ describe('completion payloads (spec §3.6)', () => {
     expect(check(text, { text: '  I read two pages.  ' })).toEqual({ payload: { text: 'I read two pages.' } });
     expect(check(text, { text: '   ' })).toEqual({ code: 'bad_payload' });
     expect(check(text, { text: 'x'.repeat(281) })).toEqual({ code: 'bad_payload' });
+    expect(check(text, { text: 'I read \u0000 two pages.' })).toEqual({ code: 'bad_payload' });
+    expect(check(text, { text: 'Line one.\nLine two.' })).toEqual({ code: 'bad_payload' });
     expect(check(text, {})).toEqual({ code: 'bad_payload' });
   });
 });

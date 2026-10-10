@@ -66,8 +66,9 @@ declare
 begin
   for t in select lmu_test.player_tables() union all select 'ai_generations' union all select 'schema_migrations' loop
     foreach p in array array['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE'] loop
-      return next ok(not has_table_privilege('authenticated', format('levelmeup.%I', t), p), format('players have no %s on %s', p, t));
+      return next ok(not has_table_privilege('lmu_player', format('levelmeup.%I', t), p), format('players have no %s on %s', p, t));
       return next ok(not has_table_privilege('lmu_service', format('levelmeup.%I', t), p), format('lmu_service has no %s on %s', p, t));
+      return next ok(not has_table_privilege('authenticated', format('levelmeup.%I', t), p), format('the project''s users have no %s on %s', p, t));
     end loop;
   end loop;
   return next matches(lmu_test.try_as(a, 'update levelmeup.character_state set xp_strength = 999'), '^42501',
@@ -84,6 +85,7 @@ begin
   return next matches(lmu_test.try_as(a, 'select * from levelmeup.ai_generations'), '^42501', 'players cannot read AI usage');
   return next matches(lmu_test.try_as(a, 'select * from levelmeup.schema_migrations'), '^42501', 'players cannot read the migration list');
   return next matches(lmu_test.try_role('anon', 'select * from levelmeup.profiles'), '^42501', 'anon is refused');
+  return next matches(lmu_test.try_role('authenticated', 'select * from levelmeup.profiles'), '^42501', 'the project''s signed-in users are refused');
   return next ok(not has_table_privilege('lmu_service', 'levelmeup.profiles', 'SELECT'), 'lmu_service reads only as a player');
 end $$;
 

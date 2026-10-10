@@ -4,13 +4,13 @@ import type postgres from 'npm:postgres@3.4.9';
 import { newAchievements } from '../../../packages/rules/src/index.ts';
 import { ACHIEVEMENTS, CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { planAdvance } from '../_shared/advance.ts';
-import { playerFromAuthHeader } from '../_shared/auth.ts';
 import { asPlayer, asService, db, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
 import { checkCompletionPayload } from '../_shared/events.ts';
 import type { PhoneEvent, Rejected } from '../_shared/events.ts';
 import { parseSyncBody } from '../_shared/events.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
+import { authenticate } from '../_shared/session.ts';
 import { achievementProgress, ladderMap, stateView } from '../_shared/state.ts';
 import type { DayRow, InstanceRow } from '../_shared/state.ts';
 
@@ -45,10 +45,19 @@ async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
     });
     return { id: event.id, ok: true, result };
   } catch (error) {
-    const code = lmuCode(error);
+    const code = lmuCode(error) ?? badData(error);
     if (code === null) throw error;
     return { id: event.id, ok: false, code };
   }
+}
+
+/**
+ * An event whose data Postgres refuses (SQLSTATE class 22) is rejected on its own, so one bad event can't fail every
+ * retry of the phone's outbox. Anything else is a real failure and fails the sync.
+ */
+function badData(error: unknown): string | null {
+  const sqlstate = (error as { code?: unknown }).code;
+  return typeof sqlstate === 'string' && sqlstate.startsWith('22') ? 'bad_payload' : null;
 }
 
 /** Closes ended days and builds the next one; recomputes from fresh state if another write got there first. */
@@ -62,6 +71,7 @@ async function advance(userId: string, timeZone: string): Promise<void> {
         const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
         const outcome = planAdvance({ ...snapshot, timeZone, nowMs: now.getTime(), library: LIBRARY, contentVersion: CONTENT_VERSION });
         if (outcome === null) return;
+        if (outcome.buildError !== null) console.error('lmu-sync: a day was built without quests', userId, outcome.buildError);
         await tx`select levelmeup.advance(${userId}::uuid, ${snapshot.character.version}::int, ${jsonParam(tx, outcome)}::jsonb)`;
       });
       return;
@@ -82,7 +92,7 @@ async function awardAchievements(userId: string): Promise<string[]> {
 }
 
 Deno.serve(async (req) => {
-  const player = playerFromAuthHeader(req.headers.get('authorization'), Date.now());
+  const player = await authenticate(req);
   if (isProblem(player)) return problemResponse(player);
   const body = await readJson(req);
   if (isProblem(body)) return problemResponse(body);

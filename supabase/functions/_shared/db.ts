@@ -1,5 +1,6 @@
 // Postgres access for the Edge Functions, as lmu_service (LMU_DB_URL, transaction pooler). Reads run as the player
-// (role authenticated with their claims) so row level security decides; writes call the levelmeup functions.
+// (role lmu_player with their claims) so row level security decides; writes call the levelmeup functions. lmu_player
+// can read LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (migration 0004).
 import postgres from 'npm:postgres@3.4.9';
 import type { CharacterRow, CheckinRow, DayRow, InstanceRow, LadderRow, ProfileRow, Snapshot } from './state.ts';
 
@@ -32,8 +33,8 @@ export function lmuCode(error: unknown): string | null {
 }
 
 export async function asPlayer(tx: Tx, userId: string): Promise<void> {
-  await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: 'authenticated' })}, true)`;
-  await tx`set local role authenticated`;
+  await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId })}, true)`;
+  await tx`set local role lmu_player`;
 }
 
 export async function asService(tx: Tx): Promise<void> {
@@ -56,9 +57,11 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       select id, day_id, gap_from, gap_to, answer from levelmeup.checkins where user_id = ${userId} and answer is null order by id`;
     const earned = await tx<{ achievement_id: string }[]>`
       select achievement_id from levelmeup.achievements_earned where user_id = ${userId}`;
+    const { queued } = one(await tx<{ queued: boolean }[]>`
+      select exists (select 1 from levelmeup.quest_days where user_id = ${userId} and status = 'closed' and not streak_applied) as queued`);
     return {
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances], checkins: [...checkins],
-      earned: earned.map((r) => r.achievement_id),
+      earned: earned.map((r) => r.achievement_id), queued,
     };
   } finally {
     await asService(tx);
