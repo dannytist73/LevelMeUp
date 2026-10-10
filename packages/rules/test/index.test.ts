@@ -9,7 +9,8 @@ describe('public API', () => {
     'resumeAfterPain', 'stepDown', 'decideConsequence', 'isSealed', 'elapsedMs', 'questTimerDone', 'trialDone',
     'simulatePacing', 'meetsTargets', 'closedDayResolution', 'resolveCheckin', 'canonicalTimeZone', 'templateAllowed',
     'effectiveRung', 'maxRungFor', 'abilityUnlocked', 'abilityReady', 'swapLimit', 'buildDay',
-    'draftQuest', 'questReward',
+    'draftQuest', 'questReward', 'swapOptions', 'applySwap', 'applyHardDay', 'restAllowed', 'applyStillness', 'applyDawnRitual',
+    'addRecovery', 'checkProvisionalDay',
   ])('exports %s', (name) => {
     expect(typeof (rules as Record<string, unknown>)[name]).toBe('function');
   });
