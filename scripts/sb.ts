@@ -26,11 +26,17 @@ export function supabase(args: readonly string[]): CliResult {
 export function query<Row = Record<string, unknown>>(args: readonly string[]): Row[] {
   const result = supabase(['db', 'query', '--linked', '--project-ref', 'knlgpcwoaaygncmlnbsm', '--output-format', 'json', ...args]);
   const text = result.stdout.trim();
-  const start = text.indexOf('{');
-  if (result.status !== 0 || start === -1) throw new Error(`query failed:\n${result.stdout}\n${result.stderr}`.trim());
-  const parsed = JSON.parse(text.slice(start)) as { rows?: Row[]; error?: { message?: string } };
-  if (parsed.error) throw new Error(`query failed: ${parsed.error.message ?? JSON.stringify(parsed.error)}`);
-  return parsed.rows ?? [];
+  let parsed: unknown;
+  try {
+    parsed = text === '' ? [] : JSON.parse(text);
+  } catch {
+    parsed = undefined;
+  }
+  // `--agent no` prints the rows as a JSON array; agent mode wraps them as { rows } and errors as { error }.
+  if (result.status === 0 && Array.isArray(parsed)) return parsed as Row[];
+  const wrapped = parsed as { rows?: Row[]; error?: { message?: string } } | undefined;
+  if (result.status === 0 && wrapped && Array.isArray(wrapped.rows)) return wrapped.rows;
+  throw new Error(`query failed: ${wrapped?.error?.message ?? `${result.stdout}\n${result.stderr}`.trim()}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
