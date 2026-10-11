@@ -108,7 +108,7 @@ in Supabase storage; the videos transcribed locally.
 13. **Quest art per exercise** (M6a carried item): a session's picture is its first move's family (`move-push` …
     `move-isolation`); the bodyweight ladders' early rungs get their own (`push-wall`, `push-incline`, `push-knee`,
     `squat-chair`, `squat-split`, `core-dead-bug`, `core-side-plank`; sit-to-stands reuse `micro-strength`). 14 new
-    pictures rendered with the M6a pipeline and published as `lmu-art/v3` (34 pictures and the manifest). The upload
+    pictures rendered with the M6a pipeline and published as `lmu-art/v3` (33 pictures and the manifest; see As built). The upload
     needs the owner's yes; until then the new keys draw the ink fallback.
 14. **Hard-day titles** (M6b carried item): no quest title names a number (a test checks), so a hard day can't show
     the full version's minutes; the summary line carries the numbers.
@@ -3856,6 +3856,11 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
   workout; players onboarded before M6c are never asked the Training question (bodyweight, No preference until they
   open Settings → Training); a move id must never change (an unknown id stops the quest from showing); Settings →
   Training's save guard is state only, as M6b's Swap.
+- **Task 13 (art):** 13 new keys, not 14: four renders of "side plank" all drew a front plank or a leg raise, so the
+  side plank rung keeps the core ladder's forearm plank (no `art` on `core-5`); the v3 set has 33 pictures. Six subjects
+  were reworded after their first renders drew the wrong exercise (the brief has the wording that worked); the dead
+  bug was re-rendered with open hands (a raised finger could read as a gesture). The 20 v2 pictures are byte-identical
+  in v3. ComfyUI ran with `run_noaudio.py` and was stopped after.
 - **Re-review (same reviewer): ready to merge.** New minor items, carried forward: the server's training re-plan doesn't
   apply `keptOutBy`; a pending training change blocks logging that workout offline until it syncs; `checkProvisionalDay`
   (M6d) must check the new rule. Server unit tests: 252.

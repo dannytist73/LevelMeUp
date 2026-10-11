@@ -5,7 +5,7 @@ Start ComfyUI first:  Start-Process D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe m
 usage (with D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe):
   quest-art.py render [KEY ...] [--seeds 11 22 33]   -> art/quest/renders/<key>-<seed>.png (every key when none given)
   quest-art.py sheet                                  -> art/quest/renders/_sheet-<page>.jpg (12 renders a page, labelled)
-  quest-art.py pick                                   -> art/quest/v2/<key>-<n>.webp and manifest.json from PICKS
+  quest-art.py pick                                   -> art/quest/v3/<key>-<n>.webp and manifest.json from PICKS
 Existing renders are skipped. The keys must match packages/content/src/art.ts (its test checks this file).
 """
 import argparse, json, subprocess, sys, time, urllib.parse, urllib.request
@@ -14,7 +14,7 @@ from pathlib import Path
 COMFY = "http://127.0.0.1:8188"
 ROOT = Path(__file__).resolve().parents[2]
 RENDERS = ROOT / "art" / "quest" / "renders"
-OUT = ROOT / "art" / "quest" / "v2"  # the published folder; a changed set gets a new one (v3, …)
+OUT = ROOT / "art" / "quest" / "v3"  # the published folder; a changed set gets a new one (v4, …)
 W, H = 1344, 768  # 16:9-ish; cropped to 960x540 on pick
 FONT = "C\\:/Windows/Fonts/arial.ttf"  # ffmpeg's drawtext needs a font file on Windows
 
@@ -44,29 +44,32 @@ SUBJECTS = {
     "dawn-ritual": "an adult opening curtains onto a sunrise over city rooftops",
     "article": "an open book glowing softly on a wooden desk at night",
     # M6c: rungs with their own exercise, and the workout exercise families.
-    "push-wall": "an adult man doing push-ups against a wall in a bright hallway, body in one straight line",
-    "push-incline": "an adult woman doing incline push-ups with her hands on a sturdy kitchen counter",
+    "push-wall": "side view, full body, an adult man standing almost upright, leaning forward toward a wall, both palms flat on the wall at shoulder height, elbows bent, both feet on the floor a step back from the wall, a standing wall push-up in a bright hallway",
+    "push-incline": "side view, full body, an adult woman doing an incline push-up, her hands gripping the front edge of a kitchen counter, both feet standing on the kitchen floor far behind her, her body one straight diagonal line from heels to head",
     "push-knee": "an adult doing push-ups from the knees on a yoga mat in a living room",
-    "squat-chair": "side view, an adult lowering into a squat to lightly touch a wooden chair behind them, arms forward",
-    "squat-split": "an adult doing a split squat in a park, one foot forward, the back knee lowering toward the grass",
-    "core-dead-bug": "an adult lying on their back on a mat, knees bent above the hips, one arm and the opposite leg reaching out",
-    "core-side-plank": "an adult holding a side plank on one forearm on a mat at a beach at sunrise, body straight",
+    "squat-chair": "wide shot, side view, full body from head to feet, an adult man doing a box squat in a living room: halfway down with knees bent, hips pushed back and hovering just above the seat of a wooden chair behind him, back straight and chest up, both arms stretched straight out in front at shoulder height",
+    "squat-split": "wide shot, side view, full body from head to feet, an adult woman doing a split squat in a park, one foot forward and one foot back, the back knee lowering toward the grass, torso upright, hands on hips",
+    "core-dead-bug": "an adult lying on their back on a mat doing the dead bug exercise, both arms reaching straight up toward the ceiling with open flat hands, knees lifted and bent at a right angle above the hips with shins level, one leg stretching out straight just above the floor",
     "move-push": "an adult pressing a pair of dumbbells up from a flat bench in a small home gym",
     "move-press": "an adult woman pressing two dumbbells overhead, standing tall in a garage gym",
-    "move-pull": "an adult doing a one-arm dumbbell row with one knee and hand on a bench",
+    "move-pull": "side view, an adult man doing a one-arm dumbbell row: his left knee and left hand resting on a flat gym bench, back flat and level with the floor, right foot on the floor, his right arm pulling one dumbbell up beside his ribs",
     "move-squat": "an adult doing a goblet squat, holding one dumbbell against the chest, in a gym",
     "move-hinge": "an adult doing a Romanian deadlift with dumbbells, back flat and hips pushed back",
     "move-core": "an adult doing hanging knee raises from a pull-up bar in a doorway",
     "move-isolation": "an adult doing dumbbell curls in front of a gym mirror",
 }
 
-# Filled in after picking from the sheets: key -> the seeds to publish, in order (n = 1, 2, …). The v2 set (2026-10-11).
+# Filled in after picking from the sheets: key -> the seeds to publish, in order (n = 1, 2, …). The v3 set (M6c,
+# 2026-10-12): v2's 20 picks and the 13 new keys (seeds 44+ were rendered with the rewritten subjects).
 PICKS: dict[str, list[int]] = {
     "ladder-push": [33], "ladder-squat": [11], "ladder-core": [11], "ladder-own-program": [11], "ladder-walk": [33],
     "ladder-mobility": [11], "ladder-sleep": [33], "ladder-breathing": [22], "ladder-reading": [22],
     "ladder-insight": [33], "ladder-focus": [11], "ladder-phone-free": [11], "micro-strength": [104],
     "micro-vitality": [33], "micro-wisdom": [33], "micro-focus": [11], "recovery": [22], "stillness": [22],
     "dawn-ritual": [22], "article": [11],
+    "push-wall": [55], "push-incline": [44], "push-knee": [22], "squat-chair": [99], "squat-split": [44],
+    "core-dead-bug": [99], "move-push": [33], "move-press": [22], "move-pull": [66], "move-squat": [22], "move-hinge": [22],
+    "move-core": [33], "move-isolation": [11],
 }
 
 

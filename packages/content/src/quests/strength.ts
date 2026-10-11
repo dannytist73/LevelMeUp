@@ -533,7 +533,6 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['back', 'shoulder'],
     hardDay: { minutes: 4, condition: hold(1, 30, true) },
     name: 'Side plank',
-    art: 'core-side-plank',
     steps: [
       'Warm up for 2 minutes with a short forearm plank and a few dead bugs.',
       'Lie on your side with your forearm under your shoulder and your legs stacked.',
