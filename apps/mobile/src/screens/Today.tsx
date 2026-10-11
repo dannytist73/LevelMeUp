@@ -1,11 +1,12 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
-// quest screen (M6a); swap, hard day and the article reader arrive in M6b–M8.
+// quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx). The article reader arrives in M8.
 import { CLASS_NAMES, artKey, authoredTemplate } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
+import { isExercise } from '../game/adjust.ts';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
@@ -19,12 +20,16 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Caption, Display, Heading, Label, Small } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
+import { DayActions, DayBanners, PausedExercises } from './DayActions.tsx';
 import { QuestCard } from './QuestCard.tsx';
 import { syncMark } from './syncLine.ts';
 
 export type TodayProps = {
   onSettings: () => void;
   onOpenQuest: (questId: number) => void;
+  onSwap: () => void;
+  onPain: (questId: number) => void;
+  onVanish: () => void;
   now?: () => number;
 };
 
@@ -32,7 +37,7 @@ const SECTION: Record<QuestView['slot'], string> = {
   core: 'Core quest', side1: 'Side quests', side2: 'Side quests', article: "Today's reading", recovery: 'Recovery',
 };
 
-export function Today({ onSettings, onOpenQuest, now = Date.now }: TodayProps) {
+export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, now = Date.now }: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
@@ -41,6 +46,7 @@ export function Today({ onSettings, onOpenQuest, now = Date.now }: TodayProps) {
   const notices = useGame((s) => s.notices);
   const syncNow = useGame((s) => s.syncNow);
   const dismissNotice = useGame((s) => s.dismissNotice);
+  const enqueue = useGame((s) => s.enqueue);
   const signInLost = useGame((s) => s.signInLost);
   const startOver = useGame((s) => s.startOver);
   const [confirming, setConfirming] = useState(false);
@@ -89,6 +95,7 @@ export function Today({ onSettings, onOpenQuest, now = Date.now }: TodayProps) {
     const sides = quests.filter((q) => q.slot === 'side1' || q.slot === 'side2');
     body = (
       <View style={{ gap: 30 }}>
+        <DayBanners today={today!} />
         {slots.map((title) => {
           const inSection = quests.filter((q) => SECTION[q.slot] === title);
           const count = title === 'Side quests' ? `${sides.filter((q) => q.completedAt !== null).length} / ${sides.length}` : undefined;
@@ -105,11 +112,14 @@ export function Today({ onSettings, onOpenQuest, now = Date.now }: TodayProps) {
                   waiting={view!.waiting.has(q.id)}
                   onOpen={() => onOpenQuest(q.id)}
                   artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId)), q.id) : null}
+                  onPain={q.slot === 'core' && q.completedAt === null && isExercise(q) ? () => onPain(q.id) : undefined}
                 />
               ))}
             </View>
           );
         })}
+        <DayActions view={view!} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />
+        <PausedExercises view={view!} enqueue={enqueue} />
       </View>
     );
   }

@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS, GOOGLE_ERRORS } from '@levelmeup/content';
+import { ACHIEVEMENTS, ADJUST_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
@@ -8,7 +8,7 @@ import { Character } from '../src/screens/Character.tsx';
 import { Chronicle, dayOutcome } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { completeEvent, serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, completeEvent, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
@@ -24,7 +24,7 @@ async function renderToday(over: Parameters<typeof testStore>[0] = {}, server: S
   const store = testStore({ view: project(server, []), ...over });
   const onSettings = jest.fn();
   const onOpenQuest = jest.fn();
-  await render(withStore(store, <Today onSettings={onSettings} onOpenQuest={onOpenQuest} now={now} />));
+  await render(withStore(store, <Today onSettings={onSettings} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} now={now} />));
   return { store, onSettings, onOpenQuest };
 }
 
@@ -258,4 +258,13 @@ describe('Celebration (M6a decision 8)', () => {
     expect(screen.getByText(titled.description)).toBeTruthy();
     expect(screen.getByText(`Title earned: ${titled.title}`)).toBeTruthy();
   });
+});
+
+it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core quest (M6b)', async () => {
+  const onPain = jest.fn();
+  await render(withStore(testStore({ view: project(adjustState(), []) }),
+    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={onPain} onVanish={jest.fn()} now={() => DAY_TWO_NOW} />));
+  expect(screen.getByRole('button', { name: 'Swap · 1 left' })).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
+  expect(onPain).toHaveBeenCalledWith(200);
 });
