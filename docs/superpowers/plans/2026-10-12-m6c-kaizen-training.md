@@ -3856,6 +3856,9 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
   workout; players onboarded before M6c are never asked the Training question (bodyweight, No preference until they
   open Settings → Training); a move id must never change (an unknown id stops the quest from showing); Settings →
   Training's save guard is state only, as M6b's Swap.
+- **Re-review (same reviewer): ready to merge.** New minor items, carried forward: the server's training re-plan doesn't
+  apply `keptOutBy`; a pending training change blocks logging that workout offline until it syncs; `checkProvisionalDay`
+  (M6d) must check the new rule. Server unit tests: 252.
 
 ### Pacing re-run (Task 5, 400 runs, 2026-10-12): all targets met, no tuning
 
