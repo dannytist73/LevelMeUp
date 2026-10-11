@@ -1,6 +1,7 @@
 // POST /functions/v1/lmu-sync — the phone's one round trip (architecture §4.1, §6): apply its events in order
 // (completions and the M6b adjustments), close ended days and build the next one, award achievements, and return the
-// player's state. The server's numbers win.
+// player's state. The server's numbers win. M6e: a day the phone built offline is applied as of when it was built, and
+// quests of that day are found by day and slot until the phone has their ids.
 import type postgres from 'npm:postgres@3.4.9';
 import { newAchievements } from '../../../packages/rules/src/index.ts';
 import { ACHIEVEMENTS, CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
@@ -9,8 +10,9 @@ import { planAdvance } from '../_shared/advance.ts';
 import { asPlayer, asService, db, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
 import { adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody } from '../_shared/events.ts';
-import type { AdjustEvent, PhoneEvent, Rejected } from '../_shared/events.ts';
+import type { AdjustEvent, PainEvent, PhoneEvent, ProvisionalDayEvent, Rejected, SlotRef } from '../_shared/events.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
+import { provisionalClock, sameQuests } from '../_shared/offline.ts';
 import { authenticate } from '../_shared/session.ts';
 import { achievementProgress, ladderMap, stateView } from '../_shared/state.ts';
 import { dayOffers } from '../_shared/today.ts';
@@ -23,10 +25,37 @@ type Applied = { id: string; ok: true; result: unknown } | Rejected & { ok: fals
 
 const jsonParam = (tx: Tx, value: unknown) => tx.json(value as postgres.JSONValue);
 
-type PlayEvent = Exclude<PhoneEvent, AdjustEvent>;
+type PlayEvent = Exclude<PhoneEvent, AdjustEvent | ProvisionalDayEvent>;
+
+type QuestRow = Pick<InstanceRow, 'id' | 'template_id' | 'completion' | 'condition' | 'minutes'> & Pick<DayRow, 'starts_at' | 'ends_at'>;
+
+/** The quest an event names, read as the player: by id, or (M6e) by its day and slot on a day the phone built offline. */
+async function questRow(tx: Tx, userId: string, target: { instanceId: number | null; ref?: SlotRef }): Promise<QuestRow | null> {
+  await asPlayer(tx, userId);
+  try {
+    const rows = target.ref === undefined
+      ? await tx<QuestRow[]>`
+          select q.id, q.template_id, q.completion, q.condition, q.minutes, d.starts_at, d.ends_at
+          from levelmeup.quest_instances q join levelmeup.quest_days d on d.id = q.day_id
+          where q.id = ${target.instanceId}::bigint and q.user_id = ${userId}::uuid`
+      : await tx<QuestRow[]>`
+          select q.id, q.template_id, q.completion, q.condition, q.minutes, d.starts_at, d.ends_at
+          from levelmeup.quest_instances q join levelmeup.quest_days d on d.id = q.day_id
+          where d.user_id = ${userId}::uuid and d.day_number = ${target.ref.dayNumber}::int and q.slot = ${target.ref.slot}`;
+    return rows[0] ?? null;
+  } finally {
+    await asService(tx);
+  }
+}
 
 async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
   try {
+    if (event.type === 'provisional_day') {
+      const kept = await provisional(userId, event);
+      // Stored with the server's own quests: the phone shows a notice and drops its day (decision 13).
+      if (kept.kept === 'server') return { id: event.id, ok: false, code: 'day_rebuilt' };
+      return { id: event.id, ok: true, result: kept };
+    }
     const result = isAdjust(event) ? await adjust(userId, event) : await play(userId, event);
     return { id: event.id, ok: true, result };
   } catch (error) {
@@ -43,27 +72,29 @@ async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
   }
 }
 
-/** A completion, undo or rating (M3). */
+/** A completion, undo or rating (M3); M6e: of a quest named by its day and slot. */
 function play(userId: string, event: PlayEvent): Promise<unknown> {
   return db().begin(async (tx) => {
     if (event.type === 'complete') {
-      await asPlayer(tx, userId);
-      const [row] = await tx<(Pick<InstanceRow, 'completion' | 'condition' | 'minutes'> & Pick<DayRow, 'starts_at' | 'ends_at'>)[]>`
-        select q.completion, q.condition, q.minutes, d.starts_at, d.ends_at
-        from levelmeup.quest_instances q join levelmeup.quest_days d on d.id = q.day_id
-        where q.id = ${event.instanceId}::bigint and q.user_id = ${userId}::uuid`;
-      await asService(tx);
-      if (row === undefined) throw new Error('lmu:not_found');
-      const checked = checkCompletionPayload(row, row, event.payload, Date.now());
+      const row = await questRow(tx, userId, event);
+      if (row === null) throw new Error('lmu:not_found');
+      // Named by its slot (M6e) but not the quest the phone showed: the server's day won. The work still counts for the
+      // quest now in that slot, without the timer or rep check, which was for the phone's quest (decision 7).
+      const ref = event.ref;
+      const checked = ref !== undefined && row.template_id !== ref.templateId
+        ? { payload: { offlineQuest: ref.templateId } }
+        : checkCompletionPayload(row, row, event.payload, Date.now());
       if ('code' in checked) throw new Error(`lmu:${checked.code}`);
-      return one(await tx<{ r: unknown }[]>`select levelmeup.complete_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint,
+      return one(await tx<{ r: unknown }[]>`select levelmeup.complete_quest(${userId}::uuid, ${event.id}::uuid, ${row.id}::bigint,
         ${new Date(event.completedAt)}::timestamptz, ${event.rating}::text, ${jsonParam(tx, checked.payload)}::jsonb) as r`).r;
     }
+    const instanceId = event.instanceId ?? (await questRow(tx, userId, event))?.id;
+    if (instanceId === undefined) throw new Error('lmu:not_found');
     if (event.type === 'undo') {
-      return one(await tx<{ r: unknown }[]>`select levelmeup.undo_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint) as r`).r;
+      return one(await tx<{ r: unknown }[]>`select levelmeup.undo_quest(${userId}::uuid, ${event.id}::uuid, ${instanceId}::bigint) as r`).r;
     }
     return one(await tx<{ r: unknown }[]>`
-      select levelmeup.rate_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint, ${event.rating}::text) as r`).r;
+      select levelmeup.rate_quest(${userId}::uuid, ${event.id}::uuid, ${instanceId}::bigint, ${event.rating}::text) as r`).r;
   });
 }
 
@@ -86,11 +117,61 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
         if (seen.length > 0) return write(-1, {});
         const snapshot = await loadSnapshot(tx, userId);
         if (snapshot === null) throw new Error('lmu:not_started');
+        // A pain report about a quest named by its slot (M6e): the quest there now, never an exercise the player didn't do.
+        const planned = event.type === 'pain' && event.ref !== undefined ? await slotPain(tx, userId, event) : event;
         // The database clock, the one levelmeup.adjust checks the day against.
         const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
-        const plan = planAdjust(snapshot, event, { nowMs: now.getTime(), library: LIBRARY });
+        const plan = planAdjust(snapshot, planned, { nowMs: now.getTime(), library: LIBRARY });
         if ('code' in plan) throw new Error(`lmu:${plan.code}`);
         return write(snapshot.character.version, plan.change);
+      });
+    } catch (error) {
+      if (lmuCode(error) !== 'conflict' || attempt >= MAX_TRIES) throw error;
+    }
+  }
+}
+
+/** "I felt pain" about a quest named by its slot (M6e decision 7): refused when the quest there isn't the one the phone showed. */
+async function slotPain(tx: Tx, userId: string, event: PainEvent & { ref: SlotRef }): Promise<PainEvent> {
+  const row = await questRow(tx, userId, event);
+  if (row === null) throw new Error('lmu:not_found');
+  if (row.template_id !== event.ref.templateId) throw new Error('lmu:quest_changed');
+  return { id: event.id, type: 'pain', instanceId: Number(row.id), choice: event.choice };
+}
+
+type Kept = { dayNumber: number; kept: 'phone' | 'existing' | 'server' };
+
+/**
+ * A day the phone built offline (M6e decision 5): closes what had ended and builds the next day as of when the phone
+ * built it, so a day the player opened isn't skipped as an away day, keeping the phone's quests when the rules allow
+ * them. A day that already exists stays as it is. Nothing is recorded: a repeat finds the day and answers the same.
+ */
+async function provisional(userId: string, event: ProvisionalDayEvent): Promise<Kept> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await db().begin(async (tx): Promise<Kept> => {
+        const snapshot = await loadSnapshot(tx, userId);
+        if (snapshot === null) throw new Error('lmu:not_started');
+        const stored = snapshot.days.find((d) => d.day_number === event.dayNumber);
+        if (stored !== undefined) {
+          const quests = snapshot.instances.filter((q) => String(q.day_id) === String(stored.id));
+          return { dayNumber: event.dayNumber, kept: sameQuests(quests, event.quests) ? 'existing' : 'server' };
+        }
+        if (snapshot.days.some((d) => d.day_number > event.dayNumber)) return { dayNumber: event.dayNumber, kept: 'server' };
+        const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
+        const lastEndsAt = Math.max(...snapshot.days.map((d) => d.ends_at.getTime()));
+        const asOf = provisionalClock(event.builtAt, now.getTime(), lastEndsAt);
+        if (asOf === null) throw new Error('lmu:clock_ahead');
+        const outcome = planAdvance({
+          ...snapshot, timeZone: event.timeZone, nowMs: asOf, library: LIBRARY, contentVersion: CONTENT_VERSION,
+          provisional: { dayNumber: event.dayNumber, quests: event.quests },
+        });
+        // The server's last day was still running when the phone built the next one: the phone's clock is ahead.
+        if (outcome === null || outcome.newDay === null) throw new Error('lmu:clock_ahead');
+        if (outcome.buildError !== null) console.error('lmu-sync: a day was built without quests', userId, outcome.buildError);
+        if (outcome.offline?.kept === 'server') console.info('lmu-sync: an offline day was rebuilt', userId, outcome.offline.problems);
+        await tx`select levelmeup.advance(${userId}::uuid, ${snapshot.character.version}::int, ${jsonParam(tx, outcome)}::jsonb)`;
+        return { dayNumber: outcome.newDay.dayNumber, kept: outcome.offline?.kept ?? 'server' };
       });
     } catch (error) {
       if (lmuCode(error) !== 'conflict' || attempt >= MAX_TRIES) throw error;
