@@ -3,7 +3,7 @@ import * as rules from '../src/index.ts';
 
 describe('public API', () => {
   it.each([
-    'levelForXp', 'levelProgress', 'statPoints', 'xpToNextPoint', 'rankFor', 'startingStats', 'questXp', 'splitXp',
+    'levelForXp', 'levelProgress', 'statPoints', 'xpToNextPoint', 'pointProgress', 'nextRank', 'localDateKey', 'rankFor', 'startingStats', 'questXp', 'splitXp',
     'firstDayWindow', 'nextDayWindow', 'isClosed', 'acceptsCompletion', 'isValidTimeZone', 'applyDay', 'isStreakDay',
     'checkinOutcome', 'shouldOfferLighterPlan', 'recordCompletion', 'recordMiss', 'recordReentry', 'recordPain',
     'resumeAfterPain', 'stepDown', 'decideConsequence', 'isSealed', 'elapsedMs', 'questTimerDone', 'trialDone',

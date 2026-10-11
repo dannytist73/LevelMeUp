@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rankFor, startingStats, statPoints, xpToNextPoint } from '../src/stats.ts';
+import { nextRank, pointProgress, rankFor, startingStats, statPoints, xpToNextPoint } from '../src/stats.ts';
 import type { ClassId } from '../src/types.ts';
 
 describe('stat points (spec §2.1)', () => {
@@ -55,5 +55,35 @@ describe('starting stats', () => {
     expect(() => startingStats({ strength: Number.NaN, vitality: 5, wisdom: 5, focus: 5, discipline: 5 }, 'monk')).toThrow(RangeError);
     expect(() => startingStats({ strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 5 }, 'paladin' as ClassId)).toThrow(RangeError);
     expect(() => startingStats({ strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 5 }, '__proto__' as ClassId)).toThrow(RangeError);
+  });
+});
+
+describe('progress to the next point (M6d)', () => {
+  it('says how far the stat XP is into its current point and what the point spans', () => {
+    expect(pointProgress(0)).toEqual({ into: 0, span: 22 });
+    expect(pointProgress(21)).toEqual({ into: 21, span: 22 });
+    expect(pointProgress(22)).toEqual({ into: 0, span: 66 }); // the second point needs 88 XP in all
+    expect(pointProgress(100)).toEqual({ into: 12, span: 110 });
+  });
+
+  it('agrees with xpToNextPoint', () => {
+    for (const xp of [0, 5, 22, 87, 88, 500, 4321]) {
+      const { into, span } = pointProgress(xp);
+      expect(span - into).toBe(xpToNextPoint(xp));
+    }
+  });
+
+  it('rejects invalid input', () => {
+    expect(() => pointProgress(-1)).toThrow(RangeError);
+  });
+});
+
+describe('the next rank (M6d)', () => {
+  it('names the next rank and the points it starts at', () => {
+    expect(nextRank(0)).toEqual({ rank: 'D', at: 10 });
+    expect(nextRank(9)).toEqual({ rank: 'D', at: 10 });
+    expect(nextRank(10)).toEqual({ rank: 'C', at: 15 });
+    expect(nextRank(59)).toEqual({ rank: 'S', at: 60 });
+    expect(nextRank(60)).toBeNull();
   });
 });

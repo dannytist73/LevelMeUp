@@ -6,6 +6,7 @@ import {
   firstDayWindow,
   isClosed,
   isValidTimeZone,
+  localDateKey,
   localParts,
   nextBoundaryAtOrAfter,
   nextDayWindow,
@@ -24,6 +25,12 @@ const windowEnding = (endsAt: string, timeZone: string): DayWindow => ({
 });
 
 describe('time-zone helpers', () => {
+  it('names the local date of an instant (M6d: the calendar)', () => {
+    expect(localDateKey('Asia/Manila', Date.UTC(2026, 9, 11, 16, 30))).toBe('2026-10-12'); // 00:30 in Manila
+    expect(localDateKey('America/New_York', Date.UTC(2026, 9, 12, 3))).toBe('2026-10-11');
+    expect(localDateKey('UTC', Date.UTC(2026, 0, 5))).toBe('2026-01-05');
+  });
+
   it('reads wall-clock parts in a zone', () => {
     expect(localParts('Asia/Manila', iso('2026-10-09T20:00:00Z'))).toEqual({
       year: 2026, month: 10, day: 10, hour: 4, minute: 0, second: 0,

@@ -24,6 +24,20 @@ export function xpToNextPoint(statXp: number): number {
   return STAT_XP_DIVISOR * (earned + 1) ** 2 - statXp;
 }
 
+/** How far a stat is into its current point (M6d: the bars on Character): XP since the last point, and the point's span. */
+export function pointProgress(statXp: number): { into: number; span: number } {
+  assertStatXp(statXp);
+  const earned = Math.floor(Math.sqrt(statXp / STAT_XP_DIVISOR));
+  const floor = STAT_XP_DIVISOR * earned ** 2;
+  return { into: statXp - floor, span: STAT_XP_DIVISOR * (earned + 1) ** 2 - floor };
+}
+
+/** The next rank above `points` and the points it starts at; null at the top rank. */
+export function nextRank(points: number): { rank: Rank; at: number } | null {
+  const above = [...RANK_FLOORS].reverse().find(([, floor]) => floor > points);
+  return above === undefined ? null : { rank: above[0], at: above[1] };
+}
+
 export function rankFor(points: number): Rank {
   for (const [rank, floor] of RANK_FLOORS) {
     if (points >= floor) return rank;

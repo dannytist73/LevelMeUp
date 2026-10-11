@@ -58,6 +58,12 @@ export function localParts(timeZone: string, utcMs: number): LocalParts {
   };
 }
 
+/** The local date at `utcMs` in `timeZone`, as `YYYY-MM-DD` (M6d: a quest day's date on the calendar). */
+export function localDateKey(timeZone: string, utcMs: number): string {
+  const p = localParts(timeZone, utcMs);
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+
 /** How far `timeZone` is ahead of UTC at `utcMs`, in ms (UTC+8 gives 28 800 000). */
 export function offsetMs(timeZone: string, utcMs: number): number {
   const p = localParts(timeZone, utcMs);
