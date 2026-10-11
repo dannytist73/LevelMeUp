@@ -12,7 +12,10 @@ export type ClearedNumbers = {
   statUps: { stat: Stat; from: number; to: number; rank: Rank }[];
   /** The core quest: today earns Discipline +5 when it closes (spec §2.1). */
   discipline: boolean;
-  /** This completion made today a streak day: the streak grows by one when the day closes (spec §2.4). */
+  /**
+   * This completion made today a streak day: the streak grows by one when the day closes (spec §2.4). Null while a
+   * check-in is pending: the server holds the day until it's answered, and the answer decides the streak (review).
+   */
   streak: { from: number; to: number } | null;
   level: { level: number; xpIntoLevel: number; xpForLevel: number };
 };
@@ -31,7 +34,7 @@ export function clearedSummary(before: Shot | null, after: Shot, questId: number
     return to > from ? [{ stat, from, to, rank: after.character.stats[stat].rank }] : [];
   });
   const current = after.character.streak.current;
-  const grew = before !== null && !streakDay(before.quests) && streakDay(after.quests);
+  const grew = before !== null && !after.character.streak.awaitingCheckin && !streakDay(before.quests) && streakDay(after.quests);
   const { level, xpIntoLevel, xpForLevel } = after.character;
   return {
     xp: Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0),

@@ -43,6 +43,17 @@ describe('"Quest cleared" (board D2, M6a decision 5)', () => {
     expect(clearedSummary(shown(core.id), shown(core.id, side1.id), side1.id).streak).toBeNull(); // already counted
   });
 
+  it('promises no streak while a check-in is pending: the server holds the day until it is answered (review)', () => {
+    const waiting = serverState([], { xp_strength: 22 - CORE_STRENGTH, awaiting_checkin: true });
+    const shot = (...done: number[]) => {
+      const view = project(waiting, done.map((id) => completeEvent(id)));
+      return { character: view.character, quests: view.today!.quests };
+    };
+    expect(waiting.character.streak.awaitingCheckin).toBe(true);
+    expect(clearedSummary(shot(), shot(core.id), core.id).streak).toBeNull();
+    expect(clearedSummary(shot(), shot(core.id), core.id).discipline).toBe(true); // the core quest still counts for Discipline
+  });
+
   it('opened later, without a before, shows no changes, only the XP, Discipline and the bar', () => {
     const c = clearedSummary(null, shown(core.id), core.id);
     expect(c.statUps).toEqual([]);
