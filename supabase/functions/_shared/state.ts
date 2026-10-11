@@ -1,6 +1,6 @@
 // Database rows and what the rules make of them. Pure: no database access here.
 import {
-  STATS, TRAINABLE_STATS, levelForXp, levelProgress, localDateKey, newLadder, rankFor, statPoints, xpToNextPoint,
+  DAY_MS, STATS, TRAINABLE_STATS, levelForXp, levelProgress, localDateKey, newLadder, rankFor, statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
   AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState, Limitation,
@@ -97,7 +97,7 @@ export type CheckinRow = { id: Id; day_id: Id | null; gap_from: number | null; g
 export type FinishedBook = { title: string; startedAt: string | null; finishedAt: string; sessions: number; minutes: number };
 
 /** What the Chronicle's calendar reads of a day (M6d). */
-export type CalendarRow = Pick<DayRow, 'day_number' | 'starts_at' | 'time_zone' | 'status' | 'resolution' | 'protection' | 'hard_day'>;
+export type CalendarRow = Pick<DayRow, 'day_number' | 'starts_at' | 'ends_at' | 'time_zone' | 'status' | 'resolution' | 'protection' | 'hard_day'>;
 
 /** Days the calendar covers (decision 3). */
 export const CALENDAR_DAYS = 92;
@@ -106,8 +106,8 @@ export const CALENDAR_DAYS = 92;
 export type History = {
   /** The latest days, newest first, at most CALENDAR_DAYS. */
   days: CalendarRow[];
-  /** Day 1's start and zone, or null. */
-  dayOne: Pick<DayRow, 'starts_at' | 'time_zone'> | null;
+  /** Day 1's end and zone (its date: `calendarDate`), or null. */
+  dayOne: Pick<DayRow, 'ends_at' | 'time_zone'> | null;
   /** New rungs reached: the rung bonuses paid. */
   newRungs: number;
   /** Quests cleared with the current book since it was set. */
@@ -117,6 +117,15 @@ export type History = {
 export type CalendarMark = 'open' | 'cleared' | 'hard' | 'rest' | 'paused' | 'none';
 
 const REST: readonly Protection[] = ['planned_rest', 'pain'];
+
+/**
+ * A quest day's date on the calendar: the local date 24 hours before it ends. For every day but one that is the date it
+ * starts on; a day 1 begun late in the evening runs at least 6 hours, to the morning after next (rules:
+ * FIRST_DAY_MIN_MS), and takes the date it mostly covers, so no date between day 1 and day 2 is left blank (review).
+ */
+export function calendarDate(d: Pick<DayRow, 'ends_at' | 'time_zone'>): string {
+  return localDateKey(d.time_zone, d.ends_at.getTime() - DAY_MS);
+}
 
 /** How the calendar draws a day (decision 3). A closed day that is neither cleared nor protected is never a "miss". */
 export function calendarMark(d: CalendarRow): CalendarMark {
@@ -296,11 +305,10 @@ const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recov
 const iso = (d: Date | null): string | null => (d === null ? null : d.toISOString());
 
 /** Growth since day 1 (decision 5): points gained per stat, levels gained, quests cleared, new rungs. */
-function growthOf(c: CharacterRow, history: History) {
-  const view = characterView(c);
+function growthOf(c: CharacterRow, view: ReturnType<typeof characterView>, history: History) {
   const start = startPoints(c);
   return {
-    since: history.dayOne === null ? null : localDateKey(history.dayOne.time_zone, history.dayOne.starts_at.getTime()),
+    since: history.dayOne === null ? null : calendarDate(history.dayOne),
     levels: view.level - 1,
     stats: Object.fromEntries(STATS.map((s) => [s, view.stats[s].points - start[s]])) as StatMap,
     questsCleared: c.quests_cleared,
@@ -313,6 +321,7 @@ function growthOf(c: CharacterRow, history: History) {
  * the history Character and Chronicle show (M6d).
  */
 export function stateView(s: Snapshot, offers: DayOffers, history: History) {
+  const character = characterView(s.character);
   const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
   const today = days[0] ?? null;
   const questsOf = (day: DayRow) => s.instances.filter((q) => String(q.day_id) === String(day.id));
@@ -326,7 +335,7 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
       book: s.profile.book, bookStartedAt: iso(s.profile.book_started_at), booksFinished: s.profile.books_finished,
       reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
     },
-    character: characterView(s.character),
+    character,
     today: today === null ? null : {
       id: Number(today.id), dayNumber: today.day_number, startsAt: iso(today.starts_at), endsAt: iso(today.ends_at),
       timeZone: today.time_zone, budget: today.budget, light: today.light, hardDay: today.hard_day, protection: today.protection,
@@ -356,9 +365,9 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
     painReports: s.painReports,
     /** M6d: the last CALENDAR_DAYS days, newest first. */
     calendar: history.days.map((d) => ({
-      dayNumber: d.day_number, date: localDateKey(d.time_zone, d.starts_at.getTime()), mark: calendarMark(d),
+      dayNumber: d.day_number, date: calendarDate(d), mark: calendarMark(d),
     })),
-    growth: growthOf(s.character, history),
+    growth: growthOf(s.character, character, history),
     /** Scholar's Path: sessions and minutes with the current book, or null without one. */
     reading: s.profile.book === null ? null : history.reading,
   };

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { CALENDAR_DAYS, calendarMark, stateView } from '../../functions/_shared/state.ts';
+import { CALENDAR_DAYS, calendarDate, calendarMark, stateView } from '../../functions/_shared/state.ts';
 import type { CalendarRow } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
 import { characterRow, dayTwoSnapshot, historyOf, profileRow } from './fixtures.ts';
 
 const row = (over: Partial<CalendarRow>): CalendarRow => ({
-  day_number: 3, starts_at: new Date(Date.UTC(2026, 9, 11, 22)), time_zone: 'Asia/Manila', status: 'closed',
+  day_number: 3, starts_at: new Date(Date.UTC(2026, 9, 11, 22)), ends_at: new Date(Date.UTC(2026, 9, 12, 22)), time_zone: 'Asia/Manila', status: 'closed',
   resolution: 'streak_day', protection: null, hard_day: false, ...over,
 });
 
@@ -20,6 +20,17 @@ describe('the calendar mark (M6d decision 3)', () => {
     expect(calendarMark(row({ resolution: 'protected', protection: 'no_quests' }))).toBe('paused');
     expect(calendarMark(row({ resolution: 'awaiting_checkin' }))).toBe('none');
     expect(calendarMark(row({ status: 'open', resolution: null }))).toBe('open');
+  });
+
+  it('dates a day by the date it mostly covers: a day 1 begun late in the evening takes the next one (review)', () => {
+    // Onboarding at 23:00 in Manila on 10 Oct: day 1 runs at least 6 hours, to 04:00 on 12 Oct, and day 2 starts then.
+    const day1 = row({ day_number: 1, starts_at: new Date(Date.UTC(2026, 9, 10, 15)), ends_at: new Date(Date.UTC(2026, 9, 11, 20)) });
+    const day2 = row({ day_number: 2, starts_at: new Date(Date.UTC(2026, 9, 11, 20)), ends_at: new Date(Date.UTC(2026, 9, 12, 20)) });
+    expect(calendarDate(day1)).toBe('2026-10-11');
+    expect(calendarDate(day2)).toBe('2026-10-12');
+    // Any other day: the date it starts on, in its own zone.
+    expect(calendarDate(row({ time_zone: 'America/New_York' }))).toBe('2026-10-11'); // 18:00 on 11 Oct in New York
+    expect(calendarDate(row({}))).toBe('2026-10-12'); // 06:00 on 12 Oct in Manila
   });
 
   it('keeps about three months', () => {
