@@ -41,6 +41,7 @@ async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
       if (event.type === 'undo') {
         return one(await tx<{ r: unknown }[]>`select levelmeup.undo_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint) as r`).r;
       }
+      if (event.type !== 'rate') throw new Error('lmu:unsupported_event'); // adjustments: Task 7
       return one(await tx<{ r: unknown }[]>`
         select levelmeup.rate_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint, ${event.rating}::text) as r`).r;
     });

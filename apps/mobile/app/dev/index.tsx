@@ -57,7 +57,7 @@ export default function Developer() {
       />
 
       <SectionTitle title="Outbox and notices" />
-      {pending.length === 0 ? <Meta>Nothing waiting.</Meta> : pending.map((e) => <Meta key={e.id}>{`${e.type} → quest ${e.instanceId}`}</Meta>)}
+      {pending.length === 0 ? <Meta>Nothing waiting.</Meta> : pending.map((e) => <Meta key={e.id}>{'instanceId' in e ? `${e.type} → quest ${e.instanceId}` : e.type}</Meta>)}
       {notices.map((n) => (
         <Meta key={n.eventId}>{`Refused: ${n.code}`}</Meta>
       ))}

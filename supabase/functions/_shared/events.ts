@@ -1,7 +1,8 @@
-// Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; the other event types arrive
-// with the milestones whose screens send them, and until then are rejected without touching anything.
-import { CLOCK_SKEW_MS, canonicalTimeZone, elapsedMs, isValidTimeZone, questTimerDone } from '../../../packages/rules/src/index.ts';
-import type { Rating, Segment } from '../../../packages/rules/src/index.ts';
+// Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; M6b the adjustments (swap, hard
+// day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); the rest arrive with the milestones whose
+// screens send them, and until then are rejected without touching anything.
+import { CLASSES, CLOCK_SKEW_MS, canonicalTimeZone, elapsedMs, isValidTimeZone, questTimerDone } from '../../../packages/rules/src/index.ts';
+import type { ClassId, Rating, Segment } from '../../../packages/rules/src/index.ts';
 import { isObject, problem, UUID } from './http.ts';
 import type { Problem } from './http.ts';
 import type { DayRow, InstanceRow } from './state.ts';
@@ -22,30 +23,81 @@ const CONTROL = /\p{Cc}/u;
 export type CompleteEvent = { id: string; type: 'complete'; instanceId: number; completedAt: number; rating: Rating | null; payload: unknown };
 export type UndoEvent = { id: string; type: 'undo'; instanceId: number };
 export type RateEvent = { id: string; type: 'rate'; instanceId: number; rating: Rating };
-export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent;
+export type PainChoice = 'gentle' | 'rest' | 'pause';
+export type DayAbility = 'stillness' | 'dawn_ritual';
+export type SwapEvent = { id: string; type: 'swap'; instanceId: number; templateId: string };
+export type HardDayEvent = { id: string; type: 'hard_day'; dayId: number };
+export type RestEvent = { id: string; type: 'plan_rest'; dayId: number };
+export type PainEvent = { id: string; type: 'pain'; instanceId: number; choice: PainChoice };
+/** `ladderId`: a ladder, or a standalone exercise quest resting after pain (rules: painKey). */
+export type ResumeEvent = { id: string; type: 'resume'; ladderId: string };
+export type StepDownEvent = { id: string; type: 'step_down'; instanceId: number };
+export type ClassChangeEvent = { id: string; type: 'class_change'; classId: ClassId };
+export type AbilityEvent = { id: string; type: 'ability'; dayId: number; ability: DayAbility };
+export type AdjustEvent =
+  | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent;
+export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent;
 export type Rejected = { id: string | null; code: string };
+
+export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
+  'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability',
+];
+export const isAdjust = (event: PhoneEvent): event is AdjustEvent => (ADJUST_TYPES as readonly string[]).includes(event.type);
+
+/** What `levelmeup.events` stores for an adjustment: the event without its id and type. */
+export function adjustPayload(event: AdjustEvent): Record<string, unknown> {
+  const { id: _id, type: _type, ...rest } = event;
+  return rest;
+}
 
 export type SyncRequest = { timeZone: string; events: PhoneEvent[]; rejected: Rejected[] };
 
-const isInstanceId = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) > 0;
+/** Instance and day ids: positive safe integers. */
+const isId = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) > 0;
+/** Template and ladder ids, as the content package writes them. */
+const isKey = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(v);
+const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
+const PAIN_CHOICES: readonly PainChoice[] = ['gentle', 'rest', 'pause'];
+const DAY_ABILITIES: readonly DayAbility[] = ['stillness', 'dawn_ritual'];
 
 function parseEvent(raw: unknown): PhoneEvent | Rejected {
   if (!isObject(raw)) return { id: null, code: 'bad_event' };
   const id = typeof raw.id === 'string' && UUID.test(raw.id) ? raw.id.toLowerCase() : null;
   if (id === null) return { id: null, code: 'bad_event_id' };
-  if (!isInstanceId(raw.instanceId)) return { id, code: 'bad_event' };
+  const bad: Rejected = { id, code: 'bad_event' };
   switch (raw.type) {
     case 'complete': {
-      if (!isTime(raw.completedAt)) return { id, code: 'bad_event' };
+      if (!isId(raw.instanceId) || !isTime(raw.completedAt)) return bad;
       const rating = raw.rating ?? null;
       if (rating !== null && !RATINGS.includes(rating as Rating)) return { id, code: 'bad_rating' };
       return { id, type: 'complete', instanceId: raw.instanceId, completedAt: raw.completedAt, rating: rating as Rating | null, payload: raw.payload ?? {} };
     }
     case 'undo':
-      return { id, type: 'undo', instanceId: raw.instanceId };
+      return isId(raw.instanceId) ? { id, type: 'undo', instanceId: raw.instanceId } : bad;
     case 'rate':
+      if (!isId(raw.instanceId)) return bad;
       if (!RATINGS.includes(raw.rating as Rating)) return { id, code: 'bad_rating' };
       return { id, type: 'rate', instanceId: raw.instanceId, rating: raw.rating as Rating };
+    case 'swap':
+      return isId(raw.instanceId) && isKey(raw.templateId) ? { id, type: 'swap', instanceId: raw.instanceId, templateId: raw.templateId } : bad;
+    case 'hard_day':
+      return isId(raw.dayId) ? { id, type: 'hard_day', dayId: raw.dayId } : bad;
+    case 'plan_rest':
+      return isId(raw.dayId) ? { id, type: 'plan_rest', dayId: raw.dayId } : bad;
+    case 'pain':
+      return isId(raw.instanceId) && PAIN_CHOICES.includes(raw.choice as PainChoice)
+        ? { id, type: 'pain', instanceId: raw.instanceId, choice: raw.choice as PainChoice }
+        : bad;
+    case 'resume':
+      return isKey(raw.ladderId) ? { id, type: 'resume', ladderId: raw.ladderId } : bad;
+    case 'step_down':
+      return isId(raw.instanceId) ? { id, type: 'step_down', instanceId: raw.instanceId } : bad;
+    case 'class_change':
+      return CLASS_IDS.includes(raw.classId as ClassId) ? { id, type: 'class_change', classId: raw.classId as ClassId } : bad;
+    case 'ability':
+      return isId(raw.dayId) && DAY_ABILITIES.includes(raw.ability as DayAbility)
+        ? { id, type: 'ability', dayId: raw.dayId, ability: raw.ability as DayAbility }
+        : bad;
     default:
       return { id, code: 'unsupported_event' };
   }

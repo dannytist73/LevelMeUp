@@ -28,6 +28,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   const quests = (server.today?.quests ?? []).map((q) => ({ ...q }));
   const waiting = new Set<number>();
   for (const event of pending) {
+    if (event.type !== 'complete' && event.type !== 'undo' && event.type !== 'rate') continue; // adjustments: Task 9
     const quest = quests.find((q) => q.id === event.instanceId);
     if (quest === undefined) continue; // not today's quest: only the server can say what happens to it
     waiting.add(quest.id);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_EVENTS, checkCompletionPayload, parseSyncBody, timerTargetMs } from '../../functions/_shared/events.ts';
+import { MAX_EVENTS, adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody, timerTargetMs } from '../../functions/_shared/events.ts';
+import type { AdjustEvent } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
 
 const ID = '7d3e1f2a-1b2c-4d3e-8f40-0123456789ab';
@@ -26,7 +27,7 @@ describe('the sync body', () => {
       timeZone: 'UTC',
       events: [
         { id: id(1), type: 'complete', instanceId: 5, completedAt: start + MIN, payload: {} },
-        { id: id(2), type: 'swap', instanceId: 5 },
+        { id: id(2), type: 'checkin', dayId: 5 },
         { id: 'not-a-uuid', type: 'undo', instanceId: 5 },
         { id: id(3), type: 'rate', instanceId: 5, rating: 'meh' },
         { id: id(4), type: 'undo', instanceId: -1 },
@@ -121,5 +122,51 @@ describe('completion payloads (spec §3.6)', () => {
     expect(check(text, { text: 'I read \u0000 two pages.' })).toEqual({ code: 'bad_payload' });
     expect(check(text, { text: 'Line one.\nLine two.' })).toEqual({ code: 'bad_payload' });
     expect(check(text, {})).toEqual({ code: 'bad_payload' });
+  });
+});
+
+describe('adjustment events (M6b)', () => {
+  it('parses each kind with its fields', () => {
+    const body = parseSyncBody({
+      timeZone: 'UTC',
+      events: [
+        { id: id(1), type: 'swap', instanceId: 5, templateId: 'walk-1' },
+        { id: id(2), type: 'hard_day', dayId: 3 },
+        { id: id(3), type: 'plan_rest', dayId: 3 },
+        { id: id(4), type: 'pain', instanceId: 5, choice: 'gentle' },
+        { id: id(5), type: 'resume', ladderId: 'micro-squats' },
+        { id: id(6), type: 'step_down', instanceId: 5 },
+        { id: id(7), type: 'class_change', classId: 'monk' },
+        { id: id(8), type: 'ability', dayId: 3, ability: 'stillness' },
+      ],
+    });
+    if (isProblem(body)) throw new Error('unexpected problem');
+    expect(body.rejected).toEqual([]);
+    expect(body.events.map((e) => e.type)).toEqual(['swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability']);
+    expect(body.events.every(isAdjust)).toBe(true);
+    expect(adjustPayload(body.events[0] as AdjustEvent)).toEqual({ instanceId: 5, templateId: 'walk-1' });
+    expect(adjustPayload(body.events[6] as AdjustEvent)).toEqual({ classId: 'monk' });
+  });
+
+  it('rejects each one with a missing or bad field, one by one', () => {
+    const bad = [
+      { type: 'swap', instanceId: 5 },
+      { type: 'swap', instanceId: 5, templateId: 'Walk 1' },
+      { type: 'hard_day', dayId: 0 },
+      { type: 'plan_rest' },
+      { type: 'pain', instanceId: 5, choice: 'ouch' },
+      { type: 'resume', ladderId: '' },
+      { type: 'step_down', instanceId: 'x' },
+      { type: 'class_change', classId: 'ranger' },
+      { type: 'ability', dayId: 3, ability: 'vanish' },
+    ];
+    const body = parseSyncBody({ timeZone: 'UTC', events: bad.map((e, i) => ({ id: id(i + 1), ...e })) });
+    if (isProblem(body)) throw new Error('unexpected problem');
+    expect(body.events).toEqual([]);
+    expect(body.rejected).toEqual(bad.map((_, i) => ({ id: id(i + 1), code: 'bad_event' })));
+  });
+
+  it('completions, undos and ratings are not adjustments', () => {
+    expect(isAdjust({ id: ID, type: 'undo', instanceId: 1 })).toBe(false);
   });
 });

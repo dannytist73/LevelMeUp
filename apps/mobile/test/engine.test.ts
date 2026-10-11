@@ -8,6 +8,7 @@ import { nodeSql } from './support/nodeSql.ts';
 
 const state = (marker: number) => ({ marker }) as unknown as ServerState;
 const ev = (n: number): PhoneEvent => ({ id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, type: 'undo', instanceId: n });
+const instanceOf = (e: PhoneEvent): number | null => ('instanceId' in e ? e.instanceId : null);
 type Reply = Call<SyncResponse> | ((events: readonly PhoneEvent[]) => Call<SyncResponse>);
 
 /** Every event applied, the server's state echoing how many it has seen. */
@@ -50,7 +51,7 @@ describe('one sync run', () => {
     for (let n = 1; n <= 120; n++) await local.enqueue(ev(n), n);
     const outcome = await syncOnce(deps);
     expect(sent.map((batch) => batch.length)).toEqual([BATCH, BATCH, 20]);
-    expect(sent.flat().map((e) => e.instanceId)).toEqual(Array.from({ length: 120 }, (_, i) => i + 1));
+    expect(sent.flat().map(instanceOf)).toEqual(Array.from({ length: 120 }, (_, i) => i + 1));
     expect(await local.pending(1000)).toEqual([]);
     expect(outcome).toMatchObject({ kind: 'synced', state: state(20) });
   });
@@ -87,7 +88,7 @@ describe('one sync run', () => {
     await local.enqueue(ev(1), 1);
     await local.enqueue(ev(2), 2);
     await syncOnce(deps);
-    expect((await local.pending(10)).map((e) => e.instanceId)).toEqual([1]);
+    expect((await local.pending(10)).map(instanceOf)).toEqual([1]);
   });
 
   it.each([
