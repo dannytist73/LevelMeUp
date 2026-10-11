@@ -41,6 +41,8 @@ describe('timers (decision 3)', () => {
   it('reads stored timers, dropping anything unreadable', () => {
     const t = pauseTimer(startTimer(NEW_TIMER, T0), T0 + MIN);
     expect(parseTimers(JSON.stringify({ 7: t, 8: { segments: 'no' }, x: t }))).toEqual({ 7: t });
+    // M6e: a quest of a day built offline has a negative id, and its timer is kept.
+    expect(parseTimers(JSON.stringify({ [-1]: t, 0: t }))).toEqual({ [-1]: t });
     expect(parseTimers('not json')).toEqual({});
     expect(parseTimers(null)).toEqual({});
   });

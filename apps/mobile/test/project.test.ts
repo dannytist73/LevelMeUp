@@ -5,7 +5,7 @@ import { characterView } from '../../../supabase/functions/_shared/state.ts';
 import { addStatXp, project } from '../src/game/project.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import {
-  adjustState, characterRow, completeEvent, ladderRows, profileRow, rateEvent, serverState, undoEvent, workoutState,
+  adjustState, characterRow, completeEvent, ladderRows, offlineEvent, profileRow, rateEvent, serverState, undoEvent, workoutState,
 } from './support/fixtures.ts';
 
 const deepFreeze = <T,>(value: T): T => {
@@ -48,11 +48,12 @@ describe('what the screens show: the server state plus the unsent events', () =>
 
   it('with nothing pending it is the server state, nothing waiting', () => {
     const shown = project(server, []);
-    const flags = { waiting: undefined, changingClass: undefined, changingBook: undefined };
+    const flags = { waiting: undefined, changingClass: undefined, changingBook: undefined, offline: undefined };
     expect({ ...shown, ...flags }).toEqual({ ...server, ...flags });
     expect(shown.waiting.size).toBe(0);
     expect(shown.changingClass).toBe(false);
     expect(shown.changingBook).toBe(false);
+    expect(shown.offline).toBe(false);
   });
 
   it('a completion clears the quest, adds its stored XP once, and waits for the server', () => {
@@ -176,5 +177,39 @@ describe("the Scholar's Path book on the phone (M6d)", () => {
     const shown = project({ ...server, profile: { ...server.profile, book: 'Dune' } }, [book(null, true)]);
     expect(shown.profile.book).toBeNull();
     expect(shown.reading).toBeNull();
+  });
+});
+
+describe('a day this phone built offline (M6e)', () => {
+  const event = offlineEvent();
+  const ref = { dayNumber: 2, slot: 'core' as const, templateId: 'push-1' };
+  const complete = { id: '00000000-0000-4000-8000-0000000000e2', type: 'complete' as const, instanceId: null, ref, completedAt: event.builtAt + 60_000, rating: null, payload: {} };
+
+  it("is today until the server's state has that day", () => {
+    const shown = project(serverState(), [event]);
+    expect(shown.offline).toBe(true);
+    expect(shown.today).toMatchObject({ dayNumber: 2, swapsLeft: 0, abilities: [] });
+    expect(shown.today!.quests.map((q) => q.id)).toEqual([-1, -2, -3, -4]);
+    const synced = project(adjustState(), [event]);
+    expect(synced.offline).toBe(false);
+    expect(synced.today!.quests[0]!.id).toBe(200);
+  });
+
+  it('completions, undos and ratings named by day and slot apply to its quests', () => {
+    const before = serverState();
+    const shown = project(before, [event, complete]);
+    const core = shown.today!.quests[0]!;
+    expect(core.completedAt).not.toBeNull();
+    expect(shown.waiting.has(-1)).toBe(true);
+    const gained = Object.values(core.xp).reduce((sum, xp) => sum + (xp ?? 0), 0);
+    expect(shown.character.totalXp).toBe(before.character.totalXp + gained);
+    const undone = project(before, [event, complete, { id: '00000000-0000-4000-8000-0000000000e3', type: 'undo', instanceId: null, ref }]);
+    expect(undone.today!.quests[0]!.completedAt).toBeNull();
+  });
+
+  it("an event named by day and slot still finds its quest once the server's day replaced the offline one", () => {
+    const shown = project(adjustState(), [complete]);
+    expect(shown.today!.quests.find((q) => q.id === 200)!.completedAt).not.toBeNull();
+    expect(project(adjustState(), [{ ...complete, ref: { ...ref, dayNumber: 3 } }]).today!.quests[0]!.completedAt).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 // Phone-side fixtures built with the server's own fixtures and `stateView`, so tests see exactly what `lmu-sync` sends.
 import { LIBRARY } from '@levelmeup/content';
-import { SAFETY_QUESTIONS, STATS, newLadder } from '@levelmeup/rules';
+import { SAFETY_QUESTIONS, STATS, newLadder, plannedMoves } from '@levelmeup/rules';
 import type { Rating, Slot } from '@levelmeup/rules';
 import { stateView } from '../../../../supabase/functions/_shared/state.ts';
 import type { CharacterRow, DayRow, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
@@ -68,4 +68,18 @@ export const REVEAL: Reveal = { narrative: 'Rin. Class: Warrior.', strengths: ['
 export function workoutState(over: Partial<Snapshot> = {}): ServerState {
   const snapshot = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'workout-0' }, over);
   return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
+}
+
+/**
+ * A `provisional_day` for day 2 with the quests of `from`'s today (by default `adjustState`'s push-1, walk-1, reading-0 and
+ * the article), as if this phone had built them offline.
+ */
+export function offlineEvent(from: ServerState = adjustState(), over: Partial<Extract<PhoneEvent, { type: 'provisional_day' }>> = {}): Extract<PhoneEvent, { type: 'provisional_day' }> {
+  const w = manilaDay(2);
+  return {
+    id: id(), type: 'provisional_day', dayNumber: 2, builtAt: w.startsAt + HOUR, timeZone: 'Asia/Manila',
+    window: { startsAt: w.startsAt, endsAt: w.endsAt }, budget: 25, light: false,
+    quests: from.today!.quests.map((q) => ({ slot: q.slot, templateId: q.templateId, why: q.why, moves: plannedMoves(q.condition), book: q.book })),
+    ...over,
+  };
 }

@@ -50,7 +50,8 @@ export function parseTimers(text: string | null): Record<number, TimerState> {
   for (const [key, value] of Object.entries(raw)) {
     const id = Number(key);
     const timer = readTimer(value);
-    if (Number.isSafeInteger(id) && id > 0 && timer !== null) timers[id] = timer;
+    // Quest ids are positive; a quest of a day built offline is negative until the server's day arrives (M6e).
+    if (Number.isSafeInteger(id) && id !== 0 && timer !== null) timers[id] = timer;
   }
   return timers;
 }

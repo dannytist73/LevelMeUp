@@ -1,6 +1,6 @@
 // The phone's view of the game, typed from the server's own modules so the two can't drift apart (M4 plan, decision 2).
 import type { Rating } from '@levelmeup/rules';
-import type { PhoneEvent } from '../../../../supabase/functions/_shared/events.ts';
+import type { PhoneEvent, ProvisionalDayEvent, SlotRef } from '../../../../supabase/functions/_shared/events.ts';
 import type { OnboardingBody, Reveal } from '../../../../supabase/functions/_shared/onboarding.ts';
 import type { stateView } from '../../../../supabase/functions/_shared/state.ts';
 
@@ -9,7 +9,7 @@ export type ServerState = ReturnType<typeof stateView>;
 export type TodayView = NonNullable<ServerState['today']>;
 export type QuestView = TodayView['quests'][number];
 export type CharacterView = ServerState['character'];
-export type { OnboardingBody, PhoneEvent, Rating, Reveal };
+export type { OnboardingBody, PhoneEvent, ProvisionalDayEvent, Rating, Reveal, SlotRef };
 
 export type EventResult = { id: string; ok: true; result: unknown } | { id: string | null; ok: false; code: string };
 export type SyncResponse = {

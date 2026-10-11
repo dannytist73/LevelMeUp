@@ -1,12 +1,14 @@
 // What the screens show (architecture §6, M4 plan decision 5): the last server state with the unsent events applied, so a
 // change shows at once. Completions move stored XP snapshots; adjustments (M6b) put the option the server offered in
 // its slot. Streaks, Discipline and ladders change when the server closes a day. The server's numbers replace all of
-// this at the next sync.
+// this at the next sync. M6e: a `provisional_day` in the outbox is today until the server's state has that day; events
+// name its quests by day and slot.
 import { LIBRARY } from '@levelmeup/content';
 import { STATS, findTemplate, levelProgress, painKey, rankFor, statPoints, xpToNextPoint } from '@levelmeup/rules';
 import type { XpByStat } from '@levelmeup/rules';
 import { hardFields, withFields } from './adjust.ts';
-import type { CharacterView, PhoneEvent, QuestView, ServerState } from './types.ts';
+import { offlineToday } from './offline.ts';
+import type { CharacterView, PhoneEvent, QuestView, ServerState, SlotRef, TodayView } from './types.ts';
 
 /** The character after adding (sign 1) or removing (sign -1) a quest's stored XP, computed like `characterView`. */
 export function addStatXp(c: CharacterView, xp: XpByStat, sign: 1 | -1): CharacterView {
@@ -31,9 +33,18 @@ export type Shown = ServerState & {
   changingClass: boolean;
   /** A Scholar's Path change is on its way. */
   changingBook: boolean;
+  /** Today is a day this phone built offline (M6e): its quests have no server ids yet. */
+  offline: boolean;
 };
 
 const CHANGEABLE: readonly QuestView['slot'][] = ['core', 'side1', 'side2'];
+
+/** Where the quest an event names is in `today`: by id, or (M6e) by day and slot for a quest of a day built offline. */
+function questIndex(today: TodayView, event: { instanceId: number | null; ref?: SlotRef }): number {
+  const { ref } = event;
+  if (ref !== undefined) return today.dayNumber === ref.dayNumber ? today.quests.findIndex((q) => q.slot === ref.slot) : -1;
+  return today.quests.findIndex((q) => q.id === event.instanceId);
+}
 
 export function project(server: ServerState, pending: readonly PhoneEvent[]): Shown {
   let character = server.character;
@@ -42,10 +53,20 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   let changingClass = false;
   let reading = server.reading;
   let changingBook = false;
-  const today = server.today === null ? null : { ...server.today, quests: server.today.quests.map((q) => ({ ...q })) };
-  const quests = today?.quests ?? [];
+  let today: TodayView | null = server.today === null ? null : { ...server.today, quests: server.today.quests.map((q) => ({ ...q })) };
+  let quests = today?.quests ?? [];
+  let offline = false;
   const waiting = new Set<number>();
   for (const event of pending) {
+    if (event.type === 'provisional_day') {
+      // M6e: a day this phone built offline is today until the server's state has that day (or a later one).
+      if (today === null || today.dayNumber < event.dayNumber) {
+        today = offlineToday(event);
+        quests = today.quests;
+        offline = true;
+      }
+      continue;
+    }
     if (event.type === 'class_change') {
       profile = { ...profile, classId: event.classId };
       changingClass = true;
@@ -102,8 +123,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       }
       continue;
     }
-    if (event.type === 'provisional_day') continue;
-    const i = quests.findIndex((q) => q.id === event.instanceId);
+    const i = questIndex(today, event);
     if (i < 0) continue; // not today's quest: only the server can say what happens to it
     const quest = quests[i]!;
     waiting.add(quest.id);
@@ -147,5 +167,5 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         break;
     }
   }
-  return { ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook };
+  return { ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline };
 }
