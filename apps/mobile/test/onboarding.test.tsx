@@ -1,17 +1,22 @@
-import { GOAL_CHOICES, GOOGLE_ERRORS, ONBOARDING_TEXT, SAFETY_CHECK, VOICE_SAMPLES } from '@levelmeup/content';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import {
+  CLASS_DAYS, GOAL_CHOICES, GOOGLE_ERRORS, ONBOARDING_TEXT, SAFETY_CHECK, SLIP_SUGGESTIONS, VOICE_SAMPLES, classStats, routineLine,
+} from '@levelmeup/content';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
+import { project } from '../src/game/project.ts';
 import { NEW_DRAFT, STEP_PATH } from '../src/onboarding/flow.ts';
 import type { Draft } from '../src/onboarding/flow.ts';
+import { Analysis } from '../src/screens/onboarding/Analysis.tsx';
 import { Awakening } from '../src/screens/onboarding/Awakening.tsx';
 import { BodyStep } from '../src/screens/onboarding/BodyStep.tsx';
 import { GoalsStep } from '../src/screens/onboarding/GoalsStep.tsx';
 import { MindStep } from '../src/screens/onboarding/MindStep.tsx';
+import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
 import { RhythmStep } from '../src/screens/onboarding/RhythmStep.tsx';
 import { SlipStep } from '../src/screens/onboarding/SlipStep.tsx';
 import { VoiceStep } from '../src/screens/onboarding/VoiceStep.tsx';
 import type { GameState } from '../src/state/store.ts';
-import { READY_DRAFT } from './support/fixtures.ts';
+import { READY_DRAFT, REVEAL, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 async function show(screenEl: ReactElement, draft: Partial<Draft> = {}, over: Partial<GameState> = {}) {
@@ -129,5 +134,71 @@ describe('When you slip (O06)', () => {
     await fireEvent.press(screen.getByRole('radio', { name: /^Real stakes/ }));
     await fireEvent.press(continueButton());
     expect(onNavigate).toHaveBeenCalledWith('/onboarding/analysis');
+  });
+});
+
+describe('Analysis (O07)', () => {
+  it('makes the character, then shows the reveal', async () => {
+    const onRevealed = jest.fn();
+    const store = await show(<Analysis onRevealed={onRevealed} onToday={() => {}} minMs={0} />, READY_DRAFT);
+    await waitFor(() => expect(onRevealed).toHaveBeenCalled());
+    expect(store.getState().startCharacter).toHaveBeenCalledTimes(1);
+  });
+
+  it('offline: keeps the answers and offers another try', async () => {
+    const startCharacter = jest.fn().mockResolvedValueOnce({ ok: false, code: 'network' }).mockResolvedValueOnce({ ok: true });
+    const onRevealed = jest.fn();
+    await show(<Analysis onRevealed={onRevealed} onToday={() => {}} minMs={0} />, READY_DRAFT, { startCharacter });
+    await waitFor(() => expect(screen.getByText(ONBOARDING_TEXT.analysis.offline)).toBeTruthy());
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.analysis.retry }));
+    await waitFor(() => expect(onRevealed).toHaveBeenCalled());
+  });
+
+  it('a player who has already begun goes to Today', async () => {
+    const onToday = jest.fn();
+    await show(<Analysis onRevealed={() => {}} onToday={onToday} minMs={0} />, READY_DRAFT, { startCharacter: jest.fn(async () => ({ ok: false, code: 'locked' })) });
+    await waitFor(() => expect(screen.getByText(ONBOARDING_TEXT.analysis.locked)).toBeTruthy());
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.analysis.today }));
+    expect(onToday).toHaveBeenCalled();
+  });
+});
+
+describe('Character reveal (O08)', () => {
+  const SERVER = serverState();
+  const revealed = (over: Partial<GameState> = {}) => ({ phase: 'ready' as const, reveal: REVEAL, view: project(SERVER, []), ...over });
+
+  it('shows the class, the words, the stats as game estimates, the routine and the pact suggestion', async () => {
+    await show(<Reveal onAccept={() => {}} onFix={() => {}} />, READY_DRAFT, revealed());
+    expect(screen.getByText('WARRIOR')).toBeTruthy();
+    expect(screen.getByText(classStats('warrior'))).toBeTruthy();
+    expect(screen.getByLabelText(`System: ${REVEAL.narrative}`)).toBeTruthy();
+    expect(screen.getByText(ONBOARDING_TEXT.reveal.estimates)).toBeTruthy();
+    const p = SERVER.profile;
+    expect(screen.getByText(routineLine({ classId: p.classId, minutesPerDay: p.minutesPerDay, difficulty: p.difficulty, gentleStart: p.gentleStart }))).toBeTruthy();
+    expect(screen.getByText(SLIP_SUGGESTIONS.stakes)).toBeTruthy();
+  });
+
+  it('changing class runs the analysis again with the player\'s class', async () => {
+    const store = await show(<Reveal onAccept={() => {}} onFix={() => {}} />, READY_DRAFT, revealed());
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.change }));
+    await fireEvent.press(screen.getByRole('radio', { name: `Monk. ${classStats('monk')}. ${CLASS_DAYS.monk}` }));
+    await waitFor(() => expect(store.getState().startCharacter).toHaveBeenCalled());
+    expect(store.getState().draft.classId).toBe('monk');
+  });
+
+  it('fixing an assumption opens that question', async () => {
+    const onFix = jest.fn();
+    await show(<Reveal onAccept={() => {}} onFix={onFix} />, READY_DRAFT, revealed());
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.fix }));
+    expect(screen.queryByRole('button', { name: ONBOARDING_TEXT.reveal.fixMind })).toBeNull(); // no Learn or Focus goal
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.fixBody }));
+    expect(onFix).toHaveBeenCalledWith(STEP_PATH.body);
+  });
+
+  it('accepting the class moves on', async () => {
+    const onAccept = jest.fn();
+    await show(<Reveal onAccept={onAccept} onFix={() => {}} />, READY_DRAFT, revealed());
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.accept }));
+    expect(onAccept).toHaveBeenCalled();
   });
 });
