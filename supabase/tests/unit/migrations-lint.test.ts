@@ -83,10 +83,16 @@ describe('migrations stay inside the levelmeup schema (architecture §12)', () =
   });
 
   it.each(MIGRATIONS)('$name touches storage only to add a LevelMeUp bucket, never changing an existing one', ({ sql }) => {
-    for (const statement of topLevelStatements(sql).filter((s) => /\bstorage\s*\./i.test(s))) {
-      expect(statement).toMatch(/^insert\s+into\s+storage\.buckets\b[\s\S]*\bvalues\s*\(\s*'lmu-[a-z0-9-]+'/i);
+    // Every mention of storage, bodies and quoted names included, must be one single-row insert of an lmu- bucket
+    // that leaves an existing bucket alone (review: bodies, quoted names and extra rows escaped the first version).
+    const mentions = stripComments(sql).match(/(?<![\w.])"?storage"?\s*\./gi) ?? [];
+    const inserts = topLevelStatements(sql).filter((s) => /^insert\s+into\s+"?storage"?\s*\.\s*"?buckets"?[\s(]/i.test(s));
+    for (const statement of inserts) {
+      expect(statement).toMatch(/\bvalues\s*\(\s*'lmu-[a-z0-9-]+'/i);
+      expect(statement, 'one bucket per statement').not.toMatch(/\)\s*,\s*\(/);
       expect(statement).toMatch(/\bon\s+conflict\s*\(\s*id\s*\)\s+do\s+nothing$/i);
     }
+    expect(mentions.length, 'every mention of storage is an allowed insert').toBe(inserts.length);
   });
 
   it.each(MIGRATIONS)('$name pins the search path of every security definer function', ({ sql }) => {

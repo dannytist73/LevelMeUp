@@ -9,6 +9,7 @@ begin
   return next is((select allowed_mime_types from storage.buckets where id = 'lmu-art'), array['image/webp', 'application/json'],
     'only WebP pictures and the JSON manifest');
   return next ok(exists (select 1 from levelmeup.schema_migrations where version = '0007'), 'migration 0007 is recorded');
+  -- A sanity check only: it can't prove nothing else in storage changed; the migration lint guards that.
   return next ok(not exists (select 1 from pg_policies where schemaname = 'storage' and policyname like 'lmu%'),
     'LevelMeUp adds no storage policy: only the owner uploads');
 end $$;
