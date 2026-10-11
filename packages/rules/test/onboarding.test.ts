@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { GOALS } from '../src/constants.ts';
 import {
   GOAL_CLASS, HABITS, PERSONA_ESTIMATES, SLIPS, TRAININGS, boundaryFromSleep, onboardingEstimates, suggestedClass,
-  suggestedPactLevel,
+  suggestedPactLevel, workoutsFit,
 } from '../src/index.ts';
+import { PROFILE, WORKOUT_FIXTURE } from './fixtures/library.ts';
 import type { Goal } from '../src/index.ts';
 
 describe('the suggested class (spec §2.5)', () => {
@@ -66,5 +67,14 @@ describe('the day boundary from sleep and wake times (spec §1.1 beat 5)', () =>
 describe('the suggested pact (spec §4.3)', () => {
   it('only "real stakes" suggests The Shadow; nothing turns on', () => {
     expect(SLIPS.map(suggestedPactLevel)).toEqual([0, 0, 1, 0]);
+  });
+});
+
+describe('workoutsFit (M6c decision 2)', () => {
+  it('a workout fits 25 minutes a day, not 15, and never a gentle start or an own program', () => {
+    expect(workoutsFit(WORKOUT_FIXTURE, { ...PROFILE, minutesPerDay: 25 })).toBe(true);
+    expect(workoutsFit(WORKOUT_FIXTURE, { ...PROFILE, minutesPerDay: 15 })).toBe(false);
+    expect(workoutsFit(WORKOUT_FIXTURE, { ...PROFILE, gentleStart: true })).toBe(false);
+    expect(workoutsFit(WORKOUT_FIXTURE, { ...PROFILE, ownProgram: true })).toBe(false);
   });
 });

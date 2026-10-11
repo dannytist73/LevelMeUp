@@ -3,9 +3,10 @@
 import { DEFAULT_BOUNDARY_MINUTES } from './constants.ts';
 import { newLadder } from './ladder.ts';
 import type { LadderState } from './ladder.ts';
-import { ladderById, maxRungFor } from './library.ts';
+import { ladderById, ladderRungs, maxRungFor } from './library.ts';
 import type { PlayerProfile, QuestLibrary } from './library.ts';
 import type { ClassId, Goal, StatMap } from './types.ts';
+import { isWorkout } from './workout.ts';
 
 /** "How much do you train now?" `own`: the player follows their own program (spec §3.1). */
 export type Training = 'none' | 'some' | 'most' | 'own';
@@ -84,6 +85,14 @@ export function startingLadders(
 /** True when no strength ladder fits the player's day: an own program at 10 or 15 minutes (M2 review). */
 export function strengthClosed(library: QuestLibrary, profile: PlayerProfile): boolean {
   return library.ladders.filter((l) => l.stat === 'strength').every((l) => maxRungFor(library, l.id, profile) < 0);
+}
+
+/** True when a workout fits the player's normal day: not at 10 or 15 minutes, a gentle start or an own program (M6c). */
+export function workoutsFit(library: QuestLibrary, profile: PlayerProfile): boolean {
+  return library.ladders.some((l) => {
+    const first = ladderRungs(library, l.id)[0];
+    return first !== undefined && isWorkout(first) && maxRungFor(library, l.id, profile) >= 0;
+  });
 }
 
 const DAY_MINUTES = 1440;

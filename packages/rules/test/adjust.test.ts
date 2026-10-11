@@ -9,7 +9,8 @@ import { newLadder } from '../src/ladder.ts';
 import type { LadderState } from '../src/ladder.ts';
 import { templateById } from '../src/library.ts';
 import type { PlayerProfile } from '../src/library.ts';
-import { FIXTURE, dayInput } from './fixtures/library.ts';
+import { planWorkout } from '../src/workout.ts';
+import { FIXTURE, TRAINING, WORKOUT_FIXTURE, dayInput } from './fixtures/library.ts';
 
 const quest = (day: BuiltDay, slot: string) => day.quests.find((q) => q.slot === slot)!;
 const withQuest = (day: BuiltDay, slot: 'core' | 'side1' | 'side2', id: string): BuiltDay => ({
@@ -234,5 +235,33 @@ describe('"I felt pain" (spec §3.3, §3.4)', () => {
   it('leads with "see a doctor or physiotherapist" from the second report in 14 days', () => {
     expect(seeProfessional(1)).toBe(false);
     expect(seeProfessional(2)).toBe(true);
+  });
+});
+
+describe('workouts in the adjustments (M6c decision 8)', () => {
+  const input = dayInput({ dayNumber: 3 });
+  const day = buildDay(WORKOUT_FIXTURE, input);
+
+  it('a hard day keeps the workout\'s plan (it stores the first two exercises), fewer minutes, half XP', () => {
+    const hard = applyHardDay(WORKOUT_FIXTURE, day, []);
+    const core = hard.quests.find((q) => q.slot === 'core')!;
+    expect(core.moves).toEqual(day.quests.find((q) => q.slot === 'core')!.moves);
+    expect(core).toMatchObject({ hardDay: true, minutes: 7, xp: { strength: 10 } });
+  });
+
+  it('a swap can offer a workout, planned like a built one', () => {
+    const roomy = dayInput({ dayNumber: 2 }, { minutesPerDay: 40 });
+    const built = buildDay(WORKOUT_FIXTURE, roomy);
+    const strengthSide = built.quests.find((q) => q.slot !== 'core' && q.stat === 'strength')!;
+    const offer = swapOptions(WORKOUT_FIXTURE, roomy, built, strengthSide.slot).find((q) => q.ladder === 'workout')!;
+    expect(offer.moves).toEqual(planWorkout(TRAINING, templateById(WORKOUT_FIXTURE, offer.templateId), roomy.profile, 0));
+  });
+
+  it('Second Wind redoes a missed workout with today\'s plan', () => {
+    const today = dayInput({ dayNumber: 4, history: [{ dayNumber: 3, quests: { core: 'workout-0' } }] }, { level: 5 });
+    const redo = addRecovery(WORKOUT_FIXTURE, today, buildDay(WORKOUT_FIXTURE, today), { kind: 'second_wind', missedCore: 'workout-0', lastUsedDay: null });
+    const quest = redo.quests.find((q) => q.slot === 'recovery')!;
+    expect(quest.templateId).toBe('workout-0');
+    expect(quest.moves).toEqual(planWorkout(TRAINING, templateById(WORKOUT_FIXTURE, 'workout-0'), today.profile, 0));
   });
 });

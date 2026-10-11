@@ -1,6 +1,6 @@
 import { abilityReady, abilityUnlocked } from './abilities.ts';
 import { DISCIPLINE_PER_RECOVERY, PAIN_PERSISTS_REPORTS, REST_DAYS_PER_WEEK, SWAP_SAME_STAT_CHOICES, WEEK_QUEST_DAYS } from './constants.ts';
-import { balanceChoice, bookFor, dayBudget, dayContext, draftQuest, ladderCandidates, microCandidates, useKey } from './day.ts';
+import { balanceChoice, bookFor, dayBudget, dayContext, draftQuest, ladderCandidates, microCandidates, movesFor, useKey } from './day.ts';
 import type { BuiltDay, DayInput, QuestDraft } from './day.ts';
 import { newLadder } from './ladder.ts';
 import {
@@ -9,6 +9,7 @@ import {
 } from './library.ts';
 import type { Exercise, QuestLibrary, QuestTemplate } from './library.ts';
 import type { Slot } from './types.ts';
+import { isWorkout, planWorkout } from './workout.ts';
 
 const QUEST_SLOTS: readonly Slot[] = ['core', 'side1', 'side2'];
 
@@ -54,7 +55,8 @@ export function swapOptions(library: QuestLibrary, input: DayInput, day: BuiltDa
     { noStrength },
   );
   const candidates = balance ? [...sameStat, balance.candidate] : sameStat;
-  return candidates.map((c) => draftQuest(c.template, slot, { code: 'swap' }, { hardDay: day.hardDay, book: bookFor(ctx, c.template) }));
+  return candidates.map((c) =>
+    draftQuest(c.template, slot, { code: 'swap' }, { hardDay: day.hardDay, book: bookFor(ctx, c.template), moves: movesFor(ctx, c.template) }));
 }
 
 /** Swaps an open core or side quest for one of `swapOptions`. The caller checks the day's swap limit (`swapLimit`). */
@@ -80,7 +82,7 @@ export function applyHardDay(library: QuestLibrary, day: BuiltDay, completedSlot
     hardDay: true,
     quests: day.quests.map((q) =>
       QUEST_SLOTS.includes(q.slot) && !completedSlots.includes(q.slot)
-        ? draftQuest(templateById(library, q.templateId), q.slot, q.why, { hardDay: true, book: q.book })
+        ? draftQuest(templateById(library, q.templateId), q.slot, q.why, { hardDay: true, book: q.book, moves: q.moves })
         : q,
     ),
   };
@@ -192,7 +194,10 @@ export function addRecovery(library: QuestLibrary, input: DayInput, day: BuiltDa
   if (day.quests.some((q) => useKey(templateById(library, q.templateId)) === useKey(redo))) {
     throw new RangeError(`${useKey(redo)} is already in today's quests`);
   }
-  const quest = draftQuest(redo, 'recovery', { code: 'second_wind' });
+  // A missed workout is redone with today's plan; one that can't be planned any more is refused.
+  const moves = isWorkout(redo) ? planWorkout(library.training, redo, input.profile, input.workoutsDone) : null;
+  if (isWorkout(redo) && moves === null) throw new RangeError(`${redo.id} can't be planned for this player today`);
+  const quest = draftQuest(redo, 'recovery', { code: 'second_wind' }, { moves });
   const xp = { ...quest.xp, discipline: (quest.xp.discipline ?? 0) + DISCIPLINE_PER_RECOVERY };
   return { ...day, quests: [...day.quests, { ...quest, xp }] };
 }

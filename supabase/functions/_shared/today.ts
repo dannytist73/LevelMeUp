@@ -2,8 +2,8 @@
 // offer on it. Pure. The planner (adjust.ts) and the state view use the same functions, so the phone is offered only
 // what the server will accept.
 import {
-  abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, newLadder, painOption, restAllowed, swapLimit,
-  swapOptions,
+  abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, newLadder, painOption, plannedMoves, restAllowed,
+  swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type { BuiltDay, DayInput, QuestDraft, QuestLibrary, Slot } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
@@ -48,7 +48,7 @@ export function todayBuilt(day: DayRow, quests: readonly InstanceRow[]): BuiltDa
     articleId: day.article_id,
     quests: quests.map((q): QuestDraft => ({
       slot: q.slot, templateId: q.template_id, ladder: q.ladder_id, rung: q.rung, stat: q.stat, tier: q.tier,
-      minutes: q.minutes, hardDay: q.hard_day, xp: q.xp, why: q.why, book: q.book,
+      minutes: q.minutes, hardDay: q.hard_day, xp: q.xp, why: q.why, book: q.book, moves: plannedMoves(q.condition),
     })),
   };
 }

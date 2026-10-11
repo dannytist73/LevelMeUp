@@ -144,10 +144,14 @@ export function workoutTemplate(rung: number, level: MoveLevel, sets: number[] =
   };
 }
 
-/** FIXTURE plus a workout ladder (rungs: level 1, 2, 3, then 3 × 3 sets) that every class prefers. */
+/** FIXTURE plus a workout ladder (rungs: level 1, 2, 3, then 3 × 3 sets) that every class prefers; push and squat lose
+ * their class affinity, as in the content (decision 7). */
 export const WORKOUT_FIXTURE: QuestLibrary = {
   ...FIXTURE,
-  ladders: [...FIXTURE.ladders, ladder('workout', 'strength', ['body'], ['warrior', 'mage', 'rogue', 'monk'])],
+  ladders: [
+    ...FIXTURE.ladders.map((l) => (l.id === 'push' || l.id === 'squat' ? { ...l, affinity: [] } : l)),
+    ladder('workout', 'strength', ['body'], ['warrior', 'mage', 'rogue', 'monk']),
+  ],
   templates: [...FIXTURE.templates, workoutTemplate(0, 1), workoutTemplate(1, 2), workoutTemplate(2, 3), workoutTemplate(3, 3, [3, 3, 3])],
   training: TRAINING,
 };

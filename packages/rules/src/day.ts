@@ -8,6 +8,8 @@ import {
 } from './library.ts';
 import type { Ladder, PlayerProfile, QuestLibrary, QuestTemplate } from './library.ts';
 import type { Goal, Slot, Stat, Tier, TrainableStat } from './types.ts';
+import { isWorkout, planWorkout, sessionMinutes } from './workout.ts';
+import type { PlannedMove } from './workout.ts';
 import { questXp, splitXp } from './xp.ts';
 import type { XpByStat } from './xp.ts';
 
@@ -46,6 +48,8 @@ export type QuestDraft = {
   why: WhyReason;
   /** Scholar's Path: the book a reading quest tracks. */
   book: string | null;
+  /** A workout's planned exercises (M6c decision 8); null for every other quest. */
+  moves: readonly PlannedMove[] | null;
 };
 
 export type BuiltDay = {
@@ -86,14 +90,18 @@ export function questReward(template: QuestTemplate, hardDay: boolean): XpByStat
   return splitXp(questXp(template.tier, { hardDay }), template.stat, template.split ?? undefined);
 }
 
-/** A quest for a slot. The article and recovery quests have no hard-day version. */
+/** A quest for a slot. The article and recovery quests have no hard-day version; a workout needs its exercises. */
 export function draftQuest(
   template: QuestTemplate,
   slot: Slot,
   why: WhyReason,
-  options: { hardDay?: boolean; book?: string | null } = {},
+  options: { hardDay?: boolean; book?: string | null; moves?: readonly PlannedMove[] | null } = {},
 ): QuestDraft {
   const hardDay = options.hardDay === true && template.role !== 'article' && template.role !== 'recovery';
+  const moves = options.moves ?? null;
+  if (isWorkout(template) !== (moves !== null)) {
+    throw new RangeError(isWorkout(template) ? `${template.id} needs its planned exercises` : `${template.id} is not a workout`);
+  }
   return {
     slot,
     templateId: template.id,
@@ -101,11 +109,12 @@ export function draftQuest(
     rung: template.rung,
     stat: template.stat,
     tier: template.tier,
-    minutes: hardDay ? template.hardDay.minutes : template.minutes,
+    minutes: moves !== null ? sessionMinutes(template, moves, hardDay) : hardDay ? template.hardDay.minutes : template.minutes,
     hardDay,
     xp: questReward(template, hardDay),
     why,
     book: options.book ?? null,
+    moves,
   };
 }
 
@@ -140,6 +149,9 @@ export function dayContext(library: QuestLibrary, input: DayInput): DayContext {
   if (!Number.isInteger(input.dayNumber) || input.dayNumber < 1) {
     throw new RangeError(`dayNumber must be an integer of at least 1, got ${input.dayNumber}`);
   }
+  if (!Number.isInteger(input.workoutsDone) || input.workoutsDone < 0) {
+    throw new RangeError(`workoutsDone must be a whole number, got ${input.workoutsDone}`);
+  }
   validateProfile(input.profile);
   const lastUsed = new Map<string, number>();
   const strengthYesterday = new Set<string>();
@@ -154,6 +166,8 @@ export function dayContext(library: QuestLibrary, input: DayInput): DayContext {
       lastUsed.set(key, Math.max(lastUsed.get(key) ?? 0, past.dayNumber));
       if (past.dayNumber === input.dayNumber - 1 && template.exercise === 'strength') {
         if (template.ladder !== null) strengthYesterday.add(template.ladder);
+        // A workout trains the whole body, so every strength ladder rests the next day (M6c decision 7).
+        if (isWorkout(template)) for (const l of library.ladders) if (l.stat === 'strength') strengthYesterday.add(l.id);
         if (slot === 'core' || slot === 'recovery') afterStrength = true;
       }
     }
@@ -177,8 +191,11 @@ export function ladderCandidates(ctx: DayContext, ladders: readonly Ladder[], al
     if (state.paused) continue;
     const rung = effectiveRung(library, ladder.id, input.profile, state, allowance);
     if (rung < 0) continue;
+    const template = ladderRungs(library, ladder.id)[rung]!;
+    // A workout needs at least two exercises the player can do today (decision 5).
+    if (isWorkout(template) && movesFor(ctx, template) === null) continue;
     const capped = rung === state.rung ? null : allowedTopRung(library, ladder.id, input.profile) < state.rung ? 'limits' : 'time';
-    candidates.push({ template: ladderRungs(library, ladder.id)[rung]!, state, capped });
+    candidates.push({ template, state, capped });
   }
   return leastRecent(ctx, candidates);
 }
@@ -202,6 +219,11 @@ export function bookFor(ctx: DayContext, template: QuestTemplate): string | null
   const { profile } = ctx.input;
   if (template.ladder === null || profile.book === null || !ladderById(ctx.library, template.ladder).tracksBook) return null;
   return abilityUnlocked('scholars_path', profile.classId, profile.level) ? profile.book : null;
+}
+
+/** A workout's exercises for this player today (decision 5); null for other quests, or when too few fit. */
+export function movesFor(ctx: DayContext, template: QuestTemplate): PlannedMove[] | null {
+  return isWorkout(template) ? planWorkout(ctx.library.training, template, ctx.input.profile, ctx.input.workoutsDone) : null;
 }
 
 const unique = <T>(items: readonly T[]): T[] => [...new Set(items)];
@@ -319,8 +341,10 @@ export function buildDay(library: QuestLibrary, input: DayInput): BuiltDay {
     used,
     [core.candidate.template.stat, side1.candidate.template.stat],
   );
-  const draft = (slot: Slot, choice: Choice): QuestDraft =>
-    draftQuest(choice.candidate.template, slot, explain(ctx, slot, choice, light), { book: bookFor(ctx, choice.candidate.template) });
+  const draft = (slot: Slot, choice: Choice): QuestDraft => {
+    const { template } = choice.candidate;
+    return draftQuest(template, slot, explain(ctx, slot, choice, light), { book: bookFor(ctx, template), moves: movesFor(ctx, template) });
+  };
   return {
     dayNumber: input.dayNumber,
     budget,

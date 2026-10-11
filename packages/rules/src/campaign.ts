@@ -60,6 +60,7 @@ function runCampaign(
   const main = CLASSES[persona.classId].main;
   let rankDay: number | null = null;
   let streak = newStreak();
+  let workoutsDone = 0;
 
   for (let day = 1; day <= days; day++) {
     const at = (day - 1) * DAY_MS;
@@ -77,13 +78,14 @@ function runCampaign(
       stats: { strength: points('strength'), vitality: points('vitality'), wisdom: points('wisdom'), focus: points('focus') },
       book: null,
     };
-    const built = buildDay(library, { dayNumber: day, profile, ladders, history: history.slice(-7), light: false, workoutsDone: 0, articleId: null });
+    const built = buildDay(library, { dayNumber: day, profile, ladders, history: history.slice(-7), light: false, workoutsDone, articleId: null });
     let done = 0;
     let coreDone = false;
     for (const quest of built.quests) {
       const cleared = random() < rate;
       if (cleared) {
         done++;
+        if (quest.moves !== null) workoutsDone++;
         if (quest.slot === 'core') coreDone = true;
         for (const [stat, xp] of Object.entries(quest.xp)) statXp[stat as Stat] += xp ?? 0;
       }

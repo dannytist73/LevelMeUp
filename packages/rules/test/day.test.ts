@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildDay, questReward } from '../src/day.ts';
+import { buildDay, draftQuest, questReward } from '../src/day.ts';
 import type { BuiltDay, DayInput } from '../src/day.ts';
 import { newLadder } from '../src/ladder.ts';
 import { templateById } from '../src/library.ts';
-import { FIXTURE, dayInput } from './fixtures/library.ts';
+import { planWorkout } from '../src/workout.ts';
+import { FIXTURE, TRAINING, WORKOUT_FIXTURE, dayInput, workoutTemplate } from './fixtures/library.ts';
 
 const ids = (day: BuiltDay): string[] => day.quests.map((q) => q.templateId);
 const quest = (day: BuiltDay, slot: string) => day.quests.find((q) => q.slot === slot)!;
@@ -177,5 +178,47 @@ describe('a pure function', () => {
   it('rejects input no day can be built from', () => {
     expect(() => buildDay(FIXTURE, dayInput({ dayNumber: 0 }))).toThrow(RangeError);
     expect(() => buildDay(FIXTURE, dayInput({}, { minutesPerDay: 12 }))).toThrow(RangeError);
+  });
+});
+
+describe('workouts (M6c decisions 5–7)', () => {
+  const strengthDay = (over: Partial<DayInput> = {}, profile: Parameters<typeof dayInput>[1] = {}) =>
+    buildDay(WORKOUT_FIXTURE, dayInput({ dayNumber: 3, ...over }, profile));
+
+  it('a strength core quest is a workout, planned for the player, at its rung\'s minutes and reward', () => {
+    const core = quest(strengthDay(), 'core');
+    expect(core.templateId).toBe('workout-0');
+    expect(core.moves?.map((m) => m.move)).toEqual(['chair-squat', 'wall-push', 'bridge']);
+    expect(core.minutes).toBe(16);
+    expect(core.xp).toEqual({ strength: 20 });
+  });
+
+  it('follows the program: the next workout is the next day of it', () => {
+    const core = quest(strengthDay({ workoutsDone: 1 }), 'core');
+    expect(core.moves?.map((m) => m.move)).toEqual(['chair-squat', 'plank', 'wall-push']);
+  });
+
+  it('the day after a workout builds no strength ladder in any slot', () => {
+    const day = buildDay(WORKOUT_FIXTURE, dayInput({ dayNumber: 4, history: [{ dayNumber: 3, quests: { core: 'workout-0' } }] }));
+    for (const q of day.quests) expect(['push', 'squat', 'workout']).not.toContain(q.ladder);
+  });
+
+  it('no workout fits a 15-minute day, or a player who can do fewer than two exercises', () => {
+    expect(quest(strengthDay({}, { minutesPerDay: 15 }), 'core').ladder).not.toBe('workout');
+    const sparse = { ...WORKOUT_FIXTURE, training: { ...TRAINING, moves: TRAINING.moves.filter((m) => m.id === 'bridge') } };
+    expect(quest(buildDay(sparse, dayInput({ dayNumber: 3 })), 'core').ladder).not.toBe('workout');
+  });
+
+  it('only a workout carries exercises, and it always does', () => {
+    const workout = workoutTemplate(0, 1);
+    expect(() => draftQuest(workout, 'core', { code: 'balance', stat: 'strength' })).toThrow(RangeError);
+    const moves = planWorkout(TRAINING, workout, dayInput().profile, 0)!;
+    expect(() => draftQuest(templateById(FIXTURE, 'push-0'), 'core', { code: 'balance', stat: 'strength' }, { moves })).toThrow(RangeError);
+    expect(draftQuest(workout, 'core', { code: 'balance', stat: 'strength' }, { moves, hardDay: true })).toMatchObject({ minutes: 7, hardDay: true, moves });
+  });
+
+  it('refuses a negative or fractional count of workouts done', () => {
+    expect(() => strengthDay({ workoutsDone: -1 })).toThrow(RangeError);
+    expect(() => strengthDay({ workoutsDone: 1.5 })).toThrow(RangeError);
   });
 });
