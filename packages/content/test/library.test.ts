@@ -132,6 +132,12 @@ describe('the whole library', () => {
     }
   });
 
+  it('the workout lines name no exercise count: limits can leave fewer exercises (review)', () => {
+    for (const t of TEMPLATES.filter((x) => x.ladder === 'workout')) {
+      for (const v of Object.values(t.voice)) expect(v.line, t.id).not.toMatch(/\b(two|three|four) (exercises|trials)\b/i);
+    }
+  });
+
   it('only the workout ladder has a class affinity among the strength ladders, besides an own program (decision 7)', () => {
     const strength = LADDERS.filter((l) => l.stat === 'strength' && !l.ownProgram);
     expect(strength.filter((l) => l.affinity.length > 0).map((l) => l.id)).toEqual(['workout']);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { newLadder, planWorkout, questReward, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
+import { newLadder, planWorkout, plannedMoves, questReward, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
 import type { PlayerProfile, Rating } from '../../../packages/rules/src/index.ts';
 import { planAdjust } from '../../functions/_shared/adjust.ts';
 import type { AdjustEvent } from '../../functions/_shared/events.ts';
@@ -271,5 +271,28 @@ describe('changing the training setup (M6c decision 12)', () => {
   it('after the day has ended, only the setup changes', () => {
     const late = planAdjust(withWorkout(), { id: 'e', type: 'training', equipment: [], programStyle: 'women' }, { nowMs: manilaDay(3).startsAt, library: LIBRARY });
     expect(late).toEqual({ change: { training: { equipment: [], programStyle: 'women' } } });
+  });
+
+  it('a hard-day workout is re-planned in its hard-day version (review)', () => {
+    const s = withWorkout();
+    const template = templateById(LIBRARY, 'workout-0');
+    const hard = {
+      ...s,
+      instances: s.instances.map((q) => (String(q.id) === '200'
+        ? { ...q, hard_day: true, minutes: 7, condition: sessionCondition(template, plannedMoves(q.condition)!, true) }
+        : q)),
+    };
+    const result = plan(hard, { type: 'training', equipment: ['gym'], programStyle: 'men' });
+    if (!('change' in result)) throw new Error(JSON.stringify(result));
+    const player: PlayerProfile = { ...toProfile(s.profile, startPoints(s.character), statXp(s.character)), equipment: ['gym'], programStyle: 'men' };
+    expect(result.change.quests![0]).toMatchObject({ id: 200, hardDay: true, minutes: 7 });
+    expect(result.change.quests![0]!.condition).toEqual(sessionCondition(template, planWorkout(LIBRARY.training, template, player, 0)!, true));
+  });
+
+  it("a setup that leaves too few exercises keeps today's plan and still stores the setup (review)", () => {
+    const limited = withWorkout({ profile: profileRow(undefined, { limitations: ['knee', 'back', 'shoulder', 'wrist'] }) });
+    expect(plan(limited, { type: 'training', equipment: [], programStyle: 'none' })).toEqual({
+      change: { training: { equipment: [], programStyle: 'none' } },
+    });
   });
 });

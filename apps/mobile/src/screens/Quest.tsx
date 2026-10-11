@@ -49,6 +49,7 @@ export type QuestProps = {
 export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.now }: QuestProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
+  const pending = useGame((s) => s.pending);
   const art = useGame((s) => s.art);
   const enqueue = useGame((s) => s.enqueue);
   const loadTimer = useGame((s) => s.timer);
@@ -174,7 +175,15 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.
       />
     );
   } else if (quest.condition.kind === 'session') {
-    panel = <WorkoutLog moves={quest.condition.moves} disabled={busy} onClaim={(payload) => void claim(payload)} />;
+    // A new plan starts a fresh log (review); a training change on its way re-plans the workout first, so it waits.
+    const replanning = pending.some((e) => e.type === 'training');
+    panel = (
+      <View style={{ gap: 12 }}>
+        {replanning && <NarrationBox>{PLAY_TEXT.workout.replanning}</NarrationBox>}
+        <WorkoutLog key={JSON.stringify(quest.condition)} moves={quest.condition.moves} disabled={busy || replanning}
+          onClaim={(payload) => void claim(payload)} />
+      </View>
+    );
   } else if (quest.completion === 'reps') {
     panel = <RepLog condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)} />;
   } else if (quest.completion === 'text') {

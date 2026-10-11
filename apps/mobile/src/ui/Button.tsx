@@ -12,9 +12,11 @@ export type ButtonProps = {
   on?: 'night' | 'paper';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** What a screen reader says, when the label alone is ambiguous (defaults to the label). */
+  accessibilityLabel?: string;
 };
 
-export function Button({ label, onPress, variant = 'primary', on = 'night', disabled = false, style }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', on = 'night', disabled = false, style, accessibilityLabel }: ButtonProps) {
   const look = {
     primary: on === 'night' ? { bg: colors.paper, fg: colors.ink, border: colors.paper } : { bg: colors.ink, fg: colors.chalk, border: colors.ink },
     commitment: { bg: colors.seal, fg: colors.white, border: colors.chalk },
@@ -24,7 +26,7 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}

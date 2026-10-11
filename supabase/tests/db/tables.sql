@@ -101,6 +101,7 @@ begin
   return next throws_ok(format('update levelmeup.profiles set minutes_per_day = 30 where user_id = %L', a), '23514', null, '30 minutes is not an option');
   return next throws_ok(format('update levelmeup.profiles set equipment = array[''kettlebell''] where user_id = %L', a), '23514', null, 'unknown equipment');
   return next throws_ok(format('update levelmeup.profiles set program_style = %L where user_id = %L', 'unisex', a), '23514', null, 'unknown program style');
+  return next throws_ok(format('update levelmeup.profiles set equipment = array[''gym'', ''gym''] where user_id = %L', a), '23514', null, 'repeated equipment');
   return next throws_ok(format('update levelmeup.profiles set name = %L where user_id = %L', '   ', a), '23514', null, 'a blank name');
   return next throws_ok(format('update levelmeup.character_state set xp_strength = -1 where user_id = %L', a), '23514', null, 'negative XP');
   return next throws_ok(format('update levelmeup.character_state set start_focus = 11 where user_id = %L', a), '23514', null, 'start points above 10');

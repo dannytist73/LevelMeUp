@@ -45,9 +45,9 @@ export const WORKOUT_TEMPLATES: readonly AuthoredTemplate[] = [
   rung(0, {
     sets: [2, 2, 2], level: 1, minutes: 16, tier: 'standard', name: 'Starter workout',
     voice: {
-      mentor: { title: "Today's workout", line: 'Three exercises, two easy sets each. Learn the moves before anything else.' },
-      system: { title: 'Workout', line: 'Strength program, first rung. Three exercises, two sets each.' },
-      questmaster: { title: 'The first forge', line: 'Three trials, two rounds each. Learn the shape of every one.' },
+      mentor: { title: "Today's workout", line: 'A short workout, two easy sets of each exercise. Learn the moves before anything else.' },
+      system: { title: 'Workout', line: 'Strength program, first rung. Two sets of each exercise.' },
+      questmaster: { title: 'The first forge', line: 'Two rounds of every trial. Learn the shape of each one.' },
     },
   }),
   rung(1, {
@@ -70,7 +70,7 @@ export const WORKOUT_TEMPLATES: readonly AuthoredTemplate[] = [
     sets: [3, 3, 3], level: 3, minutes: 23, tier: 'major', name: 'Longer workout',
     voice: {
       mentor: { title: "Today's workout", line: 'A third set for each exercise. Rest well between them.' },
-      system: { title: 'Workout', line: 'Strength program. Three exercises, three sets each.' },
+      system: { title: 'Workout', line: 'Strength program. Three sets of each exercise.' },
       questmaster: { title: 'The long forge', line: 'Three rounds of every trial. Your strength is earning its keep.' },
     },
   }),
@@ -78,15 +78,15 @@ export const WORKOUT_TEMPLATES: readonly AuthoredTemplate[] = [
     sets: [3, 3, 3, 3], level: 3, minutes: 29, tier: 'major', name: 'Full workout',
     voice: {
       mentor: { title: "Today's workout", line: 'A fourth exercise joins in. Take your time between sets.' },
-      system: { title: 'Workout', line: 'Strength program. Four exercises, three sets each.' },
-      questmaster: { title: 'Trial of the full forge', line: 'Four trials now, three rounds each. Stand ready.' },
+      system: { title: 'Workout', line: 'Strength program. One more exercise, three sets of each.' },
+      questmaster: { title: 'Trial of the full forge', line: 'Another trial joins the forge, three rounds each. Stand ready.' },
     },
   }),
   rung(5, {
     sets: [4, 3, 3, 3], level: 3, minutes: 32, tier: 'major', name: 'Peak workout',
     voice: {
       mentor: { title: "Today's workout", line: 'The top of the program: an extra set on the first exercise. Well earned.' },
-      system: { title: 'Workout', line: 'Strength program, top rung. Four exercises, an extra set on the first.' },
+      system: { title: 'Workout', line: 'Strength program, top rung. An extra set on the first exercise.' },
       questmaster: { title: 'Trial of the summit', line: 'The summit of the forge. Your first trial gets a fourth round.' },
     },
   }),

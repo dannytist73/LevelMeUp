@@ -31,7 +31,8 @@ export function WorkoutLog({ moves, disabled, onClaim }: { moves: readonly Sessi
             <Body weight="medium">{moveTarget(move)}</Body>
             <Small>{words.cue}</Small>
             <Small>{progressLine(words)}</Small>
-            <Button label={shown ? T.hide : T.how} variant="secondary" onPress={() => setOpen(shown ? null : m)} style={{ alignSelf: 'flex-start' }} />
+            <Button label={shown ? T.hide : T.how} accessibilityLabel={`${shown ? T.hide : T.how}: ${words.name}`} variant="secondary"
+              onPress={() => setOpen(shown ? null : m)} style={{ alignSelf: 'flex-start' }} />
             {shown && words.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
             {sets[m]!.map((n, s) => (
               <View key={s} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderWidth: 2, borderColor: colors.line }}>

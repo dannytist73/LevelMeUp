@@ -422,7 +422,7 @@ describe('a workout (M6c)', () => {
     expect(screen.getByText(/go a little heavier next time/)).toBeTruthy();
     expect(screen.getByText(/hold a few seconds longer/)).toBeTruthy();
     expect(screen.getByText(/1\. Hold one dumbbell upright/)).toBeTruthy(); // the first exercise's steps start open
-    await fireEvent.press(screen.getAllByRole('button', { name: PLAY_TEXT.workout.how })[0]!);
+    await fireEvent.press(screen.getByRole('button', { name: `${PLAY_TEXT.workout.how}: Forearm plank` })); // named for screen readers (review)
     expect(screen.getByText(/1\. Rest on your forearms/)).toBeTruthy();
   });
 
@@ -433,6 +433,34 @@ describe('a workout (M6c)', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Forearm plank, set 1, one less' }));
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.workout.log }));
     expect(onClaim).toHaveBeenCalledWith({ sets: [11, 10, 19] });
+  });
+
+  it('a new plan from the server starts a fresh log, whatever its size (review)', async () => {
+    const server = workoutState();
+    const store = testStore({ view: project(server, []) });
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
+    expect(screen.getAllByText(/^Set \d$/)).toHaveLength(6);
+    const four = [
+      { move: 'goblet-squat', unit: 'reps', min: 10, max: 15, perSide: false, sets: 2 },
+      { move: 'db-row', unit: 'reps', min: 8, max: 12, perSide: true, sets: 2 },
+      { move: 'plank', unit: 'seconds', min: 20, max: 40, perSide: false, sets: 2 },
+      { move: 'glute-bridge', unit: 'reps', min: 12, max: 20, perSide: false, sets: 2 },
+    ] as const;
+    const replanned: ServerState = {
+      ...server,
+      today: { ...server.today!, quests: server.today!.quests.map((q) => (q.id === 200 ? { ...q, condition: { kind: 'session', moves: four } } : q)) },
+    };
+    await act(async () => store.setState({ view: project(replanned, []) }));
+    expect(screen.getAllByText(/^Set \d$/)).toHaveLength(8);
+    expect(screen.getByText('Goblet squat')).toBeTruthy();
+  });
+
+  it('while a training change waits to sync, the workout waits too (review)', async () => {
+    const change: PhoneEvent = { id: 'e1', type: 'training', equipment: ['gym'], programStyle: 'men' };
+    const store = testStore({ view: project(workoutState(), [change]), pending: [change] });
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
+    expect(screen.getByText(PLAY_TEXT.workout.replanning)).toBeTruthy();
+    expect(disabled(PLAY_TEXT.workout.log)).toBe(true);
   });
 
   it('the quest screen shows the workout and sends its log', async () => {

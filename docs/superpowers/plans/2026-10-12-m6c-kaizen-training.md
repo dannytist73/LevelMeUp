@@ -3845,6 +3845,17 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
   keeps the workouts out (`keptOutBy`, in the day builder and in swaps). Blocking every strength side quest instead made
   the Warrior's steady pace miss rank C within 180 days; the narrower rule misses it by one day (151, target 150).
   By decision 15 step 3 the rank C miss alone is recorded, not tuned: the campaign test accepts that exact line.
+- **Important — the workout log and a new plan:** the log is keyed to its plan, so a re-plan from the server starts a
+  fresh log (a bigger plan crashed the screen); while a `training` change waits to sync, the log is disabled with a note
+  (the server re-plans first, so a log of the old plan would be refused or misfiled).
+- **Minor, fixed:** "How to do it" names its exercise for screen readers (`Button` takes an `accessibilityLabel`); the
+  workout lines name no exercise count; `draftProfile` sends No preference when the Training step is skipped, as
+  `toRequest` does; migration 0009 refuses repeated equipment (`array_positions`; a repeat would stop every day of that
+  player from being built); server tests for a hard-day re-plan and for a setup that leaves too few exercises.
+- **Minor, carried forward (roadmap):** the Training and Rhythm notes don't say when the player's limits leave no
+  workout; players onboarded before M6c are never asked the Training question (bodyweight, No preference until they
+  open Settings → Training); a move id must never change (an unknown id stops the quest from showing); Settings →
+  Training's save guard is state only, as M6b's Swap.
 
 ### Pacing re-run (Task 5, 400 runs, 2026-10-12): all targets met, no tuning
 

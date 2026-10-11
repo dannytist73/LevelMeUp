@@ -131,6 +131,7 @@ describe('the Training step (M6c decision 2)', () => {
     expect(own).toMatchObject({ equipment: [], programStyle: 'none' });
     expect(isProblem(parseOnboarding(asked))).toBe(false);
     expect(isProblem(parseOnboarding(own))).toBe(false);
+    expect(draftProfile({ ...READY, training: 'own', programStyle: 'men' }).programStyle).toBe('none'); // review
   });
 
   it('a draft saved before M6c comes back with the Training step unanswered', () => {

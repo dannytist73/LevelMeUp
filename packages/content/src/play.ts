@@ -48,6 +48,7 @@ export const PLAY_TEXT = {
     hide: 'Hide the steps',
     log: 'Log workout',
     change: 'Change equipment or program',
+    replanning: 'Your new training setup is on its way. Log this workout once it syncs.',
   },
   sentence: {
     label: 'One sentence',

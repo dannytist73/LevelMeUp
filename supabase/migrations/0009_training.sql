@@ -4,7 +4,10 @@
 
 alter table levelmeup.profiles
   add column equipment text[] not null default '{}'
-    check (equipment <@ array['bands', 'dumbbells', 'bench', 'pullup_bar', 'gym'] and cardinality(equipment) <= 5),
+    check (equipment <@ array['bands', 'dumbbells', 'bench', 'pullup_bar', 'gym']
+      and cardinality(array_positions(equipment, 'bands')) <= 1 and cardinality(array_positions(equipment, 'dumbbells')) <= 1
+      and cardinality(array_positions(equipment, 'bench')) <= 1 and cardinality(array_positions(equipment, 'pullup_bar')) <= 1
+      and cardinality(array_positions(equipment, 'gym')) <= 1),
   add column program_style text not null default 'none' check (program_style in ('men', 'women', 'none'));
 
 create or replace function levelmeup.start_player(p_user uuid, p_profile jsonb, p_character jsonb, p_ladders jsonb, p_day jsonb)
