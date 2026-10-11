@@ -448,6 +448,24 @@ describe("Scholar's Path: the book screen (M6d decision 12)", () => {
     expect(disabled(BOOK_TEXT.switchTo)).toBe(false);
   });
 
+  it('switching to another book asks first: the sessions so far are not kept (review)', async () => {
+    const { enqueue, onDone } = await renderBook(mage('Dune'));
+    await fireEvent.changeText(screen.getByLabelText(BOOK_TEXT.field), 'Meditations');
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.switchTo }));
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(screen.getByText('Switch to "Meditations"? The sessions read with "Dune" are not kept.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.switchYes }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'book', title: 'Meditations', finished: false });
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('a pasted tab or line break becomes a space, as the server would refuse it (review)', async () => {
+    const { enqueue } = await renderBook(mage(null));
+    await fireEvent.changeText(screen.getByLabelText(BOOK_TEXT.field), 'Dune\tMessiah\n');
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.start }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'book', title: 'Dune Messiah', finished: false });
+  });
+
   it('"Finished it" asks first, then records the book', async () => {
     const { enqueue, onDone } = await renderBook(mage('Dune'));
     await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.finish }));

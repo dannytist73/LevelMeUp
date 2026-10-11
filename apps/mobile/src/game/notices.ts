@@ -28,7 +28,7 @@ const TEXT = {
   not_current: 'That exercise had already changed rung, so nothing more was eased.',
   same_class: 'That is already your class.',
   class_locked: 'Class changes open once every 14 days, so your class stayed the same.',
-  ability_not_ready: "That ability wasn't ready, so today's core quest stayed the same.",
+  ability_not_ready: "That ability wasn't ready, so nothing changed.",
   already_applied: 'That ability was already in use today.',
   bad_change: "That change couldn't be applied, so nothing changed.",
   no_book: 'No book was set, so there was nothing to finish or set aside.',

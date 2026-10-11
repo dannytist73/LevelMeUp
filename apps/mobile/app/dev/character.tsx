@@ -1,6 +1,7 @@
 // Development only (M6d decision 15): Character and Chronicle for a made-up level-10 Mage with a book, a title and two
 // months of days, built from the real view, so the screens can be checked on a device before a test character gets
-// there. Its own small store; nothing is sent from here.
+// there. Its own small store, so nothing is sent from the preview itself; "Change book" opens the real book screen for
+// the real character (closed below a Mage's level 10, the refusal worth seeing).
 import { levelForXp, localDateKey } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';

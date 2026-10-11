@@ -69,6 +69,8 @@ export const BOOK_TEXT = {
   field: 'Book title',
   start: 'Start this book',
   switchTo: 'Switch to this book',
+  switchConfirm: 'Switch to "{title}"? The sessions read with "{current}" are not kept.',
+  switchYes: 'Yes, switch',
   current: 'Now reading',
   finish: 'Finished it',
   finishConfirm: 'Mark "{title}" as finished? It joins your finished books.',

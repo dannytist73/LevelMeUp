@@ -25,7 +25,7 @@ export function Book({ onDone, onBack }: BookProps) {
   const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const [title, setTitle] = useState('');
-  const [confirm, setConfirm] = useState<'finish' | 'aside' | null>(null);
+  const [confirm, setConfirm] = useState<'finish' | 'aside' | 'switch' | null>(null);
   const [busy, setBusy] = useState(false);
 
   if (view === null) {
@@ -38,7 +38,8 @@ export function Book({ onDone, onBack }: BookProps) {
   }
   const open = scholarsPathOpen(view.profile.classId, view.character.level);
   const current = view.profile.book;
-  const trimmed = title.trim();
+  // Control characters (a pasted tab or line break) become spaces: the server refuses them (review).
+  const clean = title.replace(/[\u0000-\u001f\u007f-\u009f]+/g, ' ').trim();
   const send = async (next: string | null, finished: boolean): Promise<void> => {
     if (busy) return;
     setBusy(true);
@@ -67,7 +68,7 @@ export function Book({ onDone, onBack }: BookProps) {
               <View style={{ gap: 8 }}>
                 <Label>{B.current}</Label>
                 <Heading>{current}</Heading>
-                {confirm === null ? (
+                {confirm === null || confirm === 'switch' ? (
                   <>
                     <Button label={B.finish} variant="secondary" onPress={() => setConfirm('finish')} />
                     <Button label={B.setAside} variant="secondary" onPress={() => setConfirm('aside')} />
@@ -85,7 +86,16 @@ export function Book({ onDone, onBack }: BookProps) {
           )}
           <TextField label={B.field} value={title} onChangeText={setTitle} maxLength={MAX_BOOK_TITLE} />
           <Button label={current === null ? B.start : B.switchTo} variant="commitment"
-            disabled={busy || trimmed.length === 0 || trimmed === current} onPress={() => void send(trimmed, false)} />
+            disabled={busy || clean.length === 0 || clean === current}
+            onPress={() => (current === null ? void send(clean, false) : setConfirm('switch'))} />
+          {confirm === 'switch' && current !== null && (
+            <View style={{ gap: 8 }}>
+              <Small tone="chalk">{fillText(B.switchConfirm, { title: clean, current })}</Small>
+              <Button label={B.switchYes} variant="commitment" disabled={busy || clean.length === 0 || clean === current}
+                onPress={() => void send(clean, false)} />
+              <Button label={B.notNow} variant="secondary" onPress={() => setConfirm(null)} />
+            </View>
+          )}
         </>
       )}
     </ScreenScroll>
