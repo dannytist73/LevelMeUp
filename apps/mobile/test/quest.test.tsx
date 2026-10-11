@@ -489,3 +489,10 @@ describe("the book a reading quest tracks (M6d, Scholar's Path)", () => {
     expect(screen.queryByText(/^Reading: /)).toBeNull();
   });
 });
+
+it("an offline quest's screen follows its slot once the server's day replaced the offline one (M6e)", async () => {
+  const server = adjustState();
+  await renderQuest(server, -1, {}, () => DAY_TWO_NOW);
+  expect(screen.queryByText(PLAY_TEXT.quest.gone)).toBeNull();
+  expect(screen.getByText(questSummary(server.today!.quests[0]!))).toBeTruthy(); // push-1, the core quest (id 200)
+});

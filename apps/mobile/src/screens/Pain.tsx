@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isExercise } from '../game/adjust.ts';
+import { findQuest } from '../game/offline.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -32,7 +33,7 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
   const enqueue = useGame((s) => s.enqueue);
   const [busy, setBusy] = useState(false);
   const today = view?.today ?? null;
-  const quest = today?.quests.find((q) => q.id === questId) ?? null;
+  const quest = findQuest(today, questId);
   const open = today !== null && today.endsAt !== null && Date.parse(today.endsAt) > now();
 
   const frame = (children: ReactNode) => (

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { timerTargetMs } from '../../../../supabase/functions/_shared/events.ts';
 import { artUrl } from '../art/manifest.ts';
 import { isResting } from '../game/adjust.ts';
+import { findQuest } from '../game/offline.ts';
 import { clearedSummary } from '../quest/cleared.ts';
 import type { Shot } from '../quest/cleared.ts';
 import { NEW_TIMER } from '../quest/timer.ts';
@@ -64,13 +65,14 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.
   const timerTouched = useRef(false);
 
   const today = view?.today ?? null;
-  const quest = today?.quests.find((q) => q.id === questId) ?? null;
+  const quest = findQuest(today, questId);
+  const timerId = quest?.id ?? questId;
   const openTimer = quest !== null && quest.completion === 'timer' && quest.completedAt === null;
 
   useEffect(() => {
     if (!openTimer) return;
     let live = true;
-    loadTimer(questId)
+    loadTimer(timerId)
       .then((stored) => {
         if (live && stored !== null && !timerTouched.current) setTimer(stored);
       })
@@ -78,7 +80,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.
     return () => {
       live = false;
     };
-  }, [questId, openTimer, loadTimer]);
+  }, [timerId, openTimer, loadTimer]);
 
   const endsAt = today?.endsAt != null ? Date.parse(today.endsAt) : null;
   const isOpen = (): boolean => endsAt !== null && endsAt > now();

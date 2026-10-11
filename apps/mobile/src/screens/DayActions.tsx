@@ -2,7 +2,7 @@
 // of day it is; swap, hard day, a rest day, the Monk's Stillness and Dawn Ritual and the Rogue's Vanish, each behind a
 // plain confirm; and the exercises resting after pain, with Resume. The server decides what is offered (the state view),
 // so nothing here asks for a change it would refuse.
-import { ABILITY_NAMES, ADJUST_TEXT, fillText, pausedName } from '@levelmeup/content';
+import { ABILITY_NAMES, ADJUST_TEXT, OFFLINE_TEXT, fillText, pausedName } from '@levelmeup/content';
 import { abilityUnlocked } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -13,7 +13,7 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
-import { Body } from '../ui/Text.tsx';
+import { Body, Small } from '../ui/Text.tsx';
 
 const T = ADJUST_TEXT;
 type Confirm = 'hard_day' | 'plan_rest' | 'stillness' | 'dawn_ritual';
@@ -63,8 +63,10 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
   const today = view.today!;
   const open = today.quests.filter((q) => q.completedAt === null && (q.slot === 'core' || q.slot === 'side1' || q.slot === 'side2'));
   const canSwap = today.swapsLeft > 0 && open.some((q) => q.swaps.length > 0);
-  const canHardDay = !today.hardDay && open.length > 0;
-  const canRest = today.protection === null;
+  // A day this phone built offline gets only what the phone decides alone (M6e decision 8).
+  const canHardDay = !view.offline && !today.hardDay && open.length > 0;
+  const canRest = !view.offline && today.protection === null;
+  const later = view.offline ? <Small tone="chalk">{OFFLINE_TEXT.later}</Small> : null;
   const canVanish = abilityUnlocked('vanish', view.profile.classId, view.character.level);
 
   if (confirm !== null) {
@@ -86,8 +88,8 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
       </View>
     );
   }
-  if (!canSwap && !canHardDay && !canRest && today.abilities.length === 0 && !canVanish) return null;
-  return (
+  if (!canSwap && !canHardDay && !canRest && today.abilities.length === 0 && !canVanish) return later;
+  const buttons = (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
       {canSwap && <Button label={fillText(T.day.swap, { left: today.swapsLeft })} variant="secondary" onPress={onSwap} />}
       {canHardDay && <Button label={T.day.hardDay} variant="secondary" onPress={() => setConfirm('hard_day')} />}
@@ -98,6 +100,7 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
       {canVanish && <Button label={T.day.vanish} variant="secondary" onPress={onVanish} />}
     </View>
   );
+  return later === null ? buttons : <View style={{ gap: 12 }}>{later}{buttons}</View>;
 }
 
 /** Exercises resting after pain (decision 7): Resume brings each back one rung easier. */

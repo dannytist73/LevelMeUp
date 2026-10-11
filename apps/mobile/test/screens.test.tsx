@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
+import { ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, OFFLINE_TEXT } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -11,7 +11,7 @@ import { Character } from '../src/screens/Character.tsx';
 import { Chronicle } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { DAY_TWO_NOW, adjustState, characterRow, completeEvent, ladderRows, profileRow, serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, characterRow, completeEvent, ladderRows, offlineEvent, profileRow, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
@@ -538,5 +538,22 @@ describe('the training notice (M6d decision 13)', () => {
     const view = project(SERVER, []);
     await renderToday({ view: { ...view, profile: { ...view.profile, ...profile } }, trainingNoticeSeen: false });
     expect(screen.queryByLabelText(NOTICE)).toBeNull();
+  });
+});
+
+describe('a day this phone built offline (M6e decision 8)', () => {
+  it("says so, and keeps the day's adjustments for after the sync", async () => {
+    await renderToday({ view: project(serverState(), [offlineEvent()]) });
+    expect(screen.getByText(OFFLINE_TEXT.built)).toBeTruthy();
+    expect(screen.getByText(OFFLINE_TEXT.later)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: ADJUST_TEXT.day.hardDay })).toBeNull();
+    expect(screen.queryByRole('button', { name: ADJUST_TEXT.day.rest })).toBeNull();
+    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(4);
+  });
+
+  it('shows none of it on a day from the server', async () => {
+    await renderToday();
+    expect(screen.queryByText(OFFLINE_TEXT.built)).toBeNull();
+    expect(screen.queryByText(OFFLINE_TEXT.later)).toBeNull();
   });
 });

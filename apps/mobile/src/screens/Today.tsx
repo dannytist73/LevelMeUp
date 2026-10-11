@@ -1,7 +1,7 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
 // quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx). The article reader arrives in M8.
-import { ADJUST_TEXT, CLASS_NAMES, artKey, authoredTemplate } from '@levelmeup/content';
+import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, artKey, authoredTemplate } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -101,6 +101,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
     const sides = quests.filter((q) => q.slot === 'side1' || q.slot === 'side2');
     body = (
       <View style={{ gap: 30 }}>
+        {view!.offline && <NarrationBox>{OFFLINE_TEXT.built}</NarrationBox>}
         <DayBanners today={today!} />
         {slots.map((title) => {
           const inSection = quests.filter((q) => SECTION[q.slot] === title);
