@@ -3826,6 +3826,9 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
 - **Task 7:** `lmu_test.day` has no defaults, so the start_player test passes the window `lmu_test.start` uses
   (`now() - 1 hour` to `now() + 10 hours`) instead of `lmu_test.day(1)`. The copied `start_player` and `adjust` bodies
   were diffed against 0003 and 0008: only the M6c parts differ.
+- **Task 8:** two more `Snapshot` literals got `workoutsDone: 0` (`adjust.test.ts`'s restart test, `auth-state.test.ts`),
+  and the projection's `training` branch (Task 12 Step 5) came forward: the app doesn't compile against the new event
+  type without it. Server unit tests: 250.
 
 ### Pacing re-run (Task 5, 400 runs, 2026-10-12): all targets met, no tuning
 

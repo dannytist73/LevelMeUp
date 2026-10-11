@@ -30,6 +30,7 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     earned: [],
     queued: false,
     painReports: 0,
+    workoutsDone: 0,
   };
   return stateView(snapshot, dayOffers(snapshot, LIBRARY));
 }

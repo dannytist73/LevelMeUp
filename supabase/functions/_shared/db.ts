@@ -63,9 +63,12 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
     const { pain } = one(await tx<{ pain: number }[]>`
       select count(*)::int as pain from levelmeup.events
       where user_id = ${userId} and type = 'pain' and applied_at > now() - make_interval(secs => ${PAIN_WINDOW_MS / 1000})`);
+    const { workouts } = one(await tx<{ workouts: number }[]>`
+      select count(*)::int as workouts from levelmeup.quest_instances
+      where user_id = ${userId} and completed_at is not null and condition ->> 'kind' = 'session'`);
     return {
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances], checkins: [...checkins],
-      earned: earned.map((r) => r.achievement_id), queued, painReports: pain,
+      earned: earned.map((r) => r.achievement_id), queued, painReports: pain, workoutsDone: workouts,
     };
   } finally {
     await asService(tx);

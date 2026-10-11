@@ -3,7 +3,7 @@ import { LIBRARY, VOICES, lintText } from '../../../packages/content/src/index.t
 import { isProblem } from '../../functions/_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import type { Choices } from '../../functions/_shared/onboarding.ts';
-import { HOUR, choices, onboardingBody } from './fixtures.ts';
+import { HOUR, ONBOARDED, choices, onboardingBody } from './fixtures.ts';
 
 describe('the onboarding body', () => {
   it('turns the answers into the character\'s choices, with the time zone canonicalised', () => {
@@ -140,5 +140,30 @@ describe('the reveal', () => {
     const facts = JSON.parse(revealFacts(choices({ estimates: { strength: 50, vitality: 1, wisdom: 5, focus: 5, discipline: 4 } })));
     expect(facts.startingPoints).toEqual({ Strength: 10, Vitality: 3, Wisdom: 5, Focus: 5, Discipline: 4 });
     expect(facts.class).toBe('Warrior');
+  });
+});
+
+describe('the training setup (M6c decision 1)', () => {
+  it('takes equipment and a program style, or the defaults from an older phone', () => {
+    const set = parseOnboarding(onboardingBody({ equipment: ['dumbbells', 'bench'], programStyle: 'women' }));
+    expect(set).toMatchObject({ equipment: ['dumbbells', 'bench'], programStyle: 'women' });
+    expect(parseOnboarding(onboardingBody())).toMatchObject({ equipment: [], programStyle: 'none' });
+  });
+
+  it('refuses unknown or repeated equipment and an unknown style', () => {
+    for (const body of [{ equipment: ['kettlebell'] }, { equipment: ['bands', 'bands'] }, { equipment: 'gym' }, { programStyle: 'unisex' }]) {
+      expect(parseOnboarding(onboardingBody(body))).toMatchObject({ status: 400, code: 'bad_field' });
+    }
+  });
+
+  it('stores the setup with the profile; day 1 stays light, so it has no workout', () => {
+    const args = startArgs(choices({ equipment: ['gym'], programStyle: 'men' }), templateReveal(choices()), ONBOARDED, LIBRARY);
+    expect(args.profile).toMatchObject({ equipment: ['gym'], programStyle: 'men' });
+    expect(args.day.quests.some((q) => q.condition.kind === 'session')).toBe(false);
+  });
+
+  it('a player who trains most weeks starts the workout ladder one rung up', () => {
+    const args = startArgs(choices({ training: 'most' }), templateReveal(choices()), ONBOARDED, LIBRARY);
+    expect(args.ladders.workout).toMatchObject({ rung: 1 });
   });
 });

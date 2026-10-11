@@ -51,6 +51,12 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       paused = paused.filter((key) => key !== event.ladderId);
       continue;
     }
+    if (event.type === 'training') {
+      profile = { ...profile, equipment: event.equipment, programStyle: event.programStyle };
+      // Today's open workout is re-planned by the server: it says "Will sync" until then.
+      for (const q of quests) if (q.completedAt === null && q.condition.kind === 'session') waiting.add(q.id);
+      continue;
+    }
     if (today === null) continue;
     if (event.type === 'hard_day' || event.type === 'plan_rest' || event.type === 'ability') {
       if (event.dayId !== today.id) continue;

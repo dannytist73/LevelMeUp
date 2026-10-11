@@ -3,8 +3,8 @@ import {
   STATS, TRAINABLE_STATS, levelForXp, levelProgress, newLadder, rankFor, statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Goal, LadderState, Limitation,
-  PastDay, PlayerProfile, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
+  AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState, Limitation,
+  PastDay, PlayerProfile, ProgramStyle, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
 } from '../../../packages/rules/src/index.ts';
 
 /** Bigint ids arrive as strings from postgres.js. */
@@ -24,6 +24,8 @@ export type ProfileRow = {
   limitations: Limitation[];
   gentle_start: boolean;
   own_program: boolean;
+  equipment: Equipment[];
+  program_style: ProgramStyle;
   book: string | null;
   reveal: unknown;
   accountability_level: number;
@@ -167,8 +169,8 @@ export function toProfile(p: ProfileRow, start: StatMap, xp: StatMap): PlayerPro
     limitations: p.limitations,
     gentleStart: p.gentle_start,
     ownProgram: p.own_program,
-    equipment: [],
-    programStyle: 'none',
+    equipment: p.equipment,
+    programStyle: p.program_style,
     stats,
     book: p.book,
   };
@@ -248,6 +250,8 @@ export type Snapshot = {
   queued: boolean;
   /** "I felt pain" reports in the last 14 days (rules: PAIN_WINDOW_MS). */
   painReports: number;
+  /** Workouts completed so far (M6c): the program day of the next workout (rules: planWorkout). */
+  workoutsDone: number;
 };
 
 const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];
@@ -264,6 +268,7 @@ export function stateView(s: Snapshot, offers: DayOffers) {
       timeZone: s.profile.time_zone,
       boundaryMinutes: s.profile.boundary_minutes, minutesPerDay: s.profile.minutes_per_day, difficulty: s.profile.difficulty,
       goals: s.profile.goals, limitations: s.profile.limitations, gentleStart: s.profile.gentle_start, ownProgram: s.profile.own_program,
+      equipment: s.profile.equipment, programStyle: s.profile.program_style,
       book: s.profile.book, reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
     },
     character: characterView(s.character),

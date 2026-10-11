@@ -19,6 +19,8 @@ export type AdvanceInput = {
   instances: readonly InstanceRow[];
   /** A closed day already waits behind the pending check-in (Snapshot.queued). */
   queued: boolean;
+  /** Workouts completed so far, the days being closed included (Snapshot.workoutsDone). */
+  workoutsDone: number;
   /** The phone's time zone now, canonical. */
   timeZone: string;
   nowMs: number;
@@ -168,7 +170,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     let budget = comeback ? LIGHT_DAY_MINUTES : profile.minutes_per_day;
     let protection: DayDraft['protection'] = null;
     try {
-      const built = buildDay(library, { dayNumber, profile: rulesProfile(), ladders, history, light: comeback, workoutsDone: 0, articleId: null });
+      const built = buildDay(library, { dayNumber, profile: rulesProfile(), ladders, history, light: comeback, workoutsDone: input.workoutsDone, articleId: null });
       quests = built.quests.map((q) => toDraft(library, q));
       budget = built.budget;
     } catch (error) {

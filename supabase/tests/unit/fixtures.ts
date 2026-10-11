@@ -1,12 +1,13 @@
 // Rows as postgres.js returns them, built from the real library so the day builder sees real quests.
-import { DAY_MS, draftQuest, nextDayWindow, specialTemplate, templateById } from '../../../packages/rules/src/index.ts';
-import type { LadderState, Slot } from '../../../packages/rules/src/index.ts';
+import { DAY_MS, draftQuest, isWorkout, nextDayWindow, planWorkout, specialTemplate, templateById } from '../../../packages/rules/src/index.ts';
+import type { LadderState, Slot, WhyReason } from '../../../packages/rules/src/index.ts';
 import { CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import type { Choices } from '../../functions/_shared/onboarding.ts';
 import type { AdvanceInput } from '../../functions/_shared/advance.ts';
 import { toDraft } from '../../functions/_shared/drafts.ts';
-import type { CharacterRow, DayDraft, DayRow, InstanceRow, LadderRow, ProfileRow, Snapshot } from '../../functions/_shared/state.ts';
+import { startPoints, statXp, toProfile } from '../../functions/_shared/state.ts';
+import type { CharacterRow, DayDraft, DayRow, InstanceDraft, InstanceRow, LadderRow, ProfileRow, Snapshot } from '../../functions/_shared/state.ts';
 
 /** Onboarding at 8 PM in Manila on 10 October 2026; day 1 runs to 4 AM. */
 export const ONBOARDED = Date.UTC(2026, 9, 10, 12, 0);
@@ -18,7 +19,7 @@ export function choices(over: Partial<Choices> = {}): Choices {
     estimates: { strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 4 },
     training: 'some', reading: null, focus: null,
     minutesPerDay: 25, difficulty: 'steady', boundaryMinutes: 240, timeZone: 'Asia/Manila',
-    limitations: [], gentleStart: false, ownProgram: false, ...over,
+    limitations: [], gentleStart: false, ownProgram: false, equipment: [], programStyle: 'none', ...over,
   };
 }
 
@@ -36,7 +37,8 @@ export function profileRow(c: Choices = choices(), over: Partial<ProfileRow> = {
     user_id: '00000000-0000-4000-8000-000000000001', name: c.name, voice: c.voice, class_id: c.classId, class_changed_at: null,
     time_zone: c.timeZone,
     boundary_minutes: c.boundaryMinutes, minutes_per_day: c.minutesPerDay, difficulty: c.difficulty, goals: c.goals,
-    limitations: c.limitations, gentle_start: c.gentleStart, own_program: c.ownProgram, book: null, reveal: {}, accountability_level: 0, ...over,
+    limitations: c.limitations, gentle_start: c.gentleStart, own_program: c.ownProgram, equipment: c.equipment,
+    program_style: c.programStyle, book: null, reveal: {}, accountability_level: 0, ...over,
   };
 }
 
@@ -75,7 +77,7 @@ export const DAY1: DayDraft = startArgs(choices(), templateReveal(choices()), ON
 export function afterDay1(done: readonly Slot[], nowMs: number, over: Partial<AdvanceInput> = {}): AdvanceInput {
   return {
     profile: profileRow(), character: characterRow(), ladders: [], days: [dayRow(DAY1, 1)], instances: instanceRows(DAY1, 1, done),
-    queued: false, timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION, ...over,
+    queued: false, workoutsDone: 0, timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION, ...over,
   };
 }
 
@@ -93,6 +95,14 @@ export function manilaDay(n: number): { startsAt: number; endsAt: number } {
 /** The quests of `dayTwoSnapshot` by default: a strength ladder, a walk and a reading quest (23 of 25 minutes). */
 export const DAY_TWO_SLOTS = { core: 'push-1', side1: 'walk-1', side2: 'reading-0' } as const;
 
+/** A template drafted for the default player, a workout with its plan (program day 0). */
+function drafted(templateId: string, slot: Slot, why: WhyReason): InstanceDraft {
+  const template = templateById(LIBRARY, templateId);
+  const player = toProfile(profileRow(), startPoints(characterRow()), statXp(characterRow()));
+  const moves = isWorkout(template) ? planWorkout(LIBRARY.training, template, player, 0) : null;
+  return toDraft(LIBRARY, draftQuest(template, slot, why, { moves }));
+}
+
 /**
  * The player on day 2 (a full 25-minute day in Manila, after a cleared day 1) with these templates in its slots, drafted
  * by the rules. Quest ids follow `instanceRows`: core 200, side1 201, side2 202, article 203. `day` changes day 2's row.
@@ -107,8 +117,7 @@ export function dayTwoSnapshot(
     dayNumber: 2, startsAt: new Date(w.startsAt).toISOString(), endsAt: new Date(w.endsAt).toISOString(), timeZone: 'Asia/Manila',
     budget: 25, light: false, comeback: false, articleId: null, protection: null, contentVersion: CONTENT_VERSION,
     quests: [
-      ...(['core', 'side1', 'side2'] as const).map((slot) =>
-        toDraft(LIBRARY, draftQuest(templateById(LIBRARY, slots[slot]), slot, { code: 'balance', stat: 'vitality' }))),
+      ...(['core', 'side1', 'side2'] as const).map((slot) => drafted(slots[slot], slot, { code: 'balance', stat: 'vitality' })),
       toDraft(LIBRARY, draftQuest(specialTemplate(LIBRARY, 'article'), 'article', { code: 'article' })),
     ],
   };
@@ -122,6 +131,7 @@ export function dayTwoSnapshot(
     earned: [],
     queued: false,
     painReports: 0,
+    workoutsDone: 0,
     ...over,
   };
 }

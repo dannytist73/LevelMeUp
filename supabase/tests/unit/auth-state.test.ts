@@ -97,6 +97,7 @@ describe('the state the phone receives', () => {
       earned: ['level-5', 'first-trial'],
       queued: false,
       painReports: 0,
+      workoutsDone: 0,
     }, NO_OFFERS);
     expect(view.today).toMatchObject({ id: 2, dayNumber: 2, status: 'open' });
     expect(view.today!.quests.map((q) => q.slot)).toEqual(DAY1.quests.map((q) => q.slot));

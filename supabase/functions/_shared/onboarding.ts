@@ -2,12 +2,14 @@
 // number from the answers, here on the server (M5: the phone no longer sends a class or estimates, only its own pick on
 // the reveal); Claude (when configured) only writes the reveal's words, validated like any untrusted input.
 import {
-  CLASSES, GOALS, HABITS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, SAFETY_QUESTIONS, STATS, TRAINABLE_STATS, TRAININGS,
+  CLASSES, EQUIPMENT, GOALS, HABITS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, PROGRAM_STYLES, SAFETY_QUESTIONS, STATS, TRAINABLE_STATS,
+  TRAININGS,
   buildDay, canonicalTimeZone, firstDayWindow, isValidTimeZone, onboardingEstimates, startingLadders, startingStats,
   suggestedClass,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  ClassId, Difficulty, Goal, Habit, LadderState, Limitation, PlayerProfile, QuestLibrary, StatMap, TrainableStat, Training,
+  ClassId, Difficulty, Equipment, Goal, Habit, LadderState, Limitation, PlayerProfile, ProgramStyle, QuestLibrary, StatMap,
+  TrainableStat, Training,
 } from '../../../packages/rules/src/index.ts';
 import {
   CLASS_NAMES, CONTENT_VERSION, GOAL_NAMES, LIMITATION_NAMES, SEEDS, STAT_NAMES, VOICES, lintText,
@@ -31,6 +33,10 @@ export type OnboardingBody = {
   /** Required with the Focus goal, ignored otherwise. */
   focus: Habit | null;
   limitations: Limitation[];
+  /** M6c: what the player can train with; an older phone sends none (bodyweight). */
+  equipment?: Equipment[];
+  /** M6c: their program; an older phone sends none (no preference). */
+  programStyle?: ProgramStyle;
   /** The safety check's answers: read here, never stored (spec §4.5). */
   safety: boolean[];
   minutesPerDay: number;
@@ -57,6 +63,8 @@ export type Choices = {
   limitations: Limitation[];
   gentleStart: boolean;
   ownProgram: boolean;
+  equipment: Equipment[];
+  programStyle: ProgramStyle;
 };
 
 export type Reveal = { narrative: string; strengths: string[]; growth: string[]; source: 'claude' | 'template' };
@@ -92,6 +100,12 @@ export function parseOnboarding(body: unknown): Choices | Problem {
   if (typeof body.timeZone !== 'string' || !isValidTimeZone(body.timeZone)) return bad('timeZone');
   const limitations = body.limitations ?? [];
   if (!Array.isArray(limitations) || !limitations.every((l) => LIMITATIONS.includes(l as Limitation))) return bad('limitations');
+  const equipment = body.equipment ?? [];
+  if (!Array.isArray(equipment) || new Set(equipment).size !== equipment.length || !equipment.every((e) => EQUIPMENT.includes(e as Equipment))) {
+    return bad('equipment');
+  }
+  const programStyle = body.programStyle ?? 'none';
+  if (!PROGRAM_STYLES.includes(programStyle as ProgramStyle)) return bad('programStyle');
   const training = body.training as Training;
   return {
     name,
@@ -109,6 +123,8 @@ export function parseOnboarding(body: unknown): Choices | Problem {
     limitations: [...new Set(limitations as Limitation[])],
     gentleStart: safety.some((a) => a === true),
     ownProgram: training === 'own',
+    equipment: equipment as Equipment[],
+    programStyle: programStyle as ProgramStyle,
   };
 }
 
@@ -193,8 +209,8 @@ export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, libra
   const stats = Object.fromEntries(TRAINABLE_STATS.map((s) => [s, character[s]])) as Record<TrainableStat, number>;
   const player: PlayerProfile = {
     classId: choices.classId, level: 1, goals: choices.goals, minutesPerDay: choices.minutesPerDay, difficulty: choices.difficulty,
-    limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram, equipment: [], programStyle: 'none',
-    stats, book: null,
+    limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram,
+    equipment: choices.equipment, programStyle: choices.programStyle, stats, book: null,
   };
   const answers = { goals: choices.goals, training: choices.training, reading: choices.reading, focus: choices.focus };
   const ladders = startingLadders(library, player, answers, SEEDS);
@@ -203,7 +219,8 @@ export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, libra
     profile: {
       name: choices.name, voice: choices.voice, classId: choices.classId, timeZone: choices.timeZone,
       boundaryMinutes: choices.boundaryMinutes, minutesPerDay: choices.minutesPerDay, difficulty: choices.difficulty,
-      goals: choices.goals, limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram, reveal,
+      goals: choices.goals, limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram,
+      equipment: choices.equipment, programStyle: choices.programStyle, reveal,
     },
     character,
     ladders,

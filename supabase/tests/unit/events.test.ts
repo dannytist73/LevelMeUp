@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { MAX_EVENTS, adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody, timerTargetMs } from '../../functions/_shared/events.ts';
 import type { AdjustEvent } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
+import { planWorkout, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
+import { LIBRARY } from '../../../packages/content/src/index.ts';
+import { startPoints, statXp, toProfile } from '../../functions/_shared/state.ts';
+import { characterRow, profileRow } from './fixtures.ts';
 
 const ID = '7d3e1f2a-1b2c-4d3e-8f40-0123456789ab';
 const id = (n: number) => `7d3e1f2a-1b2c-4d3e-8f40-${String(n).padStart(12, '0')}`;
@@ -168,5 +172,44 @@ describe('adjustment events (M6b)', () => {
 
   it('completions, undos and ratings are not adjustments', () => {
     expect(isAdjust({ id: ID, type: 'undo', instanceId: 1 })).toBe(false);
+  });
+});
+
+describe('the training event (M6c decision 12)', () => {
+  const parse = (event: Record<string, unknown>) => parseSyncBody({ timeZone: 'Asia/Manila', events: [{ id: ID, ...event }] });
+
+  it('carries the equipment and the program style', () => {
+    expect(parse({ type: 'training', equipment: ['dumbbells', 'bench'], programStyle: 'women' })).toMatchObject({
+      events: [{ type: 'training', equipment: ['dumbbells', 'bench'], programStyle: 'women' }], rejected: [],
+    });
+    expect(parse({ type: 'training', equipment: [], programStyle: 'none' })).toMatchObject({ rejected: [] });
+  });
+
+  it('refuses unknown or repeated equipment and an unknown style', () => {
+    for (const bad of [
+      { equipment: ['kettlebell'], programStyle: 'none' }, { equipment: ['gym', 'gym'], programStyle: 'none' },
+      { equipment: 'gym', programStyle: 'none' }, { equipment: [], programStyle: 'unisex' }, { equipment: [] },
+    ]) {
+      expect(parse({ type: 'training', ...bad })).toMatchObject({ events: [], rejected: [{ code: 'bad_event' }] });
+    }
+  });
+});
+
+describe('a workout log (M6c decision 9)', () => {
+  const template = templateById(LIBRARY, 'workout-0');
+  const player = toProfile(profileRow(), startPoints(characterRow()), statXp(characterRow()));
+  const moves = planWorkout(LIBRARY.training, template, player, 0)!;
+  const workout = { completion: 'reps' as const, condition: sessionCondition(template, moves, false), minutes: 16 };
+  const check = (instance: typeof workout, payload: unknown) => checkCompletionPayload(instance, DAY, payload, start + 60 * MIN);
+
+  it('has exactly one entry per planned set', () => {
+    expect(check(workout, { sets: [10, 10, 9, 8, 12, 12] })).toEqual({ payload: { sets: [10, 10, 9, 8, 12, 12] } });
+    expect(check(workout, { sets: [10, 10, 9, 8, 12] })).toEqual({ code: 'bad_payload' });
+    expect(check(workout, { sets: [10, 10, 9, 8, 12, 12, 1] })).toEqual({ code: 'bad_payload' });
+  });
+
+  it('a hard-day workout logs one set of each of its first two exercises', () => {
+    const hard = { ...workout, condition: sessionCondition(template, moves, true), minutes: 7 };
+    expect(check(hard, { sets: [12, 10] })).toEqual({ payload: { sets: [12, 10] } });
   });
 });

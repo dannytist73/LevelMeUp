@@ -2,10 +2,10 @@
 // writes (migration 0008), or the reason it is refused. Pure: the rules decide, from the same snapshot the offers come
 // from (today.ts), and every reward in a replaced quest is drafted here, never taken from the phone.
 import {
-  applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, findTemplate, newLadder, painKey, painOption, recordPain,
-  restAllowed, resumeAfterPain, stepDown, swapLimit, swapOptions,
+  applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout, newLadder, painKey,
+  painOption, planWorkout, recordPain, restAllowed, resumeAfterPain, stepDown, swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
-import type { BuiltDay, ClassId, LadderState, QuestDraft, QuestLibrary } from '../../../packages/rules/src/index.ts';
+import type { BuiltDay, ClassId, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
 import type { AdjustEvent, DayAbility } from './events.ts';
 import { ladderMap } from './state.ts';
@@ -30,6 +30,7 @@ export type Change = {
   ladders?: Record<string, LadderState>;
   classId?: ClassId;
   ability?: { id: DayAbility; day: number };
+  training?: { equipment: Equipment[]; programStyle: ProgramStyle };
 };
 
 export type Plan = { change: Change } | { code: AdjustCode };
@@ -173,6 +174,24 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
           ability: { id: event.ability, day: day.day_number },
         },
       };
+    }
+    case 'training': {
+      // The setup always changes; today's open workouts are re-planned with it, same rung and reward (decision 12).
+      const training = { equipment: event.equipment, programStyle: event.programStyle };
+      const day = openDay(s);
+      if (day === null || nowMs >= day.ends_at.getTime()) return { change: { training } };
+      const input = todayInput(s, day);
+      const player = { ...input.profile, ...training };
+      const quests: QuestChange[] = [];
+      for (const q of questsOf(s, day)) {
+        if (q.completed_at !== null || !QUEST_SLOTS.includes(q.slot)) continue;
+        const template = findTemplate(library, q.template_id);
+        if (template === undefined || !isWorkout(template)) continue;
+        const moves = planWorkout(library.training, template, player, input.workoutsDone);
+        if (moves === null) continue; // too few exercises fit the new setup: today's plan stays
+        quests.push(replace(library, q, draftQuest(template, q.slot, q.why, { hardDay: q.hard_day, book: q.book, moves })));
+      }
+      return { change: quests.length === 0 ? { training } : { training, day: { id: Number(day.id) }, quests } };
     }
   }
 }

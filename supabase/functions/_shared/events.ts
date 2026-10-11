@@ -1,8 +1,10 @@
 // Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; M6b the adjustments (swap, hard
-// day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); the rest arrive with the milestones whose
+// day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); M6c the training setup; the rest arrive with the milestones whose
 // screens send them, and until then are rejected without touching anything.
-import { CLASSES, CLOCK_SKEW_MS, canonicalTimeZone, elapsedMs, isValidTimeZone, questTimerDone } from '../../../packages/rules/src/index.ts';
-import type { ClassId, Rating, Segment } from '../../../packages/rules/src/index.ts';
+import {
+  CLASSES, CLOCK_SKEW_MS, EQUIPMENT, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone, questTimerDone, sessionSets,
+} from '../../../packages/rules/src/index.ts';
+import type { ClassId, Equipment, ProgramStyle, Rating, Segment } from '../../../packages/rules/src/index.ts';
 import { isObject, problem, UUID } from './http.ts';
 import type { Problem } from './http.ts';
 import type { DayRow, InstanceRow } from './state.ts';
@@ -34,13 +36,15 @@ export type ResumeEvent = { id: string; type: 'resume'; ladderId: string };
 export type StepDownEvent = { id: string; type: 'step_down'; instanceId: number };
 export type ClassChangeEvent = { id: string; type: 'class_change'; classId: ClassId };
 export type AbilityEvent = { id: string; type: 'ability'; dayId: number; ability: DayAbility };
+/** M6c: the player's training setup (Settings → Training); today's open workout is re-planned with it. */
+export type TrainingEvent = { id: string; type: 'training'; equipment: Equipment[]; programStyle: ProgramStyle };
 export type AdjustEvent =
-  | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent;
+  | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent;
 export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent;
 export type Rejected = { id: string | null; code: string };
 
 export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
-  'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability',
+  'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability', 'training',
 ];
 export const isAdjust = (event: PhoneEvent): event is AdjustEvent => (ADJUST_TYPES as readonly string[]).includes(event.type);
 
@@ -98,6 +102,12 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
       return isId(raw.dayId) && DAY_ABILITIES.includes(raw.ability as DayAbility)
         ? { id, type: 'ability', dayId: raw.dayId, ability: raw.ability as DayAbility }
         : bad;
+    case 'training': {
+      const equipment = raw.equipment;
+      if (!Array.isArray(equipment) || new Set(equipment).size !== equipment.length) return bad;
+      if (!equipment.every((e) => EQUIPMENT.includes(e as Equipment)) || !PROGRAM_STYLES.includes(raw.programStyle as ProgramStyle)) return bad;
+      return { id, type: 'training', equipment: equipment as Equipment[], programStyle: raw.programStyle as ProgramStyle };
+    }
     default:
       return { id, code: 'unsupported_event' };
   }
@@ -166,6 +176,8 @@ export function checkCompletionPayload(
       if (sets.length < 1 || sets.length > MAX_SETS) return { code: 'bad_payload' };
       if (!sets.every((n) => Number.isInteger(n) && n >= 0 && n <= MAX_REPS)) return { code: 'bad_payload' };
       if (!sets.some((n) => n > 0)) return { code: 'bad_payload' };
+      // A workout logs every planned set, in order (M6c decision 9).
+      if (instance.condition.kind === 'session' && sets.length !== sessionSets(instance.condition)) return { code: 'bad_payload' };
       return { payload: { sets } };
     }
     case 'text': {

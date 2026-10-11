@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, newLadder, nextDayWindow } from '../../../packages/rules/src/index.ts';
+import {
+  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, newLadder, nextDayWindow, planWorkout, sessionCondition, templateById,
+} from '../../../packages/rules/src/index.ts';
+import { CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { planAdvance } from '../../functions/_shared/advance.ts';
-import { DAY1, HOUR, afterDay1, characterRow, dayRow, instanceRows, ladderRows, manilaDay, profileRow } from './fixtures.ts';
+import { startPoints, statXp, toProfile } from '../../functions/_shared/state.ts';
+import { DAY1, HOUR, afterDay1, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay, profileRow } from './fixtures.ts';
 
 const day1End = new Date(DAY1.endsAt).getTime();
 const core = DAY1.quests.find((q) => q.slot === 'core')!;
@@ -164,5 +168,17 @@ describe('closing days and building the next one (architecture §4.3)', () => {
     const out = planAdvance(afterDay1(['core'], now))!;
     expect(new Date(out.newDay!.startsAt).getTime()).toBe(now);
     expect(out.newDay!.dayNumber).toBeGreaterThanOrEqual(500);
+  });
+});
+
+describe('workouts on built days (M6c decision 5)', () => {
+  it('the next strength day is a workout planned from the workouts done so far', () => {
+    const s = dayTwoSnapshot({ core: 'walk-1', side1: 'reading-0', side2: 'focus-0' }, { workoutsDone: 1 });
+    const outcome = planAdvance({ ...s, timeZone: 'Asia/Manila', nowMs: manilaDay(3).startsAt + HOUR, library: LIBRARY, contentVersion: CONTENT_VERSION });
+    const core = outcome!.newDay!.quests.find((q) => q.slot === 'core')!;
+    expect(core.templateId).toBe('workout-0');
+    const template = templateById(LIBRARY, 'workout-0');
+    const player = toProfile(s.profile, startPoints(s.character), statXp(s.character));
+    expect(core.condition).toEqual(sessionCondition(template, planWorkout(LIBRARY.training, template, player, 1)!, false));
   });
 });
