@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { newLadder } from '../../../packages/rules/src/index.ts';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { CALENDAR_DAYS, calendarDate, calendarMark, stateView } from '../../functions/_shared/state.ts';
 import type { CalendarRow } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
-import { characterRow, dayTwoSnapshot, historyOf, profileRow } from './fixtures.ts';
+import { DAY_TWO_SLOTS, characterRow, dayTwoSnapshot, historyOf, ladderRows, profileRow } from './fixtures.ts';
 
 const row = (over: Partial<CalendarRow>): CalendarRow => ({
   day_number: 3, starts_at: new Date(Date.UTC(2026, 9, 11, 22)), ends_at: new Date(Date.UTC(2026, 9, 12, 22)), time_zone: 'Asia/Manila', status: 'closed',
@@ -75,5 +76,16 @@ describe('the state for Character and Chronicle (M6d)', () => {
     const view = stateView(s, dayOffers(s, LIBRARY), { ...historyOf(s), reading: { sessions: 3, minutes: 45 } });
     expect(view.reading).toBeNull();
     expect(view.achievements).toEqual(['level-5', 'first-trial']);
+  });
+});
+
+describe('what the phone needs to build a day offline (M6e decision 3)', () => {
+  it("sends every ladder's state, each recent day's final quests, and the workouts done", () => {
+    const s = dayTwoSnapshot(DAY_TWO_SLOTS, { ladders: ladderRows({ push: newLadder(1) }), workoutsDone: 3 });
+    const view = stateView(s, dayOffers(s, LIBRARY), historyOf(s));
+    expect(view.ladders).toEqual({ push: newLadder(1) });
+    expect(view.history.map((d) => d.dayNumber)).toEqual([1, 2]);
+    expect(view.history[1]!.quests).toMatchObject({ core: 'push-1', side1: 'walk-1', side2: 'reading-0', article: 'article' });
+    expect(view.workoutsDone).toBe(3);
   });
 });

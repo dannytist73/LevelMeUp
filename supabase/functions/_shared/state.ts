@@ -366,5 +366,10 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
     growth: growthOf(s.character, character, history),
     /** Scholar's Path: sessions and minutes with the current book, or null without one. */
     reading: s.profile.book === null ? null : history.reading,
+    /** M6e: what the phone needs to build the next day offline (rules: buildDay) — every ladder's state by id, each recent
+     * day's final template per slot (oldest first) and the workouts done. */
+    ladders: ladderMap(s.ladders),
+    history: pastDays(s.days, s.instances),
+    workoutsDone: s.workoutsDone,
   };
 }
