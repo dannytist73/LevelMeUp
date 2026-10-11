@@ -1,8 +1,9 @@
-import { GOOGLE_ERRORS } from '@levelmeup/content';
+import { ACHIEVEMENTS, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
+import { Celebration } from '../src/screens/Celebration.tsx';
 import { Character } from '../src/screens/Character.tsx';
 import { Chronicle, dayOutcome } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
@@ -213,5 +214,32 @@ describe('Settings', () => {
     expect(screen.getByText('The server refused a sync (400 bad_body).')).toBeTruthy();
     expect(screen.getByText('Not synced yet')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Developer' })).toBeNull();
+  });
+});
+
+describe('Celebration (M6a decision 8)', () => {
+  it('shows nothing while nothing is queued', async () => {
+    await render(withStore(testStore(), <Celebration />));
+    expect(screen.queryByText('LEVEL UP')).toBeNull();
+    expect(screen.queryByText('ACHIEVEMENT')).toBeNull();
+  });
+
+  it('shows a level-up, and Continue dismisses it', async () => {
+    const store = testStore({ celebrations: [{ kind: 'level', level: 7 }] });
+    await render(withStore(store, <Celebration />));
+    expect(screen.getByText('LEVEL UP')).toBeTruthy();
+    expect(screen.getByText('LV 7')).toBeTruthy();
+    expect(screen.getByText('Level 7. The System marks your growth.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(store.getState().dismissCelebration).toHaveBeenCalled();
+  });
+
+  it('shows an achievement with its name, what it was for, and its title', async () => {
+    const titled = ACHIEVEMENTS.find((a) => a.title !== null)!;
+    await render(withStore(testStore({ celebrations: [{ kind: 'achievement', id: titled.id }] }), <Celebration />));
+    expect(screen.getByText('ACHIEVEMENT')).toBeTruthy();
+    expect(screen.getByText(titled.name)).toBeTruthy();
+    expect(screen.getByText(titled.description)).toBeTruthy();
+    expect(screen.getByText(`Title earned: ${titled.title}`)).toBeTruthy();
   });
 });

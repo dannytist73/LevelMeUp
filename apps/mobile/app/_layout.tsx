@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { StoreApi } from 'zustand/vanilla';
+import { Celebration } from '../src/screens/Celebration.tsx';
 import { createAppStore } from '../src/state/appStore.ts';
 import { GameProvider } from '../src/state/store.ts';
 import type { GameState } from '../src/state/store.ts';
@@ -71,7 +72,10 @@ export default function RootLayout() {
         </View>
       ) : (
         <GameProvider store={store}>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }} />
+          <View style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }} />
+            <Celebration />
+          </View>
         </GameProvider>
       )}
     </SafeAreaProvider>
