@@ -4,6 +4,7 @@
 export const PLAY_TEXT = {
   quest: {
     back: 'Back',
+    open: 'Opens the quest',
     why: 'Why this quest',
     steps: 'How to do it',
     safety: 'Safety',

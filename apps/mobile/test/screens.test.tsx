@@ -37,9 +37,11 @@ describe('Today', () => {
     expect(onOpenQuest).toHaveBeenCalledWith(side2.id);
   });
 
-  it('shows the core quest\'s picture, or its ink fallback (M6a)', async () => {
+  it('shows the core quest\'s picture, or its ink fallback, as part of the card for TalkBack (M6a, review)', async () => {
     await renderToday();
-    expect(screen.getByTestId('quest-art-fallback')).toBeTruthy();
+    expect(screen.getByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByLabelText(/quest picture/)).toBeNull(); // not a stop of its own inside the card
+    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(4);
   });
 
   it('shows the day, the player, the XP bar, the streak and shields', async () => {
@@ -222,6 +224,11 @@ describe('Celebration (M6a decision 8)', () => {
     await render(withStore(testStore(), <Celebration />));
     expect(screen.queryByText('LEVEL UP')).toBeNull();
     expect(screen.queryByText('ACHIEVEMENT')).toBeNull();
+  });
+
+  it('scrolls, so a long achievement at the largest text size is never cut off (review)', async () => {
+    await render(withStore(testStore({ celebrations: [{ kind: 'level', level: 4 }] }), <Celebration />));
+    expect(screen.getByTestId('celebration-scroll')).toBeTruthy();
   });
 
   it('shows a level-up, and Continue dismisses it', async () => {

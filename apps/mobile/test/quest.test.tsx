@@ -1,4 +1,5 @@
 import { EXERCISE_SAFETY_LINE, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
+import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent, QuestView, ServerState } from '../src/game/types.ts';
@@ -134,6 +135,7 @@ describe('"Quest cleared" (board D2)', () => {
     expect(screen.getByText('STRENGTH 11 → 12')).toBeTruthy();
     expect(screen.getByLabelText('Rank D')).toBeTruthy();
     expect(screen.getByText('Discipline · today counts')).toBeTruthy();
+    expect(screen.getByText(`+${DISCIPLINE_PER_CORE_DAY}`)).toBeTruthy(); // the rules' number, not a copy
     expect(screen.getByText('9 → 10 DAYS')).toBeTruthy();
     expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
     expect(screen.getByText('43 to Lv 7')).toBeTruthy();

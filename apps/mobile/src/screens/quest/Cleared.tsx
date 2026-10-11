@@ -1,6 +1,7 @@
 // "Quest cleared" (board D2; spec §2, §3.3; M6a decisions 5–7): the XP stamp, what went up, what today now counts for,
 // the XP bar, an optional rating, Continue, and Undo while the day is open.
 import { PLAY_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
+import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -95,7 +96,7 @@ export function Cleared({ heading, line, numbers, rating, dayOpen, waiting, onRa
             </View>
           </View>
         ))}
-        {numbers.discipline && <Row label={C.discipline} value="+5" />}
+        {numbers.discipline && <Row label={C.discipline} value={`+${DISCIPLINE_PER_CORE_DAY}`} />}
         {numbers.streak !== null && <Row label={C.streak} value={fillText(C.streakDays, numbers.streak)} />}
         <View style={{ gap: 6 }}>
           <XpBar on="paper" value={xpIntoLevel} max={xpForLevel} label={`Level ${level} progress`} />

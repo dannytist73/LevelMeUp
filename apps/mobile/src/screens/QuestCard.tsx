@@ -1,7 +1,7 @@
 // A quest on Today (D1 board): the core quest in a paper panel with its XP stamp, the others as night cards. Words come
 // from the content package in the player's voice; numbers from the quest's stored snapshot. M4 showed; M6a makes every
 // card open its quest and puts the picture on the core quest.
-import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
+import { EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary, renderWhy } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import type { ClassId } from '@levelmeup/rules';
 import { Pressable, View } from 'react-native';
@@ -48,11 +48,11 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
 
   if (quest.slot === 'core') {
     return (
-      <Pressable accessibilityRole="button" accessibilityHint="Opens the quest" onPress={onOpen}>
+      <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
         <SlamIn>
           <View style={{ marginRight: 6 }}>
             <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-              <QuestArt uri={artUri} label={`${stat} quest picture`} fallback={stat} />
+              <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative />
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 56 }}>
                 <Chip label={stat} on="paper" />
                 <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
@@ -78,7 +78,7 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
 
   if (cleared) {
     return (
-      <Pressable accessibilityRole="button" accessibilityHint="Opens the quest" onPress={onOpen}>
+      <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
         <NightCard quiet>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ flex: 1, gap: 3 }}>
@@ -94,7 +94,7 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
   }
 
   return (
-    <Pressable accessibilityRole="button" accessibilityHint="Opens the quest" onPress={onOpen}>
+    <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
       <NightCard>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flexShrink: 1 }}>

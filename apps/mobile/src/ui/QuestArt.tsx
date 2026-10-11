@@ -1,20 +1,22 @@
 // A quest's picture (M6a decision 10): the art set's picture when there is one, otherwise an ink panel with the stat's
 // name over speed lines. A picture that fails to load falls back too. 16:9 at full width; Android's image pipeline
-// keeps a disk cache, so a picture is downloaded once.
+// keeps a disk cache, so a picture is downloaded once. Inside a card it's `decorative`: the card is the one TalkBack stop.
 import { useState } from 'react';
 import { Image, View } from 'react-native';
 import { colors } from '../theme/tokens.ts';
 import { SpeedLines } from './SpeedLines.tsx';
 import { Heading } from './Text.tsx';
 
-export function QuestArt({ uri, label, fallback }: { uri: string | null; label: string; fallback: string }) {
+export function QuestArt({ uri, label, fallback, decorative = false }: { uri: string | null; label: string; fallback: string; decorative?: boolean }) {
   const [failed, setFailed] = useState<string | null>(null);
   const showPicture = uri !== null && failed !== uri;
   return (
     <View
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={label}
+      accessible={!decorative}
+      accessibilityRole={decorative ? undefined : 'image'}
+      accessibilityLabel={decorative ? undefined : label}
+      importantForAccessibility={decorative ? 'no-hide-descendants' : 'auto'}
+      accessibilityElementsHidden={decorative}
       style={{ width: '100%', aspectRatio: 16 / 9, borderWidth: 2, borderColor: colors.ink, backgroundColor: colors.halftone, overflow: 'hidden' }}
     >
       {showPicture ? (

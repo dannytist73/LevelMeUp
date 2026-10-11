@@ -2,7 +2,7 @@
 // one at a time, with speed lines and Continue. A modal, so the screen behind can't be tapped or reached by TalkBack, and
 // Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared").
 import { ACHIEVEMENTS, PLAY_TEXT, fillText } from '@levelmeup/content';
-import { Modal, View } from 'react-native';
+import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
@@ -41,12 +41,16 @@ export function Celebration() {
   }
   return (
     <Modal testID="celebration" visible animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={dismiss}>
-      <View
-        style={{ flex: 1, backgroundColor: colors.void, justifyContent: 'center', paddingHorizontal: space.gutter, paddingTop: insets.top, paddingBottom: insets.bottom + 24, gap: 28 }}
-      >
+      <View style={{ flex: 1, backgroundColor: colors.void }}>
         <SpeedLines opacity={0.18} />
-        <View style={{ alignItems: 'center', gap: 16 }}>{body}</View>
-        <Button label={T.continue} onPress={dismiss} />
+        {/* Scrolls, so a long achievement at the largest text size is never cut off (review). */}
+        <ScrollView
+          testID="celebration-scroll"
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: space.gutter, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, gap: 28 }}
+        >
+          <View style={{ alignItems: 'center', gap: 16 }}>{body}</View>
+          <Button label={T.continue} onPress={dismiss} />
+        </ScrollView>
       </View>
     </Modal>
   );
