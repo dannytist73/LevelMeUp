@@ -7,8 +7,8 @@ describe('notices for refused actions', () => {
     expect([...NOTICE_CODES].sort()).toEqual([
       'ability_not_ready', 'already_applied', 'already_completed', 'already_hard_day', 'already_protected', 'bad_change',
       'bad_event', 'bad_event_id', 'bad_payload', 'bad_rating', 'class_locked', 'day_closed', 'event_reused', 'future',
-      'no_swaps_left', 'not_an_option', 'not_completed', 'not_current', 'not_exercise', 'not_found',
-      'not_paused', 'not_swappable', 'not_too_hard', 'outside_day', 'rest_limit', 'same_class', 'timer_short', 'too_late',
+      'no_book', 'no_swaps_left', 'not_an_option', 'not_completed', 'not_current', 'not_exercise', 'not_found',
+      'not_paused', 'not_swappable', 'not_too_hard', 'outside_day', 'rest_limit', 'same_book', 'same_class', 'timer_short', 'too_late',
       'unsupported_event',
     ]);
   });

@@ -1,6 +1,7 @@
 // Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; M6b the adjustments (swap, hard
-// day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); M6c the training setup; the rest arrive with the milestones whose
-// screens send them, and until then are rejected without touching anything.
+// day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); M6c the training setup; M6d the Scholar's
+// Path book; the rest arrive with the milestones whose screens send them, and until then are rejected without touching
+// anything.
 import {
   CLASSES, CLOCK_SKEW_MS, EQUIPMENT, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone, questTimerDone, sessionSets,
 } from '../../../packages/rules/src/index.ts';
@@ -38,13 +39,17 @@ export type ClassChangeEvent = { id: string; type: 'class_change'; classId: Clas
 export type AbilityEvent = { id: string; type: 'ability'; dayId: number; ability: DayAbility };
 /** M6c: the player's training setup (Settings → Training); today's open workout is re-planned with it. */
 export type TrainingEvent = { id: string; type: 'training'; equipment: Equipment[]; programStyle: ProgramStyle };
+/** M6d: Scholar's Path. A title starts that book; `finished` first records the current one; null sets it aside. */
+export type BookEvent = { id: string; type: 'book'; title: string | null; finished: boolean };
+export const MAX_BOOK_TITLE = 120;
 export type AdjustEvent =
-  | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent;
+  | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent
+  | BookEvent;
 export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent;
 export type Rejected = { id: string | null; code: string };
 
 export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
-  'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability', 'training',
+  'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability', 'training', 'book',
 ];
 export const isAdjust = (event: PhoneEvent): event is AdjustEvent => (ADJUST_TYPES as readonly string[]).includes(event.type);
 
@@ -107,6 +112,14 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
       if (!Array.isArray(equipment) || new Set(equipment).size !== equipment.length) return bad;
       if (!equipment.every((e) => EQUIPMENT.includes(e as Equipment)) || !PROGRAM_STYLES.includes(raw.programStyle as ProgramStyle)) return bad;
       return { id, type: 'training', equipment: equipment as Equipment[], programStyle: raw.programStyle as ProgramStyle };
+    }
+    case 'book': {
+      if (typeof raw.finished !== 'boolean') return bad;
+      if (raw.title === null) return { id, type: 'book', title: null, finished: raw.finished };
+      if (typeof raw.title !== 'string') return bad;
+      const title = raw.title.trim();
+      if (title.length < 1 || title.length > MAX_BOOK_TITLE || CONTROL.test(title)) return bad;
+      return { id, type: 'book', title, finished: raw.finished };
     }
     default:
       return { id, code: 'unsupported_event' };

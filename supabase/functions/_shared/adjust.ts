@@ -2,13 +2,13 @@
 // writes (migration 0008), or the reason it is refused. Pure: the rules decide, from the same snapshot the offers come
 // from (today.ts), and every reward in a replaced quest is drafted here, never taken from the phone.
 import {
-  applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout, newLadder, painKey,
-  painOption, planWorkout, recordPain, restAllowed, resumeAfterPain, stepDown, swapLimit, swapOptions,
+  abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout, ladderById,
+  newLadder, painKey, painOption, planWorkout, plannedMoves, recordPain, restAllowed, resumeAfterPain, stepDown, swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type { BuiltDay, ClassId, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
 import type { AdjustEvent, DayAbility } from './events.ts';
-import { ladderMap } from './state.ts';
+import { ladderMap, startPoints, statXp, toProfile } from './state.ts';
 import type { DayRow, InstanceDraft, InstanceRow, Snapshot } from './state.ts';
 import { QUEST_SLOTS, canStepDown, completedSlots, openDay, questsOf, restDays, todayBuilt, todayInput } from './today.ts';
 
@@ -16,7 +16,7 @@ import { QUEST_SLOTS, canStepDown, completedSlots, openDay, questsOf, restDays, 
 export const ADJUST_CODES = [
   'not_found', 'day_closed', 'already_completed', 'not_swappable', 'no_swaps_left', 'not_an_option', 'already_hard_day',
   'already_protected', 'rest_limit', 'not_exercise', 'not_paused', 'not_too_hard', 'not_current',
-  'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change',
+  'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change', 'no_book', 'same_book',
 ] as const;
 export type AdjustCode = (typeof ADJUST_CODES)[number];
 
@@ -31,6 +31,8 @@ export type Change = {
   classId?: ClassId;
   ability?: { id: DayAbility; day: number };
   training?: { equipment: Equipment[]; programStyle: ProgramStyle };
+  /** M6d: Scholar's Path (decision 12). */
+  book?: { title: string | null; finished: boolean };
 };
 
 export type Plan = { change: Change } | { code: AdjustCode };
@@ -192,6 +194,24 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
         quests.push(replace(library, q, draftQuest(template, q.slot, q.why, { hardDay: q.hard_day, book: q.book, moves })));
       }
       return { change: quests.length === 0 ? { training } : { training, day: { id: Number(day.id) }, quests } };
+    }
+    case 'book': {
+      const player = toProfile(s.profile, startPoints(s.character), statXp(s.character));
+      if (!abilityUnlocked('scholars_path', player.classId, player.level)) return refuse('ability_not_ready');
+      if ((event.finished || event.title === null) && s.profile.book === null) return refuse('no_book');
+      if (!event.finished && event.title === s.profile.book) return refuse('same_book');
+      const book = { title: event.title, finished: event.finished };
+      const day = openDay(s);
+      if (day === null || nowMs >= day.ends_at.getTime()) return { change: { book } };
+      // Today's open reading quests show the new book at once (as `training` re-plans today's workout).
+      const quests: QuestChange[] = [];
+      for (const q of questsOf(s, day)) {
+        if (q.completed_at !== null || !QUEST_SLOTS.includes(q.slot)) continue;
+        const template = findTemplate(library, q.template_id);
+        if (template === undefined || template.ladder === null || !ladderById(library, template.ladder).tracksBook) continue;
+        quests.push(replace(library, q, draftQuest(template, q.slot, q.why, { hardDay: q.hard_day, book: event.title, moves: plannedMoves(q.condition) })));
+      }
+      return { change: quests.length === 0 ? { book } : { book, day: { id: Number(day.id) }, quests } };
     }
   }
 }

@@ -213,3 +213,25 @@ describe('a workout log (M6c decision 9)', () => {
     expect(check(hard, { sets: [12, 10] })).toEqual({ payload: { sets: [12, 10] } });
   });
 });
+
+describe('the book event (M6d decision 12)', () => {
+  const id = '00000000-0000-4000-8000-0000000000b1';
+  const parse = (raw: Record<string, unknown>) => parseSyncBody({ timeZone: 'UTC', events: [{ id, type: 'book', ...raw }] });
+
+  it('takes a trimmed title or null, and whether the current book is finished', () => {
+    expect(parse({ title: '  Dune ', finished: false })).toMatchObject({ events: [{ type: 'book', title: 'Dune', finished: false }] });
+    expect(parse({ title: null, finished: true })).toMatchObject({ events: [{ type: 'book', title: null, finished: true }] });
+  });
+
+  it.each([
+    [{ title: '', finished: false }], [{ title: '   ', finished: false }], [{ title: 'x'.repeat(121), finished: false }],
+    [{ title: 'Line\nbreak', finished: false }], [{ title: 7, finished: false }], [{ title: 'Dune' }], [{ title: 'Dune', finished: 'yes' }],
+  ])('refuses %j', (raw) => {
+    expect(parse(raw)).toMatchObject({ events: [], rejected: [{ id, code: 'bad_event' }] });
+  });
+
+  it('is an adjustment, stored without its id and type', () => {
+    expect(isAdjust({ id, type: 'book', title: 'Dune', finished: false })).toBe(true);
+    expect(adjustPayload({ id, type: 'book', title: 'Dune', finished: false })).toEqual({ title: 'Dune', finished: false });
+  });
+});

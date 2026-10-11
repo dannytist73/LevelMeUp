@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { newLadder, planWorkout, plannedMoves, questReward, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
+import { levelForXp, newLadder, planWorkout, plannedMoves, questReward, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
 import type { PlayerProfile, Rating } from '../../../packages/rules/src/index.ts';
 import { planAdjust } from '../../functions/_shared/adjust.ts';
 import type { AdjustEvent } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
 import { parseOnboarding, startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import { NO_OFFERS, startPoints, stateView, statXp, toProfile } from '../../functions/_shared/state.ts';
-import type { CharacterRow, DayRow, Snapshot } from '../../functions/_shared/state.ts';
+import type { CharacterRow, DayRow, ProfileRow, Snapshot } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
 import {
   DAY_MS, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows, manilaDay,
@@ -294,5 +294,44 @@ describe('changing the training setup (M6c decision 12)', () => {
     expect(plan(limited, { type: 'training', equipment: [], programStyle: 'none' })).toEqual({
       change: { training: { equipment: [], programStyle: 'none' } },
     });
+  });
+});
+
+describe("Scholar's Path: the book (M6d decision 12)", () => {
+  const L10 = (() => { let t = 0; while (levelForXp(t) < 10) t += 10; return t; })();
+  const mage = (over: Partial<ProfileRow> = {}) => dayTwoSnapshot({ core: 'reading-1', side1: 'walk-1', side2: 'mobility-0' }, {
+    profile: profileRow(undefined, { class_id: 'mage', ...over }),
+    character: characterRow({ xp_wisdom: L10, total_xp: L10 }),
+  });
+  const book = (title: string | null, finished = false): Draft => ({ type: 'book', title, finished });
+
+  it("needs Scholar's Path: a Mage at level 10", () => {
+    const young = dayTwoSnapshot(undefined, { profile: profileRow(undefined, { class_id: 'mage' }) });
+    expect(plan(young, book('Dune'))).toEqual({ code: 'ability_not_ready' });
+    const warrior = dayTwoSnapshot(undefined, { character: characterRow({ xp_strength: L10, total_xp: L10 }) });
+    expect(plan(warrior, book('Dune'))).toEqual({ code: 'ability_not_ready' });
+  });
+
+  it("sets the book and puts it on today's open reading quests", () => {
+    const planned = plan(mage(), book('Dune'));
+    expect(planned).toMatchObject({ change: { book: { title: 'Dune', finished: false }, day: { id: 2 } } });
+    const quests = 'change' in planned ? planned.change.quests ?? [] : [];
+    expect(quests.map((q) => [q.slot, q.templateId, q.book])).toEqual([['core', 'reading-1', 'Dune']]);
+  });
+
+  it('a cleared reading quest keeps its book; without an open reading quest only the profile changes', () => {
+    expect(plan(done(mage(), 'core'), book('Dune'))).toEqual({ change: { book: { title: 'Dune', finished: false } } });
+  });
+
+  it('finishing needs a book; the same title again is refused; set aside needs a book', () => {
+    expect(plan(mage(), book(null, true))).toEqual({ code: 'no_book' });
+    expect(plan(mage(), book(null))).toEqual({ code: 'no_book' });
+    expect(plan(mage({ book: 'Dune' }), book('Dune'))).toEqual({ code: 'same_book' });
+    expect(plan(mage({ book: 'Dune' }), book(null, true))).toMatchObject({ change: { book: { title: null, finished: true } } });
+    expect(plan(mage({ book: 'Dune' }), book('Dune', true))).toMatchObject({ change: { book: { title: 'Dune', finished: true } } });
+  });
+
+  it('after the day ends only the profile changes', () => {
+    expect(plan(mage(), book('Dune'), NOW + 2 * DAY_MS)).toEqual({ change: { book: { title: 'Dune', finished: false } } });
   });
 });

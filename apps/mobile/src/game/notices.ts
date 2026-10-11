@@ -31,6 +31,8 @@ const TEXT = {
   ability_not_ready: "That ability wasn't ready, so today's core quest stayed the same.",
   already_applied: 'That ability was already in use today.',
   bad_change: "That change couldn't be applied, so nothing changed.",
+  no_book: 'No book was set, so there was nothing to finish or set aside.',
+  same_book: 'That book was already the one you are reading.',
 } as const;
 
 export type NoticeCode = keyof typeof TEXT;
