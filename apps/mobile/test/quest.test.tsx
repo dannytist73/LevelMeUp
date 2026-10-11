@@ -1,5 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { NEW_TIMER, startTimer } from '../src/quest/timer.ts';
+import { Cleared } from '../src/screens/quest/Cleared.tsx';
+import type { ClearedProps } from '../src/screens/quest/Cleared.tsx';
 import { RepLog } from '../src/screens/quest/RepLog.tsx';
 import { SentenceLog } from '../src/screens/quest/SentenceLog.tsx';
 import { TapClaim } from '../src/screens/quest/TapClaim.tsx';
@@ -86,5 +89,74 @@ describe('the completion panels (spec §3.6)', () => {
   it('every panel can be disabled while a claim is on its way', async () => {
     await render(<TapClaim disabled onClaim={jest.fn()} />);
     expect(disabled('Mark cleared')).toBe(true);
+  });
+});
+
+const NUMBERS: ClearedNumbers = {
+  xp: 20,
+  statUps: [{ stat: 'strength', from: 11, to: 12, rank: 'D' }],
+  discipline: true,
+  streak: { from: 9, to: 10 },
+  level: { level: 6, xpIntoLevel: 87, xpForLevel: 130 },
+};
+
+async function renderCleared(over: Partial<ClearedProps> = {}) {
+  const props: ClearedProps = {
+    heading: 'CORE QUEST · KNEE PUSH-UPS', line: '3 sets of 8', numbers: NUMBERS, rating: null, canUndo: true, waiting: false,
+    onRate: jest.fn(), onUndo: jest.fn(), onContinue: jest.fn(), ...over,
+  };
+  await render(<Cleared {...props} />);
+  return props;
+}
+
+describe('"Quest cleared" (board D2)', () => {
+  it('shows the XP, the stat up with its rank, Discipline, the streak and the level bar', async () => {
+    await renderCleared();
+    expect(screen.getByText('CLEARED')).toBeTruthy();
+    expect(screen.getByText('CORE QUEST · KNEE PUSH-UPS')).toBeTruthy();
+    expect(screen.getByLabelText('+20 XP')).toBeTruthy();
+    expect(screen.getByText('STRENGTH 11 → 12')).toBeTruthy();
+    expect(screen.getByLabelText('Rank D')).toBeTruthy();
+    expect(screen.getByText('Discipline · today counts')).toBeTruthy();
+    expect(screen.getByText('9 → 10 DAYS')).toBeTruthy();
+    expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
+    expect(screen.getByText('43 to Lv 7')).toBeTruthy();
+  });
+
+  it('shows Right until the player picks, and sends a rating only when it changes', async () => {
+    const props = await renderCleared();
+    expect(screen.getByRole('button', { name: 'Right', selected: true })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Right' }));
+    expect(props.onRate).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Too hard' }));
+    expect(props.onRate).toHaveBeenCalledWith('too_hard');
+  });
+
+  it('explains "Too hard" once it is the rating', async () => {
+    await renderCleared({ rating: 'too_hard' });
+    expect(screen.getByRole('button', { name: 'Too hard', selected: true })).toBeTruthy();
+    expect(screen.getByText(/the System eases this one/)).toBeTruthy();
+  });
+
+  it('offers Undo only while the day is open; Continue always', async () => {
+    const props = await renderCleared();
+    await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
+    expect(props.onUndo).toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(props.onContinue).toHaveBeenCalled();
+    await renderCleared({ canUndo: false });
+    expect(screen.queryByRole('button', { name: 'Logged by mistake? Undo' })).toBeNull();
+  });
+
+  it('without changes, shows no stat up, no streak and no Discipline line', async () => {
+    await renderCleared({ numbers: { ...NUMBERS, statUps: [], streak: null, discipline: false } });
+    expect(screen.queryByText('STAT UP')).toBeNull();
+    expect(screen.queryByText('Streak')).toBeNull();
+    expect(screen.queryByText('Discipline · today counts')).toBeNull();
+  });
+
+  it('says when the change hasn\'t reached the server yet', async () => {
+    await renderCleared({ waiting: true });
+    expect(screen.getByText('Will sync')).toBeTruthy();
   });
 });
