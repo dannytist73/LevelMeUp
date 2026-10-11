@@ -150,3 +150,32 @@ begin
     'a training change can replace an open quest on the day it names');
   return next is((select equipment from levelmeup.profiles where user_id = a), '{}'::text[], 'and empty equipment means bodyweight');
 end $$;
+
+-- M6d: Scholar's Path. Setting, finishing (with the sessions read since it was set) and setting aside a book.
+create function lmu_test.test_adjust_book() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(61);
+  core bigint := lmu_test.quest(a, 'core');
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(61), 1, 'book', '{"title": "Dune", "finished": false}',
+    '{"book": {"title": "Dune", "finished": false}}');
+  return next is((select book from levelmeup.profiles where user_id = a), 'Dune', 'the book is set');
+  return next ok((select book_started_at is not null from levelmeup.profiles where user_id = a), 'with the time it was set');
+  update levelmeup.quest_instances set book = 'Dune' where id = core;
+  perform levelmeup.complete_quest(a, lmu_test.ev(62), core, now(), null, '{}');
+  perform levelmeup.adjust(a, lmu_test.ev(63), lmu_test.version(a), 'book', '{"title": null, "finished": true}',
+    '{"book": {"title": null, "finished": true}}');
+  return next is((select book from levelmeup.profiles where user_id = a), null, 'finishing clears the book');
+  return next ok((select book_started_at is null from levelmeup.profiles where user_id = a), 'and its start');
+  return next is((select books_finished -> 0 ->> 'title' from levelmeup.profiles where user_id = a), 'Dune', 'and records it');
+  return next is((select (books_finished -> 0 ->> 'sessions')::int from levelmeup.profiles where user_id = a), 1, 'with its sessions');
+  return next is((select (books_finished -> 0 ->> 'minutes')::int from levelmeup.profiles where user_id = a), 10, 'and minutes');
+  return next ok((select (books_finished -> 0 ->> 'finishedAt') ~ '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$' from levelmeup.profiles where user_id = a),
+    'times are stored as ISO strings the phone can read');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, %s, ''book'', ''{}'', %L)', a, lmu_test.ev(64), lmu_test.version(a),
+      '{"book": {"title": null, "finished": true}}'),
+    'P0001', 'lmu:bad_change', 'finishing without a book is refused');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, %s, ''book'', ''{}'', %L)', a, lmu_test.ev(65), lmu_test.version(a),
+      jsonb_build_object('book', jsonb_build_object('title', repeat('x', 121), 'finished', false))),
+    '23514', null, 'a title over 120 characters is refused by the table');
+end $$;
