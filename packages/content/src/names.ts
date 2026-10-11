@@ -39,3 +39,19 @@ export const ABILITY_NAMES: Readonly<Record<AbilityId, string>> = {
 
 /** Shown on every exercise quest, with the "I felt pain" button (spec §3.4). */
 export const EXERCISE_SAFETY_LINE = 'Stop if you feel sharp pain, dizziness or chest pain.';
+
+/** A ladder as the player reads it, e.g. on "Resting after pain". */
+export const LADDER_NAMES: Readonly<Record<string, string>> = {
+  push: 'Push-ups',
+  squat: 'Squats',
+  core: 'Core',
+  'own-program': 'Your own training',
+  walk: 'Walking',
+  mobility: 'Mobility',
+  sleep: 'Sleep routine',
+  breathing: 'Breathing',
+  reading: 'Reading',
+  insight: 'Reflection',
+  focus: 'Focus sessions',
+  'phone-free': 'Phone-free time',
+};

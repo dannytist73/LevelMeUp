@@ -10,3 +10,4 @@ export * from './shadow.ts';
 export * from './onboarding.ts';
 export * from './art.ts';
 export * from './play.ts';
+export * from './adjust.ts';
