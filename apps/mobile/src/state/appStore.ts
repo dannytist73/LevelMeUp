@@ -3,7 +3,9 @@ import { isValidTimeZone } from '@levelmeup/rules';
 import * as Crypto from 'expo-crypto';
 import { getCalendars } from 'expo-localization';
 import kvStore from 'expo-sqlite/kv-store';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../auth/client.ts';
+import { linkGoogle, readAccount, signInWithGoogle } from '../auth/google.ts';
 import { ensureSession, sessionAlive } from '../auth/session.ts';
 import { openExpoSql } from '../data/expoSql.ts';
 import { makeLocal, migrate } from '../data/local.ts';
@@ -33,8 +35,10 @@ export async function createAppStore() {
     now: Date.now,
     newId: Crypto.randomUUID,
     kv: kvStore,
-    // Task 10 replaces these two with src/auth/google.ts.
-    account: async () => ({ kind: 'guest' }),
-    google: { link: async () => ({ ok: false, code: 'failed' }), signIn: async () => ({ ok: false, code: 'failed' }) },
+    account: () => readAccount(supabase),
+    google: {
+      link: () => linkGoogle(supabase, WebBrowser.openAuthSessionAsync),
+      signIn: () => signInWithGoogle(supabase, WebBrowser.openAuthSessionAsync),
+    },
   });
 }

@@ -26,6 +26,8 @@ export default function Developer() {
   const deleteTestCharacter = useGame((s) => s.deleteTestCharacter);
   const startOver = useGame((s) => s.startOver);
   const signInLost = useGame((s) => s.signInLost);
+  const account = useGame((s) => s.account);
+  const saveWithGoogle = useGame((s) => s.saveWithGoogle);
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
@@ -46,8 +48,19 @@ export default function Developer() {
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 20 }}>
       <Button label="Back" variant="secondary" onPress={() => router.back()} />
       <Title>Developer</Title>
-      <Small>{`Phase ${phase} · sync ${status} · ${pending.length} waiting · zone ${deviceZone()}`}</Small>
+      <Small>{`Phase ${phase} · sync ${status} · ${pending.length} waiting · zone ${deviceZone()} · ${account.kind}${account.kind === 'saved' && account.email !== null ? ` ${account.email}` : ''}`}</Small>
       {message !== null && <Body weight="bold">{message}</Body>}
+
+      <SectionTitle title="Account" />
+      <Button
+        label="Save with Google"
+        variant="secondary"
+        disabled={busy || account.kind !== 'guest'}
+        onPress={() => void act(async () => {
+          const r = await saveWithGoogle();
+          return r.ok ? 'Saved with Google.' : `Not saved: ${r.code}`;
+        })}
+      />
 
       <SectionTitle title="Test character" />
       {phase !== 'ready' ? (

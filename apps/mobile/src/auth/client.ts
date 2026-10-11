@@ -1,5 +1,6 @@
 // The app's Supabase client (architecture §4.4): Auth and the functions only, since the levelmeup schema isn't exposed.
-// The session is sealed (sessionStorage.ts); tokens refresh only while the app is in the foreground.
+// The session is sealed (sessionStorage.ts); tokens refresh only while the app is in the foreground. Google sign-ins use
+// PKCE (src/auth/google.ts).
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
@@ -26,6 +27,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
   },
 });
 
