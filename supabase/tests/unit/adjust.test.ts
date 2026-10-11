@@ -143,10 +143,13 @@ describe('planning an adjustment (adjust.ts)', () => {
     expect(plan(at(), { type: 'swap', instanceId: 100, templateId: 'squat-0' })).toEqual({ code: 'day_closed' }); // day 1's core
   });
 
-  it('nothing changes on a day that has ended, even before the server closes it', () => {
+  it('nothing changes on a day that has ended, even before the server closes it; pain still rests the exercise', () => {
     const ended = manilaDay(2).endsAt;
+    const paused = { push: { ...newLadder(1), paused: true } };
     expect(plan(at(), { type: 'hard_day', dayId: 2 }, ended)).toEqual({ code: 'day_closed' });
-    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest' }, ended)).toEqual({ code: 'day_closed' });
+    // A report that syncs late (M6b review): the day can't change any more, but the exercise rests.
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest' }, ended)).toEqual({ change: { ladders: paused } });
+    expect(plan(at(), { type: 'pain', instanceId: 100, choice: 'gentle' })).toEqual({ change: { ladders: paused } }); // day 1's core
   });
 
   it('hard day: every open core and side quest in its hard-day version, once', () => {
@@ -179,18 +182,21 @@ describe('planning an adjustment (adjust.ts)', () => {
     // Already a rest day: the reason stays; the ladder still rests.
     expect(plan(at({}, { protection: 'planned_rest' }), { type: 'pain', instanceId: 200, choice: 'rest' })).toEqual({ change: { ladders: { push: paused } } });
     expect(plan(done(at(), 'core'), { type: 'pain', instanceId: 200, choice: 'pause' })).toEqual({ change: { ladders: { push: paused } } });
-    expect(plan(done(at(), 'core'), { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({ code: 'already_completed' });
+    // Cleared before the report reached the server: the exercise still rests.
+    expect(plan(done(at(), 'core'), { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({ change: { ladders: { push: paused } } });
     expect(plan(at(), { type: 'pain', instanceId: 202, choice: 'rest' })).toEqual({ code: 'not_exercise' });
   });
 
-  it('pain: a standalone exercise quest rests by its own id; with no gentle option, rest is the offer', () => {
+  it('pain: a standalone exercise quest rests by its own id; with no gentle option, the day rests instead', () => {
     const micro = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'micro-squats' });
     expect(plan(micro, { type: 'pain', instanceId: 200, choice: 'pause' })).toEqual({
       change: { ladders: { 'micro-squats': { ...newLadder(), paused: true } } },
     });
     const others = templateById(LIBRARY, 'walk-1').minutes + templateById(LIBRARY, 'reading-0').minutes;
     const tight = at({}, { budget: others + 2 }); // 2 minutes left: no walk or mobility rung is that short
-    expect(plan(tight, { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({ code: 'no_gentle_option' });
+    expect(plan(tight, { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({
+      change: { ladders: { push: { ...newLadder(1), paused: true } }, day: { id: 2, protection: 'pain' } },
+    });
   });
 
   it('resume: one rung lower, only while resting', () => {

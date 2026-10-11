@@ -32,6 +32,8 @@ export type QuestCardProps = {
   artUri: string | null;
   /** An open exercise core quest: "I felt pain" under the card (board D1). */
   onPain?: () => void;
+  /** The quest's exercise is resting after pain (M6b review): the card says so. */
+  resting?: boolean;
 };
 
 export const questXp = (quest: QuestView): number => Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0);
@@ -40,7 +42,7 @@ function WillSync({ on }: { on: 'paper' | 'night' }) {
   return <Caption tone={on === 'paper' ? 'inkMuted' : 'ash'}>Will sync</Caption>;
 }
 
-export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, artUri, onPain }: QuestCardProps) {
+export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, artUri, onPain, resting = false }: QuestCardProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
   const summary = questSummary(template, quest.hardDay);
@@ -54,32 +56,33 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
     // screen readers.
     return (
       <View style={{ gap: 10 }}>
-          <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
-            <SlamIn>
-              <View style={{ marginRight: 6 }}>
-                <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-                  <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative />
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 56 }}>
-                    <Chip label={stat} on="paper" />
-                    <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
-                    {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" on="paper" />}
-                  </View>
-                  <View style={{ gap: 4 }}>
-                    <Title tone="ink">{words.title}</Title>
-                    <Body tone="inkSoft" weight="medium">{summary}</Body>
-                  </View>
-                  <View style={{ gap: 3, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink }}>
-                    <Label tone="sealText">Why this quest</Label>
-                    <Small tone="inkSoft">{why}</Small>
-                  </View>
-                  {template.exercise !== null && <Small tone="inkMuted">{EXERCISE_SAFETY_LINE}</Small>}
-                  {cleared && <MarkStamp text={`Cleared +${xp}`} style={{ borderColor: colors.sealText }} />}
-                  {waiting && <WillSync on="paper" />}
-                </SlantPanel>
-                {!cleared && <XpStamp xp={xp} style={{ position: 'absolute', top: -20, right: -8 }} />}
-              </View>
-            </SlamIn>
-          </Pressable>
+        <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
+          <SlamIn>
+            <View style={{ marginRight: 6 }}>
+              <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
+                <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative />
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 56 }}>
+                  <Chip label={stat} on="paper" />
+                  <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
+                  {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" on="paper" />}
+                {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" on="paper" />}
+                </View>
+                <View style={{ gap: 4 }}>
+                  <Title tone="ink">{words.title}</Title>
+                  <Body tone="inkSoft" weight="medium">{summary}</Body>
+                </View>
+                <View style={{ gap: 3, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink }}>
+                  <Label tone="sealText">Why this quest</Label>
+                  <Small tone="inkSoft">{why}</Small>
+                </View>
+                {template.exercise !== null && <Small tone="inkMuted">{EXERCISE_SAFETY_LINE}</Small>}
+                {cleared && <MarkStamp text={`Cleared +${xp}`} style={{ borderColor: colors.sealText }} />}
+                {waiting && <WillSync on="paper" />}
+              </SlantPanel>
+              {!cleared && <XpStamp xp={xp} style={{ position: 'absolute', top: -20, right: -8 }} />}
+            </View>
+          </SlamIn>
+        </Pressable>
         {onPain !== undefined && (
           <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} style={{ alignSelf: 'flex-start' }} />
         )}
@@ -112,6 +115,7 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
             <Chip label={stat} />
             <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
             {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" />}
+            {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" />}
           </View>
           <Heading tone="ember">{`+${xp} XP`}</Heading>
         </View>

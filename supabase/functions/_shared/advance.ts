@@ -105,7 +105,9 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
       }
     }
     if (coreDone) pay({ sourceType: 'discipline', sourceId: `day:${day.day_number}`, stat: 'discipline', amount: DISCIPLINE_PER_CORE_DAY });
-    if (coreDone && day.hard_day) counters.hardDaysCleared++;
+    // A hard day counts only when its core quest was done in its hard-day version: calling one after clearing the core
+    // at full XP earns nothing (M6b review).
+    if (done.some((q) => q.slot === 'core' && q.hard_day)) counters.hardDaysCleared++;
     if (coreDone && day.comeback) counters.comebacks++;
 
     // Ladders move only now, with each quest's final rating and the rung it was built at (M1 review). A protected

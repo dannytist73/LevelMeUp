@@ -140,5 +140,8 @@ describe('adjustments show at once (M6b)', () => {
     const still = project(monk, [ev({ type: 'ability', dayId: 2, ability: 'stillness' })]);
     expect(questOf(still, 200).templateId).toBe('stillness');
     expect(still.today!.abilities).toEqual([]);
+    // After a hard day still on its way, the ability's quest is its hard-day version, as the server drafts it (review).
+    const hardStill = project(monk, [ev({ type: 'hard_day', dayId: 2 }), ev({ type: 'ability', dayId: 2, ability: 'stillness' })]);
+    expect(questOf(hardStill, 200)).toMatchObject({ templateId: 'stillness', hardDay: true });
   });
 });

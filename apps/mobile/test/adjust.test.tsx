@@ -148,6 +148,14 @@ describe('"I felt pain" (spec §3.3, §3.4)', () => {
     await view.rerender(withStore(testStore({ view: shown() }), <Pain questId={202} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
     expect(screen.getByText(PLAY_TEXT.quest.gone)).toBeTruthy();
   });
+
+  it('after the day ends the choices go, but the advice to see a professional stays (review)', async () => {
+    const late = () => DAY_TWO_NOW + DAY_MS;
+    await render(withStore(testStore({ view: shown() }), <Pain questId={200} now={late} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(PLAY_TEXT.quest.gone)).toBeTruthy();
+    expect(screen.getByText(A.pain.advice)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: A.pain.rest })).toBeNull();
+  });
 });
 
 describe('class change (spec §2.5)', () => {

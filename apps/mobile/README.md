@@ -41,6 +41,14 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   with the screen off. Level-ups and achievements queue in the store after the server confirms them and show in a modal
   (`src/screens/Celebration.tsx`). Quest pictures come from the public `lmu-art` bucket: its `v2/manifest.json` is fetched
   once per launch and kept in `lmu.art-manifest` (`src/art/manifest.ts`); without it, an ink panel shows.
+- **Adjusting the day** (M6b): Today's buttons (`src/screens/DayActions.tsx`) send `swap`, `hard_day`, `plan_rest`,
+  `ability` and `resume` through the outbox; `app/swap.tsx` (`src/screens/Swap.tsx`), `app/pain/[id].tsx`
+  (`src/screens/Pain.tsx`), `app/class.tsx` (`src/screens/ClassChange.tsx`, from Character) and `app/vanish.tsx`
+  (`src/screens/Vanish.tsx`). The server decides what may be offered and sends it in the state (each quest's `swaps`,
+  `gentle` and `canStepDown`; today's `swapsLeft`, `restAllowed`, `abilities`; the player's `paused`), so the phone only
+  asks for what the server accepts; `src/game/project.ts` shows the chosen option at once (`src/game/adjust.ts` drafts a
+  hard-day version with the server's own `toDraft`). A quest replaced by a swap, gentle movement or an ability loses its
+  stored timer. Vanish never reaches the server: `expo-keep-awake` keeps the screen on, and leaving the app pauses it.
 - `app/dev/` exists only in development builds: the account and "Save with Google", the outbox and notices, the
   self-check (time zones on Hermes, AES, SQLite) and the component kit.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state

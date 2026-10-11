@@ -23,7 +23,6 @@ const TEXT = {
   already_protected: 'Today was already a rest day.',
   rest_limit: "You've rested twice in the last 7 days, so today stays a normal day. If the days feel heavy, fewer minutes a day may help.",
   not_exercise: 'That quest has no exercise to rest.',
-  no_gentle_option: 'No gentle quest fitted today, so nothing was swapped. You can still rest today.',
   not_paused: 'That exercise was already back in your quests.',
   not_too_hard: "That quest wasn't rated too hard, so its rung stayed the same.",
   not_current: 'That exercise had already changed rung, so nothing more was eased.',

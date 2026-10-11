@@ -1,6 +1,6 @@
 import { ACHIEVEMENTS, ADJUST_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
-import { DAY_MS } from '@levelmeup/rules';
+import { DAY_MS, newLadder } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
@@ -9,7 +9,7 @@ import { Character } from '../src/screens/Character.tsx';
 import { Chronicle, dayOutcome } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { DAY_TWO_NOW, adjustState, completeEvent, profileRow, serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, completeEvent, ladderRows, profileRow, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
@@ -268,6 +268,13 @@ it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core
   expect(screen.getByRole('button', { name: 'Swap · 1 left' })).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
   expect(onPain).toHaveBeenCalledWith(200);
+});
+
+it("Today tags a quest whose exercise is resting after pain (M6b review)", async () => {
+  const resting = adjustState({ ladders: ladderRows({ push: { ...newLadder(1), paused: true } }) });
+  await render(withStore(testStore({ view: project(resting, []) }),
+    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} now={() => DAY_TWO_NOW} />));
+  expect(screen.getAllByText(ADJUST_TEXT.paused.tag)).toHaveLength(1); // the core quest, push-1
 });
 
 it('Character offers a class change, and says when the next one opens (M6b)', async () => {

@@ -41,6 +41,15 @@ describe('closing days and building the next one (architecture §4.3)', () => {
     expect(out.newDay!.dayNumber).toBe(2);
   });
 
+  it('a hard day counts as cleared only when its core quest was done in its hard-day version (M6b review)', () => {
+    const input = afterDay1(['core'], day1End);
+    const hardDay = { ...input, days: [dayRow(DAY1, 1, { hard_day: true })] };
+    // Called after clearing the core at full XP: no "hard day cleared".
+    expect(planAdvance(hardDay)!.counters.hardDaysCleared).toBe(0);
+    const lighter = { ...hardDay, instances: input.instances.map((q) => (q.slot === 'core' ? { ...q, hard_day: true } : q)) };
+    expect(planAdvance(lighter)!.counters.hardDaysCleared).toBe(1);
+  });
+
   it('a protected day never counts a missed session', () => {
     const input = afterDay1([], day1End);
     const out = planAdvance({ ...input, days: [dayRow(DAY1, 1, { protection: 'planned_rest' })] })!;

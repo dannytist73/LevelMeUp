@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
-import { isExercise } from '../game/adjust.ts';
+import { isExercise, isResting } from '../game/adjust.ts';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
@@ -113,6 +113,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, now =
                   onOpen={() => onOpenQuest(q.id)}
                   artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId)), q.id) : null}
                   onPain={q.slot === 'core' && q.completedAt === null && isExercise(q) ? () => onPain(q.id) : undefined}
+                  resting={q.completedAt === null && isResting(q, view!.paused)}
                 />
               ))}
             </View>

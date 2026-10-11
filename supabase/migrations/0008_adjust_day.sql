@@ -54,7 +54,7 @@ begin
     select * into cur from levelmeup.quest_instances where id = q.id and user_id = p_user and day_id = d.id;
     if not found then raise exception 'lmu:not_found'; end if;
     if cur.completed_at is not null then raise exception 'lmu:already_completed'; end if;
-    if cur.slot <> q.slot or q.slot not in ('core', 'side1', 'side2') then raise exception 'lmu:bad_change'; end if;
+    if q.slot is distinct from cur.slot or cur.slot not in ('core', 'side1', 'side2') then raise exception 'lmu:bad_change'; end if;
     update levelmeup.quest_instances set
       template_id = q."templateId", ladder_id = q.ladder, rung = q.rung, stat = q.stat, tier = q.tier, minutes = q.minutes,
       completion = q.completion, condition = q.condition, hard_day = coalesce(q."hardDay", false), xp = q.xp, why = q.why,

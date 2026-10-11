@@ -15,7 +15,7 @@ import { QUEST_SLOTS, canStepDown, completedSlots, openDay, questsOf, restDays, 
 /** Every reason an adjustment is refused; the phone has words for each (apps/mobile/src/game/notices.ts). */
 export const ADJUST_CODES = [
   'not_found', 'day_closed', 'already_completed', 'not_swappable', 'no_swaps_left', 'not_an_option', 'already_hard_day',
-  'already_protected', 'rest_limit', 'not_exercise', 'no_gentle_option', 'not_paused', 'not_too_hard', 'not_current',
+  'already_protected', 'rest_limit', 'not_exercise', 'not_paused', 'not_too_hard', 'not_current',
   'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change',
 ] as const;
 export type AdjustCode = (typeof ADJUST_CODES)[number];
@@ -102,20 +102,23 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
       return { change: { day: { id: Number(day.id), protection: 'planned_rest' } } };
     }
     case 'pain': {
-      const found = questOf(s, event.instanceId, nowMs);
-      if ('code' in found) return found;
-      const { day, quest, quests } = found;
+      // A valid report always rests the exercise (M6b review): even when it syncs after its day ended, or after the quest
+      // was cleared. Only the day itself can no longer change then.
+      const quest = s.instances.find((q) => Number(q.id) === event.instanceId);
+      if (quest === undefined) return refuse('not_found');
       const template = findTemplate(library, quest.template_id);
       if (template === undefined || template.exercise === null) return refuse('not_exercise');
       const key = painKey(template);
       const ladders = { [key]: recordPain(ladderMap(s.ladders)[key] ?? newLadder()).state };
-      if (event.choice === 'pause') return { change: { ladders } };
-      if (event.choice === 'rest') {
-        return { change: day.protection === null ? { ladders, day: { id: Number(day.id), protection: 'pain' } } : { ladders } };
-      }
-      if (quest.completed_at !== null) return refuse('already_completed');
+      const day = dayOf(s, Number(quest.day_id), nowMs);
+      if ('code' in day || event.choice === 'pause') return { change: { ladders } };
+      const rest: Plan = { change: day.protection === null ? { ladders, day: { id: Number(day.id), protection: 'pain' } } : { ladders } };
+      if (event.choice === 'rest') return rest;
+      if (quest.completed_at !== null) return { change: { ladders } };
+      const quests = questsOf(s, day);
       const option = painOption(library, todayInput(s, day), todayBuilt(day, quests), quest.slot);
-      if (option === null) return refuse('no_gentle_option');
+      // Nothing gentle fits any more (the day changed since the offer): rest is always the other way.
+      if (option === null) return rest;
       return { change: { ladders, day: { id: Number(day.id) }, quests: [replace(library, quest, option)] } };
     }
     case 'resume': {

@@ -72,7 +72,8 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         const offer = today.abilities.find((a) => a.ability === event.ability);
         const i = quests.findIndex((q) => q.slot === 'core' && q.completedAt === null);
         if (offer === undefined || i < 0) continue;
-        quests[i] = withFields(quests[i]!, offer.quest);
+        // A hard day still on its way: the server drafts the ability's quest in its hard-day version (review).
+        quests[i] = withFields(quests[i]!, today.hardDay && !offer.quest.hardDay ? hardFields(offer.quest, 'core') : offer.quest);
         waiting.add(quests[i]!.id);
         today.abilities = today.abilities.filter((a) => a.ability !== event.ability);
       }

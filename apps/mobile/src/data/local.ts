@@ -12,6 +12,9 @@ const MIGRATIONS: readonly string[] = [
                         created_at integer not null);`,
   // M4 code review: a refused event leaves the outbox in the same transaction that records its notice.
   `create table notices (event_id text primary key, code text not null, created_at integer not null);`,
+  // M6b review: the state gained the day's offers; an older copy would break the new screens until the first sync, so
+  // it goes (the outbox stays, and the next sync brings the state back).
+  `delete from cache where key = 'state';`,
 ];
 
 export async function migrate(sql: Sql): Promise<void> {

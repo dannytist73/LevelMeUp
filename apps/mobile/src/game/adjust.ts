@@ -1,7 +1,7 @@
 // The phone's side of adjusting the day (M6b): an option put in a quest's slot, and the hard-day version of a quest,
 // drafted with the rules and the server's own `toDraft`, so what shows at once matches what the server stores.
 import { LIBRARY } from '@levelmeup/content';
-import { draftQuest, findTemplate, templateById } from '@levelmeup/rules';
+import { draftQuest, findTemplate, painKey, templateById } from '@levelmeup/rules';
 import type { Slot } from '@levelmeup/rules';
 import { toDraft } from '../../../../supabase/functions/_shared/drafts.ts';
 import type { QuestFields } from '../../../../supabase/functions/_shared/state.ts';
@@ -22,3 +22,9 @@ export function withFields(quest: QuestView, fields: QuestFields): QuestView {
 /** The quest asks for physical work, so it shows "I felt pain". */
 export const isExercise = (quest: Pick<QuestFields, 'templateId'>): boolean =>
   (findTemplate(LIBRARY, quest.templateId)?.exercise ?? null) !== null;
+
+/** The quest's exercise is resting after pain (the player's `paused`), so its card says so. */
+export function isResting(quest: Pick<QuestFields, 'templateId'>, paused: readonly string[]): boolean {
+  const template = findTemplate(LIBRARY, quest.templateId);
+  return template !== undefined && template.exercise !== null && paused.includes(painKey(template));
+}

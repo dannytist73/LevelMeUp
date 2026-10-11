@@ -35,7 +35,14 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
     </ScreenScroll>
   );
   if (view === null || today === null || quest === null || !open || !isExercise(quest)) {
-    return frame(<NarrationBox>{PLAY_TEXT.quest.gone}</NarrationBox>);
+    // The choices go with the day, but the advice never does (review).
+    const exercise = quest !== null && isExercise(quest);
+    return frame(
+      <>
+        <NarrationBox>{PLAY_TEXT.quest.gone}</NarrationBox>
+        {exercise && <Small tone="chalk">{T.advice}</Small>}
+      </>,
+    );
   }
   const send = async (choice: 'gentle' | 'rest' | 'pause'): Promise<void> => {
     if (busy) return;
