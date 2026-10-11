@@ -105,7 +105,9 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Owner | "Rest today" after pain is a protected day outside the 2-in-7 limit (wellbeing first); the advice to see a professional from the second report is the only brake. Confirm this is what you want. |
 | M7 | A late "Rest today" after pain is applied only in part (the exercise rests; the day can't) and the result says `ok`: add a notice that the day had already ended. Dropping the pre-M6b cache means a phone whose sign-in is gone at the update, with nothing unsent, starts as a new player instead of showing "sign-in lost" (rare; check with M7's Settings). |
 | Later | Hardening from the M6b review: `levelmeup.adjust` could check that a change's parts match its event type (only the planner calls it today); the swap sheet's "Which quest?" list reads as radio buttons, where plain buttons would describe it better. |
-| Owner | Run the Find X9 rows of the M6b checklist (1–12) after M5's and M6a's. Stillness, Dawn Ritual and Vanish on a device once a test character reaches a Monk's level 5 or 10 or a Rogue's level 10 (unit tests cover them; the development build already contains `expo-keep-awake`). |
+| M6c | On a hard day, a quest title that names minutes ("Walk 5 minutes") keeps the full version's number while its target says 3 minutes (M2's voice-line item, now seen in titles): give hard-day versions their own title or keep numbers out of titles. |
+| Later | The hard-day and rest confirms open at the bottom of Today, below the buttons; scroll them into view when they open. |
+| Owner | Row 10 (step down after "Too hard") needs a quest above its ladder's first rung, which day 1 never has: check it on a later day. Run the Find X9 rows of the M6b checklist (1–12) after M5's and M6a's. Stillness, Dawn Ritual and Vanish on a device once a test character reaches a Monk's level 5 or 10 or a Rogue's level 10 (unit tests cover them; the development build already contains `expo-keep-awake`). |
 
 ## Spikes and where they run
 

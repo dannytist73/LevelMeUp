@@ -4,10 +4,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { activateKeepAwakeAsync } from 'expo-keep-awake';
 import { AppState } from 'react-native';
 import { project } from '../src/game/project.ts';
-import type { ServerState } from '../src/game/types.ts';
+import type { PhoneEvent, ServerState } from '../src/game/types.ts';
+import type { NewEvent } from '../src/state/store.ts';
 import { ClassChange } from '../src/screens/ClassChange.tsx';
 import { DayActions, DayBanners, PausedExercises } from '../src/screens/DayActions.tsx';
-import { Pain } from '../src/screens/Pain.tsx';
+import { Pain, gentleLine } from '../src/screens/Pain.tsx';
 import { Swap } from '../src/screens/Swap.tsx';
 import { Vanish } from '../src/screens/Vanish.tsx';
 import { DAY_TWO_NOW, adjustState, characterRow, ladderRows, profileRow } from './support/fixtures.ts';
@@ -149,6 +150,20 @@ describe('"I felt pain" (spec §3.3, §3.4)', () => {
     expect(screen.getByText(PLAY_TEXT.quest.gone)).toBeTruthy();
   });
 
+  it('on a day that is already a rest day, the exercise can still be paused (device check)', async () => {
+    const store = testStore({ view: shown(adjustState({}, { protection: 'planned_rest' })) });
+    await render(withStore(store, <Pain questId={200} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(A.pain.restedLine)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: A.pain.rest })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: A.pain.pause }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'pain', instanceId: 200, choice: 'pause' });
+  });
+
+  it("names the gentle quest without repeating it: 'Walk 5 minutes', not 'Walk 5 minutes (5 minutes)' (device check)", () => {
+    expect(gentleLine('Walk 5 minutes', '5 minutes')).toBe('Instead: Walk 5 minutes');
+    expect(gentleLine('Gentle stretch', '3 minutes')).toBe('Instead: Gentle stretch (3 minutes)');
+  });
+
   it('after the day ends the choices go, but the advice to see a professional stays (review)', async () => {
     const late = () => DAY_TWO_NOW + DAY_MS;
     await render(withStore(testStore({ view: shown() }), <Pain questId={200} now={late} onDone={jest.fn()} onBack={jest.fn()} />));
@@ -217,5 +232,46 @@ describe('Vanish (Rogue level 10)', () => {
     t += 20 * 60_000;
     await view.rerender(tree());
     expect(screen.getByText(fillText(A.vanish.done, { n: 30 }))).toBeTruthy();
+  });
+});
+
+describe('a screen that sends a change keeps what it shows while it closes (M6b device check)', () => {
+  // On Android, the class picker crashed ("the specified child already has a parent") when its content changed during
+  // its exit animation. The store here applies each event at once, as the real projection does.
+  function applying(state: ServerState = adjustState()) {
+    const store = testStore({ view: shown(state) });
+    let n = 0;
+    store.setState({
+      enqueue: jest.fn(async (event: NewEvent) => {
+        store.setState({ view: project(state, [{ id: `00000000-0000-4000-9000-${String(++n).padStart(12, '0')}`, ...event } as PhoneEvent]) });
+      }),
+    });
+    return store;
+  }
+
+  it('the class picker', async () => {
+    const onDone = jest.fn();
+    await render(withStore(applying(), <ClassChange now={now} onDone={onDone} onBack={jest.fn()} />));
+    await fireEvent.press(screen.getByText('Monk'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Become a Monk' }));
+    expect(onDone).toHaveBeenCalled();
+    expect(screen.getByText('Warrior · current')).toBeTruthy();
+    expect(screen.queryByText(A.classChange.willSync)).toBeNull();
+  });
+
+  it('the swap sheet', async () => {
+    const store = applying();
+    const option = store.getState().view!.today!.quests.find((q) => q.id === 200)!.swaps[0]!;
+    await render(withStore(store, <Swap questId={200} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    await fireEvent.press(screen.getByText(authoredTemplate(option.templateId).voice.system.title));
+    await fireEvent.press(screen.getByRole('button', { name: A.swap.choose }));
+    expect(screen.getByText(A.swap.options)).toBeTruthy();
+    expect(screen.queryByText(A.swap.none)).toBeNull();
+  });
+
+  it('the pain flow', async () => {
+    await render(withStore(applying(), <Pain questId={200} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    await fireEvent.press(screen.getByRole('button', { name: A.pain.gentle }));
+    expect(screen.getByText(fillText(A.pain.paused, { name: 'Push-ups' }))).toBeTruthy();
   });
 });

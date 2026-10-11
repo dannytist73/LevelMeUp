@@ -13,6 +13,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label, Title } from '../ui/Text.tsx';
+import { useLeavingView } from './leaving.ts';
 
 const T = ADJUST_TEXT.swap;
 
@@ -20,7 +21,7 @@ export type SwapProps = { questId: number | null; onDone: () => void; onBack: ()
 
 export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   const insets = useSafeAreaInsets();
-  const view = useGame((s) => s.view);
+  const [view, leave] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const today = view?.today ?? null;
   const swappable = (today?.quests ?? []).filter((q) => q.completedAt === null && q.swaps.length > 0);
@@ -47,12 +48,14 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   const send = async (): Promise<void> => {
     if (quest === null || choice === null || busy) return;
     setBusy(true);
+    leave();
     try {
       await enqueue({ type: 'swap', instanceId: quest.id, templateId: choice });
-      onDone();
-    } finally {
+    } catch {
       setBusy(false);
+      return;
     }
+    onDone();
   };
 
   return frame(

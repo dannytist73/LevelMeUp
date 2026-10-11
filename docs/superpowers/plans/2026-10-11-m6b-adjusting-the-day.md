@@ -39,6 +39,11 @@ Built as planned, with these changes (each in its commit):
   left it rests the day instead of being refused (`no_gentle_option` is gone); an ability after a pending hard day
   shows its hard-day version; the Pain screen keeps the advice to see a professional after the day ends; Today tags a
   quest whose exercise is resting ("Exercise resting"); "a step easier where it can".
+- Deploy (2026-10-11, owner's yes): migration 0008, the three functions; database tests and 25 live tests pass.
+- Emulator check: the class picker crashed when its content changed during its exit animation (Fabric on Android), so
+  the screens that send a change and close (class picker, swap sheet, pain flow) keep what they show until they are
+  gone (`src/screens/leaving.ts`); the quest screen says when its exercise is resting; the pain flow offers "Pause this
+  exercise" on a rest day and doesn't repeat "Walk 5 minutes (5 minutes)"; the core ladder is "Core training".
 
 ## Plain summary
 

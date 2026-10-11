@@ -14,6 +14,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Small, Title } from '../ui/Text.tsx';
+import { useLeavingView } from './leaving.ts';
 
 const T = ADJUST_TEXT.classChange;
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
@@ -37,7 +38,7 @@ export type ClassChangeProps = { onDone: () => void; onBack: () => void; now?: (
 
 export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps) {
   const insets = useSafeAreaInsets();
-  const view = useGame((s) => s.view);
+  const [view, leave] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const [picked, setPicked] = useState<ClassId | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,12 +56,14 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
   const choose = async (): Promise<void> => {
     if (picked === null || picked === current || lock !== null || busy) return;
     setBusy(true);
+    leave();
     try {
       await enqueue({ type: 'class_change', classId: picked });
-      onDone();
-    } finally {
+    } catch {
       setBusy(false);
+      return;
     }
+    onDone();
   };
 
   return (

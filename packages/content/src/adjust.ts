@@ -44,6 +44,7 @@ export const ADJUST_TEXT = {
     lead: 'Pain is a signal worth listening to. Stopping costs you nothing.',
     paused: '{name} rests until you say you are ready, then comes back a step easier where it can.',
     gentleLine: 'Instead: {title} ({summary})',
+    gentleTitle: 'Instead: {title}',
     gentle: 'Gentle movement instead',
     restLine: 'Your streak is safe today. The other quests stay open if you feel up to them.',
     restedLine: 'Today is already a rest day.',
@@ -59,6 +60,7 @@ export const ADJUST_TEXT = {
     title: 'Resting after pain',
     line: '{name} is paused. Ready to train it again? It comes back a step easier where it can.',
     tag: 'Exercise resting',
+    quest: 'This exercise is resting after pain. Skip it today unless it feels completely fine.',
     resume: 'Resume {name}',
   },
   stepDown: {

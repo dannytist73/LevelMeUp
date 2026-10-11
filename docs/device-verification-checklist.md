@@ -149,19 +149,39 @@ APK (2026-10-11). Rows 1–13 on the emulator first, after the M6b deploy; rows 
 
 | # | Check | Emulator | Find X9 | Automated coverage |
 |---|---|---|---|---|
-| 1 | Today shows "Swap · 1 left", "Hard day" and "Rest day" under the quests (board D1); an exercise core quest has "I felt pain" under its card. | | | DayActions and Today tests |
-| 2 | Swap from Today: pick a quest, pick an option, "Swap to this": the quest changes at once with "Will sync", the count goes to 0 and the button goes; after the sync it stays. | | | Swap, projection and live tests |
-| 3 | Swap from a quest screen ("Swap this quest"). | | | Quest screen test |
-| 4 | Hard day: the confirm explains it; after it every open quest shows "Hard day · half XP", the lighter target and less XP; the banner shows; the button goes. | | | DayActions, projection and live tests |
-| 5 | Rest day: the confirm explains it; the banner shows; the quests stay open; the button goes. | | | DayActions and planner tests |
-| 6 | "I felt pain" → gentle movement: the quest becomes a walking or mobility quest; "Resting after pain" lists the exercise. | | | Pain, projection and planner tests |
-| 7 | "I felt pain" → rest today: the "Resting after pain" banner; "Rest day" goes. | | | Pain and live tests |
-| 8 | A second pain report the same fortnight: the screen leads with "see a doctor or physiotherapist". | | | Pain test |
-| 9 | Resume: the exercise leaves "Resting after pain". | | | DayActions and live tests |
-| 10 | "Too hard" on a ladder quest above its first rung: "Step this exercise down a rung?" → "Yes, ease it": the offer goes and "Eased" shows. | | | Quest cleared and planner tests |
-| 11 | Character → Change class → pick → "Become a …": Character shows the new class; "Change class" again shows the date it opens. | | | ClassChange, Character and live tests |
-| 12 | Largest font size: Today's adjustment buttons wrap, nothing is cut off; TalkBack reads each button. | | | — |
-| 13 | Offline: swap, hard day and rest show at once and sync when the network is back. | | | Projection and store tests |
+| 1 | Today shows "Swap · 1 left", "Hard day" and "Rest day" under the quests (board D1); an exercise core quest has "I felt pain" under its card. | Pass: "Swap · 1 left", "Hard day" and "Rest day" under the quests; "I felt pain" under the Wall push-ups card (2026-10-11) | DayActions and Today tests |
+| 2 | Swap from Today: pick a quest, pick an option, "Swap to this": the quest changes at once with "Will sync", the count goes to 0 and the button goes; after the sync it stays. | Pass: picked "One good thing", then "Read two pages": it showed at once with "Will sync" and the swap button went; after the sync it stayed, no notice (2026-10-11) | Swap, projection and live tests |
+| 3 | Swap from a quest screen ("Swap this quest"). | Pass: "Swap this quest" opened the sheet on that quest; Dead bugs replaced Wall push-ups in place (2026-10-11) | Quest screen test |
+| 4 | Hard day: the confirm explains it; after it every open quest shows "Hard day · half XP", the lighter target and less XP; the banner shows; the button goes. | Pass: the confirm explains it; every open quest showed "Hard day · half XP", 1 set of 10, +5 XP; the reading kept +10; the banner showed; the button went (2026-10-11) | DayActions, projection and live tests |
+| 5 | Rest day: the confirm explains it; the banner shows; the quests stay open; the button goes. | Pass: the confirm explains it; "Rest day: your streak is safe today…"; the quests stayed open; the button went (2026-10-11) | DayActions and planner tests |
+| 6 | "I felt pain" → gentle movement: the quest becomes a walking or mobility quest; "Resting after pain" lists the exercise. | Pass: the core quest became "Walk 5 minutes" ("Pain reported: gentle movement"); "Resting after pain" listed Push-ups (2026-10-11) | Pain, projection and planner tests |
+| 7 | "I felt pain" → rest today: the "Resting after pain" banner; "Rest day" goes. | Pass after finding 3: the "Resting after pain" banner; "Rest day" went; the card shows "Exercise resting" (2026-10-11) | Pain and live tests |
+| 8 | A second pain report the same fortnight: the screen leads with "see a doctor or physiotherapist". | Pass: the second report led with "Pain has come up 2 times in two weeks. Please have it checked by a doctor or physiotherapist…" (2026-10-11) | Pain test |
+| 9 | Resume: the exercise leaves "Resting after pain". | Pass: "Resume Mobility" took it off the list, also after the sync, and its card lost "Exercise resting" (2026-10-11) | DayActions and live tests |
+| 10 | "Too hard" on a ladder quest above its first rung: "Step this exercise down a rung?" → "Yes, ease it": the offer goes and "Eased" shows. | Not run: day 1 is a light day, so every quest sits at its ladder's first rung and nothing can step down; unit tests cover it (Find X9 or a later day) | Quest cleared and planner tests |
+| 11 | Character → Change class → pick → "Become a …": Character shows the new class; "Change class" again shows the date it opens. | Pass after finding 1: Monk at once with "Your class change will sync", then "Your next class change opens on Sun 25 Oct" (2026-10-11) | ClassChange, Character and live tests |
+| 12 | Largest font size: Today's adjustment buttons wrap, nothing is cut off; TalkBack reads each button. | Pass after finding 2: font 2.0 and density 540: the day's buttons, the confirm and the pain flow wrap; nothing cut off; every button is in the accessibility tree with its label (2026-10-11) | — |
+| 13 | Offline: swap, hard day and rest show at once and sync when the network is back. | Pass: Wi-Fi and data off: a hard day showed at once with "Offline · will sync" and "Will sync" on each quest; back online it synced (2026-10-11) | Projection and store tests |
 
 Stillness, Dawn Ritual and Vanish need a level-5 Monk or a level-10 Rogue: unit tests cover them, and a device check
 waits until a test character reaches those levels (carried forward).
+
+### What the emulator found (M6b, 2026-10-11)
+
+1. **Class change crashed the app** ("the specified child already has a parent", Fabric on Android) when the picker's
+   content changed during its exit animation. A screen that sends a change and then closes (the class picker, the swap
+   sheet, the pain flow) now keeps what it shows until it is gone (`src/screens/leaving.ts`). Re-run: no crash.
+2. **Words at large sizes:** "Instead: Walk 5 minutes (5 minutes)" now drops the repeat; on a day that is already a rest
+   day the pain flow offers "Pause this exercise" instead of "Rest today"; the core ladder is "Core training" ("Core
+   rests…" read like the core quest).
+3. **After "Rest today" from a quest screen**, the screen still offered "Log it" with no word that the exercise rests:
+   it now says "This exercise is resting after pain. Skip it today unless it feels completely fine."
+4. Not bugs: "database is locked" once, after a hot reload while the new cache migration ran (the old JavaScript
+   instance still held the database; a cold start works, and a real update always starts cold); "configured linking in
+   multiple places" after a display-size change (a development warning, seen in M6a too). The hard-day and rest
+   confirms open at the bottom of Today, so they need a scroll to read (carried forward).
+5. Content (carried to M6c): on a hard day, a title that names minutes ("Walk 5 minutes") keeps the full version's
+   number while the target says 3 minutes.
+
+Test data: four test characters (Nova, Vega, Lyra, Orin) were made on the emulator and deleted from the developer
+screen; a read-only check found no players left.

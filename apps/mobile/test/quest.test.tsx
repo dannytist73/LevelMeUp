@@ -1,5 +1,5 @@
 import { ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
-import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
+import { DISCIPLINE_PER_CORE_DAY, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent, QuestView, ServerState } from '../src/game/types.ts';
@@ -13,7 +13,7 @@ import { RepLog } from '../src/screens/quest/RepLog.tsx';
 import { SentenceLog } from '../src/screens/quest/SentenceLog.tsx';
 import { TapClaim } from '../src/screens/quest/TapClaim.tsx';
 import { TimerPanel, clock } from '../src/screens/quest/TimerPanel.tsx';
-import { DAY_TWO_NOW, adjustState, serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, ladderRows, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const T0 = Date.UTC(2026, 9, 10, 13);
@@ -366,6 +366,13 @@ describe('adjusting from the quest screen (M6b)', () => {
       <Quest questId={200} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
     expect(screen.getByText(ADJUST_TEXT.hardDay.tag)).toBeTruthy();
     expect(screen.queryByText(authoredTemplate('push-1').voice.system.line)).toBeNull();
+  });
+
+  it('an exercise resting after pain says so on its quest screen (device check)', async () => {
+    const resting = adjustState({ ladders: ladderRows({ push: { ...newLadder(1), paused: true } }) });
+    await render(withStore(testStore({ view: project(resting, []) }),
+      <Quest questId={200} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+    expect(screen.getByText(ADJUST_TEXT.paused.quest)).toBeTruthy();
   });
 
   it('reading has no pain button; with no swap left there is no swap button', async () => {

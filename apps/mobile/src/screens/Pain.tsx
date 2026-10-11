@@ -14,14 +14,20 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Small, Title } from '../ui/Text.tsx';
+import { useLeavingView } from './leaving.ts';
 
 const T = ADJUST_TEXT.pain;
+
+/** "Instead: Walk 5 minutes", with the target only when the title doesn't already say it (device check). */
+export function gentleLine(title: string, summary: string): string {
+  return title.includes(summary) ? fillText(T.gentleTitle, { title }) : fillText(T.gentleLine, { title, summary });
+}
 
 export type PainProps = { questId: number; onDone: () => void; onBack: () => void; now?: () => number };
 
 export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
   const insets = useSafeAreaInsets();
-  const view = useGame((s) => s.view);
+  const [view, leave] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const [busy, setBusy] = useState(false);
   const today = view?.today ?? null;
@@ -47,16 +53,19 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
   const send = async (choice: 'gentle' | 'rest' | 'pause'): Promise<void> => {
     if (busy) return;
     setBusy(true);
+    leave();
     try {
       await enqueue({ type: 'pain', instanceId: quest.id, choice });
-      onDone();
-    } finally {
+    } catch {
       setBusy(false);
+      return;
     }
+    onDone();
   };
   const name = pausedName(painKey(templateById(LIBRARY, quest.templateId)));
   const reports = view.painReports + 1; // this one included
   const cleared = quest.completedAt !== null;
+  const rested = today.protection !== null;
   const gentle = cleared ? null : quest.gentle;
   const gentleTemplate = gentle === null ? null : authoredTemplate(gentle.templateId);
 
@@ -68,15 +77,18 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
       <Body>{fillText(T.paused, { name })}</Body>
       {gentle !== null && gentleTemplate !== null && (
         <View style={{ gap: 8 }}>
-          <Small>{fillText(T.gentleLine, { title: gentleTemplate.voice[view.profile.voice].title, summary: questSummary(gentleTemplate, gentle.hardDay) })}</Small>
+          <Small>{gentleLine(gentleTemplate.voice[view.profile.voice].title, questSummary(gentleTemplate, gentle.hardDay))}</Small>
           <Button label={T.gentle} disabled={busy} onPress={() => void send('gentle')} />
         </View>
       )}
       <View style={{ gap: 8 }}>
-        <Small>{today.protection === null ? T.restLine : T.restedLine}</Small>
-        <Button label={T.rest} variant={gentle === null && !cleared ? 'primary' : 'secondary'} disabled={busy} onPress={() => void send('rest')} />
+        <Small>{rested ? T.restedLine : T.restLine}</Small>
+        {!rested && (
+          <Button label={T.rest} variant={gentle === null && !cleared ? 'primary' : 'secondary'} disabled={busy} onPress={() => void send('rest')} />
+        )}
       </View>
-      {cleared && <Button label={T.pause} disabled={busy} onPress={() => void send('pause')} />}
+      {/* Already a rest day: resting the exercise is what's left to choose (device check). */}
+      {(cleared || rested) && <Button label={T.pause} disabled={busy} onPress={() => void send('pause')} />}
       {!seeProfessional(reports) && <Small tone="chalk">{T.advice}</Small>}
     </>,
   );

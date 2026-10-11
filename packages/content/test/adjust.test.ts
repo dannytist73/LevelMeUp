@@ -23,6 +23,7 @@ describe('the words of adjusting the day (M6b)', () => {
 
   it('names what rests after pain: a ladder, or a standalone quest by its own name', () => {
     expect(pausedName('push')).toBe('Push-ups');
+    expect(pausedName('core')).toBe('Core training'); // not "Core", which reads as the core quest (device check)
     expect(pausedName('micro-squats')).toBe(authoredTemplate('micro-squats').name);
     expect(pausedName('retired-quest')).toBe('retired-quest');
   });

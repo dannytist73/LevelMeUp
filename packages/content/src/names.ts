@@ -44,7 +44,7 @@ export const EXERCISE_SAFETY_LINE = 'Stop if you feel sharp pain, dizziness or c
 export const LADDER_NAMES: Readonly<Record<string, string>> = {
   push: 'Push-ups',
   squat: 'Squats',
-  core: 'Core',
+  core: 'Core training',
   'own-program': 'Your own training',
   walk: 'Walking',
   mobility: 'Mobility',

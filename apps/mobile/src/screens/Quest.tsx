@@ -10,6 +10,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { timerTargetMs } from '../../../../supabase/functions/_shared/events.ts';
 import { artUrl } from '../art/manifest.ts';
+import { isResting } from '../game/adjust.ts';
 import { clearedSummary } from '../quest/cleared.ts';
 import type { Shot } from '../quest/cleared.ts';
 import { NEW_TIMER } from '../quest/timer.ts';
@@ -217,6 +218,7 @@ export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: Quest
           )}
         </View>
       )}
+      {quest.completedAt === null && isResting(quest, view.paused) && <NarrationBox>{A.paused.quest}</NarrationBox>}
       {panel}
       {today.swapsLeft > 0 && quest.swaps.length > 0 && (
         <Button label={A.swap.open} variant="secondary" onPress={() => onSwap(quest.id)} />
