@@ -57,6 +57,15 @@ export type PlannedMove = { move: string; unit: Move['unit']; min: number; max: 
 /** One exercise as a quest stores it. */
 export type SessionMove = PlannedMove & { sets: number };
 
+/** The same planned exercises, in the same order (M6e: a phone's offline workout against the server's plan). */
+export function sameMoves(a: readonly PlannedMove[] | null, b: readonly PlannedMove[] | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.length === b.length && a.every((m, i) => {
+    const n = b[i]!;
+    return m.move === n.move && m.unit === n.unit && m.min === n.min && m.max === n.max && m.perSide === n.perSide;
+  });
+}
+
 /** Minutes a workout takes: the warm-up plus every set with its rest. */
 export function workoutMinutes(sets: readonly number[]): number {
   return WORKOUT_WARMUP_MINUTES + Math.ceil(sets.reduce((sum, n) => sum + n, 0) * WORKOUT_SET_MINUTES);

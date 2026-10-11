@@ -3,7 +3,7 @@ import { DISCIPLINE_PER_RECOVERY, PAIN_PERSISTS_REPORTS, REST_DAYS_PER_WEEK, SWA
 import {
   balanceChoice, bookFor, dayBudget, dayContext, draftQuest, keptOutBy, ladderCandidates, microCandidates, movesFor, useKey,
 } from './day.ts';
-import type { BuiltDay, DayInput, QuestDraft } from './day.ts';
+import type { BuiltDay, DayInput, QuestDraft, WhyReason } from './day.ts';
 import { newLadder } from './ladder.ts';
 import {
   allowedTopRung, findTemplate, ladderAllowed, ladderById, ladderExercise, ladderRungs, specialTemplate, templateAllowed,
@@ -11,7 +11,8 @@ import {
 } from './library.ts';
 import type { Exercise, QuestLibrary, QuestTemplate } from './library.ts';
 import type { Slot } from './types.ts';
-import { isWorkout, planWorkout } from './workout.ts';
+import { isWorkout, planWorkout, sameMoves } from './workout.ts';
+import type { PlannedMove } from './workout.ts';
 
 const QUEST_SLOTS: readonly Slot[] = ['core', 'side1', 'side2'];
 
@@ -236,6 +237,8 @@ export function checkProvisionalDay(library: QuestLibrary, input: DayInput, day:
       problems.push(`${template.id} can't fill the ${quest.slot} slot`);
       continue;
     }
+    // A workout's exercises are the ones the server plans, so the sets the player logs fit it (M6e).
+    if (!sameMoves(movesFor(ctx, template), quest.moves)) problems.push(`${template.id}'s exercises are not the ones planned`);
     if (!templateAllowed(template, input.profile)) problems.push(`${template.id} is not allowed for this player`);
     if (template.ladder !== null) {
       const ladder = ladderById(library, template.ladder);
@@ -256,7 +259,48 @@ export function checkProvisionalDay(library: QuestLibrary, input: DayInput, day:
     keys.add(key);
     minutes += template.minutes;
   }
+  // No movement twice in a day (M6c review): a workout and a strength quest it keeps out never share it. Both ways, since
+  // the builder keeps out by slot order and a swap by the rest of the day (M6e).
+  const kept = day.quests.filter((q) => QUEST_SLOTS.includes(q.slot)).flatMap((q) => {
+    const template = findTemplate(library, q.templateId);
+    return template === undefined ? [] : [{ key: useKey(template), out: keptOutBy(library, template, q.moves) }];
+  });
+  kept.forEach((a, i) => {
+    for (const b of kept.slice(i + 1)) if (a.out.includes(b.key) && b.out.includes(a.key)) problems.push(`${a.key} and ${b.key} train the same movement`);
+  });
   const budget = dayBudget(input);
   if (minutes > budget) problems.push(`the quests take ${minutes} minutes, over the day's ${budget}`);
   return problems;
+}
+
+/** A quest of a day the phone built offline, as the server reads it (M6e): it re-drafts the rest from its own tables. */
+export type ProvisionalQuest = { slot: Slot; templateId: string; why: WhyReason; moves: readonly PlannedMove[] | null };
+
+/**
+ * The day the phone built offline, re-drafted from the server's tables (rewards, minutes, the book), or why it can't be
+ * kept: a template this content doesn't know, a workout without its exercises, or what `checkProvisionalDay` finds.
+ */
+export function provisionalDay(
+  library: QuestLibrary,
+  input: DayInput,
+  dayNumber: number,
+  quests: readonly ProvisionalQuest[],
+): { day: BuiltDay; problems: [] } | { day: null; problems: string[] } {
+  const ctx = dayContext(library, input);
+  const drafts: QuestDraft[] = [];
+  for (const q of quests) {
+    const template = findTemplate(library, q.templateId);
+    if (template === undefined) return { day: null, problems: [`unknown template ${q.templateId}`] };
+    try {
+      drafts.push(draftQuest(template, q.slot, q.why, { book: bookFor(ctx, template), moves: q.moves }));
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      return { day: null, problems: [error.message] };
+    }
+  }
+  const day: BuiltDay = {
+    dayNumber, budget: dayBudget(input), light: input.light || input.dayNumber === 1, hardDay: false, articleId: input.articleId, quests: drafts,
+  };
+  const problems = checkProvisionalDay(library, input, day);
+  return problems.length === 0 ? { day, problems: [] } : { day: null, problems };
 }

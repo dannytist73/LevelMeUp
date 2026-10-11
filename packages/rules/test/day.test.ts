@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildDay, draftQuest, questReward } from '../src/day.ts';
+import { buildDay, draftQuest, isWhyReason, questReward, storedQuest } from '../src/day.ts';
 import type { BuiltDay, DayInput } from '../src/day.ts';
 import { newLadder } from '../src/ladder.ts';
 import { templateById } from '../src/library.ts';
-import { planWorkout } from '../src/workout.ts';
-import { FIXTURE, TRAINING, WORKOUT_FIXTURE, dayInput, workoutTemplate } from './fixtures/library.ts';
+import { planWorkout, sessionCondition } from '../src/workout.ts';
+import { FIXTURE, PROFILE, TRAINING, WORKOUT_FIXTURE, dayInput, workoutTemplate } from './fixtures/library.ts';
 
 const ids = (day: BuiltDay): string[] => day.quests.map((q) => q.templateId);
 const quest = (day: BuiltDay, slot: string) => day.quests.find((q) => q.slot === slot)!;
@@ -226,5 +226,41 @@ describe('workouts (M6c decisions 5–7)', () => {
   it('refuses a negative or fractional count of workouts done', () => {
     expect(() => strengthDay({ workoutsDone: -1 })).toThrow(RangeError);
     expect(() => strengthDay({ workoutsDone: 1.5 })).toThrow(RangeError);
+  });
+});
+
+describe('a built quest as it is stored and shown (M6e)', () => {
+  it('snapshots the completion type and the condition of the version in use', () => {
+    const day = buildDay(FIXTURE, dayInput());
+    const stored = storedQuest(FIXTURE, day.quests[0]!);
+    const template = templateById(FIXTURE, stored.templateId);
+    expect(stored).toMatchObject({ slot: 'core', completion: template.completion, condition: template.condition, xp: day.quests[0]!.xp });
+    expect('moves' in stored).toBe(false);
+  });
+
+  it("a workout stores its exercises and sets; a hard day the lighter version's condition", () => {
+    const workout = workoutTemplate(0, 1);
+    const moves = planWorkout(TRAINING, workout, PROFILE, 0)!;
+    const drafted = draftQuest(workout, 'core', { code: 'balance', stat: 'strength' }, { moves });
+    expect(storedQuest(WORKOUT_FIXTURE, drafted).condition).toEqual(sessionCondition(workout, moves, false));
+    const walk = templateById(FIXTURE, 'walk-0');
+    expect(storedQuest(FIXTURE, draftQuest(walk, 'core', { code: 'light_day' }, { hardDay: true })).condition).toEqual(walk.hardDay.condition);
+  });
+});
+
+describe('a why-line sent by a phone (M6e)', () => {
+  it('accepts every reason the builder gives', () => {
+    for (const q of buildDay(FIXTURE, dayInput()).quests) expect(isWhyReason(q.why)).toBe(true);
+    for (const why of [
+      { code: 'goal', goal: 'body' }, { code: 'unlocked', previous: 'push-0' }, { code: 'short_on_time', minutes: 10 }, { code: 'second_wind' },
+    ]) expect(isWhyReason(why)).toBe(true);
+  });
+
+  it('refuses anything else', () => {
+    for (const why of [
+      null, 'goal', {}, { code: 'nope' }, { code: 'goal', goal: 'fame' }, { code: 'balance', stat: 'discipline' },
+      { code: 'article', extra: 1 }, { code: 'unlocked', previous: 'Push 0' }, { code: 'short_on_time', minutes: 0 },
+      { code: 'short_on_time', minutes: 1.5 },
+    ]) expect(isWhyReason(why)).toBe(false);
   });
 });

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addRecovery, applyDawnRitual, applyHardDay, applyStillness, applySwap, checkProvisionalDay, painKey, painOption, restAllowed,
-  seeProfessional, swapOptions,
+  addRecovery, applyDawnRitual, applyHardDay, applyStillness, applySwap, checkProvisionalDay, painKey, painOption, provisionalDay,
+  restAllowed, seeProfessional, swapOptions,
 } from '../src/adjust.ts';
+import type { ProvisionalQuest } from '../src/adjust.ts';
 import { buildDay, draftQuest } from '../src/day.ts';
 import type { BuiltDay, DayInput } from '../src/day.ts';
 import { newLadder } from '../src/ladder.ts';
@@ -188,6 +189,43 @@ describe('checking a day built offline (architecture §6)', () => {
     expect(has(checkProvisionalDay(FIXTURE, dayInput(), withRecovery), 'slots')).toBe(true);
     expect(has(checkProvisionalDay(FIXTURE, dayInput(), applyHardDay(FIXTURE, DAY_TWO, [])), 'normal day')).toBe(true);
     expect(has(checkProvisionalDay(FIXTURE, dayInput({ dayNumber: 3 }), DAY_TWO), 'day number')).toBe(true);
+  });
+
+  const sent = (day: BuiltDay): ProvisionalQuest[] => day.quests.map((q) => ({ slot: q.slot, templateId: q.templateId, why: q.why, moves: q.moves }));
+
+  it('keeps the day the phone built, re-drafted from the tables (M6e)', () => {
+    expect(provisionalDay(FIXTURE, dayInput(), 2, sent(DAY_TWO))).toEqual({ day: DAY_TWO, problems: [] });
+  });
+
+  it("names what it can't keep: an unknown template, a workout without its exercises, a broken rule (M6e)", () => {
+    const unknown = [...sent(DAY_TWO).slice(1), { slot: 'core' as const, templateId: 'nope-0', why: { code: 'article' as const }, moves: null }];
+    expect(provisionalDay(FIXTURE, dayInput(), 2, unknown)).toEqual({ day: null, problems: ['unknown template nope-0'] });
+    const input = dayInput({ dayNumber: 3 });
+    const noMoves = sent(buildDay(WORKOUT_FIXTURE, input)).map((q) => ({ ...q, moves: null }));
+    expect(provisionalDay(WORKOUT_FIXTURE, input, 3, noMoves).problems[0]).toMatch(/needs its planned exercises/);
+    expect(has(provisionalDay(FIXTURE, dayInput(), 3, sent(DAY_TWO)).problems, 'day number')).toBe(true);
+  });
+
+  it("a workout's exercises must be the ones planned for the player (M6e)", () => {
+    const input = dayInput({ dayNumber: 3 });
+    const day = buildDay(WORKOUT_FIXTURE, input); // core: workout-0
+    expect(checkProvisionalDay(WORKOUT_FIXTURE, input, day)).toEqual([]);
+    const later = day.quests.map((q) => (q.moves === null ? q : { ...q, moves: planWorkout(TRAINING, templateById(WORKOUT_FIXTURE, q.templateId), input.profile, 1) }));
+    expect(checkProvisionalDay(WORKOUT_FIXTURE, input, { ...day, quests: later })).toContain("workout-0's exercises are not the ones planned");
+  });
+
+  it('the day after a workout rests every strength ladder (M6c decision 7)', () => {
+    const input = dayInput({ dayNumber: 4, history: [{ dayNumber: 3, quests: { core: 'workout-0' } }] });
+    const day = buildDay(WORKOUT_FIXTURE, input);
+    const withPush = day.quests.map((q) => (q.slot === 'side1' ? draftQuest(templateById(WORKOUT_FIXTURE, 'push-0'), 'side1', q.why) : q));
+    expect(checkProvisionalDay(WORKOUT_FIXTURE, input, { ...day, quests: withPush })).toContain('push was trained yesterday');
+  });
+
+  it('no movement twice: a workout and a strength quest it trains never share the day (M6e, M6c review)', () => {
+    const input = dayInput({ dayNumber: 3 });
+    const day = buildDay(WORKOUT_FIXTURE, input); // the workout trains squat, push and hinge
+    const withPush = day.quests.map((q) => (q.slot === 'side1' ? draftQuest(templateById(WORKOUT_FIXTURE, 'push-0'), 'side1', q.why) : q));
+    expect(checkProvisionalDay(WORKOUT_FIXTURE, input, { ...day, quests: withPush })).toContain('workout and push train the same movement');
   });
 });
 

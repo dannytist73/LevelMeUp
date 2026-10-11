@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIN_WORKOUT_MOVES } from '../src/constants.ts';
 import {
-  hasEquipment, isWorkout, planWorkout, plannedMoves, sessionCondition, sessionMinutes, sessionSets, workoutMinutes,
+  hasEquipment, isWorkout, planWorkout, plannedMoves, sameMoves, sessionCondition, sessionMinutes, sessionSets, workoutMinutes,
 } from '../src/workout.ts';
 import { PROFILE, TRAINING, workoutTemplate } from './fixtures/library.ts';
 import type { PlayerProfile } from '../src/library.ts';
@@ -99,5 +99,16 @@ describe('a stored session', () => {
 
   it('refuses more moves than the template has sets for', () => {
     expect(() => sessionCondition(workoutTemplate(0, 1, [2, 2]), plan, false)).toThrow(RangeError);
+  });
+});
+
+describe('the same exercises (M6e)', () => {
+  it('compares each planned exercise, in order', () => {
+    const a = [{ move: 'bridge', unit: 'reps' as const, min: 8, max: 12, perSide: false }];
+    expect(sameMoves(a, [{ ...a[0]! }])).toBe(true);
+    expect(sameMoves(null, null)).toBe(true);
+    expect(sameMoves(a, null)).toBe(false);
+    expect(sameMoves(a, [{ ...a[0]!, max: 15 }])).toBe(false);
+    expect(sameMoves(a, [...a, ...a])).toBe(false);
   });
 });

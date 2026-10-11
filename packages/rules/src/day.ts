@@ -1,14 +1,14 @@
 import { abilityUnlocked } from './abilities.ts';
-import { CLASSES, CORE_MIX, DISCIPLINE_PER_RECOVERY, LIGHT_DAY_MINUTES, MIN_SIDE_MINUTES, TRAINABLE_STATS } from './constants.ts';
+import { CLASSES, CORE_MIX, DISCIPLINE_PER_RECOVERY, GOALS, LIGHT_DAY_MINUTES, MIN_SIDE_MINUTES, TRAINABLE_STATS } from './constants.ts';
 import { newLadder } from './ladder.ts';
 import type { LadderState } from './ladder.ts';
 import {
   allowedTopRung, coreAllowance, effectiveRung, findTemplate, ladderAllowed, ladderById, ladderExercise, ladderRungs,
-  specialTemplate, templateAllowed, validateProfile,
+  specialTemplate, templateAllowed, templateById, validateProfile,
 } from './library.ts';
-import type { Ladder, PlayerProfile, QuestLibrary, QuestTemplate } from './library.ts';
+import type { CompletionType, Condition, Ladder, PlayerProfile, QuestLibrary, QuestTemplate } from './library.ts';
 import type { Goal, Slot, Stat, Tier, TrainableStat } from './types.ts';
-import { isWorkout, planWorkout, sessionMinutes } from './workout.ts';
+import { isWorkout, planWorkout, sessionCondition, sessionMinutes } from './workout.ts';
 import type { PlannedMove } from './workout.ts';
 import { questXp, splitXp } from './xp.ts';
 import type { XpByStat } from './xp.ts';
@@ -32,6 +32,27 @@ export const WHY_CODES: readonly WhyCode[] = [
   'class_main', 'class_second', 'balance', 'goal', 'unlocked', 'after_strength', 'stepped_down', 'gentle_start', 'limits',
   'short_on_time', 'light_day', 'own_program', 'swap', 'stillness', 'dawn_ritual', 'recovery', 'second_wind', 'pain', 'article',
 ];
+
+/** A why-line sent by a phone (M6e): one of the builder's reasons, with valid details and nothing else. */
+export function isWhyReason(value: unknown): value is WhyReason {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const v = value as Record<string, unknown>;
+  const keys = Object.keys(v).sort().join();
+  switch (v.code) {
+    case 'class_main':
+    case 'class_second':
+    case 'balance':
+      return keys === 'code,stat' && TRAINABLE_STATS.includes(v.stat as TrainableStat);
+    case 'goal':
+      return keys === 'code,goal' && GOALS.includes(v.goal as Goal);
+    case 'unlocked':
+      return keys === 'code,previous' && typeof v.previous === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(v.previous);
+    case 'short_on_time':
+      return keys === 'code,minutes' && Number.isInteger(v.minutes) && (v.minutes as number) >= 1 && (v.minutes as number) <= 60;
+    default:
+      return keys === 'code' && WHY_CODES.includes(v.code as WhyCode);
+  }
+}
 
 /** One quest of a day, ready to store. The reward is a snapshot from the rules tables (architecture §3). */
 export type QuestDraft = {
@@ -115,6 +136,32 @@ export function draftQuest(
     why,
     book: options.book ?? null,
     moves,
+  };
+}
+
+/** A built quest as it is stored and shown: the completion type and the condition of the version in use, no plan list. */
+export type StoredQuest = Omit<QuestDraft, 'moves'> & { completion: CompletionType; condition: Condition };
+
+/**
+ * A built quest as the database stores it (a later content change never rewrites a day) and as the phone shows a day it
+ * built offline (M6e). A workout stores its planned exercises and their sets (M6c).
+ */
+export function storedQuest(library: QuestLibrary, q: QuestDraft): StoredQuest {
+  const template = templateById(library, q.templateId);
+  return {
+    slot: q.slot,
+    templateId: q.templateId,
+    ladder: q.ladder,
+    rung: q.rung,
+    stat: q.stat,
+    tier: q.tier,
+    minutes: q.minutes,
+    completion: template.completion,
+    condition: q.moves !== null ? sessionCondition(template, q.moves, q.hardDay) : q.hardDay ? template.hardDay.condition : template.condition,
+    hardDay: q.hardDay,
+    xp: q.xp,
+    why: q.why,
+    book: q.book,
   };
 }
 

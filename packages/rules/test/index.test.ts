@@ -10,7 +10,7 @@ describe('public API', () => {
     'simulatePacing', 'meetsTargets', 'closedDayResolution', 'resolveCheckin', 'canonicalTimeZone', 'templateAllowed',
     'effectiveRung', 'maxRungFor', 'abilityUnlocked', 'abilityReady', 'swapLimit', 'buildDay',
     'draftQuest', 'questReward', 'swapOptions', 'applySwap', 'applyHardDay', 'restAllowed', 'applyStillness', 'applyDawnRitual',
-    'addRecovery', 'checkProvisionalDay', 'closeLadders', 'reenterLadders', 'followingDay', 'meetsCriterion', 'newAchievements', 'campaignPacing',
+    'addRecovery', 'checkProvisionalDay', 'closeLadders', 'reenterLadders', 'followingDay', 'storedQuest', 'isWhyReason', 'sameMoves', 'provisionalDay', 'meetsCriterion', 'newAchievements', 'campaignPacing',
     'campaignFailures', 'painKey', 'painOption', 'seeProfessional', 'classChangeOpensAt',
     'suggestedClass', 'onboardingEstimates', 'startingLadders', 'strengthClosed', 'boundaryFromSleep', 'suggestedPactLevel',
   ])('exports %s', (name) => {
