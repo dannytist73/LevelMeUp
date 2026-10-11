@@ -176,7 +176,7 @@ export const ONBOARDING_TEXT = {
     stats: 'Stats',
     estimates: 'Game estimates',
     statsNote: 'Stats grow from what you do. Discipline grows only from showing up.',
-    strength: 'Strength',
+    strength: 'Strengths',
     growth: 'Growth',
     routine: 'Starting routine',
     accept: 'Accept class',

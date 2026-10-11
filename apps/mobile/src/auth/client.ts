@@ -3,6 +3,7 @@
 // PKCE (src/auth/google.ts).
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
+import * as ExpoCrypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import kvStore from 'expo-sqlite/kv-store';
 import { AppState } from 'react-native';
@@ -10,6 +11,7 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config.ts';
 import { timedFetch } from '../net/timedFetch.ts';
 import { expoCipher } from './expoCipher.ts';
 import { makeSessionStorage } from './sessionStorage.ts';
+import { installWebCrypto } from './webCrypto.ts';
 
 const KEY_NAME = 'lmu.session-key';
 /** Longer than any function's own timeout (net/api.ts), so those keep their more precise ones. */
@@ -19,6 +21,12 @@ const vault = {
   get: () => SecureStore.getItemAsync(KEY_NAME),
   set: (key: string) => SecureStore.setItemAsync(KEY_NAME, key),
 };
+
+// Before the client: PKCE needs WebCrypto, which Hermes lacks (webCrypto.ts).
+installWebCrypto(globalThis as { crypto?: Crypto }, {
+  getRandomValues: (array) => ExpoCrypto.getRandomValues(array as unknown as Uint8Array) as unknown as typeof array,
+  sha256: (data) => ExpoCrypto.digest(ExpoCrypto.CryptoDigestAlgorithm.SHA256, data),
+});
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   global: { fetch: timedFetch(REQUEST_TIMEOUT_MS) },

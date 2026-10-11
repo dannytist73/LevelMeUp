@@ -127,7 +127,7 @@ export default function Developer() {
               void act(async () => {
                 const r = await deleteTestCharacter();
                 setConfirm('');
-                return r.ok ? 'Deleted. A new guest sign-in starts on the next sync.' : `Not deleted: ${r.code}`;
+                return r.ok ? 'Deleted. The onboarding starts again; it makes the next guest at its analysis.' : `Not deleted: ${r.code}`;
               })
             }
           />
