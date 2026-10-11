@@ -255,3 +255,24 @@ describe('adjusting the day (M6b)', () => {
     expect(reused.body.results[0]).toMatchObject({ ok: false, code: 'event_reused' });
   });
 });
+
+describe('the training setup (M6c)', () => {
+  let t: Player;
+
+  it('onboarding stores the equipment and the program style', async () => {
+    t = await newPlayer();
+    const res = await call('lmu-onboarding', t.token, { ...ONBOARDING, equipment: ['dumbbells', 'bench'], programStyle: 'women' });
+    expect(res.status).toBe(201);
+    expect(res.body.state.profile).toMatchObject({ equipment: ['dumbbells', 'bench'], programStyle: 'women' });
+  });
+
+  it('a training event changes them; a repeat changes nothing; a bad one is refused', async () => {
+    const change = { id: eventId(), type: 'training', equipment: ['gym'], programStyle: 'men' };
+    const res = await sync(t, [change, { id: eventId(), type: 'training', equipment: ['kettlebell'], programStyle: 'men' }]);
+    expect(res.body.results[0]).toMatchObject({ ok: true });
+    expect(res.body.rejected).toEqual([expect.objectContaining({ code: 'bad_event' })]);
+    expect(res.body.state.profile).toMatchObject({ equipment: ['gym'], programStyle: 'men' });
+    const again = await sync(t, [change]);
+    expect(again.body.results[0].result).toEqual(res.body.results[0].result);
+  });
+});

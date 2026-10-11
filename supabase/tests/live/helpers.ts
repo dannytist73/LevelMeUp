@@ -1,5 +1,5 @@
 // Live tests call the deployed functions on the shared project with temporary anonymous players, and delete every
-// player they create (through lmu-account-delete) when the file ends. At most 7 players per run (sign-up limits).
+// player they create (through lmu-account-delete) when the file ends. At most 8 players per run (sign-up limits).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll } from 'vitest';
@@ -15,7 +15,7 @@ export const URL_BASE = env.LMU_SUPABASE_URL!;
 export const ANON_KEY = env.LMU_SUPABASE_ANON_KEY!;
 /** The key the app ships with (M4): public by design, unlike the service role. */
 export const PUBLISHABLE_KEY = env.LMU_SUPABASE_PUBLISHABLE_KEY!;
-const MAX_PLAYERS = 7;
+const MAX_PLAYERS = 8;
 
 export type Player = { id: string; token: string };
 const created: Player[] = [];
