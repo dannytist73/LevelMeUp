@@ -11,6 +11,7 @@ export * from './consequence.ts';
 export * from './timer.ts';
 export * from './simulation.ts';
 export * from './library.ts';
+export * from './workout.ts';
 export * from './abilities.ts';
 export * from './day.ts';
 export * from './adjust.ts';

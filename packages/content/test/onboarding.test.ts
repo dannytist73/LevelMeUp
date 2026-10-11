@@ -16,7 +16,7 @@ function strings(value: unknown): string[] {
 
 const profile = (over: Partial<PlayerProfile> = {}): PlayerProfile => ({
   classId: 'warrior', level: 1, goals: ['body'], minutesPerDay: 25, difficulty: 'steady', limitations: [],
-  gentleStart: false, ownProgram: false, stats: { strength: 5, vitality: 5, wisdom: 5, focus: 5 }, book: null, ...over,
+  gentleStart: false, ownProgram: false, equipment: [], programStyle: 'none', stats: { strength: 5, vitality: 5, wisdom: 5, focus: 5 }, book: null, ...over,
 });
 const answers = (over: Partial<Answers> = {}): Answers => ({ goals: ['body'], training: 'most', reading: null, focus: null, ...over });
 

@@ -415,7 +415,7 @@ In `FIXTURE`, after `recovery: {…},` add `training: NO_TRAINING,`. In `PROFILE
 
 Search the rules tests for other literal profiles or day inputs:
 
-Run: `npx rg -n "ownProgram:|light: (true|false)," packages/rules/test`
+Run: `git grep -nE "ownProgram:|light: (true|false)," packages/rules/test`
 For each literal `PlayerProfile` add `equipment: [], programStyle: 'none'`; for each literal `DayInput` add
 `workoutsDone: 0`; for each literal `QuestLibrary` add `training: NO_TRAINING`.
 
@@ -427,7 +427,7 @@ Every place that builds a profile, a day input or a library gets the defaults no
   `training: { moves: [], programs: { men: [], women: [], none: [] } },` (Task 4 fills it).
 - `packages/content/test/days.test.ts`, `fuzz.test.ts`, `onboarding.test.ts`, `trained.ts`: add
   `equipment: [], programStyle: 'none'` to each literal profile, and `workoutsDone: 0` to each `buildDay` input.
-  (Run `npx rg -n "ownProgram|buildDay\(" packages/content/test` to find them.)
+  (Run `git grep -nE "ownProgram|buildDay\(" packages/content/test` to find them.)
 - `supabase/functions/_shared/onboarding.ts`, in `startArgs`: add `equipment: [], programStyle: 'none',` to the
   `player` literal after `ownProgram: choices.ownProgram,`, and `workoutsDone: 0,` to the `buildDay` input after
   `light: true,`.
@@ -438,7 +438,7 @@ Every place that builds a profile, a day input or a library gets the defaults no
 - `apps/mobile/src/onboarding/flow.ts`, in `draftProfile`: add `equipment: [], programStyle: 'none',` after
   `ownProgram: draft.training === 'own',`.
 
-Each is replaced in Tasks 3, 8 and 10; `npx rg -n "workoutsDone: 0|programStyle: 'none'" supabase apps packages/rules/src`
+Each is replaced in Tasks 3, 8 and 10; `git grep -nE "workoutsDone: 0|programStyle: 'none'" supabase apps packages/rules/src`
 lists them.
 
 - [ ] **Step 10: Run everything**

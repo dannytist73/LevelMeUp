@@ -2,6 +2,7 @@
 import type { DayInput } from '../../src/day.ts';
 import type { Exercise, Ladder, PlayerProfile, QuestLibrary, QuestTemplate, TemplateRole } from '../../src/library.ts';
 import type { Limitation, Stat, Tier } from '../../src/types.ts';
+import type { TrainingLibrary } from '../../src/workout.ts';
 
 type Spec = {
   id: string;
@@ -42,6 +43,9 @@ const ladder = (id: string, stat: Ladder['stat'], goals: Ladder['goals'], affini
 const rungs = (id: string, stat: Stat, minutes: number[], extra: (rung: number) => Partial<Spec> = () => ({})): QuestTemplate[] =>
   minutes.map((m, rung) => template({ id: `${id}-${rung}`, ladder: id, rung, stat, minutes: m, ...extra(rung) }));
 
+/** No exercises and no programs: the fixture library has no workouts (the workout fixture in Task 2 has). */
+export const NO_TRAINING: TrainingLibrary = { moves: [], programs: { men: [], women: [], none: [] } };
+
 export const FIXTURE: QuestLibrary = {
   ladders: [
     ladder('push', 'strength', ['body'], ['warrior']),
@@ -71,6 +75,7 @@ export const FIXTURE: QuestLibrary = {
     template({ id: 'article', role: 'article', stat: 'wisdom', minutes: 6 }),
   ],
   recovery: { warrior: 'recovery-walk', rogue: 'recovery-walk', mage: 'recovery-read', monk: 'recovery-read' },
+  training: NO_TRAINING,
 };
 
 export const PROFILE: PlayerProfile = {
@@ -82,6 +87,8 @@ export const PROFILE: PlayerProfile = {
   limitations: [],
   gentleStart: false,
   ownProgram: false,
+  equipment: [],
+  programStyle: 'none',
   stats: { strength: 7, vitality: 5, wisdom: 5, focus: 4 },
   book: null,
 };
@@ -94,6 +101,7 @@ export function dayInput(overrides: Partial<DayInput> = {}, profile: Partial<Pla
     ladders: {},
     history: [],
     light: false,
+    workoutsDone: 0,
     articleId: 'article-1',
     ...overrides,
   };

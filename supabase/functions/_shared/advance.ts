@@ -168,7 +168,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     let budget = comeback ? LIGHT_DAY_MINUTES : profile.minutes_per_day;
     let protection: DayDraft['protection'] = null;
     try {
-      const built = buildDay(library, { dayNumber, profile: rulesProfile(), ladders, history, light: comeback, articleId: null });
+      const built = buildDay(library, { dayNumber, profile: rulesProfile(), ladders, history, light: comeback, workoutsDone: 0, articleId: null });
       quests = built.quests.map((q) => toDraft(library, q));
       budget = built.budget;
     } catch (error) {

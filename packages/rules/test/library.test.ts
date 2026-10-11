@@ -98,3 +98,17 @@ describe('validating a profile', () => {
     expect(() => validateProfile(profile())).not.toThrow();
   });
 });
+
+describe('the training setup (M6c)', () => {
+  it('accepts no equipment, any mix of equipment and every program style', () => {
+    expect(() => validateProfile(profile({ equipment: [] }))).not.toThrow();
+    expect(() => validateProfile(profile({ equipment: ['bands', 'dumbbells', 'bench', 'pullup_bar', 'gym'] }))).not.toThrow();
+    for (const programStyle of ['men', 'women', 'none'] as const) expect(() => validateProfile(profile({ programStyle }))).not.toThrow();
+  });
+
+  it('refuses unknown or repeated equipment and an unknown program style', () => {
+    expect(() => validateProfile(profile({ equipment: ['kettlebell' as never] }))).toThrow(RangeError);
+    expect(() => validateProfile(profile({ equipment: ['bands', 'bands'] }))).toThrow(RangeError);
+    expect(() => validateProfile(profile({ programStyle: 'unisex' as never }))).toThrow(RangeError);
+  });
+});

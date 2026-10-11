@@ -75,6 +75,8 @@ export type DayInput = {
   history: readonly PastDay[];
   /** The first day back after 5+ days away, or the day after a sick or injured check-in. Day 1 is always light. */
   light: boolean;
+  /** Workouts completed so far (M6c): a new workout follows the program's next day; a missed one repeats. */
+  workoutsDone: number;
   articleId: string | null;
 };
 

@@ -193,11 +193,12 @@ export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, libra
   const stats = Object.fromEntries(TRAINABLE_STATS.map((s) => [s, character[s]])) as Record<TrainableStat, number>;
   const player: PlayerProfile = {
     classId: choices.classId, level: 1, goals: choices.goals, minutesPerDay: choices.minutesPerDay, difficulty: choices.difficulty,
-    limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram, stats, book: null,
+    limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram, equipment: [], programStyle: 'none',
+    stats, book: null,
   };
   const answers = { goals: choices.goals, training: choices.training, reading: choices.reading, focus: choices.focus };
   const ladders = startingLadders(library, player, answers, SEEDS);
-  const built = buildDay(library, { dayNumber: 1, profile: player, ladders, history: [], light: true, articleId: null });
+  const built = buildDay(library, { dayNumber: 1, profile: player, ladders, history: [], light: true, workoutsDone: 0, articleId: null });
   return {
     profile: {
       name: choices.name, voice: choices.voice, classId: choices.classId, timeZone: choices.timeZone,

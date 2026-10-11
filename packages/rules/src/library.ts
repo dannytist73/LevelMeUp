@@ -1,6 +1,8 @@
 import { CLASSES, GOALS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, MIN_SIDE_MINUTES, TRAINABLE_STATS } from './constants.ts';
 import type { LadderState } from './ladder.ts';
 import type { ClassId, Difficulty, Goal, Limitation, Stat, Tier, TrainableStat } from './types.ts';
+import { EQUIPMENT, PROGRAM_STYLES } from './workout.ts';
+import type { Equipment, MoveLevel, ProgramStyle, SessionMove, TrainingLibrary } from './workout.ts';
 import type { XpSplit } from './xp.ts';
 
 /** The physical work a quest asks for; null for reading, focus, breathing and habits. */
@@ -15,7 +17,11 @@ export type Condition =
   | { kind: 'hold'; sets: number; seconds: number; perSide: boolean }
   | { kind: 'minutes'; minutes: number }
   | { kind: 'habit' }
-  | { kind: 'sentence' };
+  | { kind: 'sentence' }
+  /** A workout template (M6c): the sets of each exercise, in order, and the hardest exercise level it may use. */
+  | { kind: 'workout'; sets: readonly number[]; level: MoveLevel }
+  /** A planned workout as a quest stores it: each exercise with its sets (`sessionCondition`). */
+  | { kind: 'session'; moves: readonly SessionMove[] };
 
 /**
  * `ladder` templates are a ladder's rungs; `micro` ones are tiny standalone quests that keep short days possible; the
@@ -62,6 +68,8 @@ export type QuestLibrary = {
   templates: readonly QuestTemplate[];
   /** The 5-minute recovery quest for each class (spec §3.7). */
   recovery: Readonly<Record<ClassId, string>>;
+  /** The exercises and programs workouts are planned from (M6c). */
+  training: TrainingLibrary;
 };
 
 /** What the day builder needs to know about the player. */
@@ -76,6 +84,10 @@ export type PlayerProfile = {
   gentleStart: boolean;
   /** The player follows their own training program (spec §3.1). */
   ownProgram: boolean;
+  /** What the player can train with (M6c); empty means bodyweight only. */
+  equipment: readonly Equipment[];
+  /** The program their workouts follow (M6c). */
+  programStyle: ProgramStyle;
   /** Current stat points, for balance quests. */
   stats: Readonly<Record<TrainableStat, number>>;
   /** Scholar's Path (Mage level 10): the book reading quests track. */
@@ -101,6 +113,11 @@ export function validateProfile(profile: PlayerProfile): void {
   if (!profile.limitations.every((l) => LIMITATIONS.includes(l))) {
     throw new RangeError(`unknown limitation in [${profile.limitations.join(', ')}]`);
   }
+  const { equipment } = profile;
+  if (new Set(equipment).size !== equipment.length || !equipment.every((e) => EQUIPMENT.includes(e))) {
+    throw new RangeError(`unknown or repeated equipment in [${equipment.join(', ')}]`);
+  }
+  if (!PROGRAM_STYLES.includes(profile.programStyle)) throw new RangeError(`unknown program style ${profile.programStyle}`);
   for (const stat of TRAINABLE_STATS) {
     if (!Number.isFinite(profile.stats[stat])) throw new RangeError(`stat points for ${stat} must be a number`);
   }

@@ -110,3 +110,10 @@ export const CLASS_CHANGE_MS = 14 * DAY_MS;
 export const PAIN_WINDOW_MS = 14 * DAY_MS;
 /** From this many reports in the window, this one included, the app leads with "see a doctor or physiotherapist". */
 export const PAIN_PERSISTS_REPORTS = 2;
+
+// Workouts (M6c decision 6)
+/** Minutes a workout set takes with its rest (about 2 minutes); a workout also starts with a warm-up. */
+export const WORKOUT_SET_MINUTES = 2.25;
+export const WORKOUT_WARMUP_MINUTES = 2;
+/** A workout needs at least this many exercises the player can do, or the day uses the single-exercise ladders. */
+export const MIN_WORKOUT_MOVES = 2;

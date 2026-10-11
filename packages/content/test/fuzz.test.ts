@@ -29,6 +29,8 @@ function randomInput(): DayInput {
     limitations: LIMITATIONS.filter(() => random() < 0.3),
     gentleStart: random() < 0.25,
     ownProgram: random() < 0.25,
+    equipment: [],
+    programStyle: 'none',
     stats: {
       strength: Math.floor(random() * 20), vitality: Math.floor(random() * 20),
       wisdom: Math.floor(random() * 20), focus: Math.floor(random() * 20),
@@ -55,7 +57,7 @@ function randomInput(): DayInput {
     if (random() < 0.2) quests.recovery = random() < 0.5 ? pick(FILLABLE).id : 'recovery-walk';
     history.push({ dayNumber: d, quests });
   }
-  return { dayNumber, profile, ladders, history, light: random() < 0.2, articleId: null };
+  return { dayNumber, profile, ladders, history, light: random() < 0.2, workoutsDone: 0, articleId: null };
 }
 
 const cases = Array.from({ length: CASES }, () => {

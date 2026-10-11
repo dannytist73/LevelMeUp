@@ -21,6 +21,7 @@ export const LIBRARY: QuestLibrary = {
   ladders: LADDERS,
   templates: TEMPLATES,
   recovery: { warrior: 'recovery-walk', rogue: 'recovery-walk', mage: 'recovery-read', monk: 'recovery-breath' },
+  training: { moves: [], programs: { men: [], women: [], none: [] } },
 };
 
 export function authoredTemplate(id: string): AuthoredTemplate {

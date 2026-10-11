@@ -15,6 +15,13 @@ export function targetText(condition: Condition): string {
       return 'One sentence';
     case 'habit':
       return '';
+    case 'workout': {
+      const low = Math.min(...condition.sets);
+      const high = Math.max(...condition.sets);
+      return `${count(condition.sets.length, 'exercise')}, ${low === high ? count(low, 'set') : `${low}–${high} sets`} each`;
+    }
+    case 'session':
+      return condition.moves.map((m) => m.move).join(', ');
   }
 }
 

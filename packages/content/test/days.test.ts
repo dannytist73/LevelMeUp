@@ -23,7 +23,7 @@ function profiles(): PlayerProfile[] {
         for (const gentleStart of [false, true])
           for (const ownProgram of [false, true])
             for (const goals of GOAL_SETS)
-              all.push({ classId, level: 12, goals, minutesPerDay, difficulty: 'steady', limitations, gentleStart, ownProgram, stats: statsFor(classId), book: 'A book' });
+              all.push({ classId, level: 12, goals, minutesPerDay, difficulty: 'steady', limitations, gentleStart, ownProgram, equipment: [], programStyle: 'none', stats: statsFor(classId), book: 'A book' });
   return all;
 }
 
@@ -33,7 +33,7 @@ function play(profile: PlayerProfile, days: number, rung: number): Array<{ day: 
   const history: PastDay[] = [];
   const played: Array<{ day: BuiltDay; yesterday: BuiltDay | null }> = [];
   for (let dayNumber = 1; dayNumber <= days; dayNumber++) {
-    const day = buildDay(LIBRARY, { dayNumber, profile, ladders, history: history.slice(-7), light: false, articleId: 'a' });
+    const day = buildDay(LIBRARY, { dayNumber, profile, ladders, history: history.slice(-7), light: false, workoutsDone: 0, articleId: 'a' });
     played.push({ day, yesterday: played.at(-1)?.day ?? null });
     history.push({ dayNumber, quests: Object.fromEntries(day.quests.map((q) => [q.slot, q.templateId])) });
   }
@@ -109,7 +109,7 @@ describe('days built from the real library (spec §5 "Days and quests")', () => 
     for (const classId of CLASS_IDS) {
       const profile: PlayerProfile = {
         classId, level: 3, goals: ['learn'], minutesPerDay: 25, difficulty: 'steady', limitations: [],
-        gentleStart: false, ownProgram: false, stats: statsFor(classId), book: null,
+        gentleStart: false, ownProgram: false, equipment: [], programStyle: 'none', stats: statsFor(classId), book: null,
       };
       const cores = play(profile, 28, 0).map(({ day }) => authoredTemplate(day.quests[0]!.templateId).stat);
       const main = cores.filter((s) => s === CLASSES[classId].main).length;

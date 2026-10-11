@@ -72,10 +72,12 @@ function runCampaign(
       limitations: [],
       gentleStart: false,
       ownProgram: false,
+      equipment: [],
+      programStyle: 'none',
       stats: { strength: points('strength'), vitality: points('vitality'), wisdom: points('wisdom'), focus: points('focus') },
       book: null,
     };
-    const built = buildDay(library, { dayNumber: day, profile, ladders, history: history.slice(-7), light: false, articleId: null });
+    const built = buildDay(library, { dayNumber: day, profile, ladders, history: history.slice(-7), light: false, workoutsDone: 0, articleId: null });
     let done = 0;
     let coreDone = false;
     for (const quest of built.quests) {

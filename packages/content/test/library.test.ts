@@ -11,6 +11,8 @@ const COMPLETION_FOR: Record<Condition['kind'], readonly string[]> = {
   minutes: ['tap', 'timer'],
   habit: ['tap'],
   sentence: ['text'],
+  workout: ['reps'],
+  session: [],
 };
 
 /** How much a condition asks for, so a hard-day version can be checked to ask for less. */

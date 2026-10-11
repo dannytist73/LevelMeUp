@@ -167,6 +167,8 @@ export function toProfile(p: ProfileRow, start: StatMap, xp: StatMap): PlayerPro
     limitations: p.limitations,
     gentleStart: p.gentle_start,
     ownProgram: p.own_program,
+    equipment: [],
+    programStyle: 'none',
     stats,
     book: p.book,
   };

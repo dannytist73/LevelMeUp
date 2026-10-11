@@ -33,6 +33,7 @@ export function todayInput(s: Snapshot, day: DayRow): DayInput {
     ladders: ladderMap(s.ladders),
     history: pastDays(s.days.filter((d) => d.day_number < day.day_number), s.instances).slice(-7),
     light: day.light,
+    workoutsDone: 0,
     articleId: day.article_id,
   };
 }
