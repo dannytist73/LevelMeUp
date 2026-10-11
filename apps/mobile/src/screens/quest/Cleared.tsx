@@ -7,11 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ClearedNumbers } from '../../quest/cleared.ts';
 import { colors, fonts, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
+import { OutlinedTitle } from '../../ui/OutlinedTitle.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { SlantPanel } from '../../ui/SlantPanel.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
 import { XpStamp } from '../../ui/Stamp.tsx';
-import { Body, Caption, Display, Heading, Label, Small } from '../../ui/Text.tsx';
+import { Body, Caption, Heading, Label, Small } from '../../ui/Text.tsx';
 import { XpBar } from '../../ui/XpBar.tsx';
 
 const C = PLAY_TEXT.cleared;
@@ -65,13 +66,16 @@ export function Cleared({ heading, line, numbers, rating, canUndo, waiting, onRa
   const shown: Rating = rating ?? 'right';
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, paddingHorizontal: space.gutter, gap: 22 }}>
-      <View style={{ alignItems: 'center', gap: 10, paddingTop: 18, paddingHorizontal: 44 }}>
+      {/* The board's outlined title, shrunk to fit, and the stamp below the line rather than over the words: at the
+          largest text size the stamp covered the heading and the title broke mid-word (emulator check, M6a). */}
+      <View style={{ alignItems: 'center', gap: 10, paddingTop: 18 }}>
         <SpeedLines />
-        {/* Inset on both sides so a long heading wraps clear of the XP stamp (emulator check, M6a). */}
-        <Label style={{ textAlign: 'center', paddingHorizontal: 40 }}>{heading}</Label>
-        <Display style={{ transform: [{ rotate: '-4deg' }] }}>{C.title}</Display>
+        <Label style={{ textAlign: 'center' }}>{heading}</Label>
+        <View style={{ alignSelf: 'stretch', transform: [{ rotate: '-4deg' }] }}>
+          <OutlinedTitle text={C.title} align="center" />
+        </View>
         <Small style={{ textAlign: 'center' }}>{line}</Small>
-        <XpStamp xp={numbers.xp} size={86} rotate={12} style={{ position: 'absolute', top: -6, right: -4 }} />
+        <XpStamp xp={numbers.xp} size={86} rotate={12} />
       </View>
 
       <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>

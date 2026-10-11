@@ -13,12 +13,15 @@ export function fittedSize(size: number, natural: number | null, room: number): 
   return natural === null || natural <= room ? size : Math.max(1, Math.floor((size * room) / natural));
 }
 
-export function OutlinedTitle({ text, size = 58 }: { text: string; size?: number }) {
+export function OutlinedTitle({ text, size = 58, align = 'start' }: { text: string; size?: number; align?: 'start' | 'center' }) {
   const [box, onLayout] = useSize();
   const [natural, setNatural] = useState<number | null>(null);
   const fontSize = box === null ? size : fittedSize(size, natural, box.width - 8 - Math.round(size * 0.09));
   const offset = Math.round(fontSize * 0.09);
   const baseline = Math.round(fontSize * 0.9);
+  // Centred (Quest cleared, M6a): every copy is anchored at the middle of the box.
+  const x = align === 'center' && box !== null ? box.width / 2 : 4;
+  const anchor = align === 'center' ? 'middle' : 'start';
   return (
     <View accessible accessibilityRole="header" accessibilityLabel={text} onLayout={onLayout} style={{ height: Math.round(fontSize * 1.1) + offset }}>
       <View style={{ position: 'absolute', width: 4000, opacity: 0 }} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
@@ -28,13 +31,13 @@ export function OutlinedTitle({ text, size = 58 }: { text: string; size?: number
       </View>
       {box !== null && natural !== null && (
         <Svg width={box.width} height={box.height}>
-          <SvgText x={4 + offset} y={baseline + offset} fontFamily={fonts.display} fontSize={fontSize} fill={colors.vermilion}>
+          <SvgText x={x + offset} y={baseline + offset} textAnchor={anchor} fontFamily={fonts.display} fontSize={fontSize} fill={colors.vermilion}>
             {text}
           </SvgText>
-          <SvgText x={4} y={baseline} fontFamily={fonts.display} fontSize={fontSize} fill={colors.ink} stroke={colors.ink} strokeWidth={6} strokeLinejoin="round">
+          <SvgText x={x} y={baseline} textAnchor={anchor} fontFamily={fonts.display} fontSize={fontSize} fill={colors.ink} stroke={colors.ink} strokeWidth={6} strokeLinejoin="round">
             {text}
           </SvgText>
-          <SvgText x={4} y={baseline} fontFamily={fonts.display} fontSize={fontSize} fill={colors.chalk}>
+          <SvgText x={x} y={baseline} textAnchor={anchor} fontFamily={fonts.display} fontSize={fontSize} fill={colors.chalk}>
             {text}
           </SvgText>
         </Svg>

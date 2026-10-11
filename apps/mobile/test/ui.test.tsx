@@ -180,6 +180,23 @@ describe('small pieces', () => {
     expect(drawnSizes()).toEqual([41, 41, 41]); // three copies; room 300 − 8 − 5 = 287, 58 × 287/400 ≈ 41.6
   });
 
+  it('the outlined title can be centred: each copy is anchored at the middle of its box (Quest cleared, M6a)', async () => {
+    type Node = { type: string; props: Record<string, unknown>; children: (Node | string)[] | null };
+    const drawn: { x: unknown; anchor: unknown }[] = [];
+    const walk = (node: Node | string | null) => {
+      if (node === null || typeof node === 'string') return;
+      if (node.type === 'RNSVGText') drawn.push({ x: (node.props.x as unknown[])[0], anchor: (node.props.font as { textAnchor?: unknown }).textAnchor });
+      node.children?.forEach(walk);
+    };
+    const layout = (width: number) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height: 70 } } });
+    await render(<OutlinedTitle text="CLEARED" align="center" />);
+    await fireEvent(screen.getByRole('header', { name: 'CLEARED' }), 'layout', layout(300));
+    await fireEvent(screen.getByText('CLEARED', { includeHiddenElements: true }), 'layout', layout(200));
+    walk(screen.toJSON() as Node);
+    // the vermilion copy sits 5 to the right (58 × 0.09), the ink and chalk copies at the middle
+    expect(drawn).toEqual([{ x: 155, anchor: 'middle' }, { x: 150, anchor: 'middle' }, { x: 150, anchor: 'middle' }]);
+  });
+
   it('a screen scroll shows its content, with a band behind the status bar that never takes touches', async () => {
     await render(<ScreenScroll><Text>Quest</Text></ScreenScroll>);
     expect(screen.getByText('Quest')).toBeTruthy();
