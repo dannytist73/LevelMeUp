@@ -301,3 +301,52 @@ describe('Character and Chronicle (M6d)', () => {
     expect(res.body.state.profile.book).toBeNull();
   });
 });
+
+describe('offline-built days (M6e)', () => {
+  let d: Player;
+  let state: any;
+
+  it('the state carries what the phone needs to build the next day', async () => {
+    d = await newPlayer();
+    const res = await call('lmu-onboarding', d.token, ONBOARDING);
+    expect(res.status).toBe(201);
+    state = res.body.state;
+    expect(typeof state.ladders).toBe('object');
+    expect(state.history).toEqual([{ dayNumber: 1, quests: expect.objectContaining({ core: quest(state, 'core').templateId }) }]);
+    expect(state.workoutsDone).toBe(0);
+  });
+
+  it('a quest named by its day and slot is the one completed and undone', async () => {
+    const core = quest(state, 'core');
+    const ref = { dayNumber: 1, slot: 'core', templateId: core.templateId };
+    const done = await sync(d, [{ id: eventId(), type: 'complete', ref, completedAt: now(), payload: { sets: [6, 5] } }]);
+    expect(done.body.results[0]).toMatchObject({ ok: true });
+    expect(quest(done.body.state, 'core').completedAt).not.toBeNull();
+    const undone = await sync(d, [{ id: eventId(), type: 'undo', ref }]);
+    expect(undone.body.results[0]).toMatchObject({ ok: true });
+    expect(undone.body.state.character.totalXp).toBe(0);
+  });
+
+  it("another quest in that slot still counts the work; a pain report about it is refused; an unknown day isn't found", async () => {
+    const ref = { dayNumber: 1, slot: 'core', templateId: 'not-this-0' };
+    const res = await sync(d, [
+      { id: eventId(), type: 'complete', ref, completedAt: now(), payload: {} },
+      { id: eventId(), type: 'pain', ref, choice: 'pause' },
+      { id: eventId(), type: 'undo', ref: { ...ref, dayNumber: 9 } },
+    ]);
+    expect(res.body.results.map((r: any) => r.ok ? 'ok' : r.code)).toEqual(['ok', 'quest_changed', 'not_found']);
+    expect(quest(res.body.state, 'core').completedAt).not.toBeNull();
+    expect(res.body.state.paused).toEqual([]);
+  });
+
+  it("a day built while the server's day still runs is refused (clock_ahead); a malformed one is rejected", async () => {
+    const day = {
+      type: 'provisional_day', dayNumber: 2, builtAt: now(), timeZone: 'Asia/Manila', window: { startsAt: now(), endsAt: now() + 86_400_000 },
+      budget: 25, light: false, quests: [{ slot: 'core', templateId: quest(state, 'core').templateId, why: { code: 'light_day' }, moves: null, book: null }],
+    };
+    const res = await sync(d, [{ id: eventId(), ...day }, { id: eventId(), ...day, dayNumber: 1 }]);
+    expect(res.body.results[0]).toMatchObject({ ok: false, code: 'clock_ahead' });
+    expect(res.body.rejected).toEqual([expect.objectContaining({ code: 'bad_event' })]);
+    expect(res.body.state.today.dayNumber).toBe(1);
+  });
+});
