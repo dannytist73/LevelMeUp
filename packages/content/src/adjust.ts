@@ -109,6 +109,8 @@ export const ADJUST_TEXT = {
     today: "Today's open workout changes once this syncs; the next ones follow it.",
     save: 'Save training',
     noRoom: 'Workouts need 25 minutes a day or more, and they stay off on a gentle start or your own plan. Your setup is kept for when they fit.',
+    notice: 'New: tell the System what you train with, and your workouts are built for it.',
+    setUp: 'Set up training',
   },
 } as const;
 
