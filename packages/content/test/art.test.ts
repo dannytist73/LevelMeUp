@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ART_KEYS, artKey } from '../src/art.ts';
 import { LADDERS, TEMPLATES } from '../src/library.ts';
@@ -18,5 +20,10 @@ describe('quest art keys (M6a, decision 10)', () => {
     expect(ART_KEYS).toEqual(expect.arrayContaining([
       'micro-strength', 'micro-vitality', 'micro-wisdom', 'micro-focus', 'recovery', 'stillness', 'dawn-ritual', 'article',
     ]));
+  });
+
+  it('has a subject in the art script for every key, so the set can be rendered', () => {
+    const script = readFileSync(fileURLToPath(new URL('../../../scripts/art/quest-art.py', import.meta.url)), 'utf8');
+    for (const key of ART_KEYS) expect(script, key).toContain(`"${key}":`);
   });
 });
