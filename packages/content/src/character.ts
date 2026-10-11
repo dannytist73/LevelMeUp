@@ -6,7 +6,6 @@ import { ACHIEVEMENTS } from './achievements.ts';
 export const CHARACTER_TEXT = {
   label: 'Character',
   portrait: '{className} portrait, level {level}',
-  levelLine: 'Level {level} · {className}',
   totalXp: '{total} XP total · {into} / {span} this level',
   next: 'Next: Level {level}',
   stats: {
@@ -79,7 +78,6 @@ export const BOOK_TEXT = {
   setAsideYes: 'Set it aside',
   notNow: 'Not now',
   questLine: 'Reading: {title}',
-  finishedList: 'Finished books',
   closed: "Scholar's Path opens for a Mage at level 10.",
 } as const;
 
