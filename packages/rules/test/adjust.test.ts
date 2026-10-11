@@ -257,6 +257,15 @@ describe('workouts in the adjustments (M6c decision 8)', () => {
     expect(offer.moves).toEqual(planWorkout(TRAINING, templateById(WORKOUT_FIXTURE, offer.templateId), roomy.profile, 0));
   });
 
+  it('a swap on a workout day offers no movement the workout trains (review)', () => {
+    const roomy = dayInput({ dayNumber: 3 }, { goals: ['body'], minutesPerDay: 40, stats: { strength: 1, vitality: 5, wisdom: 5, focus: 4 } });
+    const day = buildDay(WORKOUT_FIXTURE, roomy);
+    expect(quest(day, 'core').ladder).toBe('workout');
+    for (const slot of ['side1', 'side2'] as const) {
+      for (const o of swapOptions(WORKOUT_FIXTURE, roomy, day, slot)) expect(['push', 'squat', 'micro-squats']).not.toContain(o.ladder ?? o.templateId);
+    }
+  });
+
   it('Second Wind redoes a missed workout with today\'s plan', () => {
     const today = dayInput({ dayNumber: 4, history: [{ dayNumber: 3, quests: { core: 'workout-0' } }] }, { level: 5 });
     const redo = addRecovery(WORKOUT_FIXTURE, today, buildDay(WORKOUT_FIXTURE, today), { kind: 'second_wind', missedCore: 'workout-0', lastUsedDay: null });

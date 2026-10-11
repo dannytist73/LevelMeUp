@@ -49,8 +49,8 @@ export const NO_TRAINING: TrainingLibrary = { moves: [], programs: { men: [], wo
 
 export const FIXTURE: QuestLibrary = {
   ladders: [
-    ladder('push', 'strength', ['body'], ['warrior']),
-    ladder('squat', 'strength', ['body'], ['warrior']),
+    ladder('push', 'strength', ['body'], ['warrior'], { pattern: 'push' }),
+    ladder('squat', 'strength', ['body'], ['warrior'], { pattern: 'squat' }),
     ladder('own', 'strength', ['body'], ['warrior'], { ownProgram: true }),
     ladder('walk', 'vitality', ['energy', 'body'], ['warrior', 'rogue', 'mage', 'monk']),
     ladder('mobility', 'vitality', ['energy', 'body'], ['warrior', 'monk']),

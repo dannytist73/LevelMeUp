@@ -1,6 +1,8 @@
 import { abilityReady, abilityUnlocked } from './abilities.ts';
 import { DISCIPLINE_PER_RECOVERY, PAIN_PERSISTS_REPORTS, REST_DAYS_PER_WEEK, SWAP_SAME_STAT_CHOICES, WEEK_QUEST_DAYS } from './constants.ts';
-import { balanceChoice, bookFor, dayBudget, dayContext, draftQuest, ladderCandidates, microCandidates, movesFor, useKey } from './day.ts';
+import {
+  balanceChoice, bookFor, dayBudget, dayContext, draftQuest, keptOutBy, ladderCandidates, microCandidates, movesFor, useKey,
+} from './day.ts';
 import type { BuiltDay, DayInput, QuestDraft } from './day.ts';
 import { newLadder } from './ladder.ts';
 import {
@@ -39,7 +41,12 @@ export function swapOptions(library: QuestLibrary, input: DayInput, day: BuiltDa
   const others = QUEST_SLOTS.filter((s) => s !== slot).map((s) => templateById(library, questIn(day, s).templateId));
   const allowance = day.budget - others.reduce((sum, t) => sum + t.minutes, 0);
   const recovery = day.quests.find((q) => q.slot === 'recovery');
-  const used = new Set([current, ...others, ...(recovery ? [templateById(library, recovery.templateId)] : [])].map(useKey));
+  const staying = [...others, ...(recovery ? [templateById(library, recovery.templateId)] : [])];
+  // No movement twice in a day: what the rest of the day keeps out (M6c review).
+  const keptOut = day.quests
+    .filter((q) => q.slot !== slot && q.slot !== 'article')
+    .flatMap((q) => keptOutBy(library, templateById(library, q.templateId), q.moves));
+  const used = new Set([current, ...staying].map(useKey).concat(keptOut));
   const noStrength = slot === 'core' && ctx.afterStrength;
   const sameStat = noStrength && current.stat === 'strength'
     ? []

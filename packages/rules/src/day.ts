@@ -221,6 +221,25 @@ export function bookFor(ctx: DayContext, template: QuestTemplate): string | null
   return abilityUnlocked('scholars_path', profile.classId, profile.level) ? profile.book : null;
 }
 
+/**
+ * No movement twice in a day (M6c review): what a strength quest keeps out of the day's other slots (ladder ids and
+ * standalone template ids, as `useKey` names them). A workout keeps out the strength ladders whose movement it trains
+ * and the small strength quests; any other strength quest keeps out the workouts (their plan isn't known yet).
+ */
+export function keptOutBy(library: QuestLibrary, template: QuestTemplate, moves: readonly PlannedMove[] | null): string[] {
+  if (template.exercise !== 'strength') return [];
+  const isWorkoutLadder = (id: string): boolean => {
+    const first = ladderRungs(library, id)[0];
+    return first !== undefined && isWorkout(first);
+  };
+  if (!isWorkout(template)) return library.ladders.filter((l) => isWorkoutLadder(l.id)).map((l) => l.id);
+  const trained = new Set((moves ?? []).map((m) => library.training.moves.find((x) => x.id === m.move)?.pattern));
+  return [
+    ...library.ladders.filter((l) => l.pattern !== undefined && trained.has(l.pattern)).map((l) => l.id),
+    ...library.templates.filter((t) => t.role === 'micro' && t.exercise === 'strength').map((t) => t.id),
+  ];
+}
+
 /** A workout's exercises for this player today (decision 5); null for other quests, or when too few fit. */
 export function movesFor(ctx: DayContext, template: QuestTemplate): PlannedMove[] | null {
   return isWorkout(template) ? planWorkout(ctx.library.training, template, ctx.input.profile, ctx.input.workoutsDone) : null;
@@ -332,9 +351,11 @@ export function buildDay(library: QuestLibrary, input: DayInput): BuiltDay {
   const budget = dayBudget(input);
   const used = new Set<string>();
   const core = chooseCore(ctx, budget, used);
-  used.add(useKey(core.candidate.template));
+  const coreMoves = movesFor(ctx, core.candidate.template);
+  for (const key of [useKey(core.candidate.template), ...keptOutBy(library, core.candidate.template, coreMoves)]) used.add(key);
   const side1 = chooseGoalSide(ctx, budget - core.candidate.template.minutes - MIN_SIDE_MINUTES, used);
-  used.add(useKey(side1.candidate.template));
+  const side1Moves = movesFor(ctx, side1.candidate.template);
+  for (const key of [useKey(side1.candidate.template), ...keptOutBy(library, side1.candidate.template, side1Moves)]) used.add(key);
   const side2 = chooseBalance(
     ctx,
     budget - core.candidate.template.minutes - side1.candidate.template.minutes,

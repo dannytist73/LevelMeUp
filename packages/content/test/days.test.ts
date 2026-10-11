@@ -98,6 +98,24 @@ describe('days built from the real library (spec §5 "Days and quests")', () => 
     });
   });
 
+  it('a workout day trains no movement twice: no other quest of a movement the workout trains (M6c review)', () => {
+    let workoutDays = 0;
+    all.forEach((profile, i) => {
+      for (const { day } of play(profile, 21, i % 4)) {
+        const workout = day.quests.find((q) => q.moves !== null);
+        if (workout === undefined) continue;
+        workoutDays++;
+        const trained = new Set(workout.moves!.map((m) => authoredMove(m.move).pattern));
+        for (const q of day.quests.filter((x) => x !== workout && authoredTemplate(x.templateId).exercise === 'strength')) {
+          expect(q.ladder, q.templateId).not.toBeNull(); // never the small strength quest
+          const pattern = LADDERS.find((l) => l.id === q.ladder)!.pattern;
+          expect(pattern !== undefined && trained.has(pattern), `${q.templateId} beside ${workout.templateId}`).toBe(false);
+        }
+      }
+    });
+    expect(workoutDays).toBeGreaterThan(100);
+  });
+
   it('every quest says why, in every voice, in clean words; goal quests serve a chosen goal', () => {
     all.forEach((profile, i) => {
       if (i % 8 !== 0) return; // rendering is the same work for every profile; a sample is enough

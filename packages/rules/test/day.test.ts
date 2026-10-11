@@ -217,6 +217,12 @@ describe('workouts (M6c decisions 5–7)', () => {
     expect(draftQuest(workout, 'core', { code: 'balance', stat: 'strength' }, { moves, hardDay: true })).toMatchObject({ minutes: 7, hardDay: true, moves });
   });
 
+  it('a workout keeps the movements it trains out of the rest of its day (review)', () => {
+    const day = strengthDay({}, { goals: ['body'] }); // the goal side would pick push-ups
+    expect(quest(day, 'core').moves?.map((m) => m.move)).toEqual(['chair-squat', 'wall-push', 'bridge']); // squat, push, hinge
+    for (const q of day.quests.filter((x) => x.slot !== 'core')) expect(['push', 'squat', 'micro-squats']).not.toContain(q.ladder ?? q.templateId);
+  });
+
   it('refuses a negative or fractional count of workouts done', () => {
     expect(() => strengthDay({ workoutsDone: -1 })).toThrow(RangeError);
     expect(() => strengthDay({ workoutsDone: 1.5 })).toThrow(RangeError);

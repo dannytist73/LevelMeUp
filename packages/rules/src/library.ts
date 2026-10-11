@@ -2,7 +2,7 @@ import { CLASSES, GOALS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, MIN_SIDE_MINUT
 import type { LadderState } from './ladder.ts';
 import type { ClassId, Difficulty, Goal, Limitation, Stat, Tier, TrainableStat } from './types.ts';
 import { EQUIPMENT, PROGRAM_STYLES } from './workout.ts';
-import type { Equipment, MoveLevel, ProgramStyle, SessionMove, TrainingLibrary } from './workout.ts';
+import type { Equipment, MoveLevel, MovePattern, ProgramStyle, SessionMove, TrainingLibrary } from './workout.ts';
 import type { XpSplit } from './xp.ts';
 
 /** The physical work a quest asks for; null for reading, focus, breathing and habits. */
@@ -59,6 +59,8 @@ export type Ladder = {
   affinity: readonly ClassId[];
   /** "Complete your own planned session": replaces the strength ladders for players with their own program. */
   ownProgram: boolean;
+  /** The movement a strength ladder trains (M6c review): a workout with that movement keeps it out of the day. */
+  pattern?: MovePattern;
   /** Its quests show the player's Scholar's Path book. */
   tracksBook: boolean;
 };

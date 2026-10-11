@@ -3835,6 +3835,17 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
   tests assert on the `enqueue` call (as the class-change tests do) and build the store with `view` only; the flow tests
   that expected Rhythm after Body now expect Training. The Settings test also presses Game → Training. App tests: 491.
 
+### Code review (2026-10-12): fixes
+
+- **Critical — back limitation (amends decision 3):** bodyweight and split squats and the side plank ruled out a back
+  limitation as quests but not as workout exercises. Every exercise now rules out at least what the same-named quest
+  does, and every loaded squat rules out a back limitation too (a test checks both).
+- **Important — no movement twice in a day (amends decision 7):** a workout keeps out of its day the strength ladders
+  whose movement it trains (`Ladder.pattern`: push, squat, core) and the small strength quest; any other strength quest
+  keeps the workouts out (`keptOutBy`, in the day builder and in swaps). Blocking every strength side quest instead made
+  the Warrior's steady pace miss rank C within 180 days; the narrower rule misses it by one day (151, target 150).
+  By decision 15 step 3 the rank C miss alone is recorded, not tuned: the campaign test accepts that exact line.
+
 ### Pacing re-run (Task 5, 400 runs, 2026-10-12): all targets met, no tuning
 
 ```
