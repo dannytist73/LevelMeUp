@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EQUIPMENT, LIMITATIONS, MOVE_PATTERNS, MOVE_SLOTS, PROGRAM_STYLES, hasEquipment, planWorkout } from '../../rules/src/index.ts';
 import type { Equipment, PlayerProfile } from '../../rules/src/index.ts';
-import { LIBRARY } from '../src/library.ts';
+import { LIBRARY, TEMPLATES } from '../src/library.ts';
 import { lintText } from '../src/lint.ts';
 import { MOVES, authoredMove, progressLine } from '../src/training/moves.ts';
 import { WORKOUT_TEMPLATES } from '../src/quests/workout.ts';
@@ -44,6 +44,15 @@ describe('the exercise library (M6c decision 3)', () => {
         expect(text.toLowerCase(), m.id).not.toMatch(/failure|to fail|max out|all-out/);
       }
     }
+  });
+
+  it('rules out at least what the same exercise rules out as a quest; loaded squats rule out a back limitation (review)', () => {
+    for (const m of MOVES) {
+      for (const t of TEMPLATES.filter((x) => x.name === m.name)) {
+        for (const tag of t.contraindications) expect(m.contraindications, `${m.id} vs ${t.id}`).toContain(tag);
+      }
+    }
+    for (const m of MOVES.filter((x) => x.pattern === 'squat' && x.needs.length > 0)) expect(m.contraindications, m.id).toContain('back');
   });
 
   it('the progress line follows the kind of move', () => {

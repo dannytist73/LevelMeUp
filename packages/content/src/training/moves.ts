@@ -161,19 +161,19 @@ export const MOVES: readonly AuthoredMove[] = [
   // Squat and quads.
   {
     id: 'leg-press', name: 'Leg press', slots: ['squat', 'quads'], pattern: 'squat', needs: ['gym'],
-    level: 1, unit: 'reps', min: 8, max: 12, perSide: false, contraindications: ['knee'],
+    level: 1, unit: 'reps', min: 8, max: 12, perSide: false, contraindications: ['knee', 'back'],
     steps: ['Sit with your back flat on the pad and your feet hip-width on the plate.', 'Lower the plate until your knees are bent to about a right angle, then press it away.'],
     cue: "Keep your lower back on the pad, and don't snap your knees straight at the top.",
   },
   {
     id: 'goblet-squat', name: 'Goblet squat', slots: ['squat', 'quads'], pattern: 'squat', needs: ['dumbbells'],
-    level: 1, unit: 'reps', min: 10, max: 15, perSide: false, contraindications: ['knee'],
+    level: 1, unit: 'reps', min: 10, max: 15, perSide: false, contraindications: ['knee', 'back'],
     steps: ['Hold one dumbbell upright against your chest, feet a little wider than your hips.', 'Sit your hips down between your heels, then stand up.'],
     cue: 'Keep your chest up and your knees pointing the same way as your toes.',
   },
   {
     id: 'db-split-squat', name: 'Dumbbell split squats', slots: ['squat', 'quads'], pattern: 'squat', needs: ['dumbbells'],
-    level: 2, unit: 'reps', min: 8, max: 12, perSide: true, contraindications: ['knee'],
+    level: 2, unit: 'reps', min: 8, max: 12, perSide: true, contraindications: ['knee', 'back'],
     steps: ['Stand in a long stride with a dumbbell in each hand.', 'Lower your back knee toward the floor, then push back up. Do every rep, then switch legs.'],
     cue: 'Keep your front knee in line with your foot.',
   },
@@ -185,7 +185,7 @@ export const MOVES: readonly AuthoredMove[] = [
   },
   {
     id: 'band-squat', name: 'Band squats', slots: ['squat', 'quads'], pattern: 'squat', needs: ['bands'],
-    level: 1, unit: 'reps', min: 15, max: 25, perSide: false, contraindications: ['knee'],
+    level: 1, unit: 'reps', min: 15, max: 25, perSide: false, contraindications: ['knee', 'back'],
     steps: ['Stand on the middle of the band and hold the ends at your shoulders.', 'Squat down as far as is comfortable, then stand up against the band.'],
     cue: 'Keep your heels down and your chest up.',
   },
@@ -197,19 +197,19 @@ export const MOVES: readonly AuthoredMove[] = [
   },
   {
     id: 'bodyweight-squat', name: 'Bodyweight squats', slots: ['squat', 'quads'], pattern: 'squat', needs: [],
-    level: 2, unit: 'reps', min: 12, max: 20, perSide: false, contraindications: ['knee'],
+    level: 2, unit: 'reps', min: 12, max: 20, perSide: false, contraindications: ['knee', 'back'],
     steps: ['Stand with your feet a little wider than your hips, toes turned slightly out.', 'Sit your hips back and down as far as is comfortable, chest up, then stand.'],
     cue: 'Go only as low as you can without pain.',
   },
   {
     id: 'split-squat', name: 'Split squats', slots: ['squat', 'quads'], pattern: 'squat', needs: [],
-    level: 2, unit: 'reps', min: 8, max: 12, perSide: true, contraindications: ['knee'],
+    level: 2, unit: 'reps', min: 8, max: 12, perSide: true, contraindications: ['knee', 'back'],
     steps: ['Step one foot forward and one back, about a stride apart. Hold a wall or chair if you like.', 'Bend both knees to lower your back knee toward the floor, then push up. Do every rep, then switch.'],
     cue: 'Keep your front knee in line with your foot.',
   },
   {
     id: 'raised-split-squat', name: 'Back-foot-raised split squats', slots: ['squat', 'quads'], pattern: 'squat', needs: [],
-    level: 3, unit: 'reps', min: 6, max: 12, perSide: true, contraindications: ['knee'],
+    level: 3, unit: 'reps', min: 6, max: 12, perSide: true, contraindications: ['knee', 'back'],
     steps: ['Stand a stride in front of a sturdy chair and rest the top of your back foot on it.', 'Lower your back knee toward the floor, then push up through your front foot. Do every rep, then switch.'],
     cue: 'Hold a wall for balance at first, and keep your front knee in line with your foot.',
   },
@@ -321,7 +321,7 @@ export const MOVES: readonly AuthoredMove[] = [
   },
   {
     id: 'side-plank', name: 'Side plank', slots: ['abs'], pattern: 'core', needs: [],
-    level: 2, unit: 'seconds', min: 15, max: 30, perSide: true, contraindications: ['shoulder'],
+    level: 2, unit: 'seconds', min: 15, max: 30, perSide: true, contraindications: ['back', 'shoulder'],
     steps: ['Lie on your side with your forearm under your shoulder and your legs stacked.', 'Lift your hips so your body is straight, and hold. Then switch sides.'],
     cue: 'Bend your bottom knee to the floor to make it easier.',
   },

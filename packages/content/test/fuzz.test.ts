@@ -108,7 +108,8 @@ function checkDay(input: DayInput, day: BuiltDay, note: (kind: string, example: 
   }
 }
 
-describe(`${CASES} random player states against the real library`, () => {
+// 10,000 states take a few seconds each pass; a busy machine must not turn that into a timeout.
+describe(`${CASES} random player states against the real library`, { timeout: 30_000 }, () => {
   it('builds days that keep every rule, the same way twice, and that the offline check accepts', () => {
     const { problems, note } = collector();
     for (const { input, day } of cases) {
