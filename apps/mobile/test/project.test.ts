@@ -5,7 +5,7 @@ import { characterView } from '../../../supabase/functions/_shared/state.ts';
 import { addStatXp, project } from '../src/game/project.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import {
-  adjustState, characterRow, completeEvent, ladderRows, profileRow, rateEvent, serverState, undoEvent,
+  adjustState, characterRow, completeEvent, ladderRows, profileRow, rateEvent, serverState, undoEvent, workoutState,
 } from './support/fixtures.ts';
 
 const deepFreeze = <T,>(value: T): T => {
@@ -102,6 +102,14 @@ const ev = (event: object): PhoneEvent => ({ id: `00000000-0000-4000-9000-${Stri
 const questOf = (s: ServerState, id: number) => s.today!.quests.find((q) => q.id === id)!;
 
 describe('adjustments show at once (M6b)', () => {
+  it('a training change shows in the profile at once, and the open workout waits for the server (M6c)', () => {
+    const server = workoutState();
+    const shown = project(server, [{ id: 'e1', type: 'training', equipment: ['gym'], programStyle: 'men' }]);
+    expect(shown.profile).toMatchObject({ equipment: ['gym'], programStyle: 'men' });
+    expect(shown.waiting.has(200)).toBe(true);
+    expect(shown.waiting.has(201)).toBe(false);
+  });
+
   it('a swap puts the offered quest in its slot and counts the swap; an option not offered changes nothing', () => {
     const server = adjustState();
     const option = questOf(server, 200).swaps[0]!;

@@ -13,7 +13,8 @@ import { RepLog } from '../src/screens/quest/RepLog.tsx';
 import { SentenceLog } from '../src/screens/quest/SentenceLog.tsx';
 import { TapClaim } from '../src/screens/quest/TapClaim.tsx';
 import { TimerPanel, clock } from '../src/screens/quest/TimerPanel.tsx';
-import { DAY_TWO_NOW, adjustState, ladderRows, serverState } from './support/fixtures.ts';
+import { WorkoutLog } from '../src/screens/quest/WorkoutLog.tsx';
+import { DAY_TWO_NOW, adjustState, ladderRows, serverState, workoutState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const T0 = Date.UTC(2026, 9, 10, 13);
@@ -404,5 +405,47 @@ describe('stepping down after "Too hard" (spec §3.3)', () => {
       <Quest questId={201} now={() => DAY_TWO_NOW} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
     expect(screen.getByText(PLAY_TEXT.cleared.tooHardNote)).toBeTruthy();
     expect(screen.queryByText(ADJUST_TEXT.stepDown.offer)).toBeNull();
+  });
+});
+
+describe('a workout (M6c)', () => {
+  const moves = [
+    { move: 'goblet-squat', unit: 'reps', min: 10, max: 15, perSide: false, sets: 2 },
+    { move: 'plank', unit: 'seconds', min: 20, max: 40, perSide: false, sets: 1 },
+  ] as const;
+
+  it('lists each exercise with its target, cue and progress line; the steps open on request', async () => {
+    await render(<WorkoutLog moves={moves} disabled={false} onClaim={jest.fn()} />);
+    expect(screen.getByText('Goblet squat')).toBeTruthy();
+    expect(screen.getByText('2 sets of 10–15 reps')).toBeTruthy();
+    expect(screen.getByText('1 hold of 20–40 seconds')).toBeTruthy();
+    expect(screen.getByText(/go a little heavier next time/)).toBeTruthy();
+    expect(screen.getByText(/hold a few seconds longer/)).toBeTruthy();
+    expect(screen.getByText(/1\. Hold one dumbbell upright/)).toBeTruthy(); // the first exercise's steps start open
+    await fireEvent.press(screen.getAllByRole('button', { name: PLAY_TEXT.workout.how })[0]!);
+    expect(screen.getByText(/1\. Rest on your forearms/)).toBeTruthy();
+  });
+
+  it('logs every set, starting at the bottom of each range', async () => {
+    const onClaim = jest.fn();
+    await render(<WorkoutLog moves={moves} disabled={false} onClaim={onClaim} />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Goblet squat, set 1, one more' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Forearm plank, set 1, one less' }));
+    await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.workout.log }));
+    expect(onClaim).toHaveBeenCalledWith({ sets: [11, 10, 19] });
+  });
+
+  it('the quest screen shows the workout and sends its log', async () => {
+    const store = testStore({ view: project(workoutState(), []) });
+    const enqueue = jest.fn(async (_event: Omit<PhoneEvent, 'id'>) => {});
+    store.setState({ enqueue: enqueue as never });
+    const onTraining = jest.fn();
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onTraining={onTraining} now={() => DAY_TWO_NOW} />));
+    await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.workout.change }));
+    expect(onTraining).toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.workout.log }));
+    const sent = enqueue.mock.calls.at(-1)![0];
+    expect(sent).toMatchObject({ type: 'complete', instanceId: 200 });
+    expect((sent as unknown as { payload: { sets: number[] } }).payload.sets).toHaveLength(6);
   });
 });

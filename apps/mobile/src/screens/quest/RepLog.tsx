@@ -11,7 +11,7 @@ import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
 
 const T = PLAY_TEXT.reps;
 
-function Step({ text, label, onPress }: { text: string; label: string; onPress: () => void }) {
+export function Step({ text, label, onPress }: { text: string; label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
       <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 22, color: colors.chalk }}>{text}</Text>

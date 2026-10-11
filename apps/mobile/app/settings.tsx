@@ -8,6 +8,7 @@ export default function SettingsRoute() {
     <Settings
       onBack={() => router.back()}
       onDeveloper={__DEV__ ? () => router.push('/dev') : undefined}
+      onTraining={() => router.push('/training')}
       version={Constants.expoConfig?.version ?? 'unknown'}
       deviceZone={deviceZone()}
     />

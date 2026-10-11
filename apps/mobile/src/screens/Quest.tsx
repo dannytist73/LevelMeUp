@@ -1,6 +1,7 @@
 // A quest, opened from Today (spec §3.1, §3.4, §3.6; M6a decisions 1–10): its picture, its words in the player's voice,
 // why it was picked, how to do it, the safety lines, and the panel that logs it. A cleared quest shows "Quest cleared".
-// M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag.
+// M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag. M6c: a workout's log, and a way to change the
+// equipment or program.
 import {
   ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary, renderWhy,
 } from '@levelmeup/content';
@@ -29,6 +30,7 @@ import { RepLog } from './quest/RepLog.tsx';
 import { SentenceLog } from './quest/SentenceLog.tsx';
 import { TapClaim } from './quest/TapClaim.tsx';
 import { TimerPanel } from './quest/TimerPanel.tsx';
+import { WorkoutLog } from './quest/WorkoutLog.tsx';
 
 const T = PLAY_TEXT.quest;
 const A = ADJUST_TEXT;
@@ -39,10 +41,12 @@ export type QuestProps = {
   onBack: () => void;
   onSwap: (questId: number) => void;
   onPain: (questId: number) => void;
+  /** A workout: change the equipment or program (M6c). */
+  onTraining?: () => void;
   now?: () => number;
 };
 
-export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: QuestProps) {
+export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.now }: QuestProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const art = useGame((s) => s.art);
@@ -169,6 +173,8 @@ export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: Quest
         onClaim={(payload) => void claim(payload)}
       />
     );
+  } else if (quest.condition.kind === 'session') {
+    panel = <WorkoutLog moves={quest.condition.moves} disabled={busy} onClaim={(payload) => void claim(payload)} />;
   } else if (quest.completion === 'reps') {
     panel = <RepLog condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)} />;
   } else if (quest.completion === 'text') {
@@ -222,6 +228,9 @@ export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: Quest
       {panel}
       {today.swapsLeft > 0 && quest.swaps.length > 0 && (
         <Button label={A.swap.open} variant="secondary" onPress={() => onSwap(quest.id)} />
+      )}
+      {quest.condition.kind === 'session' && onTraining !== undefined && (
+        <Button label={PLAY_TEXT.workout.change} variant="secondary" onPress={onTraining} />
       )}
       {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
     </ScreenScroll>

@@ -102,6 +102,14 @@ export const ADJUST_TEXT = {
     done: 'You vanished for {n} minutes.',
     finish: 'Done',
   },
+  training: {
+    title: 'Training',
+    open: 'Training',
+    line: 'Your workouts are built from what you have, in the program you pick.',
+    today: "Today's open workout changes once this syncs; the next ones follow it.",
+    save: 'Save training',
+    noRoom: 'Workouts need 25 minutes a day or more, and they stay off on a gentle start or your own plan. Your setup is kept for when they fit.',
+  },
 } as const;
 
 /** What each class ability does, on the class picker (spec §2.5). */

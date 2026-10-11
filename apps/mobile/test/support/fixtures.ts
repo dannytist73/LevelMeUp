@@ -63,3 +63,9 @@ export const READY_DRAFT: Draft = {
 };
 
 export const REVEAL: Reveal = { narrative: 'Rin. Class: Warrior.', strengths: ['Strength'], growth: ['Focus'], source: 'template' };
+
+/** Day 2 with a workout (workout-0, planned for the default player) as its core quest, id 200. */
+export function workoutState(over: Partial<Snapshot> = {}): ServerState {
+  const snapshot = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'workout-0' }, over);
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY));
+}

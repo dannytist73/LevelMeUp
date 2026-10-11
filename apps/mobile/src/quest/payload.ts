@@ -1,7 +1,7 @@
 // What a completion sends for each completion type (spec §3.6). The server checks the same shapes with the same limits
 // (`checkCompletionPayload`), and the tests run every payload through it (M6a decision 2).
 import { PLAY_TEXT } from '@levelmeup/content';
-import type { Condition } from '@levelmeup/rules';
+import type { Condition, SessionMove } from '@levelmeup/rules';
 import { MAX_REPS, MAX_SENTENCE, MAX_SETS } from '../../../../supabase/functions/_shared/events.ts';
 import { timerSegments } from './timer.ts';
 import type { TimerState } from './timer.ts';
@@ -35,4 +35,21 @@ const CONTROL = /\p{Cc}/u;
 export function sentenceValid(text: string): boolean {
   const trimmed = text.trim();
   return trimmed.length >= 1 && trimmed.length <= MAX_SENTENCE && !CONTROL.test(trimmed);
+}
+
+/** A workout log starts each set at the bottom of its exercise's range (M6c decision 9). */
+export function startingSession(moves: readonly SessionMove[]): number[][] {
+  return moves.map((m) => Array<number>(m.sets).fill(m.min));
+}
+
+/** Every set, in order; the server checks the count against the plan. */
+export const sessionPayload = (sets: readonly (readonly number[])[]) => ({ sets: sets.flat() });
+
+export const sessionValid = (sets: readonly (readonly number[])[]): boolean => repsValid(sets.flat());
+
+/** What a workout exercise counts, in content's words. */
+export function moveUnit(move: Pick<SessionMove, 'unit' | 'perSide'>): string {
+  const units = PLAY_TEXT.reps.units;
+  if (move.unit === 'seconds') return move.perSide ? units.secondsPerSide : units.seconds;
+  return move.perSide ? units.repsPerSide : units.reps;
 }

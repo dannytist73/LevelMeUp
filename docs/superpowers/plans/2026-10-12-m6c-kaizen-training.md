@@ -3829,6 +3829,11 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
 - **Task 8:** two more `Snapshot` literals got `workoutsDone: 0` (`adjust.test.ts`'s restart test, `auth-state.test.ts`),
   and the projection's `training` branch (Task 12 Step 5) came forward: the app doesn't compile against the new event
   type without it. Server unit tests: 250.
+- **Task 9:** a live run now creates up to 8 players (`MAX_PLAYERS`, as M6b raised it to 7); the client test signs up one
+  more. The deploy waits for the owner's yes (asked 2026-10-12).
+- **Tasks 10–12, tests:** the test store's `enqueue` is a mock that doesn't fill `pending`, so the quest-screen and Training
+  tests assert on the `enqueue` call (as the class-change tests do) and build the store with `view` only; the flow tests
+  that expected Rhythm after Body now expect Training. The Settings test also presses Game → Training. App tests: 491.
 
 ### Pacing re-run (Task 5, 400 runs, 2026-10-12): all targets met, no tuning
 

@@ -9,6 +9,7 @@ export default function QuestRoute() {
       onBack={() => router.back()}
       onSwap={(questId) => router.push(`/swap?quest=${questId}`)}
       onPain={(questId) => router.push(`/pain/${questId}`)}
+      onTraining={() => router.push('/training')}
     />
   );
 }

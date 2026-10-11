@@ -1,6 +1,7 @@
 // Settings (spec §1.3, S1 board): the account (a guest, or saved with Google since M5), sync status, the
 // not-medical-advice line and the version. Game settings, notifications, the Pact and deletion arrive in M6–M7.
-import { GOOGLE_ERRORS } from '@levelmeup/content';
+// M6c: Training (equipment and program) under Game.
+import { ADJUST_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,9 +14,9 @@ import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
 import { lastSynced, syncMark } from './syncLine.ts';
 
-export type SettingsProps = { onBack: () => void; onDeveloper?: () => void; version: string; deviceZone: string };
+export type SettingsProps = { onBack: () => void; onDeveloper?: () => void; onTraining: () => void; version: string; deviceZone: string };
 
-export function Settings({ onBack, onDeveloper, version, deviceZone }: SettingsProps) {
+export function Settings({ onBack, onDeveloper, onTraining, version, deviceZone }: SettingsProps) {
   const account = useGame((s) => s.account);
   const saveWithGoogle = useGame((s) => s.saveWithGoogle);
   const [saving, setSaving] = useState(false);
@@ -68,6 +69,11 @@ export function Settings({ onBack, onDeveloper, version, deviceZone }: SettingsP
             </>
           )}
         </NightCard>
+      </View>
+
+      <View style={{ gap: 12 }}>
+        <SectionTitle title="Game" />
+        <Button label={ADJUST_TEXT.training.open} variant="secondary" onPress={onTraining} />
       </View>
 
       <View style={{ gap: 12 }}>

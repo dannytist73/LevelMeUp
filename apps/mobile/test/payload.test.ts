@@ -1,7 +1,12 @@
 /** @jest-environment node */
 import { checkCompletionPayload, timerTargetMs } from '../../../supabase/functions/_shared/events.ts';
 import type { QuestView } from '../src/game/types.ts';
-import { repUnit, repsPayload, repsValid, sentenceValid, startingSets, textPayload, timerPayload } from '../src/quest/payload.ts';
+import { LIBRARY } from '@levelmeup/content';
+import { sessionCondition, templateById } from '@levelmeup/rules';
+import {
+  moveUnit, repUnit, repsPayload, repsValid, sentenceValid, sessionPayload, sessionValid, startingSession, startingSets, textPayload,
+  timerPayload,
+} from '../src/quest/payload.ts';
 import { NEW_TIMER, parseTimers, pauseTimer, startTimer, timerDone, timerElapsed } from '../src/quest/timer.ts';
 import { serverState } from './support/fixtures.ts';
 
@@ -78,5 +83,33 @@ describe('one sentence and check-offs', () => {
 
   it('send nothing for a check-off', () => {
     expect(accepted(tap, {}, T0)).toEqual({ payload: {} });
+  });
+});
+
+describe('workout logs (M6c decision 9)', () => {
+  const template = templateById(LIBRARY, 'workout-0');
+  const moves = [
+    { move: 'goblet-squat', unit: 'reps', min: 10, max: 15, perSide: false },
+    { move: 'db-row', unit: 'reps', min: 8, max: 12, perSide: true },
+    { move: 'plank', unit: 'seconds', min: 20, max: 40, perSide: false },
+  ] as const;
+  const condition = sessionCondition(template, moves, false);
+  if (condition.kind !== 'session') throw new Error('not a session');
+
+  it('start every set at the bottom of its range', () => {
+    expect(startingSession(condition.moves)).toEqual([[10, 10], [8, 8], [20, 20]]);
+    expect(moveUnit(condition.moves[1]!)).toBe('reps per side');
+    expect(moveUnit(condition.moves[2]!)).toBe('seconds');
+  });
+
+  it('send every set in order, which the server accepts; a count that differs is refused', () => {
+    const payload = sessionPayload([[12, 11], [9, 8], [30, 25]]);
+    expect(payload).toEqual({ sets: [12, 11, 9, 8, 30, 25] });
+    expect(sessionValid([[12, 11], [9, 8], [30, 25]])).toBe(true);
+    expect(sessionValid([[0, 0], [0, 0], [0, 0]])).toBe(false);
+    const day = { starts_at: new Date(0), ends_at: new Date(Date.UTC(2100, 0, 1)) };
+    const instance = { completion: 'reps' as const, condition, minutes: 16 };
+    expect(checkCompletionPayload(instance, day, payload, Date.UTC(2026, 9, 11))).toEqual({ payload });
+    expect(checkCompletionPayload(instance, day, sessionPayload([[12, 11], [9, 8]]), Date.UTC(2026, 9, 11))).toEqual({ code: 'bad_payload' });
   });
 });

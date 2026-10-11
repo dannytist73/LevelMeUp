@@ -1,4 +1,4 @@
-import { ABILITY_LINES, ADJUST_TEXT, PLAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
+import { ABILITY_LINES, ADJUST_TEXT, EQUIPMENT_NAMES, ONBOARDING_TEXT, PLAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
 import { DAY_MS, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { activateKeepAwakeAsync } from 'expo-keep-awake';
@@ -10,8 +10,9 @@ import { ClassChange } from '../src/screens/ClassChange.tsx';
 import { DayActions, DayBanners, PausedExercises } from '../src/screens/DayActions.tsx';
 import { Pain, gentleLine } from '../src/screens/Pain.tsx';
 import { Swap } from '../src/screens/Swap.tsx';
+import { Training } from '../src/screens/Training.tsx';
 import { Vanish } from '../src/screens/Vanish.tsx';
-import { DAY_TWO_NOW, adjustState, characterRow, ladderRows, profileRow } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, characterRow, ladderRows, profileRow, workoutState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 jest.mock('expo-keep-awake', () => ({
@@ -291,5 +292,27 @@ describe('a screen that sends a change keeps what it shows while it closes (M6b 
     await render(withStore(applying(), <Pain questId={200} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
     await fireEvent.press(screen.getByRole('button', { name: A.pain.gentle }));
     expect(screen.getByText(fillText(A.pain.paused, { name: 'Push-ups' }))).toBeTruthy();
+  });
+});
+
+describe('Training (M6c decision 12)', () => {
+  it('shows the current setup, saves a change once, and goes back', async () => {
+    const store = testStore({ view: project(workoutState(), []) });
+    const onDone = jest.fn();
+    await render(withStore(store, <Training onDone={onDone} onBack={jest.fn()} />));
+    const save = () => screen.getByRole('button', { name: ADJUST_TEXT.training.save });
+    expect(screen.getByRole('checkbox', { name: ONBOARDING_TEXT.gear.nothing }).props.accessibilityState.checked).toBe(true);
+    expect(save().props.accessibilityState.disabled).toBe(true); // nothing changed yet
+    await fireEvent.press(screen.getByRole('checkbox', { name: EQUIPMENT_NAMES.bands }));
+    await fireEvent.press(save());
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'training', equipment: ['bands'], programStyle: 'none' });
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('says when workouts don\'t fit the player\'s day', async () => {
+    const server = workoutState({ profile: profileRow(undefined, { minutes_per_day: 15 }) });
+    const store = testStore({ view: project(server, []) });
+    await render(withStore(store, <Training onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(ADJUST_TEXT.training.noRoom)).toBeTruthy();
   });
 });
