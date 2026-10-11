@@ -2,6 +2,8 @@
 // how the last sync went, and the onboarding (M5): the interview's draft, the reveal and the account. Every action goes
 // through the outbox first, then a sync is requested.
 // M6a adds the celebration queue, the quest-art manifest and the quest timers.
+// M6b: adjustments go through the same outbox; a quest replaced by a swap, gentle movement or an ability loses its stored
+// timer.
 import { createContext, createElement, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
@@ -124,6 +126,14 @@ function readKeptArt(text: string | null): ArtManifest | null {
   } catch {
     return null;
   }
+}
+
+/** The quest a new event replaces with another (M6b): its stored timer belongs to the old quest. */
+function replacedQuest(event: NewEvent, view: Shown | null): number | null {
+  if (event.type === 'swap') return event.instanceId;
+  if (event.type === 'pain' && event.choice === 'gentle') return event.instanceId;
+  if (event.type === 'ability') return view?.today?.quests.find((q) => q.slot === 'core')?.id ?? null;
+  return null;
 }
 
 export function createGameStore(deps: GameDeps): StoreApi<GameState> {
@@ -293,7 +303,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       enqueue: async (event) => {
+        const replaced = replacedQuest(event, get().view);
         await deps.local.enqueue({ ...event, id: deps.newId() } as PhoneEvent, deps.now());
+        if (replaced !== null) await get().saveTimer(replaced, null).catch(() => {});
         await refresh();
         void scheduler.request();
       },

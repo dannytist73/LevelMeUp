@@ -8,7 +8,7 @@ import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import { ART_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, VOW_KEY, createGameStore } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { nodeSql } from './support/nodeSql.ts';
-import { READY_DRAFT, REVEAL, serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, READY_DRAFT, REVEAL, adjustState, serverState } from './support/fixtures.ts';
 
 const SERVER = serverState();
 const core = SERVER.today!.quests.find((q) => q.slot === 'core')!;
@@ -617,5 +617,20 @@ describe('quest timers (M6a decision 3)', () => {
     await store.getState().startOver();
     expect(kv.has(TIMERS_KEY)).toBe(false);
     expect(store.getState().celebrations).toEqual([]);
+  });
+});
+
+describe('adjustments and quest timers (M6b)', () => {
+  it("a swap drops the replaced quest's stored timer; a hard day keeps it (its time still counts)", async () => {
+    const day2 = adjustState();
+    const { store } = await setup([ok(day2)], { now: () => DAY_TWO_NOW });
+    await store.getState().boot();
+    const running = { segments: [], runningSince: DAY_TWO_NOW };
+    await store.getState().saveTimer(201, running); // walk-1, a timer quest
+    await store.getState().enqueue({ type: 'hard_day', dayId: 2 });
+    expect(await store.getState().timer(201)).toEqual(running);
+    const option = day2.today!.quests.find((q) => q.id === 201)!.swaps[0]!;
+    await store.getState().enqueue({ type: 'swap', instanceId: 201, templateId: option.templateId });
+    expect(await store.getState().timer(201)).toBeNull();
   });
 });

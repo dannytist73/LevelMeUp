@@ -21,3 +21,12 @@ export function clockLabel(minutes: number): string {
   const hour = Math.floor(minutes / 60);
   return `${((hour + 11) % 12) + 1}:${String(minutes % 60).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
 }
+
+const titleCase = (word: string): string => word.charAt(0) + word.slice(1).toLowerCase();
+
+/** "Sat 24 Oct", inside a sentence (the class-change lock). */
+export function dateLine(ms: number, timeZone: string): string {
+  const p = localParts(timeZone, ms);
+  const weekday = WEEKDAYS[new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay()]!;
+  return `${titleCase(weekday)} ${p.day} ${titleCase(MONTHS[p.month - 1]!)}`;
+}

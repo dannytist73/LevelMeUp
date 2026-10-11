@@ -12,7 +12,7 @@ import type { PhoneEvent, Reveal, ServerState } from '../../src/game/types.ts';
 import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
 import type { Draft } from '../../src/onboarding/flow.ts';
 
-export { DAY1, DAY_TWO_SLOTS, characterRow, profileRow };
+export { DAY1, DAY_TWO_SLOTS, characterRow, ladderRows, profileRow };
 
 /** Day 1 of the server fixtures' player, with the given slots already cleared and their XP counted. */
 export function serverState(done: readonly Slot[] = [], character: Partial<CharacterRow> = {}): ServerState {

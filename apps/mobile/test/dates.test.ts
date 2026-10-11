@@ -1,4 +1,4 @@
-import { clockTime, dayLabel } from '../src/lib/dates.ts';
+import { clockTime, dateLine, dayLabel } from '../src/lib/dates.ts';
 
 describe('dates on screen', () => {
   it('labels a quest day by its local start, whatever the phone language', () => {
@@ -11,4 +11,9 @@ describe('dates on screen', () => {
     expect(clockTime('2026-10-09T23:40:00.000Z', 'Asia/Manila')).toBe('07:40');
     expect(clockTime('2026-10-10T04:05:00.000Z', 'America/New_York')).toBe('00:05');
   });
+});
+
+it('writes a date for a sentence: "Sat 24 Oct", in the given zone', () => {
+  expect(dateLine(Date.UTC(2026, 9, 24, 2), 'Asia/Manila')).toBe('Sat 24 Oct');
+  expect(dateLine(Date.UTC(2026, 9, 24, 2), 'America/New_York')).toBe('Fri 23 Oct');
 });

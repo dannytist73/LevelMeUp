@@ -1,8 +1,12 @@
-import { STATS } from '@levelmeup/rules';
+import { LIBRARY } from '@levelmeup/content';
+import { STATS, newLadder, questReward, templateById } from '@levelmeup/rules';
 import type { XpByStat } from '@levelmeup/rules';
 import { characterView } from '../../../supabase/functions/_shared/state.ts';
 import { addStatXp, project } from '../src/game/project.ts';
-import { characterRow, completeEvent, rateEvent, serverState, undoEvent } from './support/fixtures.ts';
+import type { PhoneEvent, ServerState } from '../src/game/types.ts';
+import {
+  adjustState, characterRow, completeEvent, ladderRows, profileRow, rateEvent, serverState, undoEvent,
+} from './support/fixtures.ts';
 
 const deepFreeze = <T,>(value: T): T => {
   if (typeof value === 'object' && value !== null) {
@@ -44,8 +48,9 @@ describe('what the screens show: the server state plus the unsent events', () =>
 
   it('with nothing pending it is the server state, nothing waiting', () => {
     const shown = project(server, []);
-    expect({ ...shown, waiting: undefined }).toEqual({ ...server, waiting: undefined });
+    expect({ ...shown, waiting: undefined, changingClass: undefined }).toEqual({ ...server, waiting: undefined, changingClass: undefined });
     expect(shown.waiting.size).toBe(0);
+    expect(shown.changingClass).toBe(false);
   });
 
   it('a completion clears the quest, adds its stored XP once, and waits for the server', () => {
@@ -89,5 +94,51 @@ describe('what the screens show: the server state plus the unsent events', () =>
   it('works on a state without a day', () => {
     const none = { ...server, today: null };
     expect(project(none, [completeEvent(core.id)]).today).toBeNull();
+  });
+});
+
+let n = 0;
+const ev = (event: object): PhoneEvent => ({ id: `00000000-0000-4000-9000-${String(++n).padStart(12, '0')}`, ...event }) as PhoneEvent;
+const questOf = (s: ServerState, id: number) => s.today!.quests.find((q) => q.id === id)!;
+
+describe('adjustments show at once (M6b)', () => {
+  it('a swap puts the offered quest in its slot and counts the swap; an option not offered changes nothing', () => {
+    const server = adjustState();
+    const option = questOf(server, 200).swaps[0]!;
+    const shown = project(server, [ev({ type: 'swap', instanceId: 200, templateId: option.templateId })]);
+    expect(questOf(shown, 200)).toMatchObject({ templateId: option.templateId, xp: option.xp, swaps: [], gentle: null });
+    expect(shown.today!.swapsLeft).toBe(0);
+    expect(shown.waiting.has(200)).toBe(true);
+    expect(questOf(project(server, [ev({ type: 'swap', instanceId: 200, templateId: 'push-5' })]), 200).templateId).toBe('push-1');
+  });
+
+  it('a hard day turns the open core and side quests, and their options, into hard-day versions', () => {
+    const shown = project(adjustState(), [ev({ type: 'hard_day', dayId: 2 })]);
+    const push = templateById(LIBRARY, 'push-1');
+    expect(shown.today!.hardDay).toBe(true);
+    expect(questOf(shown, 200)).toMatchObject({ hardDay: true, minutes: push.hardDay.minutes, xp: questReward(push, true) });
+    expect(questOf(shown, 200).swaps.every((o) => o.hardDay)).toBe(true);
+    expect(questOf(shown, 203).hardDay).toBe(false); // the article keeps its reward
+  });
+
+  it('rest and pain protect the day; pain rests the exercise; gentle movement takes its slot', () => {
+    const server = adjustState();
+    expect(project(server, [ev({ type: 'plan_rest', dayId: 2 })]).today!.protection).toBe('planned_rest');
+    const gentle = project(server, [ev({ type: 'pain', instanceId: 200, choice: 'gentle' })]);
+    expect(questOf(gentle, 200).templateId).toBe(questOf(server, 200).gentle!.templateId);
+    expect(gentle.paused).toEqual(['push']);
+    expect(project(server, [ev({ type: 'pain', instanceId: 200, choice: 'rest' })]).today!.protection).toBe('pain');
+  });
+
+  it('resume, step down, a class change and Stillness', () => {
+    const resting = adjustState({ ladders: ladderRows({ push: { ...newLadder(1), paused: true } }) });
+    expect(project(resting, [ev({ type: 'resume', ladderId: 'push' })]).paused).toEqual([]);
+    expect(questOf(project(adjustState(), [ev({ type: 'step_down', instanceId: 200 })]), 200).canStepDown).toBe(false);
+    const changed = project(adjustState(), [ev({ type: 'class_change', classId: 'monk' })]);
+    expect(changed).toMatchObject({ profile: { classId: 'monk' }, changingClass: true });
+    const monk = adjustState({ profile: profileRow(undefined, { class_id: 'monk' }), character: characterRow({ xp_vitality: 240 }) });
+    const still = project(monk, [ev({ type: 'ability', dayId: 2, ability: 'stillness' })]);
+    expect(questOf(still, 200).templateId).toBe('stillness');
+    expect(still.today!.abilities).toEqual([]);
   });
 });
