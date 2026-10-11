@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, newLadder, nextDayWindow, planWorkout, sessionCondition, templateById,
+  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, newLadder, nextDayWindow, planWorkout, plannedMoves, sessionCondition,
+  templateById,
 } from '../../../packages/rules/src/index.ts';
 import { CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { planAdvance } from '../../functions/_shared/advance.ts';
@@ -180,5 +181,42 @@ describe('workouts on built days (M6c decision 5)', () => {
     const template = templateById(LIBRARY, 'workout-0');
     const player = toProfile(s.profile, startPoints(s.character), statXp(s.character));
     expect(core.condition).toEqual(sessionCondition(template, planWorkout(LIBRARY.training, template, player, 1)!, false));
+  });
+});
+
+describe('a day the phone built offline (M6e)', () => {
+  const end = day1End + 5 * HOUR;
+  const built = planAdvance(afterDay1(['core'], end))!.newDay!;
+  const phone = built.quests.map((q) => ({ slot: q.slot, templateId: q.templateId, why: q.why, moves: plannedMoves(q.condition) }));
+
+  it('without one, says nothing about it', () => {
+    expect(planAdvance(afterDay1(['core'], end))!.offline).toBeNull();
+  });
+
+  it("keeps the phone's quests when the rules allow them, even where the server would have chosen others", () => {
+    const side2 = built.quests.find((q) => q.slot === 'side2')!;
+    const used = new Set(built.quests.map((q) => q.ladder ?? q.templateId));
+    const other = LIBRARY.templates.find((t) => t.role === 'micro' && t.exercise === null && t.minutes <= side2.minutes && !used.has(t.id))!;
+    const mine = phone.map((q) => (q.slot === 'side2' ? { ...q, templateId: other.id, why: { code: 'swap' as const } } : q));
+    const out = planAdvance({ ...afterDay1(['core'], end), provisional: { dayNumber: 2, quests: mine } })!;
+    expect(out.offline).toEqual({ kept: 'phone', problems: [] });
+    expect(out.newDay!.quests.find((q) => q.slot === 'side2')).toMatchObject({ templateId: other.id, why: { code: 'swap' } });
+    expect(out.newDay!.quests.filter((q) => q.slot !== 'side2')).toEqual(built.quests.filter((q) => q.slot !== 'side2'));
+  });
+
+  it("builds its own day when the phone's breaks a rule, and says why", () => {
+    const core = built.quests.find((q) => q.slot === 'core')!;
+    const higher = LIBRARY.templates.find((t) => t.ladder === core.ladder && t.rung === (core.rung ?? 0) + 1)!;
+    const mine = phone.map((q) => (q.slot === 'core' ? { ...q, templateId: higher.id } : q));
+    const out = planAdvance({ ...afterDay1(['core'], end), provisional: { dayNumber: 2, quests: mine } })!;
+    expect(out.offline).toEqual({ kept: 'server', problems: [`${higher.id} is above the player's rung`] });
+    expect(out.newDay!.quests).toEqual(built.quests);
+  });
+
+  it('keeps the phone\'s quests only for the day it built', () => {
+    const out = planAdvance({ ...afterDay1(['core'], end), provisional: { dayNumber: 3, quests: phone } })!;
+    expect(out.offline!.kept).toBe('server');
+    expect(out.offline!.problems.some((p) => p.includes('day number'))).toBe(true);
+    expect(out.newDay!.dayNumber).toBe(2);
   });
 });

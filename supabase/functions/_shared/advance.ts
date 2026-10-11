@@ -2,9 +2,9 @@
 // player's state and returns what `levelmeup.advance` should write, or null when nothing is due.
 import {
   DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, STREAK_SLOTS, applyDay, buildDay, closeLadders, closedDayResolution,
-  followingDay, ladderById, reenterLadders,
+  followingDay, ladderById, provisionalDay, reenterLadders,
 } from '../../../packages/rules/src/index.ts';
-import type { LadderState, QuestLibrary, Stat, StreakState } from '../../../packages/rules/src/index.ts';
+import type { DayInput, LadderState, ProvisionalQuest, QuestLibrary, Stat, StreakState } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
 import { dayWindow, ladderMap, pastDays, startPoints, statXp, streakState, toProfile } from './state.ts';
 import type { CharacterRow, DayDraft, DayRow, InstanceDraft, InstanceRow, LadderRow, ProfileRow } from './state.ts';
@@ -25,6 +25,8 @@ export type AdvanceInput = {
   nowMs: number;
   library: QuestLibrary;
   contentVersion: number;
+  /** M6e: a day the phone built offline (its number and quests), kept when the rules allow it. */
+  provisional?: { dayNumber: number; quests: readonly ProvisionalQuest[] };
 };
 
 export type LedgerLine = { sourceType: 'rung' | 'discipline' | 'milestone'; sourceId: string; stat: Stat; amount: number };
@@ -55,6 +57,8 @@ export type Outcome = {
   newDay: DayDraft | null;
   /** Why the new day has no quests, for the function's log (not stored). */
   buildError: string | null;
+  /** M6e: whose quests the new day has when the phone sent a day it built offline (null without one), and why not its own. */
+  offline: { kept: 'phone' | 'server'; problems: string[] } | null;
 };
 
 export function planAdvance(input: AdvanceInput): Outcome | null {
@@ -125,6 +129,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   let newDay: DayDraft | null = null;
   let gap: Outcome['gap'] = null;
   let buildError: string | null = null;
+  let offline: Outcome['offline'] = null;
   if (!running) {
     const last = days[days.length - 1]!;
     const { window, dayNumber, away, comeback } = followingDay(dayWindow(last), last.day_number, input.timeZone, profile.boundary_minutes, nowMs);
@@ -139,17 +144,30 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     if (comeback) setLadders(reenterLadders(ladders, window.startsAt, last.ends_at.getTime()));
 
     const history = pastDays(days, input.instances).slice(-7);
+    const dayInput: DayInput = {
+      dayNumber, profile: rulesProfile(), ladders, history, light: comeback, workoutsDone: input.workoutsDone, articleId: null,
+    };
     let quests: InstanceDraft[] = [];
     let budget = comeback ? LIGHT_DAY_MINUTES : profile.minutes_per_day;
     let protection: DayDraft['protection'] = null;
-    try {
-      const built = buildDay(library, { dayNumber, profile: rulesProfile(), ladders, history, light: comeback, workoutsDone: input.workoutsDone, articleId: null });
-      quests = built.quests.map((q) => toDraft(library, q));
-      budget = built.budget;
-    } catch (error) {
-      // A day that can't be built is protected automatically (spec §3.7): never a miss the player didn't cause.
-      protection = 'no_quests';
-      buildError = error instanceof Error ? error.message : String(error);
+    // The phone's day when the rules allow it (M6e decision 5), re-drafted from the server's tables.
+    const phone = input.provisional === undefined
+      ? null
+      : provisionalDay(library, dayInput, input.provisional.dayNumber, input.provisional.quests);
+    if (phone !== null) offline = { kept: phone.day === null ? 'server' : 'phone', problems: phone.problems };
+    if (phone !== null && phone.day !== null) {
+      quests = phone.day.quests.map((q) => toDraft(library, q));
+      budget = phone.day.budget;
+    } else {
+      try {
+        const built = buildDay(library, dayInput);
+        quests = built.quests.map((q) => toDraft(library, q));
+        budget = built.budget;
+      } catch (error) {
+        // A day that can't be built is protected automatically (spec §3.7): never a miss the player didn't cause.
+        protection = 'no_quests';
+        buildError = error instanceof Error ? error.message : String(error);
+      }
     }
     newDay = {
       dayNumber,
@@ -167,5 +185,5 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   }
 
   if (close.length === 0 && newDay === null) return null;
-  return { close, gap, ladders: changed, ledger, streak, counters, newDay, buildError };
+  return { close, gap, ladders: changed, ledger, streak, counters, newDay, buildError, offline };
 }
