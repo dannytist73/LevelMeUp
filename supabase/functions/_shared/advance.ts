@@ -1,10 +1,11 @@
 // Lazy day closing and the next day (architecture §4.3, spec §2.4, §3.3, §3.7). Pure: it reads a snapshot of the
 // player's state and returns what `levelmeup.advance` should write, or null when nothing is due.
 import {
-  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, REENTRY_AWAY_MS, RUNG_BONUS_XP, applyDay, buildDay, closedDayResolution,
-  firstDayWindow, ladderById, maxRungFor, newLadder, nextDayWindow, recordCompletion, recordMiss, recordReentry,
+  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, REENTRY_AWAY_MS, RUNG_BONUS_XP, STREAK_SLOTS, applyDay, buildDay,
+  closedDayResolution, firstDayWindow, ladderById, maxRungFor, newLadder, nextDayWindow, recordCompletion, recordMiss,
+  recordReentry,
 } from '../../../packages/rules/src/index.ts';
-import type { DayWindow, LadderChange, LadderState, QuestLibrary, Slot, Stat, StreakState } from '../../../packages/rules/src/index.ts';
+import type { DayWindow, LadderChange, LadderState, QuestLibrary, Stat, StreakState } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
 import { dayWindow, ladderMap, pastDays, startPoints, statXp, streakState, toProfile } from './state.ts';
 import type { CharacterRow, DayDraft, DayRow, InstanceDraft, InstanceRow, LadderRow, ProfileRow } from './state.ts';
@@ -55,8 +56,6 @@ export type Outcome = {
   buildError: string | null;
 };
 
-/** Slots that count toward "any 2 quests" (spec §2.4); a recovery quest answers an earlier miss instead. */
-const STREAK_SLOTS: readonly Slot[] = ['core', 'side1', 'side2', 'article'];
 /** Away days counted one by one; a longer absence starts a fresh day from now. */
 const MAX_AWAY_DAYS = 400;
 

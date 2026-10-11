@@ -1,4 +1,4 @@
-import type { ClassId, Difficulty, Goal, Limitation, Rank, Stat, Tier, TrainableStat } from './types.ts';
+import type { ClassId, Difficulty, Goal, Limitation, Rank, Slot, Stat, Tier, TrainableStat } from './types.ts';
 
 export const STATS: readonly Stat[] = ['strength', 'vitality', 'wisdom', 'focus', 'discipline'];
 
@@ -99,3 +99,6 @@ export const MONTH_QUEST_DAYS = 30;
  * take longer when it is very easy.
  */
 export const TIER_MIN_MINUTES: Readonly<Record<Tier, number>> = { minor: 0, standard: 8, major: 23 };
+
+/** The slots that count towards a streak day's "any 2 quests" (spec §2.4); the recovery quest has its own rule. */
+export const STREAK_SLOTS: readonly Slot[] = ['core', 'side1', 'side2', 'article'];

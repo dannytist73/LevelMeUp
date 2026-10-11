@@ -23,5 +23,7 @@ describe('public API', () => {
     expect(rules.MINUTES_OPTIONS).toEqual([10, 15, 25, 40]);
     expect(rules.CORE_MIX.filter((m) => m === 'main')).toHaveLength(4);
     expect(rules.TRAINABLE_STATS).toEqual(['strength', 'vitality', 'wisdom', 'focus']);
+    // Spec §2.4: the core quest, both side quests and the reading count towards "any 2 quests"; recovery never does.
+    expect(rules.STREAK_SLOTS).toEqual(['core', 'side1', 'side2', 'article']);
   });
 });

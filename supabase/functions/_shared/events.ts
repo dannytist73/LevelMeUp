@@ -9,9 +9,9 @@ import type { DayRow, InstanceRow } from './state.ts';
 export const MAX_EVENTS = 50;
 const RATINGS: readonly Rating[] = ['easy', 'right', 'too_hard'];
 const MAX_SEGMENTS = 100;
-const MAX_SETS = 20;
-const MAX_REPS = 999;
-const MAX_SENTENCE = 280;
+export const MAX_SETS = 20;
+export const MAX_REPS = 999;
+export const MAX_SENTENCE = 280;
 /** Times a phone can send: whole milliseconds between 2026 and 2100 (SQL checks the real window). */
 const EARLIEST_MS = Date.UTC(2026, 0, 1);
 const LATEST_MS = Date.UTC(2100, 0, 1);
