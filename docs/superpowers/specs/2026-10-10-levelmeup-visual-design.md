@@ -106,8 +106,8 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
 | Today | §1.2–1.3, §3 | Every quest card shows its "why"; exercise safety line and "I felt pain" |
 | Quest cleared | §2, §3.3 | Stat up, Discipline +5, streak, XP bar; Easy/Right/Too hard; undo |
 | Today's reading | §4.1 | Sources section, one-sentence takeaway claims +10 XP |
-| Character | §1.3, §2 | Stats with progress to the next point, ranks, class path, achievements, class change timer |
-| Chronicle | §1.3, §2.4 | Calendar states, streak/best/shields, growth since day 1, past readings |
+| Character | §1.3, §2 | Stats with progress to the next point, ranks, class path, achievements, class change timer. *M6d: built; the portrait is a framed class emblem until M9's art.* |
+| Chronicle | §1.3, §2.4 | Calendar states, streak/best/shields, growth since day 1, past readings. *M6d: built; cells outside the month are blank; dates without a quest day (before day 1, after today) show their digit in ash (about 7:1 on the night); past readings wait for M8.* |
 | Missed-day check-in | §3.7 | Five answers with their outcomes; "Answer later" keeps the streak paused |
 | The Shadow (level 1) | §4.3 | Claims the day; optional private note; "Take back the day · 5 min" |
 | Today after a miss (level 2) | §3.7, §4.3 | Recovery quest first, Second Wind option, side quests sealed; core, recovery and article never sealed |

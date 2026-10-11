@@ -103,6 +103,8 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
   event). A workout quest stores its planned exercises in `quest_instances.condition` as a `session` condition (each
   exercise with its range and sets); its log must have exactly that many sets. Workouts done so far (the program day
   of the next one) are counted from completed `session` quests, so no new column is needed.
+- M6d (2026-10-12, migration 0010): `profiles` gains `book_started_at` and `books_finished` (a JSON list of at most
+  100 finished books, oldest first, each with its title, start and finish as ISO strings, sessions and minutes).
 - Character totals are cached in `character_state` and updated in the same transaction as the ledger, so the
   ledger is the audit trail and the cache is what screens read.
 
@@ -130,6 +132,12 @@ records the event. A version conflict plans again (3 tries). `quest_days` gains 
 M6c (2026-10-12): `training` (equipment and program style, from Settings → Training) joins the adjustments: the
 planner stores the setup and re-plans today's open, uncleared workout with it (same rung and reward); after the day
 ended only the setup changes. `levelmeup.adjust` (migration 0009) writes it; the table's checks refuse unknown values.
+
+M6d (2026-10-12): `book` (Scholar's Path: a title starts that book, `finished` first records the current one, a null
+title sets it aside) joins the adjustments. The planner refuses it below a Mage's level 10, without a book to finish
+or set aside, and for the book already being read, and re-drafts today's open reading quests with the new book.
+`levelmeup.adjust` (migration 0010) counts the finished book's sessions and minutes from the completed quests that
+carried it since it was set.
 
 ### 4.2 How a write happens
 
@@ -221,7 +229,7 @@ template narrative is used; the player never sees an error.
 - Every action is written to the outbox and applied to the cache immediately (optimistic), using the rules package to
   show the reward. On app foreground or reconnect: flush the outbox through `sync`, then replace the cache with the
   server's state. The server's numbers win.
-- Offline on a new day (built in M6, moved from M4 with the owner's OK on 2026-10-11; until then the app shows "The
+- Offline on a new day (M6e, moved from M4 with the owner's OK on 2026-10-11; until then the app shows "The
   System is preparing your trials" with a retry): the phone builds a provisional day with the rules package and cached state, and sends it as
   a `provisional_day` event. The server accepts it if every quest is allowed by the player's ladder state and slot
   rules (XP always from the server's tables); otherwise it builds its own day and re-maps completions by slot.
@@ -230,6 +238,11 @@ template narrative is used; the player never sees an error.
   rest is allowed, the ready abilities, which quests can step down), computed by the server from the same rules
   (`_shared/today.ts`). An adjustment shows at once by putting the offered quest in its slot; the server's state
   replaces it at the next sync.
+- M6d: the state also carries what only Character and Chronicle show, read once per response (`loadHistory`) rather
+  than by the planners' snapshot: `calendar` (the last 92 days, newest first, each with its local date in the day's
+  own zone and a mark: open, cleared, hard, rest, paused or none), `growth` since day 1, `reading` (the current book's
+  sessions and minutes), and the abilities' last use. Achievements arrive in earned order. Today's calendar cell
+  follows the phone's own projected day. Offline-built days (`provisional_day`) are M6e.
 
 ## 7. Notifications
 

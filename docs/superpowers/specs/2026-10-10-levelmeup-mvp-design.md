@@ -63,6 +63,15 @@ the article → the day closes at the boundary → if the core quest was missed,
 Why not 5 tabs: the article is read from Today (one a day), so a Reading tab would be empty most of the time;
 achievements and history are both "looking back"; fewer tabs keep today's quests one tap away.
 
+*Built in M6d (2026-10-12):* Character shows a framed class emblem (the painted portraits come with M9), the name,
+level and title (the latest earned achievement that carries one), total XP and the level bar, each stat with a bar to
+its next point and "rank D at 10" when one point away, the class path (both abilities, when each unlocks, ready or
+"ready again in N days"; abilities whose screens come later say so), the achievements earned and how many are still
+hidden (board D4 keeps them on Character), the vow from onboarding, and the class change. Chronicle shows the streak,
+best streak and shields as tiles, a month calendar with real dates for the last 92 days (cleared, hard day, rest,
+paused, today; a closed day is never drawn as a miss; earlier months by button), and growth since day 1 (stat points
+gained, levels, quests cleared, new rungs). Past readings arrive with articles (M8).
+
 ### 1.4 Screen states
 
 | Screen | Loading | Empty | Error |
@@ -173,6 +182,10 @@ the base (30) or the content, not the step.
   first change after onboarding is open at once); today's quests stay, tomorrow is built for the new class. Stillness
   and Dawn Ritual replace today's open core quest from Today. Vanish runs on the phone only (the rules give it no
   reward): 30, 60 or 90 minutes with the screen kept awake, counting only while LevelMeUp stays open.
+- Built in M6d (2026-10-12): Scholar's Path. A Mage from level 10 sets a book (Character → Set a book); reading quests
+  then show it ("Reading: Dune"), and the card counts the sessions and minutes read since it was set. "Finished it"
+  keeps the book with its sessions (the newest 100 books); "Set it aside" clears it. Changing the book re-drafts
+  today's open reading quests.
 
 ### 2.6 Achievements and titles
 

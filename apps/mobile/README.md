@@ -56,8 +56,18 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   at the bottom of the range; every set is sent and the server checks the count). Settings → Training
   (`app/training.tsx`, `src/screens/Training.tsx`) sends a `training` event; `src/game/project.ts` shows the new setup at
   once and marks today's open workout "Will sync" until the server re-plans it. The cache dropped older states (version 4).
+- **Character and Chronicle** (M6d): `src/screens/Character.tsx` with its parts in `src/screens/character/` (stats with
+  a bar to the next point, the class path from `src/game/character.ts`, achievements, Scholar's Path) and the framed
+  class emblem `src/ui/Portrait.tsx` (M9 brings the painted portraits); the vow is read from `lmu.vow` at boot.
+  `src/screens/Chronicle.tsx` draws the state's `calendar` as a month grid (`src/screens/chronicle/Calendar.tsx`,
+  `src/lib/calendar.ts`; today's cell follows the phone's own day) and the `growth` since day 1. Scholar's Path:
+  `app/book.tsx` (`src/screens/Book.tsx`) sends a `book` event; reading quests show "Reading: <book>". Players from
+  before M6c see a one-time training note on Today (`lmu.training-notice`; leaving the onboarding marks it seen). The
+  cache dropped older states (version 5).
 - `app/dev/` exists only in development builds: the account and "Save with Google", the outbox and notices, the
-  self-check (time zones on Hermes, AES, SQLite), the component kit and the workout preview (`app/dev/workout.tsx`: a
-  workout planned on the phone for any equipment, program, rung and program day; nothing is sent).
+  self-check (time zones on Hermes, AES, SQLite), the component kit, the workout preview (`app/dev/workout.tsx`: a
+  workout planned on the phone for any equipment, program, rung and program day; nothing is sent) and the Character
+  preview (`app/dev/character.tsx`: Character and Chronicle for a made-up level-10 Mage with a book, a title and two
+  months of days, built from the real view; nothing is sent).
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

@@ -207,3 +207,23 @@ checks from the M6c branch (it contains M5–M6b), or with characters on day 1 o
 | 10 | Hard day on a workout day: one set of the first two exercises, 7 minutes, half XP. | | | rules `adjust.test.ts` |
 | 11 | "I felt pain" on a workout: workouts rest ("Workouts" under resting exercises); Resume brings them back. | | | rules and server pain tests |
 | 12 | The beginner rungs show their own pictures (wall, incline and knee push-ups; chair and split squats; dead bugs); the side plank keeps the forearm plank. | | | content `art.test.ts` |
+
+## M6d — Character and Chronicle
+
+No new build: M6d adds no native module. All rows after the M6c and M6d deploys (the M6d app reads the new state's
+calendar and growth). Rows 10–11 use Developer → Character preview, so no test character needs level 10. All rows on
+the Find X9 (the owner), after M6c's.
+
+| # | Check | Emulator | Find X9 | Automated coverage |
+|---|---|---|---|---|
+| 1 | Character: the framed class emblem, the name, the level tag, no title for a new player, total XP and the level bar. | | | `screens.test.tsx` (Character) |
+| 2 | Stats: five bars, "N XP to M", rank stamps, "rank D at 10" where it applies, Discipline's line; at the largest font size nothing is cut off. | | | `character.test.ts`, `screens.test.tsx` |
+| 3 | The class path: both abilities with "Level N · M to go" for a new player. | | | `character.test.ts` |
+| 4 | Achievements: "First Trial" after the first clear, and "N still hidden.". | | | `screens.test.tsx` |
+| 5 | The vow sworn in onboarding shows on Character (a new test character who swears one). | | | `store.test.ts`, `screens.test.tsx` |
+| 6 | Chronicle: the three tiles; this month with today's vermilion border; TalkBack reads the date and "today". | | | `screens.test.tsx` (Chronicle) |
+| 7 | After clearing the core quest, today's cell fills (paper). | | | `calendar.test.ts` (`todayMark`) |
+| 8 | Growth since day 1: the date and "Your first quests are waiting.", then the counts after a clear and a sync. | | | server `state.test.ts`, live test |
+| 9 | The training note: on a character with the default training it shows once on Today; "Set up training" opens Settings → Training; back on Today it is gone, also after a restart. A new character from onboarding never sees it. | | | `store.test.ts`, `screens.test.tsx` |
+| 10 | Developer → Character preview: the Scholar's Path card with the book, its progress and the finished book; the title; the vow; Chronicle's marks (paper, ink corner, dashed, hatched) and the previous-month button. | | | — |
+| 11 | The book screen from the preview's "Change book" with a non-Mage character: "Scholar's Path opens for a Mage at level 10." | | | `screens.test.tsx` (book screen) |

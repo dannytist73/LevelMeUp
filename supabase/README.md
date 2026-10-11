@@ -50,3 +50,9 @@ model keys never leave Supabase.
   the reveal), the estimates, the starting rungs and the gentle start; the safety answers themselves are never stored.
   With `redo: true` it builds the character again through `restart_player` (`0006`), which refuses (`lmu:locked`) once
   the player has any event or XP ledger row; the Claude-call log is kept, so the 3-call cap holds across redos.
+- Adjustments (M6b–M6d: swap, hard day, rest, pain, resume, step down, class change, abilities, `training`, `book`) are
+  planned in `_shared/adjust.ts` and written by `levelmeup.adjust`, replaced whole by each migration that adds a kind
+  (latest: `0010`, Scholar's Path, which also adds `profiles.book_started_at` and `books_finished`).
+- The state each response returns (`_shared/state.ts`, `stateView`) adds what only Character and Chronicle show (M6d):
+  the last 92 days' dates and marks, growth since day 1 and the book's progress, read once per response by
+  `loadHistory` (`db.ts`) as the player.
