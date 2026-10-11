@@ -4,8 +4,8 @@ Start ComfyUI first:  Start-Process D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe m
 
 usage (with D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe):
   quest-art.py render [KEY ...] [--seeds 11 22 33]   -> art/quest/renders/<key>-<seed>.png (every key when none given)
-  quest-art.py sheet                                  -> art/quest/renders/_sheet-<page>.jpg (4 keys a page, labelled)
-  quest-art.py pick                                   -> art/quest/v1/<key>-<n>.webp and manifest.json from PICKS
+  quest-art.py sheet                                  -> art/quest/renders/_sheet-<page>.jpg (12 renders a page, labelled)
+  quest-art.py pick                                   -> art/quest/v2/<key>-<n>.webp and manifest.json from PICKS
 Existing renders are skipped. The keys must match packages/content/src/art.ts (its test checks this file).
 """
 import argparse, json, subprocess, sys, time, urllib.parse, urllib.request
@@ -14,7 +14,7 @@ from pathlib import Path
 COMFY = "http://127.0.0.1:8188"
 ROOT = Path(__file__).resolve().parents[2]
 RENDERS = ROOT / "art" / "quest" / "renders"
-OUT = ROOT / "art" / "quest" / "v1"
+OUT = ROOT / "art" / "quest" / "v2"  # the published folder; a changed set gets a new one (v3, …)
 W, H = 1344, 768  # 16:9-ish; cropped to 960x540 on pick
 FONT = "C\\:/Windows/Fonts/arial.ttf"  # ffmpeg's drawtext needs a font file on Windows
 
@@ -35,7 +35,7 @@ SUBJECTS = {
     "ladder-insight": "an adult woman writing in a notebook at a desk under a warm lamp",
     "ladder-focus": "an adult at a desk wearing headphones, deep in work, a small kitchen timer beside the laptop",
     "ladder-phone-free": "a smartphone left in an open drawer while its adult owner walks out of the door into the sunlight",
-    "micro-strength": "an adult in a t-shirt standing and leaning with both hands flat against a kitchen wall, doing wall push-ups",
+    "micro-strength": "side view, full body, an adult in a t-shirt halfway up from sitting on a wooden chair, knees bent, arms crossed over the chest, rising to stand, in a small kitchen",
     "micro-vitality": "an adult woman drinking a glass of water at a sunny window",
     "micro-wisdom": "an open book being read on a commuter train, two pages visible",
     "micro-focus": "a hand writing on a single small blank card at a tidy desk",
@@ -45,11 +45,11 @@ SUBJECTS = {
     "article": "an open book glowing softly on a wooden desk at night",
 }
 
-# Filled in after picking from the sheets: key -> the seeds to publish, in order (n = 1, 2, …). The v1 set (2026-10-11).
+# Filled in after picking from the sheets: key -> the seeds to publish, in order (n = 1, 2, …). The v2 set (2026-10-11).
 PICKS: dict[str, list[int]] = {
     "ladder-push": [33], "ladder-squat": [11], "ladder-core": [11], "ladder-own-program": [11], "ladder-walk": [33],
     "ladder-mobility": [11], "ladder-sleep": [33], "ladder-breathing": [22], "ladder-reading": [22],
-    "ladder-insight": [33], "ladder-focus": [11], "ladder-phone-free": [11], "micro-strength": [55],
+    "ladder-insight": [33], "ladder-focus": [11], "ladder-phone-free": [11], "micro-strength": [104],
     "micro-vitality": [33], "micro-wisdom": [33], "micro-focus": [11], "recovery": [22], "stillness": [22],
     "dawn-ritual": [22], "article": [11],
 }
@@ -125,7 +125,12 @@ def sheet(per_page: int = 12) -> list[Path]:
 def pick() -> None:
     if not PICKS:
         sys.exit("PICKS is empty: fill it in from the sheets first")
+    missing = [f"{key}-{seed}.png" for key, seeds in PICKS.items() for seed in seeds if not (RENDERS / f"{key}-{seed}.png").exists()]
+    if missing:  # check before clearing anything: the committed set must survive a machine without the renders
+        sys.exit(f"missing renders: {', '.join(missing)}")
     OUT.mkdir(parents=True, exist_ok=True)
+    for old in OUT.glob("*.webp"):  # a key whose picks shrank must not leave old variants to upload
+        old.unlink()
     manifest = {"version": 1, "art": {}}
     for key, seeds in PICKS.items():
         if key not in SUBJECTS:

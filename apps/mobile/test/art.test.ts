@@ -22,7 +22,7 @@ describe('the art manifest (M6a decision 10)', () => {
   });
 
   it('reads the public lmu-art bucket of the app\'s own project, and every content key fits it', () => {
-    expect(ART_BASE).toBe('https://knlgpcwoaaygncmlnbsm.supabase.co/storage/v1/object/public/lmu-art/v1');
+    expect(ART_BASE).toBe('https://knlgpcwoaaygncmlnbsm.supabase.co/storage/v1/object/public/lmu-art/v2');
     expect(ART_MANIFEST_URL).toBe(`${ART_BASE}/manifest.json`);
     const all = parseArtManifest({ version: 1, art: Object.fromEntries(ART_KEYS.map((k) => [k, 1])) });
     expect(Object.keys(all!.art)).toEqual([...ART_KEYS]);

@@ -224,7 +224,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const core = coreOf(SERVER);
     const key = artKey(authoredTemplate(core.templateId));
     await renderQuest(SERVER, core.id, { art: { version: 1, art: { [key]: 1 } } });
-    expect(screen.getByTestId('quest-art').props.source.uri).toContain(`/lmu-art/v1/${key}-1.webp`);
+    expect(screen.getByTestId('quest-art').props.source.uri).toContain(`/lmu-art/v2/${key}-1.webp`);
   });
 
   it('a check-off sends the completion, then shows "Quest cleared" with Discipline for the core quest', async () => {
