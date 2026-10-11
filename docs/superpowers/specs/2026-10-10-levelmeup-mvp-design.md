@@ -164,6 +164,10 @@ the base (30) or the content, not the step.
 - Limits count quest days, so DST and travel can't shift them (M2): "once a week" means every 7 quest days, "once a
   month" every 30. Second Wind puts the missed core quest in the recovery slot for its full XP plus the recovery's
   Discipline +5. Insight (M8), Vanish (M6) and Unbreakable (M7) get their screens later; their rules exist now.
+- Built in M6b (2026-10-11): class change from Character; the 14 days are measured in time from the last change (the
+  first change after onboarding is open at once); today's quests stay, tomorrow is built for the new class. Stillness
+  and Dawn Ritual replace today's open core quest from Today. Vanish runs on the phone only (the rules give it no
+  reward): 30, 60 or 90 minutes with the screen kept awake, counting only while LevelMeUp stays open.
 
 ### 2.6 Achievements and titles
 
@@ -226,6 +230,13 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
   5+ days away (first session one rung lower).
 - **"I felt pain"** pauses that ladder without penalty and swaps in rest or gentle movement; persistent pain → the
   System suggests a professional; resuming starts one rung lower.
+- Built in M6b (2026-10-11): "Too hard" offers the step down on Quest cleared at once (when the quest is at its
+  ladder's current rung, above the first). After "I felt pain" the player chooses: gentle movement (the first rung of a
+  walking or mobility ladder, another kind of movement first, when one fits the day) or rest today (the day is
+  protected as `pain`, which never uses up a planned rest day); a cleared quest can be paused. A standalone exercise
+  quest (the small strength quest) rests by its own id. From the second report in 14 days the flow leads with "see a
+  doctor or physiotherapist". Nothing costs XP. A report always rests the exercise, even when it reaches the server
+  after its day ended; only the day itself can't change then.
 
 ### 3.4 Safety
 
@@ -245,6 +256,9 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
 - Planned rest: up to 2 days a week (set weekly or at the briefing); beyond that the System suggests fewer minutes.
   "A week" is any 7 consecutive quest days. A planned rest day only protects the streak; its quests stay as a bonus
   (M2).
+- Built in M6b (2026-10-11): swap, hard day and rest from Today; a swap replaces the quest in place and the button
+  hides when no swap is left or nothing fits. Rest is for today only; planning rest days ahead waits for the morning
+  briefing (M7).
 
 ### 3.6 Completion
 

@@ -25,6 +25,21 @@ forward" rows for M6b (from M2, M3, M5, M6a).
 
 ---
 
+## As built (2026-10-11)
+
+Built as planned, with these changes (each in its commit):
+- Gentle movement after pain also skips the recovery quest's ladder, as a swap does. Migration 0008 avoids the jsonb
+  `?` operator and a variable named `current`; its slot guard is null-safe (review).
+- Task 4 needed stop-gaps the plan missed (the dev screen and the engine test read `instanceId` from every event).
+- Quest cleared says "Eased. Your next one is a rung lower." once the step down is sent, instead of the "if it stays
+  too hard" note.
+- Code review: the cached state from before M6b is dropped on update (its shape changed; the outbox stays); a hard day
+  counts towards "Bend, Don't Break" only when its core quest was done in its hard-day version; a valid pain report
+  always rests the exercise, even when it syncs after its day ended or the quest was cleared, and with no gentle quest
+  left it rests the day instead of being refused (`no_gentle_option` is gone); an ability after a pending hard day
+  shows its hard-day version; the Pain screen keeps the advice to see a professional after the day ends; Today tags a
+  quest whose exercise is resting ("Exercise resting"); "a step easier where it can".
+
 ## Plain summary
 
 M6b lets the player adjust a day. When it's done, the player can:

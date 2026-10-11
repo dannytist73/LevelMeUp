@@ -113,8 +113,14 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 | `articles-tick` | Called by Supabase Cron every 30 minutes; advances the article pipeline one step (§5.2). Not callable by players. |
 
 Events the phone can send (each with a `client_event_id`): `complete`, `undo`, `rate`, `swap`, `hard_day`,
-`plan_rest`, `checkin`, `pain`, `class_change`, `accountability_set`, `provisional_day`. Unknown or invalid events
-are rejected and reported back; they never partially apply.
+`plan_rest`, `checkin`, `pain`, `resume`, `step_down`, `class_change`, `ability`, `accountability_set`,
+`provisional_day`. Unknown or invalid events are rejected and reported back; they never partially apply.
+
+M6b (2026-10-11): the adjustments (`swap`, `hard_day`, `plan_rest`, `pain`, `resume`, `step_down`, `class_change`,
+`ability`) go through one path: `_shared/adjust.ts` plans the change with the rules from a fresh snapshot (or names
+the refusal), and `levelmeup.adjust` (migration 0008) re-checks the version and the guards, writes the change and
+records the event. A version conflict plans again (3 tries). `quest_days` gains `swaps_used`, and `protection` gains
+`pain` (a day rested after "I felt pain", which never counts as a planned rest day).
 
 ### 4.2 How a write happens
 
@@ -211,6 +217,10 @@ template narrative is used; the player never sees an error.
   a `provisional_day` event. The server accepts it if every quest is allowed by the player's ladder state and slot
   rules (XP always from the server's tables); otherwise it builds its own day and re-maps completions by slot.
 - Single device per player in the MVP; a second device just gets the server state on sign-in.
+- M6b: the state carries what the phone may offer today (swap options per quest, gentle movement after pain, whether
+  rest is allowed, the ready abilities, which quests can step down), computed by the server from the same rules
+  (`_shared/today.ts`). An adjustment shows at once by putting the offered quest in its slot; the server's state
+  replaces it at the next sync.
 
 ## 7. Notifications
 

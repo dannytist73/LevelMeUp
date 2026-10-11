@@ -131,6 +131,13 @@ timer, rep log, one sentence), "Quest cleared" (board D2, its title the outlined
 target line so it never covers words at large text sizes) and the level-up and achievement moment (a full-screen modal
 with speed lines and Continue).
 
+Built in M6b (2026-10-11): the day's buttons under Today's quests ("Swap · 1 left", "Hard day", "Rest day", the
+class's abilities, "Vanish"), each behind a plain confirm with "Not now"; the hard-day, rest and pain banners as
+narration boxes; "Hard day · half XP" as an outline chip; "I felt pain" under an exercise core card (beside it, never
+inside the card's pressable) and on the quest screen; the swap sheet and the class picker built from option cards;
+"Resting after pain" as night cards with Resume; the step-down offer on Quest cleared; Vanish as a dark, quiet timer
+screen.
+
 ## 5. React Native notes
 
 The boards are HTML/CSS. These effects need a native equivalent:

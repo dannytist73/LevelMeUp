@@ -141,3 +141,27 @@ on the Find X9 (the owner).
    level-crossing quest shows LEVEL UP again, because the server confirmed the level again.
 
 Test data: two test characters (Kai, Mira) were made on the emulator and deleted from the developer screen.
+
+## M6b — Adjusting the day
+
+No new build: the development build already contains `expo-keep-awake` (Vanish), checked in the emulator's installed
+APK (2026-10-11). Rows 1–13 on the emulator first, after the M6b deploy; rows 1–12 on the Find X9 (the owner).
+
+| # | Check | Emulator | Find X9 | Automated coverage |
+|---|---|---|---|---|
+| 1 | Today shows "Swap · 1 left", "Hard day" and "Rest day" under the quests (board D1); an exercise core quest has "I felt pain" under its card. | | | DayActions and Today tests |
+| 2 | Swap from Today: pick a quest, pick an option, "Swap to this": the quest changes at once with "Will sync", the count goes to 0 and the button goes; after the sync it stays. | | | Swap, projection and live tests |
+| 3 | Swap from a quest screen ("Swap this quest"). | | | Quest screen test |
+| 4 | Hard day: the confirm explains it; after it every open quest shows "Hard day · half XP", the lighter target and less XP; the banner shows; the button goes. | | | DayActions, projection and live tests |
+| 5 | Rest day: the confirm explains it; the banner shows; the quests stay open; the button goes. | | | DayActions and planner tests |
+| 6 | "I felt pain" → gentle movement: the quest becomes a walking or mobility quest; "Resting after pain" lists the exercise. | | | Pain, projection and planner tests |
+| 7 | "I felt pain" → rest today: the "Resting after pain" banner; "Rest day" goes. | | | Pain and live tests |
+| 8 | A second pain report the same fortnight: the screen leads with "see a doctor or physiotherapist". | | | Pain test |
+| 9 | Resume: the exercise leaves "Resting after pain". | | | DayActions and live tests |
+| 10 | "Too hard" on a ladder quest above its first rung: "Step this exercise down a rung?" → "Yes, ease it": the offer goes and "Eased" shows. | | | Quest cleared and planner tests |
+| 11 | Character → Change class → pick → "Become a …": Character shows the new class; "Change class" again shows the date it opens. | | | ClassChange, Character and live tests |
+| 12 | Largest font size: Today's adjustment buttons wrap, nothing is cut off; TalkBack reads each button. | | | — |
+| 13 | Offline: swap, hard day and rest show at once and sync when the network is back. | | | Projection and store tests |
+
+Stillness, Dawn Ritual and Vanish need a level-5 Monk or a level-10 Rogue: unit tests cover them, and a device check
+waits until a test character reaches those levels (carried forward).
