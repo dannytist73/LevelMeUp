@@ -268,13 +268,24 @@ describe('the game store', () => {
   });
 
   it('a correction on the reveal asks again with redo, and never makes a guest', async () => {
-    const { store, api, local, deps } = await setup([ok(SERVER)]);
-    await local.acknowledge([], [], SERVER, 1);
+    const { store, api, deps } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
     await store.getState().boot();
-    store.getState().editDraft({ ...READY_DRAFT, classId: 'monk' });
-    expect(await store.getState().startCharacter()).toEqual({ ok: true });
-    expect(api.onboarding).toHaveBeenCalledWith(expect.objectContaining({ classId: 'monk', redo: true }));
+    store.getState().editDraft(READY_DRAFT);
+    expect(await store.getState().startCharacter()).toEqual({ ok: true }); // the analysis
+    store.getState().editDraft({ classId: 'monk' });
+    expect(await store.getState().startCharacter()).toEqual({ ok: true }); // "Change class"
+    expect(api.onboarding).toHaveBeenLastCalledWith(expect.objectContaining({ classId: 'monk', redo: true }));
     expect(lastAllowNewGuest(deps)).toBe(false);
+    store.getState().stop();
+  });
+
+  it('a character this interview didn\'t make (a Google restore) is never rebuilt (re-review)', async () => {
+    const { store, api, local } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1); // arrived by a sync, not by this phone's analysis
+    await store.getState().boot();
+    store.getState().editDraft(READY_DRAFT);
+    expect(await store.getState().startCharacter()).toEqual({ ok: false, code: 'already_started' });
+    expect(api.onboarding).not.toHaveBeenCalled();
     store.getState().stop();
   });
 

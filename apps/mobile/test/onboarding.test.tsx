@@ -60,6 +60,18 @@ describe('Awakening (O01)', () => {
     expect(screen.queryByText(ONBOARDING_TEXT.awakening.noSave)).toBeNull();
   });
 
+  it('stays out of the way when the analysis makes the character (it stays mounted under the stack; re-review)', async () => {
+    const onRestored = jest.fn();
+    const store = await show(<Awakening onNavigate={() => {}} onRestored={onRestored} />, { name: 'Rin' }, {
+      signInWithGoogle: jest.fn(async () => ({ ok: true as const, found: 'unknown' as const })),
+    });
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.awakening.restore }));
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.awakening.go })); // the player moves on
+    await act(async () => store.setState({ phase: 'ready' }));
+    expect(onRestored).not.toHaveBeenCalled();
+    expect(store.getState().finishOnboarding).not.toHaveBeenCalled();
+  });
+
   it('says so when the Google account has no character, or the sign-in failed', async () => {
     const signInWithGoogle = jest.fn()
       .mockResolvedValueOnce({ ok: true, found: false })

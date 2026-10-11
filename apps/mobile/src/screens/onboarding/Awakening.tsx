@@ -1,6 +1,6 @@
 // O01 Awakening (spec §1.1 beat 1): the name, no sign-up wall; and a way back in for a character saved with Google.
 import { GOOGLE_ERRORS, ONBOARDING_TEXT } from '@levelmeup/content';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NAME_MAX, complete, nextPath } from '../../onboarding/flow.ts';
@@ -27,11 +27,20 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
   const phase = useGame((s) => s.phase);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  // Set by a Google restore that found the character, or couldn't look yet; cleared when the player moves on. This
+  // screen stays mounted under the rest of the onboarding, so without it the analysis's own character would end the
+  // onboarding here, before the reveal (M5 re-review).
+  const [awaiting, setAwaiting] = useState(false);
+  const restored = useRef(onRestored);
+  restored.current = onRestored;
+  const done = useRef(false);
 
-  // A character arrived (a Google restore, now or once back online): the onboarding is over.
+  // The restored character arrived (now, or once back online): the onboarding is over.
   useEffect(() => {
-    if (phase === 'ready') void finishOnboarding().then(onRestored);
-  }, [phase, finishOnboarding, onRestored]);
+    if (!awaiting || phase !== 'ready' || done.current) return;
+    done.current = true;
+    void finishOnboarding().then(() => restored.current());
+  }, [awaiting, phase, finishOnboarding]);
 
   const restore = async () => {
     setBusy(true);
@@ -40,7 +49,10 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
     setBusy(false);
     if (!result.ok) setNote(GOOGLE_ERRORS[result.code]);
     else if (result.found === false) setNote(T.noSave);
-    else if (result.found === 'unknown') setNote(T.restoreOffline);
+    else {
+      if (result.found === 'unknown') setNote(T.restoreOffline);
+      setAwaiting(true);
+    }
   };
 
   return (
@@ -53,7 +65,10 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
         <NarrationBox>{T.line}</NarrationBox>
         <TextField label={T.ask} value={draft.name} onChangeText={(name) => editDraft({ name })} maxLength={NAME_MAX} />
-        <Button label={T.go} disabled={!complete(draft, 'awakening')} onPress={() => onNavigate(nextPath(draft, 'awakening'))} />
+        <Button label={T.go} disabled={!complete(draft, 'awakening')} onPress={() => {
+          setAwaiting(false);
+          onNavigate(nextPath(draft, 'awakening'));
+        }} />
         <Small>{T.note}</Small>
         {account.kind !== 'saved' && <Button label={T.restore} variant="secondary" disabled={busy} onPress={() => void restore()} />}
         {note !== null && <View accessibilityLiveRegion="polite"><Small tone="chalk">{note}</Small></View>}

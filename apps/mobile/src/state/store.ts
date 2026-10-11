@@ -252,7 +252,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
             await refresh({ phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account() });
             return { ok: true };
           };
-          return ask(get().cached !== null);
+          const holding = get().cached !== null;
+          // Only a character this phone's analysis made may be redone: one that arrived by a sync (a Google restore) is
+          // a saved character, never rebuilt by an interview (M5 re-review).
+          if (holding && get().reveal === null) return { ok: false, code: 'already_started' };
+          return ask(holding);
         });
         // The server already holds this player's character: fetch it, so "Go to Today" finds it (M5 review).
         if (!result.ok && (result.code === 'locked' || result.code === 'already_started')) void scheduler.request();
