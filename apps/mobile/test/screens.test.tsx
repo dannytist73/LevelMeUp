@@ -1,6 +1,6 @@
 import { ACHIEVEMENTS, ADJUST_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
-import { DAY_MS, newLadder } from '@levelmeup/rules';
+import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
@@ -9,7 +9,7 @@ import { Character } from '../src/screens/Character.tsx';
 import { Chronicle, dayOutcome } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { DAY_TWO_NOW, adjustState, completeEvent, ladderRows, profileRow, serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, characterRow, completeEvent, ladderRows, profileRow, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
@@ -134,20 +134,77 @@ describe('Today', () => {
   });
 });
 
-describe('Character', () => {
-  it('shows the level and the five stats with points, rank and XP to the next point', async () => {
+describe('Character (M6d)', () => {
+  const L10 = (() => { let t = 0; while (levelForXp(t) < 10) t += 10; return t; })();
+  /** A level-10 Mage reading Dune since 5 Oct, 3 sessions and 45 minutes in. */
+  const mageView = () => {
+    const state = adjustState({
+      profile: profileRow(undefined, { class_id: 'mage', book: 'Dune', book_started_at: new Date('2026-10-05T00:00:00.000Z') }),
+      character: characterRow({ xp_wisdom: L10 }),
+    });
+    return project({ ...state, reading: { sessions: 3, minutes: 45 } }, []);
+  };
+
+  it('shows the portrait frame, the name, the level and the XP', async () => {
     const view = project(SERVER, []);
-    await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} />));
-    expect(screen.getByText(`Level ${view.character.level} · Warrior`)).toBeTruthy();
+    await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
+    expect(screen.getByLabelText('Warrior portrait, level 1')).toBeTruthy();
+    expect(screen.getByText(view.profile.name)).toBeTruthy();
+    expect(screen.getByText('LV 1 WARRIOR')).toBeTruthy();
+    expect(screen.getByText(/XP total/)).toBeTruthy();
+    expect(screen.getByText('Next: Level 2')).toBeTruthy();
+  });
+
+  it('shows each stat with a bar to its next point, its rank, and how Discipline grows', async () => {
+    await render(withStore(testStore({ view: project(SERVER, []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     for (const stat of ['strength', 'vitality', 'wisdom', 'focus', 'discipline'] as const) {
       expect(screen.getByText(STAT_NAMES[stat])).toBeTruthy();
+      expect(screen.getByLabelText(`${STAT_NAMES[stat]} progress to the next point`)).toBeTruthy();
     }
-    expect(screen.getAllByText(/^\d+ points$/)).toHaveLength(5);
     expect(screen.getAllByLabelText(/^Rank [EDCBAS]$/)).toHaveLength(5);
+    expect(screen.getByText(/grows only from showing up$/)).toBeTruthy();
+  });
+
+  it("shows the class path: each ability and when it unlocks", async () => {
+    await render(withStore(testStore({ view: project(SERVER, []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
+    expect(screen.getByText('Second Wind')).toBeTruthy();
+    expect(screen.getByText('Level 5 · 4 to go')).toBeTruthy();
+    expect(screen.getByText('Unbreakable')).toBeTruthy();
+    expect(screen.getByText('Level 10 · 9 to go')).toBeTruthy();
+    expect(screen.queryByText("Scholar's Path")).toBeNull();
+  });
+
+  it('shows the latest title, the achievements earned and how many are still hidden', async () => {
+    const view = { ...project(SERVER, []), achievements: ['first-trial', 'trials-100'] };
+    await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
+    expect(screen.getByText('“The Tireless”')).toBeTruthy();
+    expect(screen.getByText('First Trial')).toBeTruthy();
+    expect(screen.getByText(`${ACHIEVEMENTS.length - 2} still hidden.`)).toBeTruthy();
+  });
+
+  it('with nothing earned, says the first achievement is one quest away', async () => {
+    await render(withStore(testStore({ view: project(SERVER, []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
+    expect(screen.getByText('Your first achievement is one quest away.')).toBeTruthy();
+  });
+
+  it('shows the vow sworn in onboarding', async () => {
+    await render(withStore(testStore({ view: project(SERVER, []), vow: 'I rise at dawn' }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
+    expect(screen.getByText('“I rise at dawn”')).toBeTruthy();
+  });
+
+  it("Scholar's Path for a Mage at level 10: the book, its progress, and a way to change it", async () => {
+    const onOpenBook = jest.fn();
+    await render(withStore(testStore({ view: mageView() }), <Character onChangeClass={jest.fn()} onOpenBook={onOpenBook} />));
+    expect(screen.getAllByText("Scholar's Path")).toHaveLength(2); // on the class path, and its card
+    expect(screen.getByText('Dune')).toBeTruthy();
+    expect(screen.getByText('3 sessions · 45 min since Mon 5 Oct')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Change book' }));
+    expect(onOpenBook).toHaveBeenCalled();
   });
 
   it('offline: shows when it last synced', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), status: 'offline', lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30) }), <Character onChangeClass={jest.fn()} />));
+    await render(withStore(testStore({ view: project(SERVER, []), status: 'offline', lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30) }),
+      <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     expect(screen.getByText('Last synced 20:30')).toBeTruthy();
   });
 });
@@ -283,7 +340,7 @@ it("Today tags a quest whose exercise is resting after pain (M6b review)", async
 it('Character offers a class change, and says when the next one opens (M6b)', async () => {
   const onChangeClass = jest.fn();
   const changed = adjustState({ profile: profileRow(undefined, { class_changed_at: new Date(DAY_TWO_NOW - 3 * DAY_MS) }) });
-  await render(withStore(testStore({ view: project(changed, []) }), <Character onChangeClass={onChangeClass} now={() => DAY_TWO_NOW} />));
+  await render(withStore(testStore({ view: project(changed, []) }), <Character onChangeClass={onChangeClass} onOpenBook={jest.fn()} now={() => DAY_TWO_NOW} />));
   expect(screen.getByText(/Your next class change opens on/)).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.classChange.open }));
   expect(onChangeClass).toHaveBeenCalled();
