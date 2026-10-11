@@ -42,11 +42,22 @@ describe('Awakening (O01)', () => {
     expect(onNavigate).toHaveBeenCalledWith(STEP_PATH.voice);
   });
 
-  it('brings a saved character back with Google', async () => {
+  it('brings a saved character back with Google, and forgets the draft', async () => {
     const onRestored = jest.fn();
-    await show(<Awakening onNavigate={() => {}} onRestored={onRestored} />);
+    const store = await show(<Awakening onNavigate={() => {}} onRestored={onRestored} />, {}, {
+      // Like the real store: the sync after the sign-in brings the character in.
+      signInWithGoogle: jest.fn(async () => (store.setState({ phase: 'ready' }), { ok: true as const, found: true })),
+    });
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.awakening.restore }));
-    expect(onRestored).toHaveBeenCalled();
+    await waitFor(() => expect(onRestored).toHaveBeenCalledTimes(1));
+    expect(store.getState().finishOnboarding).toHaveBeenCalled();
+  });
+
+  it('signed in but offline: never says there is no character (review)', async () => {
+    await show(<Awakening onNavigate={() => {}} onRestored={() => {}} />, {}, { signInWithGoogle: jest.fn(async () => ({ ok: true as const, found: 'unknown' as const })) });
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.awakening.restore }));
+    expect(screen.getByText(ONBOARDING_TEXT.awakening.restoreOffline)).toBeTruthy();
+    expect(screen.queryByText(ONBOARDING_TEXT.awakening.noSave)).toBeNull();
   });
 
   it('says so when the Google account has no character, or the sign-in failed', async () => {

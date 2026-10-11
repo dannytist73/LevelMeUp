@@ -64,7 +64,7 @@ export function Settings({ onBack, onDeveloper, version, deviceZone }: SettingsP
               <Body weight="bold">Playing as a guest.</Body>
               <Small>For now, only this phone can reach your character. Save it with Google so a new or lost phone costs you nothing.</Small>
               <Button label="Save with Google" variant="secondary" disabled={saving || account.kind !== 'guest'} onPress={() => void save()} />
-              {note !== null && <Small>{note}</Small>}
+              {note !== null && <View accessibilityLiveRegion="polite"><Small>{note}</Small></View>}
             </>
           )}
         </NightCard>

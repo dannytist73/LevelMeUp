@@ -20,6 +20,7 @@ export function Analysis({ onRevealed, onToday, minMs = 2_400 }: { onRevealed: (
   const insets = useSafeAreaInsets();
   const name = useGame((s) => s.draft.name.trim());
   const startCharacter = useGame((s) => s.startCharacter);
+  const syncNow = useGame((s) => s.syncNow);
   const [failure, setFailure] = useState<string | null>(null);
   const [shown, setShown] = useState(0);
   const started = useRef(false);
@@ -44,7 +45,9 @@ export function Analysis({ onRevealed, onToday, minMs = 2_400 }: { onRevealed: (
     return () => clearTimeout(tick);
   }, [failure, shown, minMs]);
 
-  const message = failure === 'network' ? T.offline : failure === 'locked' ? T.locked : T.failed;
+  // `already_started` with a Google account: the saved character exists, so it is the same as `locked` (M5 review).
+  const begun = failure === 'locked' || failure === 'already_started';
+  const message = failure === 'network' ? T.offline : begun ? T.locked : T.failed;
   return (
     <ScreenScroll
       contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 24 }}
@@ -60,9 +63,11 @@ export function Analysis({ onRevealed, onToday, minMs = 2_400 }: { onRevealed: (
         <NarrationBox>{analysisLine(name)}</NarrationBox>
       ) : (
         <>
-          <NarrationBox>{message}</NarrationBox>
-          {failure === 'locked'
-            ? <Button label={T.today} onPress={onToday} />
+          <View accessibilityLiveRegion="polite">
+            <NarrationBox>{message}</NarrationBox>
+          </View>
+          {begun
+            ? <Button label={T.today} onPress={() => void syncNow().then(onToday)} />
             : <Button label={T.retry} onPress={() => void attempt()} />}
         </>
       )}

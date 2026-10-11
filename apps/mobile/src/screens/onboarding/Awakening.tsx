@@ -1,6 +1,6 @@
 // O01 Awakening (spec §1.1 beat 1): the name, no sign-up wall; and a way back in for a character saved with Google.
 import { GOOGLE_ERRORS, ONBOARDING_TEXT } from '@levelmeup/content';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NAME_MAX, complete, nextPath } from '../../onboarding/flow.ts';
@@ -23,8 +23,15 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
   const editDraft = useGame((s) => s.editDraft);
   const account = useGame((s) => s.account);
   const signInWithGoogle = useGame((s) => s.signInWithGoogle);
+  const finishOnboarding = useGame((s) => s.finishOnboarding);
+  const phase = useGame((s) => s.phase);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+
+  // A character arrived (a Google restore, now or once back online): the onboarding is over.
+  useEffect(() => {
+    if (phase === 'ready') void finishOnboarding().then(onRestored);
+  }, [phase, finishOnboarding, onRestored]);
 
   const restore = async () => {
     setBusy(true);
@@ -32,8 +39,8 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
     const result = await signInWithGoogle();
     setBusy(false);
     if (!result.ok) setNote(GOOGLE_ERRORS[result.code]);
-    else if (result.found) onRestored();
-    else setNote(T.noSave);
+    else if (result.found === false) setNote(T.noSave);
+    else if (result.found === 'unknown') setNote(T.restoreOffline);
   };
 
   return (
@@ -49,7 +56,7 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
         <Button label={T.go} disabled={!complete(draft, 'awakening')} onPress={() => onNavigate(nextPath(draft, 'awakening'))} />
         <Small>{T.note}</Small>
         {account.kind !== 'saved' && <Button label={T.restore} variant="secondary" disabled={busy} onPress={() => void restore()} />}
-        {note !== null && <Small tone="chalk">{note}</Small>}
+        {note !== null && <View accessibilityLiveRegion="polite"><Small tone="chalk">{note}</Small></View>}
       </View>
     </ScreenScroll>
   );

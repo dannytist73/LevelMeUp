@@ -2,7 +2,7 @@
 // cancels. With a screen reader on, holding isn't practical, so a tap shows a Confirm button instead.
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, Text } from 'react-native';
-import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, fonts } from '../theme/tokens.ts';
 import { Button } from './Button.tsx';
 
@@ -41,7 +41,8 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
   }
 
   const start = () => {
-    fill.value = withTiming(1, { duration: holdMs, easing: Easing.linear });
+    // The fill is how long to keep holding, not decoration: it runs even with reduced motion on (M5 review).
+    fill.value = withTiming(1, { duration: holdMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
     timer.current = setTimeout(() => {
       timer.current = null;
       onDone();

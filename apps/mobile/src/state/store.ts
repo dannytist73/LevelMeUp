@@ -14,7 +14,7 @@ import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
 import type { PhoneEvent, Reveal } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
-import { NEW_DRAFT, persistable, restoreDraft, toRequest } from '../onboarding/flow.ts';
+import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
 import type { Draft } from '../onboarding/flow.ts';
 import { syncOnce } from '../sync/engine.ts';
 import type { Notice, SyncOutcome } from '../sync/engine.ts';
@@ -52,7 +52,8 @@ export const DRAFT_KEY = 'lmu.onboarding-draft';
 export const VOW_KEY = 'lmu.vow';
 
 export type StartResult = { ok: true } | { ok: false; code: string };
-export type RestoreResult = { ok: true; found: boolean } | { ok: false; code: GoogleProblem };
+/** `found: 'unknown'`: signed in, but the sync that would find the character didn't finish (no connection). */
+export type RestoreResult = { ok: true; found: boolean | 'unknown' } | { ok: false; code: GoogleProblem };
 
 export type GameState = {
   phase: Phase;
@@ -146,6 +147,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.local.wipe();
       await deps.signOut();
       await deps.kv.removeItem(DRAFT_KEY);
+      await deps.kv.removeItem(VOW_KEY); // the next player on this phone never sees it (M5 review)
       set({ draft: NEW_DRAFT, reveal: null, account: await deps.account() });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -208,9 +210,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       boot: async () => {
         const [saved, account] = await Promise.all([deps.kv.getItem(DRAFT_KEY).catch(() => null), deps.account()]);
-        set({ draft: restoreDraft(saved), account });
         await refresh();
-        set({ phase: get().cached === null ? 'loading' : 'ready' });
+        const holding = get().cached !== null;
+        // A character already exists, so the onboarding is over: its draft (a name, goals, limits) isn't kept (M5 review).
+        if (holding && saved !== null) await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
+        set({ draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading' });
         await scheduler.request();
       },
 
@@ -229,15 +233,19 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         void deps.kv.setItem(DRAFT_KEY, persistable(draft)).catch(() => {});
       },
 
-      startCharacter: () =>
-        fenced(async () => {
+      startCharacter: async () => {
+        const result = await fenced(async (): Promise<StartResult> => {
+          const draft = get().draft;
+          // Never an unfinished interview: an unanswered safety question must not travel as a "no" (M5 review).
+          if (!stepsFor(draft).every((step) => complete(draft, step))) return { ok: false, code: 'incomplete' };
           const ask = async (redo: boolean): Promise<StartResult> => {
             const signedIn = await deps.ensureSession(() => !redo && get().cached === null && get().pending.length === 0);
             if (signedIn !== 'signed_in') return { ok: false, code: signedIn === 'offline' ? 'network' : 'no_session' };
             const started = await deps.api.onboarding(toRequest(get().draft, deps.timeZone(), redo));
             if (!started.ok) {
-              // Decision 11: the first answer was lost on the way back, so the untouched character is built again.
-              if (!redo && started.code === 'already_started') return ask(true);
+              // Decision 11: the first answer was lost on the way back, so the untouched character is built again. Never
+              // over a Google account: its "already started" is a saved character, never rebuilt (M5 review).
+              if (!redo && started.code === 'already_started' && get().account.kind !== 'saved') return ask(true);
               return { ok: false, code: started.code };
             }
             await deps.local.acknowledge([], [], started.body.state, deps.now());
@@ -245,7 +253,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
             return { ok: true };
           };
           return ask(get().cached !== null);
-        }),
+        });
+        // The server already holds this player's character: fetch it, so "Go to Today" finds it (M5 review).
+        if (!result.ok && (result.code === 'locked' || result.code === 'already_started')) void scheduler.request();
+        return result;
+      },
 
       finishOnboarding: async () => {
         await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
@@ -268,7 +280,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         set({ account: await deps.account() });
         if (!result.ok) return result;
         await scheduler.request();
-        return { ok: true, found: get().phase === 'ready' };
+        const { phase, status, error } = get();
+        if (phase === 'ready') return { ok: true, found: true };
+        // Only a sync that finished can say there is no character (M5 review).
+        return { ok: true, found: phase === 'not_started' && status === 'idle' && error === null ? false : 'unknown' };
       },
 
       deleteTestCharacter: async () => {

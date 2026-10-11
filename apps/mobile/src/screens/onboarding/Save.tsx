@@ -2,6 +2,7 @@
 // character, or begin Day 1 as a guest (Settings offers it again). A failure says so plainly and keeps everything.
 import { GOOGLE_ERRORS, ONBOARDING_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../../state/store.ts';
 import { space } from '../../theme/tokens.ts';
@@ -46,7 +47,7 @@ export function Save({ onBegin }: { onBegin: () => void }) {
           <Button label={T.google} on="paper" disabled={busy} onPress={() => void save()} />
         </SlantPanel>
       )}
-      {note !== null && <Small tone="chalk">{note}</Small>}
+      {note !== null && <View accessibilityLiveRegion="polite"><Small tone="chalk">{note}</Small></View>}
       <NightCard>
         <Label tone="chalk">{T.lightTitle}</Label>
         <Small>{T.lightBody}</Small>

@@ -80,8 +80,12 @@ describe('saving with Google', () => {
 describe('the account', () => {
   it.each([
     [null, { kind: 'none' }],
-    [{ user: { is_anonymous: true } }, { kind: 'guest' }],
-    [{ user: { is_anonymous: false, email: 'rin@example.com' } }, { kind: 'saved', email: 'rin@example.com' }],
+    [{ user: { is_anonymous: true, identities: [] } }, { kind: 'guest' }],
+    [{ user: { is_anonymous: false, email: 'rin@example.com', identities: [{ provider: 'google' }] } }, { kind: 'saved', email: 'rin@example.com' }],
+    [{ user: { is_anonymous: false, email: 'rin@example.com', app_metadata: { providers: ['anonymous', 'google'] } } }, { kind: 'saved', email: 'rin@example.com' }],
+    // Never tell a player they are saved without a Google identity (review).
+    [{ user: { is_anonymous: false, email: 'rin@example.com', identities: [{ provider: 'email' }] } }, { kind: 'guest' }],
+    [{ user: { email: 'rin@example.com' } }, { kind: 'guest' }],
   ])('%j', async (session, account) => {
     const client = fakeClient({ getSession: jest.fn(async () => ({ data: { session }, error: null })) });
     expect(await readAccount(client)).toEqual(account);

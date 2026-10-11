@@ -63,6 +63,8 @@ Deno.serve(async (req) => {
   } catch (error) {
     const code = lmuCode(error);
     if (code === 'already_started' || code === 'locked') return problemResponse(problem(409, code));
+    // Two redos at once: the second waited on a character the first replaced (M5 review). Trying again works.
+    if (code === 'not_started' && redo) return problemResponse(problem(503, 'busy', 'try again'));
     console.error('lmu-onboarding failed', error);
     return problemResponse(problem(500, 'internal'));
   }

@@ -94,7 +94,11 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
         </View>
         <NarrationBox>{busy ? T.rewriting : reveal.narrative}</NarrationBox>
         {failure !== null && (
-          <Small tone="chalk">{failure === 'network' ? ONBOARDING_TEXT.analysis.offline : ONBOARDING_TEXT.analysis.failed}</Small>
+          <View accessibilityLiveRegion="polite">
+            <Small tone="chalk">
+              {failure === 'network' ? ONBOARDING_TEXT.analysis.offline : failure === 'locked' ? ONBOARDING_TEXT.analysis.locked : ONBOARDING_TEXT.analysis.failed}
+            </Small>
+          </View>
         )}
         <NightCard>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 }}>

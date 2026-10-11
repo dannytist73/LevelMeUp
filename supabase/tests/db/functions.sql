@@ -299,7 +299,7 @@ begin
   return next is((select start_vitality from levelmeup.character_state where user_id = a), 7::smallint, 'and the start points');
   return next is((select count(*) from levelmeup.ladder_states where user_id = a), 0::bigint, 'and the starting ladders');
   return next is((select count(*) from levelmeup.quest_days where user_id = a), 1::bigint, 'day 1 is built again, once');
-  return next is(lmu_test.version(a), 1, 'it is still a new character');
+  return next is(lmu_test.version(a), 2, 'the version moves on, so nothing planned for the first character matches the new one');
   return next is((select count(*) from levelmeup.ai_generations where user_id = a), 1::bigint,
     'the Claude calls already made still count towards the cap');
 

@@ -11,7 +11,7 @@ export const REDIRECT_URL = 'levelmeup://auth-callback';
 export type OpenAuth = (url: string, redirectUrl: string) => Promise<{ type: string; url?: string }>;
 export type GoogleProblem = 'cancelled' | 'taken' | 'network' | 'failed';
 export type GoogleResult = { ok: true } | { ok: false; code: GoogleProblem };
-/** `saved`: any sign-in that isn't a guest's (in LevelMeUp, Google). */
+/** `saved`: signed in with a Google identity (linked, or a sign-in on a new phone). */
 export type Account = { kind: 'none' } | { kind: 'guest' } | { kind: 'saved'; email: string | null };
 
 /** The one-time code from the redirect, or the error Supabase Auth put there instead (query or fragment). */
@@ -67,7 +67,9 @@ export async function readAccount(client: SupabaseClient): Promise<Account> {
     const { data } = await client.auth.getSession();
     const user = data.session?.user;
     if (user === undefined) return { kind: 'none' };
-    return user.is_anonymous === true ? { kind: 'guest' } : { kind: 'saved', email: user.email ?? null };
+    // Saved only with a Google identity; anything else is shown as a guest, never as saved (M5 review).
+    const providers = [...(user.identities ?? []).map((i) => i.provider), ...((user.app_metadata?.providers as string[] | undefined) ?? [])];
+    return user.is_anonymous !== true && providers.includes('google') ? { kind: 'saved', email: user.email ?? null } : { kind: 'guest' };
   } catch {
     return { kind: 'none' };
   }

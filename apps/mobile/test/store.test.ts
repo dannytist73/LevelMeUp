@@ -363,6 +363,49 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('a Google sign-in whose sync can\'t finish never claims there is no character (review)', async () => {
+    const session = guestSession();
+    const { store, deps } = await setup([{ ok: false, status: 0, code: 'network' }], { ensureSession: session });
+    (deps.google.signIn as jest.Mock).mockImplementation(async () => (session.signIn(), { ok: true }));
+    await store.getState().boot();
+    expect(await store.getState().signInWithGoogle()).toEqual({ ok: true, found: 'unknown' });
+    expect(store.getState().phase).not.toBe('ready');
+    store.getState().stop();
+  });
+
+  it('with a Google account, "already started" fetches the character instead of rebuilding it (review)', async () => {
+    const { store, api } = await setup([{ ok: false, status: 404, code: 'not_started' }, ok(SERVER)], {
+      account: jest.fn(async (): Promise<Account> => ({ kind: 'saved', email: null })),
+    });
+    api.onboarding.mockResolvedValue({ ok: false, status: 409, code: 'already_started' });
+    await store.getState().boot();
+    store.getState().editDraft(READY_DRAFT);
+    expect(await store.getState().startCharacter()).toEqual({ ok: false, code: 'already_started' });
+    expect(api.onboarding).toHaveBeenCalledTimes(1); // no redo over a saved character
+    await store.getState().syncNow();
+    expect(store.getState().phase).toBe('ready');
+    store.getState().stop();
+  });
+
+  it('never sends an unfinished interview: an unanswered safety question is not a "no" (review)', async () => {
+    const { store, api } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
+    await store.getState().boot();
+    store.getState().editDraft({ ...READY_DRAFT, safety: NEW_DRAFT.safety });
+    expect(await store.getState().startCharacter()).toEqual({ ok: false, code: 'incomplete' });
+    expect(api.onboarding).not.toHaveBeenCalled();
+    store.getState().stop();
+  });
+
+  it('a phone that already holds a character forgets a leftover draft at boot (review)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(DRAFT_KEY, JSON.stringify(READY_DRAFT));
+    await store.getState().boot();
+    expect(kv.has(DRAFT_KEY)).toBe(false);
+    expect(store.getState().draft).toEqual(NEW_DRAFT);
+    store.getState().stop();
+  });
+
   it('a late "no character" answer can\'t wipe a character started meanwhile (M4 code review)', async () => {
     let answer: (() => void) | null = null;
     const late = () => new Promise<Call<SyncResponse>>((resolve) => (answer = () => resolve({ ok: false, status: 404, code: 'not_started' })));
@@ -400,12 +443,16 @@ describe('the game store', () => {
     }
   });
 
-  it('starting over forgets this phone\'s data and sign-in', async () => {
-    const { store, local, deps } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
+  it('starting over forgets this phone\'s data, sign-in, draft and vow', async () => {
+    const { store, local, deps, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
     await local.acknowledge([], [], SERVER, 1);
+    await store.getState().saveVow('I will rise.');
+    kv.set(DRAFT_KEY, '{}');
     await store.getState().startOver();
     expect(deps.signOut).toHaveBeenCalled();
     expect(await local.load()).toBeNull();
+    expect(kv.has(VOW_KEY)).toBe(false); // the next player on this phone never sees it (review)
+    expect(kv.has(DRAFT_KEY)).toBe(false);
     expect(lastAllowNewGuest(deps)).toBe(false); // the onboarding makes the next guest
     store.getState().stop();
   });
