@@ -227,3 +227,16 @@ the Find X9 (the owner), after M6c's.
 | 9 | The training note: on a character with the default training it shows once on Today; "Set up training" opens Settings → Training; back on Today it is gone, also after a restart. A new character from onboarding never sees it. | | | `store.test.ts`, `screens.test.tsx` |
 | 10 | Developer → Character preview: the Scholar's Path card with the book, its progress and the finished book; the title; the vow; Chronicle's marks (paper, ink corner, dashed, hatched) and the previous-month button. | | | — |
 | 11 | The book screen from the preview's "Change book" with a non-Mage character: "Scholar's Path opens for a Mage at level 10." | | | `screens.test.tsx` (book screen) |
+
+## M6e — Offline-built days
+
+No new build: M6e adds no native module. All rows after the M6e deploy (the functions). Row 2 needs a real day
+boundary: on the emulator only when a test day ends during the session, otherwise on the Find X9 (the owner).
+
+| # | Check | Emulator | Find X9 | Automated coverage |
+|---|---|---|---|---|
+| 1 | Developer → Offline day preview: Today with the offline line, real dates and four quests (Hermes runs the builder). | | | `offlineDay.test.ts` |
+| 2 | Real boundary: airplane mode before the day ends; open the app after the boundary → the offline line and the day's quests; clear one; airplane mode off → it syncs, no notice, the quest stays cleared with its XP, ids are the server's. | | | `store.test.ts`, live test (quests by slot) |
+| 3 | A quest screen open during that sync stays on the same quest (its slot), and a running timer keeps its time. | | | `quest.test.tsx`, `offline.test.ts` |
+| 4 | Clock ahead (emulator): airplane mode, set the clock a day ahead, open → an offline day; restore the clock, airplane mode off → the `clock_ahead` notice, then the server's day. | | | live test (`clock_ahead`) |
+| 5 | "I felt pain" on an offline day offers rest and pause (no gentle option); after the sync the exercise is resting. | | | `project.test.ts`, live test (`quest_changed`) |

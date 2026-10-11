@@ -56,3 +56,8 @@ model keys never leave Supabase.
 - The state each response returns (`_shared/state.ts`, `stateView`) adds what only Character and Chronicle show (M6d):
   the last 92 days' dates and marks, growth since day 1 and the book's progress, read once per response by
   `loadHistory` (`db.ts`) as the player.
+- Offline-built days (M6e, no database change): the state also carries every ladder's state, each recent day's quests
+  and the workouts done, so the phone can build the next day itself. A `provisional_day` event is applied as of when the
+  phone built it (`_shared/offline.ts`, `planAdvance`'s `provisional` input): the phone's quests are kept when the rules
+  allow them, otherwise the server stores its own day and answers `day_rebuilt`. `complete`, `undo`, `rate` and `pain`
+  can name a quest by `ref: { dayNumber, slot, templateId }` instead of `instanceId`.

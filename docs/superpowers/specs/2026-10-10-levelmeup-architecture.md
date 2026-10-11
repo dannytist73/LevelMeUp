@@ -139,6 +139,10 @@ or set aside, and for the book already being read, and re-drafts today's open re
 `levelmeup.adjust` (migration 0010) counts the finished book's sessions and minutes from the completed quests that
 carried it since it was set.
 
+M6e (2026-10-12): `complete`, `undo`, `rate` and `pain` can name a quest by `ref: { dayNumber, slot, templateId }`
+instead of `instanceId` (a quest of a day the phone built offline); `provisional_day` carries that day. No database
+change.
+
 ### 4.2 How a write happens
 
 1. The function reads the player's id **from the verified JWT** (confirmed with Supabase Auth), never from the body.
@@ -158,7 +162,9 @@ last line of defence.
 
 - A day row stores `starts_at` and `ends_at` (absolute times), computed by the rules from the player's boundary and
   the phone's time zone at creation, clamped to 20–28 hours (day 1: 6–30 hours). The server always recomputes them
-  with the rules; it never trusts a window from a provisional day built on the phone.
+  with the rules; it never trusts a window from a provisional day built on the phone; a `provisional_day` is applied as
+  of when the phone built it (`builtAt`, never later than now), so a day the player opened offline isn't skipped as an
+  away day.
 - A day covers `[starts_at, ends_at)` and counts as closed once `now() >= ends_at` (the rules' `isClosed`). Whenever
   `sync` runs, it evaluates closed days in order with the rules' `closedDayResolution`: done, protected (including
   a day protected with `no_quests`), or "check-in due". While a check-in is pending, later days wait for it: a streak
@@ -229,10 +235,14 @@ template narrative is used; the player never sees an error.
 - Every action is written to the outbox and applied to the cache immediately (optimistic), using the rules package to
   show the reward. On app foreground or reconnect: flush the outbox through `sync`, then replace the cache with the
   server's state. The server's numbers win.
-- Offline on a new day (M6e, moved from M4 with the owner's OK on 2026-10-11; until then the app shows "The
-  System is preparing your trials" with a retry): the phone builds a provisional day with the rules package and cached state, and sends it as
-  a `provisional_day` event. The server accepts it if every quest is allowed by the player's ladder state and slot
-  rules (XP always from the server's tables); otherwise it builds its own day and re-maps completions by slot.
+- Offline on a new day (M6e): when the day on screen has ended and a sync fails, the phone closes it the way the
+  server does (rules: `closeLadders`, `reenterLadders`, `followingDay`) with its projected completions, builds the next
+  day with `buildDay`, and queues it as a `provisional_day` (one at a time). The state carries what that needs: every
+  ladder's state, each recent day's quests, and the workouts done. On sync the server applies the event as of
+  `builtAt`: it keeps the phone's quests when `provisionalDay` / `checkProvisionalDay` accept them (re-drafted from its
+  own tables) and otherwise stores its own day; events about that day's quests name them by day and slot, and a
+  completion counts for the quest in that slot even when the server's day won (without the timer or rep check). Swaps,
+  hard days, rest and abilities wait for the sync.
 - Single device per player in the MVP; a second device just gets the server state on sign-in.
 - M6b: the state carries what the phone may offer today (swap options per quest, gentle movement after pain, whether
   rest is allowed, the ready abilities, which quests can step down), computed by the server from the same rules
@@ -242,7 +252,7 @@ template narrative is used; the player never sees an error.
   than by the planners' snapshot: `calendar` (the last 92 days, newest first, each with its local date in the day's
   own zone and a mark: open, cleared, hard, rest, paused or none), `growth` since day 1, `reading` (the current book's
   sessions and minutes), and the abilities' last use. Achievements arrive in earned order. Today's calendar cell
-  follows the phone's own projected day. Offline-built days (`provisional_day`) are M6e.
+  follows the phone's own projected day.
 
 ## 7. Notifications
 

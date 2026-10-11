@@ -69,6 +69,13 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   self-check (time zones on Hermes, AES, SQLite), the component kit, the workout preview (`app/dev/workout.tsx`: a
   workout planned on the phone for any equipment, program, rung and program day; nothing is sent) and the Character
   preview (`app/dev/character.tsx`: Character and Chronicle for a made-up level-10 Mage with a book, a title and two
-  months of days, built from the real view; nothing is sent).
+  months of days, built from the real view; nothing is sent), and the offline day preview (`app/dev/offline.tsx`: the
+  day this phone would build if today had just ended; nothing is sent).
+- **Offline-built days** (M6e): when the day on screen has ended and a sync ends offline or retrying, the store builds the
+  next day with the rules (`src/game/offlineDay.ts`) and queues it as a `provisional_day` (one at a time); `project`
+  shows it as today with quest ids −1 to −4 and Today says the phone built it. Events on its quests are sent with
+  `ref: { dayNumber, slot, templateId }` (`src/game/offline.ts`, `withRef`); the quest and pain screens find a quest by
+  its slot once the server's day replaces the offline one, and a timer started on an offline quest moves to the
+  server's quest in its slot. Swaps, a hard day, rest and abilities wait for the sync.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

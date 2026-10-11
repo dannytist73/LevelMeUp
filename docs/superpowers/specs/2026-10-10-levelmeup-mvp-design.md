@@ -230,7 +230,8 @@ About 25 in the MVP across milestones, streaks, ladder rungs, class feats, artic
 4. Text: the template's variant in the player's voice.
 5. The server creates the day once (`unique (user_id, quest_day, slot)`). A new day opened offline is built on the
    phone with the same package, marked provisional, and checked by the server on sync (slot count, templates
-   allowed by the player's ladder state, rewards taken from the server's table).
+   allowed by the player's ladder state, rewards taken from the server's table) (M6e: one offline day at a time; the
+   server keeps it when every quest is allowed, otherwise builds its own and counts the work by slot).
 
 Every quest card shows **why it was picked** (e.g. "You cleared incline push-ups 3 times, so knee push-ups unlocked").
 
@@ -301,7 +302,8 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
 - The client sends `{quest_instance_id, client_event_id, completed_at, payload}`. A Postgres function checks
   ownership and the open window, then awards XP once in one transaction. A repeat returns the same result.
 - Offline completions sync later and are accepted up to 48 h after the day closed if `completed_at` falls inside
-  the day.
+  the day. On a day the phone built offline, a completion names its quest by day and slot until the server has the day
+  (M6e).
 - Undo the same day (mis-taps): a reversing ledger entry.
 
 ### 3.7 The missed-day check-in
