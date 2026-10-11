@@ -502,6 +502,13 @@ describe("Scholar's Path: the book screen (M6d decision 12)", () => {
   });
 });
 
+it("Today's header names the date the quest day mostly covers, as Chronicle does (M6d review)", async () => {
+  // Day 1 begun at 23:00 on Sun 11 Oct in Manila runs to 04:00 on Tue 13 Oct.
+  const today = { ...SERVER.today!, startsAt: '2026-10-11T15:00:00.000Z', endsAt: '2026-10-12T20:00:00.000Z' };
+  await renderToday({}, { ...SERVER, today });
+  expect(screen.getByText('MON · 12 OCT')).toBeTruthy();
+});
+
 describe('the training notice (M6d decision 13)', () => {
   const NOTICE = `System: ${ADJUST_TEXT.training.notice}`;
 

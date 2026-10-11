@@ -2,6 +2,7 @@
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
 // quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx). The article reader arrives in M8.
 import { ADJUST_TEXT, CLASS_NAMES, artKey, authoredTemplate } from '@levelmeup/content';
+import { questDayDate } from '@levelmeup/rules';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -135,7 +136,9 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <View style={{ flexShrink: 1, gap: 2 }}>
-            {today !== null && <Label>{dayLabel(today.startsAt!, today.timeZone)}</Label>}
+            {today !== null && (
+              <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
+            )}
             <Display>{today !== null ? `DAY ${today.dayNumber}` : 'TODAY'}</Display>
           </View>
           <Pressable

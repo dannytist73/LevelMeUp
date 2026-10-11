@@ -8,10 +8,11 @@ const MONTH_NAMES = [
   'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
 ] as const;
 
-export function dayLabel(iso: string, timeZone: string): string {
-  const p = localParts(timeZone, Date.parse(iso));
-  const weekday = WEEKDAYS[new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay()]!;
-  return `${weekday} · ${p.day} ${MONTHS[p.month - 1]!}`;
+/** "SAT · 10 OCT" for a `YYYY-MM-DD` date (Today's header: the quest day's date, rules `questDayDate`). */
+export function dayLabel(date: string): string {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]!;
+  return `${weekday} · ${d} ${MONTHS[m - 1]!}`;
 }
 
 export function clockTime(iso: string, timeZone: string): string {

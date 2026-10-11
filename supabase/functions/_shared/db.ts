@@ -83,8 +83,8 @@ export async function loadHistory(tx: Tx, userId: string, book: string | null): 
     const days = await tx<CalendarRow[]>`
       select day_number, starts_at, ends_at, time_zone, status, resolution, protection, hard_day from levelmeup.quest_days
       where user_id = ${userId} order by day_number desc limit ${CALENDAR_DAYS}`;
-    const [dayOne] = await tx<Pick<DayRow, 'ends_at' | 'time_zone'>[]>`
-      select ends_at, time_zone from levelmeup.quest_days where user_id = ${userId} and day_number = 1`;
+    const [dayOne] = await tx<Pick<DayRow, 'starts_at' | 'ends_at' | 'time_zone'>[]>`
+      select starts_at, ends_at, time_zone from levelmeup.quest_days where user_id = ${userId} and day_number = 1`;
     const { rungs } = one(await tx<{ rungs: number }[]>`
       select count(*)::int as rungs from levelmeup.xp_ledger where user_id = ${userId} and source_type = 'rung'`);
     const reading = book === null

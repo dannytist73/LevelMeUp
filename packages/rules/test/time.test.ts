@@ -8,6 +8,7 @@ import {
   isValidTimeZone,
   localDateKey,
   localParts,
+  questDayDate,
   nextBoundaryAtOrAfter,
   nextDayWindow,
   offsetMs,
@@ -25,6 +26,18 @@ const windowEnding = (endsAt: string, timeZone: string): DayWindow => ({
 });
 
 describe('time-zone helpers', () => {
+  it("names a quest day's date: its start's, or for a day over 25 hours the date it mostly covers (M6d review)", () => {
+    const at = (startsAt: number, endsAt: number, timeZone = 'Asia/Manila') => questDayDate({ startsAt, endsAt, timeZone });
+    expect(at(Date.UTC(2026, 9, 11, 20), Date.UTC(2026, 9, 12, 20))).toBe('2026-10-12'); // 04:00 to 04:00
+    // Day 1 begun at 23:00 on 11 Oct runs at least 6 hours, to 04:00 on 13 Oct: it is mostly the 12th.
+    expect(at(Date.UTC(2026, 9, 11, 15), Date.UTC(2026, 9, 12, 20))).toBe('2026-10-12');
+    // Day 1 begun at 22:00 on 10 Oct ends at 04:00 on the 11th: the 10th, and day 2 is the 11th.
+    expect(at(Date.UTC(2026, 9, 10, 14), Date.UTC(2026, 9, 10, 20))).toBe('2026-10-10');
+    // Clock changes keep the start's date: a 23-hour day from 00:30 (New York, 8 Mar) and a 25-hour one from 23:30 (31 Oct).
+    expect(at(Date.UTC(2026, 2, 8, 5, 30), Date.UTC(2026, 2, 9, 4, 30), 'America/New_York')).toBe('2026-03-08');
+    expect(at(Date.UTC(2026, 10, 1, 3, 30), Date.UTC(2026, 10, 2, 4, 30), 'America/New_York')).toBe('2026-10-31');
+  });
+
   it('names the local date of an instant (M6d: the calendar)', () => {
     expect(localDateKey('Asia/Manila', Date.UTC(2026, 9, 11, 16, 30))).toBe('2026-10-12'); // 00:30 in Manila
     expect(localDateKey('America/New_York', Date.UTC(2026, 9, 12, 3))).toBe('2026-10-11');

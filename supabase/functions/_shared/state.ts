@@ -1,6 +1,6 @@
 // Database rows and what the rules make of them. Pure: no database access here.
 import {
-  DAY_MS, STATS, TRAINABLE_STATS, levelForXp, levelProgress, localDateKey, newLadder, rankFor, statPoints, xpToNextPoint,
+  STATS, TRAINABLE_STATS, levelForXp, levelProgress, newLadder, questDayDate, rankFor, statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
   AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState, Limitation,
@@ -106,8 +106,8 @@ export const CALENDAR_DAYS = 92;
 export type History = {
   /** The latest days, newest first, at most CALENDAR_DAYS. */
   days: CalendarRow[];
-  /** Day 1's end and zone (its date: `calendarDate`), or null. */
-  dayOne: Pick<DayRow, 'ends_at' | 'time_zone'> | null;
+  /** Day 1's window (its date: `calendarDate`), or null. */
+  dayOne: Pick<DayRow, 'starts_at' | 'ends_at' | 'time_zone'> | null;
   /** New rungs reached: the rung bonuses paid. */
   newRungs: number;
   /** Quests cleared with the current book since it was set. */
@@ -118,13 +118,9 @@ export type CalendarMark = 'open' | 'cleared' | 'hard' | 'rest' | 'paused' | 'no
 
 const REST: readonly Protection[] = ['planned_rest', 'pain'];
 
-/**
- * A quest day's date on the calendar: the local date 24 hours before it ends. For every day but one that is the date it
- * starts on; a day 1 begun late in the evening runs at least 6 hours, to the morning after next (rules:
- * FIRST_DAY_MIN_MS), and takes the date it mostly covers, so no date between day 1 and day 2 is left blank (review).
- */
-export function calendarDate(d: Pick<DayRow, 'ends_at' | 'time_zone'>): string {
-  return localDateKey(d.time_zone, d.ends_at.getTime() - DAY_MS);
+/** A quest day's date on the calendar (rules: `questDayDate`, which Today's header uses too). */
+export function calendarDate(d: Pick<DayRow, 'starts_at' | 'ends_at' | 'time_zone'>): string {
+  return questDayDate({ startsAt: d.starts_at.getTime(), endsAt: d.ends_at.getTime(), timeZone: d.time_zone });
 }
 
 /** How the calendar draws a day (decision 3). A closed day that is neither cleared nor protected is never a "miss". */

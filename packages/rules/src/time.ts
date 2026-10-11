@@ -1,4 +1,4 @@
-import { CLOCK_SKEW_MS, FIRST_DAY_MIN_MS, LATE_SYNC_MS, MAX_DAY_MS, MIN_DAY_MS } from './constants.ts';
+import { CLOCK_SKEW_MS, DAY_MS, FIRST_DAY_MIN_MS, HOUR_MS, LATE_SYNC_MS, MAX_DAY_MS, MIN_DAY_MS } from './constants.ts';
 
 export type LocalParts = { year: number; month: number; day: number; hour: number; minute: number; second: number };
 
@@ -62,6 +62,16 @@ export function localParts(timeZone: string, utcMs: number): LocalParts {
 export function localDateKey(timeZone: string, utcMs: number): string {
   const p = localParts(timeZone, utcMs);
   return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+
+/**
+ * The date a quest day is shown under (M6d: the calendar, Today's header): the local date it starts on, or, for a day
+ * over 25 hours (a first day begun late in the evening runs to the morning after next; a long travel day), the date 24
+ * hours before it ends, the one it mostly covers. Clock-change days (23 or 25 hours) keep their start's date.
+ */
+export function questDayDate(day: DayWindow): string {
+  const long = day.endsAt - day.startsAt > DAY_MS + HOUR_MS;
+  return localDateKey(day.timeZone, long ? day.endsAt - DAY_MS : day.startsAt);
 }
 
 /** How far `timeZone` is ahead of UTC at `utcMs`, in ms (UTC+8 gives 28 800 000). */
