@@ -12,6 +12,7 @@ export * from './art.ts';
 export * from './play.ts';
 export * from './adjust.ts';
 export * from './character.ts';
+export * from './offline.ts';
 export * from './quests/workout.ts';
 export * from './training/moves.ts';
 export * from './training/programs.ts';

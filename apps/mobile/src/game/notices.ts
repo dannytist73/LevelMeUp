@@ -33,6 +33,9 @@ const TEXT = {
   bad_change: "That change couldn't be applied, so nothing changed.",
   no_book: 'No book was set, so there was nothing to finish or set aside.',
   same_book: 'That book was already the one you are reading.',
+  day_rebuilt: 'The System rebuilt the day this phone made offline. Anything you finished there counts for the quest now in its place.',
+  quest_changed: "That quest had changed by the time the day reached the System, so the pain report wasn't saved. If it still hurts, report it again.",
+  clock_ahead: "This phone's clock is ahead of the System's, so the day it built offline wasn't used. Check the phone's time.",
 } as const;
 
 export type NoticeCode = keyof typeof TEXT;
