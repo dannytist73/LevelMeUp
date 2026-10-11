@@ -4402,4 +4402,17 @@ git branch -d m5-onboarding
 | M4 carried: replace the developer test character with the onboarding | 4, 9, 12 |
 | Spike 2: anonymous → Google linking | 10, 15 |
 
+## Review fixes (2026-10-11, after the independent review)
+
+Patterns the later plans must not copy:
+
+1. **`packages/content` imports only types from the rules** (M2's portability test). Line 588's `import { CLASSES }` broke
+   it; `classStats` and `routineLine` now take the class's stats from the caller. Run the whole content suite, not a
+   filtered one, before committing content.
+2. **A ladder started above rung 0 is not a climb.** `highestRung` counts towards rung achievements only once
+   `lastStepUpAt` is set (`_shared/state.ts`, `achievementProgress`); otherwise starting rungs award "New Ground".
+3. **Forgetting a phone's data forgets everything kept beside it**: the vow (`lmu.vow`) as well as the draft.
+4. Google restore reports `found: 'unknown'` when the sync after the sign-in didn't finish; a Google account's
+   `already_started` is never rebuilt with `redo`; `startCharacter` refuses an unfinished interview; `restart_player`
+   moves the version forward; two redos at once get `503 busy`; `readAccount` says "saved" only with a Google identity.
 

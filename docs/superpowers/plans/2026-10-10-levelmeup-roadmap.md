@@ -76,9 +76,10 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | Milestone | Item |
 |---|---|
-| M6 | Show the vow (`lmu.vow` in the phone's key-value store) on Character. Class change after onboarding (the analysis's "locked" message points there). |
+| M6 | Show the vow (`lmu.vow` in the phone's key-value store) on Character. Class change after onboarding (the analysis's "locked" message points there); check the lock before any Claude call (the M5 review saw a refused redo spend one of the player's three reveal calls; the app only sends a redo from the reveal, before the first action). |
 | M7 | The reveal's "Read the pact" link once the Pact screen exists. Settings changes the voice, as the Voice screen promises. Deleting a Google-linked account deletes all LevelMeUp data and keeps the shared sign-in (M3 decision); the delete screen says so. |
-| M9 | The class portrait on the reveal (the board's frame waits for the class art). Re-run `npm run pacing` (experienced players included) before the pilot. |
+| M9 | The class portrait on the reveal (the board's frame waits for the class art). Re-run `npm run pacing` (experienced players included) before the pilot; the experienced players' rank day isn't modelled yet ("most weeks" gives an estimate of 6, so the main stat starts at 8 and reaches rank C roughly 23 % sooner): model it, or accept it as intended. |
+| Accepted (M5 review) | Android back from the first reveal returns to the last question; Continue there re-runs the analysis as a redo, the same as "Fix an assumption". A 30-minute sleep (e.g. 3:30–4:00) rounds the day boundary onto the wake time. |
 | Before launch | Google's sign-in page shows the shared project's address (`knlgpcwoaaygncmlnbsm.supabase.co`); a custom domain or LevelMeUp's own project changes that (decide with the move question, architecture §12). |
 
 ## Spikes and where they run
