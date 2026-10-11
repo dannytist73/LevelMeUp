@@ -129,10 +129,13 @@ function readKeptArt(text: string | null): ArtManifest | null {
 export function createGameStore(deps: GameDeps): StoreApi<GameState> {
   return createStore<GameState>()((set, get) => {
     let dayEnd: ReturnType<typeof setTimeout> | null = null;
+    /** After stop(), a refresh still finishing must not arm a new day-end timer (it kept test runs alive). */
+    let stopped = false;
 
     const watchDayEnd = (view: Shown | null): void => {
       if (dayEnd !== null) clearTimeout(dayEnd);
       dayEnd = null;
+      if (stopped) return;
       const endsAt = view?.today?.endsAt;
       if (endsAt === undefined || endsAt === null) return;
       const wait = Date.parse(endsAt) - deps.now() + DAY_END_GRACE_MS;
@@ -231,6 +234,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           // A new guest is only made on an empty phone, so this is the same sign-in: its character is gone on the
           // server, and anything cached is stale.
           await deps.local.wipe();
+          confirmedLevel = null;
           await refresh({ phase: 'not_started', status: 'idle', error: null });
           return;
         case 'session_ended':
@@ -319,6 +323,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
               return { ok: false, code: started.code };
             }
             await deps.local.acknowledge([], [], started.body.state, deps.now());
+            confirmedLevel = started.body.state.character.level; // the server's own first state (review)
             await refresh({ phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account() });
             return { ok: true };
           };
@@ -383,7 +388,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       dismissCelebration: () => set({ celebrations: get().celebrations.slice(1) }),
 
-      timer: async (questId) => parseTimers(await deps.kv.getItem(TIMERS_KEY).catch(() => null))[questId] ?? null,
+      // After the saves on their way, so a pause still being written isn't read stale (review).
+      timer: (questId) =>
+        timerWrites.then(async () => parseTimers(await deps.kv.getItem(TIMERS_KEY).catch(() => null))[questId] ?? null),
 
       saveTimer: (questId, state) => {
         const write = async (): Promise<void> => {
@@ -401,6 +408,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       stop: () => {
+        stopped = true;
         scheduler.stop();
         if (dayEnd !== null) clearTimeout(dayEnd);
       },

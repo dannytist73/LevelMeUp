@@ -21,6 +21,12 @@ const completeCore = { type: 'complete', instanceId: core.id, completedAt: NOW, 
 
 type SyncReply = Call<SyncResponse> | (() => Promise<Call<SyncResponse>>);
 
+/** Stores the tests made; each is stopped after its test, so a day-end timer can't keep Jest running (review). */
+const made: { getState: () => { stop: () => void } }[] = [];
+afterEach(() => {
+  for (const store of made.splice(0)) store.getState().stop();
+});
+
 async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
   const sql = nodeSql();
   await migrate(sql);
@@ -62,6 +68,7 @@ async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
     ...over,
   };
   const store = createGameStore(deps);
+  made.push(store);
   return { store, local, api, deps, sent, kv };
 }
 
@@ -515,6 +522,15 @@ describe('celebrations (M6a decision 8)', () => {
     expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level }]);
   });
 
+  it('celebrates a level crossed between the analysis and its first sync (review)', async () => {
+    const higher = serverState([], { xp_strength: 400 });
+    const { store } = await setup([ok(higher)], { ensureSession: guestSession() });
+    store.getState().editDraft(READY_DRAFT);
+    expect(await store.getState().startCharacter()).toEqual({ ok: true }); // the analysis stores SERVER (level 1)
+    await store.getState().syncNow();
+    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level }]);
+  });
+
   it('queues the reply\'s new achievements', async () => {
     const { store } = await setup([ok(SERVER, { newAchievements: ['first-trial', 'level-5'] })]);
     await store.getState().boot();
@@ -539,15 +555,19 @@ describe('the art manifest (M6a decision 10)', () => {
     expect(deps.artManifest).toHaveBeenCalledTimes(1);
     expect(JSON.parse(kv.get(ART_KEY)!)).toEqual({ version: 1, art: { 'ladder-push': 2 } });
     const next = createGameStore({ ...deps, artManifest: jest.fn(async () => null) });
+    made.push(next);
     await next.getState().boot();
     expect(next.getState().art).toEqual({ version: 1, art: { 'ladder-push': 2 } });
   });
 
-  it('a manifest it can\'t read changes nothing', async () => {
-    const { store } = await setup([ok(SERVER)], { artManifest: jest.fn(async () => ({ version: 9 })) });
+  it('a manifest it can\'t read changes nothing, and the kept one stays', async () => {
+    const { store, deps, kv } = await setup([ok(SERVER)], { artManifest: jest.fn(async () => ({ version: 9 })) });
+    kv.set(ART_KEY, JSON.stringify({ version: 1, art: { 'ladder-walk': 1 } }));
     await store.getState().boot();
     await settle();
-    expect(store.getState().art).toBeNull();
+    expect(deps.artManifest).toHaveBeenCalledTimes(1);
+    expect(store.getState().art).toEqual({ version: 1, art: { 'ladder-walk': 1 } });
+    expect(JSON.parse(kv.get(ART_KEY)!)).toEqual({ version: 1, art: { 'ladder-walk': 1 } });
   });
 });
 
@@ -576,6 +596,18 @@ describe('quest timers (M6a decision 3)', () => {
     });
     await Promise.all([store.getState().saveTimer(core.id, running), store.getState().saveTimer(core.id, paused)]);
     expect(await store.getState().timer(core.id)).toEqual(paused);
+  });
+
+  it('reads a timer only after the saves on their way (review)', async () => {
+    const { store, deps, kv } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    (deps.kv.setItem as jest.Mock).mockImplementationOnce(async (k: string, v: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 20)); // the save's write is slow
+      kv.set(k, v);
+    });
+    const saving = store.getState().saveTimer(core.id, paused);
+    expect(await store.getState().timer(core.id)).toEqual(paused);
+    await saving;
   });
 
   it('are forgotten with everything else when the phone starts over', async () => {

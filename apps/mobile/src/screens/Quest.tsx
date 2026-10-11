@@ -4,7 +4,7 @@ import {
   EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary, renderWhy,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { timerTargetMs } from '../../../../supabase/functions/_shared/events.ts';
@@ -29,6 +29,7 @@ import { TapClaim } from './quest/TapClaim.tsx';
 import { TimerPanel } from './quest/TimerPanel.tsx';
 
 const T = PLAY_TEXT.quest;
+const MAX_TIMEOUT_MS = 2_147_483_647;
 
 export type QuestProps = { questId: number; onBack: () => void; now?: () => number };
 
@@ -42,6 +43,11 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
   const [before, setBefore] = useState<Shot | null>(null);
   const [timer, setTimer] = useState<TimerState>(NEW_TIMER);
   const [busy, setBusy] = useState(false);
+  const [, redraw] = useState(0);
+  /** A claim on its way: a second tap before the screen redraws sends nothing (review). */
+  const claiming = useRef(false);
+  /** The player moved the timer: a stored copy that loads late must not overwrite it (review). */
+  const timerTouched = useRef(false);
 
   const today = view?.today ?? null;
   const quest = today?.quests.find((q) => q.id === questId) ?? null;
@@ -52,7 +58,7 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
     let live = true;
     loadTimer(questId)
       .then((stored) => {
-        if (live && stored !== null) setTimer(stored);
+        if (live && stored !== null && !timerTouched.current) setTimer(stored);
       })
       .catch(() => {});
     return () => {
@@ -60,7 +66,25 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
     };
   }, [questId, openTimer, loadTimer]);
 
-  const dayOpen = today !== null && today.endsAt !== null && Date.parse(today.endsAt) > now();
+  const endsAt = today?.endsAt != null ? Date.parse(today.endsAt) : null;
+  const isOpen = (): boolean => endsAt !== null && endsAt > now();
+  const dayOpen = isOpen();
+
+  // The screen closes itself when the day ends (review): nothing else redraws it at that moment.
+  useEffect(() => {
+    if (!dayOpen || endsAt === null) return;
+    const wait = endsAt - now() + 50;
+    if (wait >= MAX_TIMEOUT_MS) return;
+    const id = setTimeout(() => redraw((n) => n + 1), Math.max(0, wait));
+    return () => clearTimeout(id);
+  }, [dayOpen, endsAt, now]);
+
+  /** The day may have ended since the last redraw: then nothing is sent and the screen shows it (review). */
+  const stillOpen = (): boolean => {
+    if (isOpen()) return true;
+    redraw((n) => n + 1);
+    return false;
+  };
   if (view === null || today === null || quest === null || (!dayOpen && quest.completedAt === null)) {
     return (
       <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: space.gutter, gap: 20 }}>
@@ -82,10 +106,13 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
         line={summary}
         numbers={clearedSummary(before, { character: view.character, quests: today.quests }, quest.id)}
         rating={quest.rating}
-        canUndo={dayOpen}
+        dayOpen={dayOpen}
         waiting={view.waiting.has(quest.id)}
-        onRate={(rating: Rating) => void enqueue({ type: 'rate', instanceId: quest.id, rating })}
+        onRate={(rating: Rating) => {
+          if (stillOpen()) void enqueue({ type: 'rate', instanceId: quest.id, rating });
+        }}
         onUndo={() => {
+          if (!stillOpen()) return;
           setBefore(null);
           setTimer(NEW_TIMER); // logged by mistake: the time it claimed doesn't carry over
           void enqueue({ type: 'undo', instanceId: quest.id });
@@ -96,12 +123,15 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
   }
 
   const claim = async (payload: Record<string, unknown>): Promise<void> => {
+    if (claiming.current || !stillOpen()) return;
+    claiming.current = true;
     setBusy(true);
     try {
       setBefore({ character: view.character, quests: today.quests });
       await enqueue({ type: 'complete', instanceId: quest.id, completedAt: now(), rating: null, payload });
       if (quest.completion === 'timer') await saveTimer(quest.id, null).catch(() => {});
     } finally {
+      claiming.current = false;
       setBusy(false);
     }
   };
@@ -115,8 +145,10 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
         timer={timer}
         targetMs={timerTargetMs(quest)}
         now={now}
+        endsAt={endsAt ?? undefined}
         disabled={busy}
         onChange={(next) => {
+          timerTouched.current = true;
           setTimer(next);
           void saveTimer(quest.id, next).catch(() => {});
         }}

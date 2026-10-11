@@ -1,5 +1,5 @@
 import { EXERCISE_SAFETY_LINE, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent, QuestView, ServerState } from '../src/game/types.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
@@ -53,6 +53,13 @@ describe('the completion panels (spec §3.6)', () => {
     await render(<TimerPanel timer={paused} now={() => T0 + 5 * MIN} targetMs={20 * MIN} disabled={false} onChange={jest.fn()} onClaim={jest.fn()} />);
     expect(screen.getByRole('button', { name: 'Resume' })).toBeTruthy();
     expect(screen.getByLabelText('01:00 of 20:00')).toBeTruthy();
+  });
+
+  it('timer: counts only up to the end of the day, as the server does (review)', async () => {
+    const endsAt = T0 + 10 * MIN; // started 10 minutes before the day ends
+    await render(<TimerPanel timer={startTimer(NEW_TIMER, T0)} now={() => T0 + 30 * MIN} endsAt={endsAt} targetMs={20 * MIN} disabled={false} onChange={jest.fn()} onClaim={jest.fn()} />);
+    expect(screen.getByLabelText('10:00 of 20:00')).toBeTruthy();
+    expect(disabled('Claim')).toBe(true);
   });
 
   it('formats long timers with hours, and never below zero', () => {
@@ -111,7 +118,7 @@ const NUMBERS: ClearedNumbers = {
 
 async function renderCleared(over: Partial<ClearedProps> = {}) {
   const props: ClearedProps = {
-    heading: 'CORE QUEST · KNEE PUSH-UPS', line: '3 sets of 8', numbers: NUMBERS, rating: null, canUndo: true, waiting: false,
+    heading: 'CORE QUEST · KNEE PUSH-UPS', line: '3 sets of 8', numbers: NUMBERS, rating: null, dayOpen: true, waiting: false,
     onRate: jest.fn(), onUndo: jest.fn(), onContinue: jest.fn(), ...over,
   };
   await render(<Cleared {...props} />);
@@ -147,14 +154,17 @@ describe('"Quest cleared" (board D2)', () => {
     expect(screen.getByText(/the System eases this one/)).toBeTruthy();
   });
 
-  it('offers Undo only while the day is open; Continue always', async () => {
+  it('offers Undo and the rating only while the day is open (the server refuses both after); Continue always', async () => {
     const props = await renderCleared();
     await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
     expect(props.onUndo).toHaveBeenCalled();
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(props.onContinue).toHaveBeenCalled();
-    await renderCleared({ canUndo: false });
+    await renderCleared({ dayOpen: false });
     expect(screen.queryByRole('button', { name: 'Logged by mistake? Undo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Easy' })).toBeNull();
+    expect(screen.queryByText(/How did it feel/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy();
   });
 
   it('without changes, shows no stat up, no streak and no Discipline line', async () => {
@@ -181,7 +191,7 @@ function withCore(over: Partial<QuestView>): ServerState {
 const coreOf = (s: ServerState) => s.today!.quests.find((q) => q.slot === 'core')!;
 
 /** A store whose enqueue applies the event like the real one, so the screen moves on to "Quest cleared". */
-async function renderQuest(server: ServerState, questId: number, over: Parameters<typeof testStore>[0] = {}) {
+async function renderQuest(server: ServerState, questId: number, over: Parameters<typeof testStore>[0] = {}, now: () => number = () => NOW) {
   const pending: PhoneEvent[] = [];
   const store = testStore({ view: project(server, []), ...over });
   const enqueue = jest.fn(async (event: Omit<PhoneEvent, 'id'>) => {
@@ -190,7 +200,7 @@ async function renderQuest(server: ServerState, questId: number, over: Parameter
   });
   store.setState({ enqueue: enqueue as never });
   const onBack = jest.fn();
-  await render(withStore(store, <Quest questId={questId} onBack={onBack} now={() => NOW} />));
+  await render(withStore(store, <Quest questId={questId} onBack={onBack} now={now} />));
   return { store, enqueue, onBack };
 }
 
@@ -277,6 +287,53 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     await renderQuest(SERVER, article.id);
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Log it' })).toBeNull();
+  });
+
+  it('an open quest whose day has ended says so and offers no claim (review)', async () => {
+    const server = withCore({ completion: 'tap', condition: { kind: 'habit' } });
+    const ended = Date.parse(server.today!.endsAt!) + 60_000;
+    await renderQuest(server, coreOf(server).id, {}, () => ended);
+    expect(screen.getByText(/This quest's day has closed/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Mark cleared' })).toBeNull();
+  });
+
+  it('closes itself when the day ends while it is open (review)', async () => {
+    jest.useFakeTimers();
+    try {
+      const server = withCore({ completion: 'tap', condition: { kind: 'habit' } });
+      const endsAt = Date.parse(server.today!.endsAt!);
+      let clock = endsAt - 2_000;
+      await renderQuest(server, coreOf(server).id, {}, () => clock);
+      expect(screen.getByRole('button', { name: 'Mark cleared' })).toBeTruthy();
+      clock = endsAt + 1_000;
+      await act(async () => {
+        jest.advanceTimersByTime(3_000);
+      });
+      expect(screen.getByText(/This quest's day has closed/)).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('sends nothing when the day ended before the screen caught up (review)', async () => {
+    const server = withCore({ completion: 'tap', condition: { kind: 'habit' } });
+    let clock = NOW;
+    const { enqueue } = await renderQuest(server, coreOf(server).id, {}, () => clock);
+    clock = Date.parse(server.today!.endsAt!) + 1_000; // no re-render yet
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared' }));
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(screen.getByText(/This quest's day has closed/)).toBeTruthy();
+  });
+
+  it('sends one completion for a second tap while the first is on its way (review)', async () => {
+    const server = withCore({ completion: 'tap', condition: { kind: 'habit' } });
+    const { store } = await renderQuest(server, coreOf(server).id);
+    const slow = jest.fn(() => new Promise<void>(() => {})); // the outbox write never finishes
+    await act(async () => store.setState({ enqueue: slow as never }));
+    const button = screen.getByRole('button', { name: 'Mark cleared' });
+    await fireEvent.press(button);
+    await fireEvent.press(button);
+    expect(slow).toHaveBeenCalledTimes(1);
   });
 
   it('a quest that is no longer today\'s says so and goes back', async () => {

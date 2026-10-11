@@ -25,7 +25,8 @@ export type ClearedProps = {
   line: string;
   numbers: ClearedNumbers;
   rating: Rating | null;
-  canUndo: boolean;
+  /** Undo and the rating are offered only while the day is open: the server refuses both after (review). */
+  dayOpen: boolean;
   waiting: boolean;
   onRate: (rating: Rating) => void;
   onUndo: () => void;
@@ -60,7 +61,7 @@ function RateButton({ label, selected, onPress }: { label: string; selected: boo
   );
 }
 
-export function Cleared({ heading, line, numbers, rating, canUndo, waiting, onRate, onUndo, onContinue }: ClearedProps) {
+export function Cleared({ heading, line, numbers, rating, dayOpen, waiting, onRate, onUndo, onContinue }: ClearedProps) {
   const insets = useSafeAreaInsets();
   const { level, xpIntoLevel, xpForLevel } = numbers.level;
   const shown: Rating = rating ?? 'right';
@@ -105,18 +106,20 @@ export function Cleared({ heading, line, numbers, rating, canUndo, waiting, onRa
         </View>
       </SlantPanel>
 
-      <View style={{ gap: 8 }}>
-        <Small>{C.rateLabel}</Small>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {RATINGS.map(([value, label]) => (
-            <RateButton key={value} label={label} selected={shown === value} onPress={() => { if (value !== shown) onRate(value); }} />
-          ))}
+      {dayOpen && (
+        <View style={{ gap: 8 }}>
+          <Small>{C.rateLabel}</Small>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {RATINGS.map(([value, label]) => (
+              <RateButton key={value} label={label} selected={shown === value} onPress={() => { if (value !== shown) onRate(value); }} />
+            ))}
+          </View>
+          {rating === 'too_hard' && <Small>{C.tooHardNote}</Small>}
         </View>
-        {rating === 'too_hard' && <Small>{C.tooHardNote}</Small>}
-      </View>
+      )}
 
       <Button label={C.continue} onPress={onContinue} />
-      {canUndo && <Button label={C.undo} variant="secondary" onPress={onUndo} />}
+      {dayOpen && <Button label={C.undo} variant="secondary" onPress={onUndo} />}
       {waiting && <Caption>{PLAY_TEXT.quest.willSync}</Caption>}
     </ScreenScroll>
   );

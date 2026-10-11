@@ -26,12 +26,14 @@ export type TimerPanelProps = {
   timer: TimerState;
   targetMs: number;
   now: () => number;
+  /** The end of the quest's day: the server counts no time after it, so neither does the panel (review). */
+  endsAt?: number;
   disabled: boolean;
   onChange: (timer: TimerState) => void;
   onClaim: (payload: Record<string, unknown>) => void;
 };
 
-export function TimerPanel({ timer, targetMs, now, disabled, onChange, onClaim }: TimerPanelProps) {
+export function TimerPanel({ timer, targetMs, now, endsAt, disabled, onChange, onClaim }: TimerPanelProps) {
   const [, tick] = useState(0);
   const running = timer.runningSince !== null;
   useEffect(() => {
@@ -40,7 +42,8 @@ export function TimerPanel({ timer, targetMs, now, disabled, onChange, onClaim }
     return () => clearInterval(id);
   }, [running]);
 
-  const at = now();
+  const clamped = (): number => (endsAt === undefined ? now() : Math.min(now(), endsAt));
+  const at = clamped();
   const elapsed = timerElapsed(timer, at);
   const done = timerDone(timer, at, targetMs);
   const started = running || timer.segments.length > 0;
@@ -59,7 +62,7 @@ export function TimerPanel({ timer, targetMs, now, disabled, onChange, onClaim }
         disabled={disabled}
         onPress={() => onChange(running ? pauseTimer(timer, now()) : startTimer(timer, now()))}
       />
-      <Button label={PLAY_TEXT.claim.timer} variant="commitment" disabled={disabled || !done} onPress={() => onClaim(timerPayload(timer, now()))} />
+      <Button label={PLAY_TEXT.claim.timer} variant="commitment" disabled={disabled || !done} onPress={() => onClaim(timerPayload(timer, clamped()))} />
     </View>
   );
 }
