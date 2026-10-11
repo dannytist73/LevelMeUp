@@ -1,7 +1,8 @@
 // A quest, opened from Today (spec §3.1, §3.4, §3.6; M6a decisions 1–10): its picture, its words in the player's voice,
 // why it was picked, how to do it, the safety lines, and the panel that logs it. A cleared quest shows "Quest cleared".
+// M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag.
 import {
-  EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary, renderWhy,
+  ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary, renderWhy,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -29,11 +30,18 @@ import { TapClaim } from './quest/TapClaim.tsx';
 import { TimerPanel } from './quest/TimerPanel.tsx';
 
 const T = PLAY_TEXT.quest;
+const A = ADJUST_TEXT;
 const MAX_TIMEOUT_MS = 2_147_483_647;
 
-export type QuestProps = { questId: number; onBack: () => void; now?: () => number };
+export type QuestProps = {
+  questId: number;
+  onBack: () => void;
+  onSwap: (questId: number) => void;
+  onPain: (questId: number) => void;
+  now?: () => number;
+};
 
-export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
+export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: QuestProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const art = useGame((s) => s.art);
@@ -179,9 +187,11 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
           <Chip label={STAT_NAMES[quest.stat]} />
           <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
           <Chip label={`+${questXp(quest)} XP`} kind="outline" />
+          {quest.hardDay && <Chip label={A.hardDay.tag} kind="outline" />}
         </View>
       </View>
-      <Body>{words.line}</Body>
+      {/* The voice line quotes the full version's numbers (M2 carried item), so a hard day hides it. */}
+      {!quest.hardDay && <Body>{words.line}</Body>}
       <View style={{ gap: 4, padding: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.line }}>
         <Label>{T.why}</Label>
         <Small>{renderWhy(quest.why, view.profile.voice, { classId: view.profile.classId })}</Small>
@@ -197,9 +207,15 @@ export function Quest({ questId, onBack, now = Date.now }: QuestProps) {
           <Label>{T.safety}</Label>
           {template.safety.map((line, i) => <Small key={i}>{line}</Small>)}
           {template.exercise !== null && <Small tone="chalk">{EXERCISE_SAFETY_LINE}</Small>}
+          {template.exercise !== null && (
+            <Button label={A.pain.open} variant="secondary" onPress={() => onPain(quest.id)} style={{ alignSelf: 'flex-start' }} />
+          )}
         </View>
       )}
       {panel}
+      {today.swapsLeft > 0 && quest.swaps.length > 0 && (
+        <Button label={A.swap.open} variant="secondary" onPress={() => onSwap(quest.id)} />
+      )}
       {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
     </ScreenScroll>
   );

@@ -1,12 +1,15 @@
-import { ADJUST_TEXT, fillText } from '@levelmeup/content';
+import { ADJUST_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
 import { newLadder } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { DayActions, DayBanners, PausedExercises } from '../src/screens/DayActions.tsx';
-import { adjustState, characterRow, ladderRows, profileRow } from './support/fixtures.ts';
+import { Swap } from '../src/screens/Swap.tsx';
+import { DAY_TWO_NOW, adjustState, characterRow, ladderRows, profileRow } from './support/fixtures.ts';
+import { testStore, withStore } from './support/store.ts';
 
 const A = ADJUST_TEXT;
+const now = () => DAY_TWO_NOW;
 const shown = (state: ServerState = adjustState()) => project(state, []);
 const actions = (view = shown(), enqueue = jest.fn(async () => {}), onSwap = jest.fn(), onVanish = jest.fn()) =>
   <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />;
@@ -70,5 +73,35 @@ describe("Today's adjustments (M6b)", () => {
     expect(screen.getByText(fillText(A.paused.line, { name: 'Push-ups' }))).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Resume Push-ups' }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'resume', ladderId: 'push' });
+  });
+});
+
+describe('the swap sheet (spec §3.5)', () => {
+  const title = (templateId: string) => authoredTemplate(templateId).voice.system.title;
+
+  it("from a quest: lists that quest's options and sends the chosen one", async () => {
+    const view = shown();
+    const store = testStore({ view });
+    const onDone = jest.fn();
+    await render(withStore(store, <Swap questId={200} now={now} onDone={onDone} onBack={jest.fn()} />));
+    const option = view.today!.quests.find((q) => q.id === 200)!.swaps[0]!;
+    expect(screen.getByRole('button', { name: A.swap.choose }).props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(screen.getByText(title(option.templateId)));
+    await fireEvent.press(screen.getByRole('button', { name: A.swap.choose }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'swap', instanceId: 200, templateId: option.templateId });
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('from Today: asks which quest first', async () => {
+    await render(withStore(testStore({ view: shown() }), <Swap questId={null} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(A.swap.which)).toBeTruthy();
+    await fireEvent.press(screen.getByText(title('walk-1')));
+    expect(screen.getByText(A.swap.options)).toBeTruthy();
+  });
+
+  it('with no swap left, says so', async () => {
+    await render(withStore(testStore({ view: shown(adjustState({}, { swaps_used: 1 })) }),
+      <Swap questId={200} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(A.swap.none)).toBeTruthy();
   });
 });

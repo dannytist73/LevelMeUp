@@ -1,4 +1,4 @@
-import { EXERCISE_SAFETY_LINE, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
+import { ADJUST_TEXT, EXERCISE_SAFETY_LINE, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
@@ -13,7 +13,7 @@ import { RepLog } from '../src/screens/quest/RepLog.tsx';
 import { SentenceLog } from '../src/screens/quest/SentenceLog.tsx';
 import { TapClaim } from '../src/screens/quest/TapClaim.tsx';
 import { TimerPanel, clock } from '../src/screens/quest/TimerPanel.tsx';
-import { serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const T0 = Date.UTC(2026, 9, 10, 13);
@@ -202,7 +202,7 @@ async function renderQuest(server: ServerState, questId: number, over: Parameter
   });
   store.setState({ enqueue: enqueue as never });
   const onBack = jest.fn();
-  await render(withStore(store, <Quest questId={questId} onBack={onBack} now={now} />));
+  await render(withStore(store, <Quest questId={questId} onBack={onBack} onSwap={jest.fn()} onPain={jest.fn()} now={now} />));
   return { store, enqueue, onBack };
 }
 
@@ -343,5 +343,35 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     expect(screen.getByText(/This quest's day has closed/)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
     expect(onBack).toHaveBeenCalled();
+  });
+});
+
+describe('adjusting from the quest screen (M6b)', () => {
+  const at = () => DAY_TWO_NOW;
+  const hardDay = { id: '00000000-0000-4000-9000-000000000001', type: 'hard_day', dayId: 2 } as const;
+
+  it('an open exercise quest offers "I felt pain" and "Swap this quest"', async () => {
+    const onSwap = jest.fn();
+    const onPain = jest.fn();
+    await render(withStore(testStore({ view: project(adjustState(), []) }),
+      <Quest questId={200} now={at} onBack={jest.fn()} onSwap={onSwap} onPain={onPain} />));
+    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
+    expect(onPain).toHaveBeenCalledWith(200);
+    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.swap.open }));
+    expect(onSwap).toHaveBeenCalledWith(200);
+  });
+
+  it('a hard-day quest hides the line that quotes the full version, and says it is a hard day', async () => {
+    await render(withStore(testStore({ view: project(adjustState(), [hardDay]) }),
+      <Quest questId={200} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+    expect(screen.getByText(ADJUST_TEXT.hardDay.tag)).toBeTruthy();
+    expect(screen.queryByText(authoredTemplate('push-1').voice.system.line)).toBeNull();
+  });
+
+  it('reading has no pain button; with no swap left there is no swap button', async () => {
+    await render(withStore(testStore({ view: project(adjustState({}, { swaps_used: 1 }), []) }),
+      <Quest questId={202} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+    expect(screen.queryByRole('button', { name: ADJUST_TEXT.pain.open })).toBeNull();
+    expect(screen.queryByRole('button', { name: ADJUST_TEXT.swap.open })).toBeNull();
   });
 });
