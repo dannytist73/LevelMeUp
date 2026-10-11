@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 import { colors } from '../src/theme/tokens.ts';
 import { Button } from '../src/ui/Button.tsx';
@@ -15,6 +15,12 @@ import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { SlantPanel, slantPoints } from '../src/ui/SlantPanel.tsx';
 import { MarkStamp, XpStamp, clampRotation } from '../src/ui/Stamp.tsx';
 import { XpBar, fillFraction } from '../src/ui/XpBar.tsx';
+import { HoldButton } from '../src/ui/HoldButton.tsx';
+import { OptionCard } from '../src/ui/OptionCard.tsx';
+import { ProgressSegments } from '../src/ui/ProgressSegments.tsx';
+import { SpeedLines } from '../src/ui/SpeedLines.tsx';
+import { TextField } from '../src/ui/TextField.tsx';
+import { TimeStepper } from '../src/ui/TimeStepper.tsx';
 
 const flat = (style: unknown): Record<string, unknown> => (StyleSheet.flatten(style as never) ?? {}) as Record<string, unknown>;
 
@@ -222,5 +228,102 @@ describe('SlamIn', () => {
     await render(<SlamIn reduceMotion><Text>panel</Text></SlamIn>);
     expect(screen.getByText('panel')).toBeTruthy();
     expect(flat(screen.getByTestId('slam-in').props.style).transform).toBeUndefined();
+  });
+});
+
+describe('OptionCard', () => {
+  it('is a radio, unchecked and without the offset until selected', async () => {
+    const onPress = jest.fn();
+    await render(<OptionCard label="Mentor" detail="Warm" selected={false} onPress={onPress} />);
+    const card = screen.getByRole('radio', { name: 'Mentor. Warm' });
+    expect(card.props.accessibilityState).toMatchObject({ checked: false });
+    expect(screen.queryByTestId('option-offset')).toBeNull();
+    await fireEvent.press(card);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('selected: checked, with the vermilion offset for a single choice only', async () => {
+    await render(
+      <>
+        <OptionCard label="Steady" selected onPress={() => {}} />
+        <OptionCard label="Knees" kind="checkbox" selected onPress={() => {}} />
+      </>,
+    );
+    expect(screen.getByRole('radio', { name: 'Steady' }).props.accessibilityState).toMatchObject({ checked: true });
+    expect(screen.getByRole('checkbox', { name: 'Knees' }).props.accessibilityState).toMatchObject({ checked: true });
+    expect(screen.getAllByTestId('option-offset')).toHaveLength(1);
+  });
+
+  it('a disabled card says so and ignores taps', async () => {
+    const onPress = jest.fn();
+    await render(<OptionCard label="Read and learn" kind="checkbox" selected={false} disabled onPress={onPress} />);
+    const card = screen.getByRole('checkbox', { name: 'Read and learn' });
+    expect(card.props.accessibilityState).toMatchObject({ disabled: true });
+    await fireEvent.press(card);
+    expect(onPress).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProgressSegments', () => {
+  it('one bar per screen; the current one named for screen readers', async () => {
+    await render(<ProgressSegments count={6} current={2} />);
+    expect(screen.getByRole('progressbar', { name: 'Step 3 of 6' })).toBeTruthy();
+    expect(screen.getAllByTestId('segment', { includeHiddenElements: true })).toHaveLength(6);
+  });
+});
+
+describe('TimeStepper', () => {
+  it('moves by half an hour and wraps around midnight', async () => {
+    const onChange = jest.fn();
+    await render(<TimeStepper label="Sleep" minutes={23 * 60 + 30} onChange={onChange} />);
+    expect(screen.getByText('11:30 PM')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Sleep 30 minutes later' }));
+    expect(onChange).toHaveBeenLastCalledWith(0);
+    await fireEvent.press(screen.getByRole('button', { name: 'Sleep 30 minutes earlier' }));
+    expect(onChange).toHaveBeenLastCalledWith(23 * 60);
+  });
+});
+
+describe('TextField', () => {
+  it('is a labelled input', async () => {
+    const onChangeText = jest.fn();
+    await render(<TextField label="What should I call you?" value="" onChangeText={onChangeText} />);
+    await fireEvent.changeText(screen.getByLabelText('What should I call you?'), 'Rin');
+    expect(onChangeText).toHaveBeenCalledWith('Rin');
+  });
+});
+
+describe('HoldButton', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('fires after a two-second hold; letting go early cancels', async () => {
+    const onDone = jest.fn();
+    await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
+    const button = screen.getByRole('button', { name: 'Hold to swear' });
+    await fireEvent(button, 'pressIn');
+    await act(async () => { jest.advanceTimersByTime(1_000); });
+    await fireEvent(button, 'pressOut');
+    await act(async () => { jest.advanceTimersByTime(3_000); });
+    expect(onDone).not.toHaveBeenCalled();
+    await fireEvent(button, 'pressIn');
+    await act(async () => { jest.advanceTimersByTime(2_000); });
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('with a screen reader on: tap, then confirm (visual spec §3)', async () => {
+    const onDone = jest.fn();
+    await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Swear' }));
+    expect(onDone).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Confirm the vow' }));
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SpeedLines', () => {
+  it('draws nothing a screen reader or a tap can reach', async () => {
+    await render(<SpeedLines />);
+    expect(screen.getByTestId('speed-lines', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
   });
 });

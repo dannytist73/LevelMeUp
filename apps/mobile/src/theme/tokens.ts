@@ -42,6 +42,8 @@ export const colors = {
   lineSoft: '#3A3A40',
   /** The tab bar. */
   tabBar: '#0A0A0B',
+  /** An onboarding progress bar not reached yet (visual spec §2). */
+  segmentNext: '#2A2A2F',
 } as const;
 
 export type ColorName = keyof typeof colors;
