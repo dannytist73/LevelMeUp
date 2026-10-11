@@ -352,7 +352,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
             }
             await deps.local.acknowledge([], [], started.body.state, deps.now());
             confirmedLevel = started.body.state.character.level; // the server's own first state (review)
-            await refresh({ phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account() });
+            // A new player just answered the Training step: the note for players from before M6c is never theirs (M6d).
+            await deps.kv.setItem(TRAINING_NOTICE_KEY, 'seen').catch(() => {});
+            await refresh({
+              phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account(), trainingNoticeSeen: true,
+            });
             return { ok: true };
           };
           const holding = get().cached !== null;
@@ -368,9 +372,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       finishOnboarding: async () => {
         await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
-        // A new player just answered the Training step: the note for players from before M6c is never theirs.
-        await deps.kv.setItem(TRAINING_NOTICE_KEY, 'seen').catch(() => {});
-        set({ draft: NEW_DRAFT, reveal: null, trainingNoticeSeen: true });
+        set({ draft: NEW_DRAFT, reveal: null });
       },
 
       saveVow: async (text) => {

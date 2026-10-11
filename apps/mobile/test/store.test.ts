@@ -375,13 +375,23 @@ describe('the game store', () => {
     second.store.getState().stop();
   });
 
-  it('a new player never gets the training notice: leaving the onboarding marks it seen', async () => {
+  it('a new player never gets the training notice: making the character marks it seen (review)', async () => {
     const { store, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
     await store.getState().boot();
     expect(store.getState().trainingNoticeSeen).toBe(false);
-    await store.getState().finishOnboarding();
+    store.getState().editDraft(READY_DRAFT);
+    expect(await store.getState().startCharacter()).toEqual({ ok: true });
     expect(store.getState().trainingNoticeSeen).toBe(true);
     expect(kv.get(TRAINING_NOTICE_KEY)).toBe('seen');
+    store.getState().stop();
+  });
+
+  it('a character restored with Google keeps the notice: leaving the onboarding alone does not mark it (review)', async () => {
+    const { store, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
+    await store.getState().boot();
+    await store.getState().finishOnboarding();
+    expect(store.getState().trainingNoticeSeen).toBe(false);
+    expect(kv.has(TRAINING_NOTICE_KEY)).toBe(false);
     store.getState().stop();
   });
 
