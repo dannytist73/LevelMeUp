@@ -3,7 +3,7 @@
 // M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag. M6c: a workout's log, and a way to change the
 // equipment or program.
 import {
-  ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary, renderWhy,
+  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary, renderWhy,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -204,6 +204,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.
         <Label tone="ember">{slot}</Label>
         <Title>{words.title}</Title>
         <Body weight="medium">{summary}</Body>
+        {quest.book !== null && <Body tone="ashLight">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Body>}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           <Chip label={STAT_NAMES[quest.stat]} />
           <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />

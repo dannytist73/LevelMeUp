@@ -477,3 +477,15 @@ describe('a workout (M6c)', () => {
     expect((sent as unknown as { payload: { sets: number[] } }).payload.sets).toHaveLength(6);
   });
 });
+
+describe("the book a reading quest tracks (M6d, Scholar's Path)", () => {
+  it('shows on the quest screen, and only when there is one', async () => {
+    await renderQuest(withCore({ book: 'Dune' }), coreOf(SERVER).id);
+    expect(screen.getByText('Reading: Dune')).toBeTruthy();
+  });
+
+  it('is absent without a book', async () => {
+    await renderQuest(SERVER, coreOf(SERVER).id);
+    expect(screen.queryByText(/^Reading: /)).toBeNull();
+  });
+});

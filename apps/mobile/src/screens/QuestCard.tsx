@@ -1,7 +1,7 @@
 // A quest on Today (D1 board): the core quest in a paper panel with its XP stamp, the others as night cards. Words come
 // from the content package in the player's voice; numbers from the quest's stored snapshot. M4 showed; M6a makes every
 // card open its quest and puts the picture on the core quest; M6b adds the hard-day tag and "I felt pain".
-import { ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary, renderWhy } from '@levelmeup/content';
+import { ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary, renderWhy } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import type { ClassId } from '@levelmeup/rules';
 import { Pressable, View } from 'react-native';
@@ -70,6 +70,7 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
                 <View style={{ gap: 4 }}>
                   <Title tone="ink">{words.title}</Title>
                   <Body tone="inkSoft" weight="medium">{summary}</Body>
+                  {quest.book !== null && <Small tone="inkSoft">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
                 </View>
                 <View style={{ gap: 3, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink }}>
                   <Label tone="sealText">Why this quest</Label>
@@ -121,6 +122,7 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
         </View>
         <Heading>{words.title}</Heading>
         <Meta>{summary}</Meta>
+        {quest.book !== null && <Small tone="chalk">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
         <Small>{why}</Small>
         {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
         {waiting && <WillSync on="night" />}

@@ -1,0 +1,93 @@
+// Scholar's Path (spec §2.5, Mage level 10; M6d decision 12): set the book the reading quests track, finish it, or set
+// it aside. Each choice sends one `book` event; the server keeps the finished books with their sessions.
+import { BOOK_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { useState } from 'react';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MAX_BOOK_TITLE } from '../../../../supabase/functions/_shared/events.ts';
+import { scholarsPathOpen } from '../game/character.ts';
+import { useGame } from '../state/store.ts';
+import { space } from '../theme/tokens.ts';
+import { Button } from '../ui/Button.tsx';
+import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { NightCard } from '../ui/NightCard.tsx';
+import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { Body, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { TextField } from '../ui/TextField.tsx';
+import { useLeavingView } from './leaving.ts';
+
+const B = BOOK_TEXT;
+
+export type BookProps = { onDone: () => void; onBack: () => void };
+
+export function Book({ onDone, onBack }: BookProps) {
+  const insets = useSafeAreaInsets();
+  const [view, leave, stay] = useLeavingView();
+  const enqueue = useGame((s) => s.enqueue);
+  const [title, setTitle] = useState('');
+  const [confirm, setConfirm] = useState<'finish' | 'aside' | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (view === null) {
+    return (
+      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: space.gutter, gap: 20 }}>
+        <NarrationBox>The System is preparing your trials.</NarrationBox>
+        <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} />
+      </ScreenScroll>
+    );
+  }
+  const open = scholarsPathOpen(view.profile.classId, view.character.level);
+  const current = view.profile.book;
+  const trimmed = title.trim();
+  const send = async (next: string | null, finished: boolean): Promise<void> => {
+    if (busy) return;
+    setBusy(true);
+    leave();
+    try {
+      await enqueue({ type: 'book', title: next, finished });
+    } catch {
+      stay();
+      setBusy(false);
+      return;
+    }
+    onDone();
+  };
+
+  return (
+    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
+      <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+      <Title>{B.title}</Title>
+      {!open ? (
+        <NarrationBox>{B.closed}</NarrationBox>
+      ) : (
+        <>
+          <Body>{B.lead}</Body>
+          {current !== null && (
+            <NightCard>
+              <View style={{ gap: 8 }}>
+                <Label>{B.current}</Label>
+                <Heading>{current}</Heading>
+                {confirm === null ? (
+                  <>
+                    <Button label={B.finish} variant="secondary" onPress={() => setConfirm('finish')} />
+                    <Button label={B.setAside} variant="secondary" onPress={() => setConfirm('aside')} />
+                  </>
+                ) : (
+                  <>
+                    <Small tone="chalk">{fillText(confirm === 'finish' ? B.finishConfirm : B.setAsideConfirm, { title: current })}</Small>
+                    <Button label={confirm === 'finish' ? B.finishYes : B.setAsideYes} variant="commitment" disabled={busy}
+                      onPress={() => void send(null, confirm === 'finish')} />
+                    <Button label={B.notNow} variant="secondary" onPress={() => setConfirm(null)} />
+                  </>
+                )}
+              </View>
+            </NightCard>
+          )}
+          <TextField label={B.field} value={title} onChangeText={setTitle} maxLength={MAX_BOOK_TITLE} />
+          <Button label={current === null ? B.start : B.switchTo} variant="commitment"
+            disabled={busy || trimmed.length === 0 || trimmed === current} onPress={() => void send(trimmed, false)} />
+        </>
+      )}
+    </ScreenScroll>
+  );
+}

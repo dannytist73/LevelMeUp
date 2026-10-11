@@ -1,9 +1,10 @@
-import { ACHIEVEMENTS, ADJUST_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
+import { ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
+import { Book } from '../src/screens/Book.tsx';
 import { Celebration } from '../src/screens/Celebration.tsx';
 import { Character } from '../src/screens/Character.tsx';
 import { Chronicle, dayOutcome } from '../src/screens/Chronicle.tsx';
@@ -344,4 +345,73 @@ it('Character offers a class change, and says when the next one opens (M6b)', as
   expect(screen.getByText(/Your next class change opens on/)).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.classChange.open }));
   expect(onChangeClass).toHaveBeenCalled();
+});
+
+describe("Scholar's Path: the book screen (M6d decision 12)", () => {
+  const L10 = (() => { let t = 0; while (levelForXp(t) < 10) t += 10; return t; })();
+  const mage = (book: string | null) => project(adjustState({
+    profile: profileRow(undefined, { class_id: 'mage', book }),
+    character: characterRow({ xp_wisdom: L10 }),
+  }), []);
+  const disabled = (name: string) => screen.getByRole('button', { name }).props.accessibilityState.disabled;
+  async function renderBook(view: ReturnType<typeof project>) {
+    const store = testStore({ view });
+    const onDone = jest.fn();
+    await render(withStore(store, <Book onDone={onDone} onBack={jest.fn()} />));
+    return { enqueue: store.getState().enqueue as jest.Mock, onDone };
+  }
+
+  it('starts a book, its title trimmed, and goes back', async () => {
+    const { enqueue, onDone } = await renderBook(mage(null));
+    expect(disabled(BOOK_TEXT.start)).toBe(true);
+    await fireEvent.changeText(screen.getByLabelText(BOOK_TEXT.field), '  Dune ');
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.start }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'book', title: 'Dune', finished: false });
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('switching needs a different title', async () => {
+    await renderBook(mage('Dune'));
+    expect(screen.getByText('Dune')).toBeTruthy();
+    expect(disabled(BOOK_TEXT.switchTo)).toBe(true);
+    await fireEvent.changeText(screen.getByLabelText(BOOK_TEXT.field), ' Dune');
+    expect(disabled(BOOK_TEXT.switchTo)).toBe(true);
+    await fireEvent.changeText(screen.getByLabelText(BOOK_TEXT.field), 'Meditations');
+    expect(disabled(BOOK_TEXT.switchTo)).toBe(false);
+  });
+
+  it('"Finished it" asks first, then records the book', async () => {
+    const { enqueue, onDone } = await renderBook(mage('Dune'));
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.finish }));
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(screen.getByText('Mark "Dune" as finished? It joins your finished books.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.finishYes }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'book', title: null, finished: true });
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('"Set it aside" asks first; "Not now" changes nothing', async () => {
+    const { enqueue } = await renderBook(mage('Dune'));
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.setAside }));
+    expect(screen.getByText('Set "Dune" aside? Its sessions so far are not kept.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.notNow }));
+    expect(screen.getByRole('button', { name: BOOK_TEXT.finish })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.setAside }));
+    await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.setAsideYes }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'book', title: null, finished: false });
+  });
+
+  it('is closed below a Mage at level 10', async () => {
+    await renderBook(project(adjustState(), []));
+    expect(screen.getByLabelText(`System: ${BOOK_TEXT.closed}`)).toBeTruthy();
+    expect(screen.queryByLabelText(BOOK_TEXT.field)).toBeNull();
+  });
+
+  it('reading quests show their book on Today', async () => {
+    const server = adjustState();
+    const quests = server.today!.quests.map((q) => (q.slot === 'core' || q.slot === 'side2' ? { ...q, book: 'Dune' } : q));
+    await render(withStore(testStore({ view: project({ ...server, today: { ...server.today!, quests } }, []) }),
+      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} now={() => DAY_TWO_NOW} />));
+    expect(screen.getAllByText('Reading: Dune')).toHaveLength(2); // the core card and an open side card
+  });
 });
