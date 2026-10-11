@@ -18,6 +18,7 @@ import { XpBar, fillFraction } from '../src/ui/XpBar.tsx';
 import { HoldButton } from '../src/ui/HoldButton.tsx';
 import { OptionCard } from '../src/ui/OptionCard.tsx';
 import { ProgressSegments } from '../src/ui/ProgressSegments.tsx';
+import { QuestArt } from '../src/ui/QuestArt.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { TextField } from '../src/ui/TextField.tsx';
 import { TimeStepper } from '../src/ui/TimeStepper.tsx';
@@ -325,5 +326,34 @@ describe('SpeedLines', () => {
   it('draws nothing a screen reader or a tap can reach', async () => {
     await render(<SpeedLines />);
     expect(screen.getByTestId('speed-lines', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
+  });
+});
+
+describe('QuestArt (M6a decision 10)', () => {
+  it('shows the picture when there is one', async () => {
+    await render(<QuestArt uri="https://example.test/a.webp" label="Strength quest picture" fallback="Strength" />);
+    expect(screen.getByTestId('quest-art').props.source).toEqual({ uri: 'https://example.test/a.webp' });
+    expect(screen.getByLabelText('Strength quest picture')).toBeTruthy();
+  });
+
+  it('draws the ink fallback without a picture', async () => {
+    await render(<QuestArt uri={null} label="Focus quest picture" fallback="Focus" />);
+    expect(screen.getByTestId('quest-art-fallback')).toBeTruthy();
+    expect(screen.getByText('FOCUS')).toBeTruthy();
+  });
+
+  it('falls back when the picture fails to load', async () => {
+    await render(<QuestArt uri="https://example.test/missing.webp" label="Wisdom quest picture" fallback="Wisdom" />);
+    await fireEvent(screen.getByTestId('quest-art'), 'error');
+    expect(screen.getByText('WISDOM')).toBeTruthy();
+  });
+});
+
+describe('XpBar on paper', () => {
+  it('uses an ink border on paper and chalk on the night', async () => {
+    await render(<XpBar value={1} max={2} label="On paper" on="paper" />);
+    expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On paper' }).props.style).borderColor).toBe(colors.ink);
+    await render(<XpBar value={1} max={2} label="On night" />);
+    expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On night' }).props.style).borderColor).toBe(colors.chalk);
   });
 });
