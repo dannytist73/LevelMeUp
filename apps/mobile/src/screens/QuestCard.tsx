@@ -65,7 +65,7 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
                   <Chip label={stat} on="paper" />
                   <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
                   {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" on="paper" />}
-                {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" on="paper" />}
+              {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" on="paper" />}
                 </View>
                 <View style={{ gap: 4 }}>
                   <Title tone="ink">{words.title}</Title>

@@ -197,6 +197,12 @@ describe('planning an adjustment (adjust.ts)', () => {
     expect(plan(tight, { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({
       change: { ladders: { push: { ...newLadder(1), paused: true } }, day: { id: 2, protection: 'pain' } },
     });
+    // Another quest of the day has a template this version doesn't know: the report still rests (re-review).
+    const s = at();
+    const retired = { ...s, instances: s.instances.map((q) => (q.id === '202' ? { ...q, template_id: 'retired-quest' } : q)) };
+    expect(plan(retired, { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({
+      change: { ladders: { push: { ...newLadder(1), paused: true } }, day: { id: 2, protection: 'pain' } },
+    });
   });
 
   it('resume: one rung lower, only while resting', () => {

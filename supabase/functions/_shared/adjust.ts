@@ -115,8 +115,14 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
       const rest: Plan = { change: day.protection === null ? { ladders, day: { id: Number(day.id), protection: 'pain' } } : { ladders } };
       if (event.choice === 'rest') return rest;
       if (quest.completed_at !== null) return { change: { ladders } };
-      const quests = questsOf(s, day);
-      const option = painOption(library, todayInput(s, day), todayBuilt(day, quests), quest.slot);
+      let option: QuestDraft | null;
+      try {
+        option = painOption(library, todayInput(s, day), todayBuilt(day, questsOf(s, day)), quest.slot);
+      } catch (error) {
+        // The rules can't read the day (a template this version doesn't know): the report still rests (re-review).
+        if (!(error instanceof RangeError)) throw error;
+        option = null;
+      }
       // Nothing gentle fits any more (the day changed since the offer): rest is always the other way.
       if (option === null) return rest;
       return { change: { ladders, day: { id: Number(day.id) }, quests: [replace(library, quest, option)] } };
