@@ -3,11 +3,13 @@ import { createElement } from 'react';
 import type { ReactNode } from 'react';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
+import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
+import type { Draft } from '../../src/onboarding/flow.ts';
 import { GameProvider } from '../../src/state/store.ts';
 import type { GameState } from '../../src/state/store.ts';
 
 export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
-  return createStore<GameState>()(() => ({
+  return createStore<GameState>()((set) => ({
     phase: 'ready',
     cached: null,
     pending: [],
@@ -17,10 +19,18 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     notices: [],
     signInLost: false,
     error: null,
+    draft: NEW_DRAFT,
+    reveal: null,
+    account: { kind: 'guest' },
     boot: jest.fn(async () => {}),
     enqueue: jest.fn(async () => {}),
     syncNow: jest.fn(async () => {}),
-    startTestCharacter: jest.fn(async () => ({ ok: true as const, source: 'template' as const })),
+    editDraft: jest.fn((patch: Partial<Draft>) => set((s) => ({ draft: { ...s.draft, ...patch } }))),
+    startCharacter: jest.fn(async () => ({ ok: true as const })),
+    finishOnboarding: jest.fn(async () => {}),
+    saveVow: jest.fn(async () => {}),
+    saveWithGoogle: jest.fn(async () => ({ ok: true as const })),
+    signInWithGoogle: jest.fn(async () => ({ ok: true as const, found: true })),
     deleteTestCharacter: jest.fn(async () => ({ ok: true as const })),
     startOver: jest.fn(async () => {}),
     dismissNotice: jest.fn(async () => {}),

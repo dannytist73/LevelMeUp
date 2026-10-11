@@ -2,6 +2,7 @@
 import { isValidTimeZone } from '@levelmeup/rules';
 import * as Crypto from 'expo-crypto';
 import { getCalendars } from 'expo-localization';
+import kvStore from 'expo-sqlite/kv-store';
 import { supabase } from '../auth/client.ts';
 import { ensureSession, sessionAlive } from '../auth/session.ts';
 import { openExpoSql } from '../data/expoSql.ts';
@@ -31,5 +32,9 @@ export async function createAppStore() {
     timeZone: deviceZone,
     now: Date.now,
     newId: Crypto.randomUUID,
+    kv: kvStore,
+    // Task 10 replaces these two with src/auth/google.ts.
+    account: async () => ({ kind: 'guest' }),
+    google: { link: async () => ({ ok: false, code: 'failed' }), signIn: async () => ({ ok: false, code: 'failed' }) },
   });
 }
