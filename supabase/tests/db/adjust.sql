@@ -179,3 +179,41 @@ begin
       jsonb_build_object('book', jsonb_build_object('title', repeat('x', 121), 'finished', false))),
     '23514', null, 'a title over 120 characters is refused by the table');
 end $$;
+
+-- M6d review: what a finished book counts (only its own quests, completed since it was set), a direct switch, and the
+-- newest 100 finished books.
+create function lmu_test.test_adjust_book_history() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(62);
+  core bigint := lmu_test.quest(a, 'core');
+  side1 bigint := lmu_test.quest(a, 'side1');
+  side2 bigint := lmu_test.quest(a, 'side2');
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(71), 1, 'book', '{}', '{"book": {"title": "Dune", "finished": false}}');
+  perform levelmeup.adjust(a, lmu_test.ev(72), lmu_test.version(a), 'book', '{}', '{"book": {"title": "Meditations", "finished": false}}');
+  return next is((select book from levelmeup.profiles where user_id = a), 'Meditations', 'a switch sets the new book');
+  return next is((select jsonb_array_length(books_finished) from levelmeup.profiles where user_id = a), 0, 'and records nothing');
+  -- The book counts from when it was set (10 minutes ago here): the core quest, completed 30 minutes ago, doesn't count;
+  -- nor does side2, read with another book.
+  update levelmeup.profiles set book_started_at = now() - interval '10 minutes' where user_id = a;
+  update levelmeup.quest_instances set book = 'Meditations' where id in (core, side1);
+  update levelmeup.quest_instances set book = 'Dune' where id = side2;
+  perform levelmeup.complete_quest(a, lmu_test.ev(73), core, now() - interval '30 minutes', null, '{}');
+  perform levelmeup.complete_quest(a, lmu_test.ev(74), side1, now(), null, '{}');
+  perform levelmeup.complete_quest(a, lmu_test.ev(75), side2, now(), null, '{}');
+  perform levelmeup.adjust(a, lmu_test.ev(76), lmu_test.version(a), 'book', '{}', '{"book": {"title": null, "finished": true}}');
+  return next is((select books_finished -> 0 ->> 'title' from levelmeup.profiles where user_id = a), 'Meditations', 'the finished book');
+  return next is((select (books_finished -> 0 ->> 'sessions')::int from levelmeup.profiles where user_id = a), 1,
+    'counts only its own quests completed since it was set');
+  return next is((select (books_finished -> 0 ->> 'minutes')::int from levelmeup.profiles where user_id = a), 5, 'and their minutes');
+  -- The newest 100 are kept: finishing a 101st drops the oldest.
+  update levelmeup.profiles set book = 'Last', book_started_at = now(), books_finished = (
+      select jsonb_agg(jsonb_build_object('title', 'Book ' || i, 'startedAt', null, 'finishedAt', '2026-01-01T00:00:00.000Z',
+        'sessions', 0, 'minutes', 0) order by i)
+      from generate_series(1, 100) i)
+  where user_id = a;
+  perform levelmeup.adjust(a, lmu_test.ev(77), lmu_test.version(a), 'book', '{}', '{"book": {"title": null, "finished": true}}');
+  return next is((select jsonb_array_length(books_finished) from levelmeup.profiles where user_id = a), 100, 'at most 100 finished books');
+  return next is((select books_finished -> 0 ->> 'title' from levelmeup.profiles where user_id = a), 'Book 2', 'the oldest goes');
+  return next is((select books_finished -> 99 ->> 'title' from levelmeup.profiles where user_id = a), 'Last', 'the newest is last');
+end $$;
