@@ -5,7 +5,7 @@ import { makeLocal, migrate } from '../src/data/local.ts';
 import type { ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
-import { DRAFT_KEY, SIGN_IN_LOST_TEXT, VOW_KEY, createGameStore } from '../src/state/store.ts';
+import { ART_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, VOW_KEY, createGameStore } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { nodeSql } from './support/nodeSql.ts';
 import { READY_DRAFT, REVEAL, serverState } from './support/fixtures.ts';
@@ -58,6 +58,7 @@ async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
     kv: blobs,
     account: jest.fn(async (): Promise<Account> => ({ kind: 'guest' })),
     google: { link: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })), signIn: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })) },
+    artManifest: jest.fn(async (): Promise<unknown> => ({ version: 1, art: { 'ladder-push': 2 } })),
     ...over,
   };
   const store = createGameStore(deps);
@@ -484,5 +485,105 @@ describe('the game store', () => {
       store.getState().stop();
       jest.useRealTimers();
     }
+  });
+});
+
+describe('celebrations (M6a decision 8)', () => {
+  it('a level-up the server confirms is celebrated once, with the new level', async () => {
+    const higher = serverState([], { xp_strength: 400 });
+    expect(higher.character.level).toBeGreaterThan(SERVER.character.level);
+    const { store } = await setup([ok(SERVER), ok(higher)]);
+    await store.getState().boot();
+    expect(store.getState().celebrations).toEqual([]);
+    await store.getState().syncNow();
+    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level }]);
+    store.getState().dismissCelebration();
+    expect(store.getState().celebrations).toEqual([]);
+  });
+
+  it('still celebrates when something reloads the screen between the sync storing the state and its result', async () => {
+    const higher = serverState([], { xp_strength: 400 });
+    const { store, local } = await setup([ok(SERVER), ok(higher)]);
+    await store.getState().boot();
+    const acknowledge = local.acknowledge;
+    local.acknowledge = async (...args) => {
+      const done = await acknowledge(...args);
+      await store.getState().dismissNotice('none'); // reloads what the phone holds, the new state included
+      return done;
+    };
+    await store.getState().syncNow();
+    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level }]);
+  });
+
+  it('queues the reply\'s new achievements', async () => {
+    const { store } = await setup([ok(SERVER, { newAchievements: ['first-trial', 'level-5'] })]);
+    await store.getState().boot();
+    expect(store.getState().celebrations).toEqual([{ kind: 'achievement', id: 'first-trial' }, { kind: 'achievement', id: 'level-5' }]);
+  });
+
+  it('celebrates nothing on the first state a phone ever receives', async () => {
+    const { store } = await setup([ok(serverState([], { xp_strength: 400 }))]);
+    await store.getState().boot();
+    expect(store.getState().celebrations).toEqual([]);
+  });
+});
+
+describe('the art manifest (M6a decision 10)', () => {
+  it('is fetched after the first sync of a launch, kept on the phone, and read back at the next launch', async () => {
+    const { store, deps, kv } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    await settle();
+    expect(store.getState().art).toEqual({ version: 1, art: { 'ladder-push': 2 } });
+    await store.getState().syncNow();
+    await settle();
+    expect(deps.artManifest).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(kv.get(ART_KEY)!)).toEqual({ version: 1, art: { 'ladder-push': 2 } });
+    const next = createGameStore({ ...deps, artManifest: jest.fn(async () => null) });
+    await next.getState().boot();
+    expect(next.getState().art).toEqual({ version: 1, art: { 'ladder-push': 2 } });
+  });
+
+  it('a manifest it can\'t read changes nothing', async () => {
+    const { store } = await setup([ok(SERVER)], { artManifest: jest.fn(async () => ({ version: 9 })) });
+    await store.getState().boot();
+    await settle();
+    expect(store.getState().art).toBeNull();
+  });
+});
+
+describe('quest timers (M6a decision 3)', () => {
+  const running = { segments: [], runningSince: NOW };
+  const paused = { segments: [{ start: NOW, end: NOW + 60_000 }], runningSince: null };
+
+  it('are kept per quest, pruned to today\'s quests, and forgotten on request', async () => {
+    const { store, kv } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    kv.set(TIMERS_KEY, JSON.stringify({ 999999: running })); // a quest from another day
+    await store.getState().saveTimer(core.id, running);
+    expect(await store.getState().timer(core.id)).toEqual(running);
+    expect(JSON.parse(kv.get(TIMERS_KEY)!)).toEqual({ [core.id]: running });
+    await store.getState().saveTimer(core.id, null);
+    expect(await store.getState().timer(core.id)).toBeNull();
+  });
+
+  it('saves in the order they were asked for, so a quick start and pause keeps the pause', async () => {
+    const { store, deps, kv } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    // The first save's read is slow: without the queue, the second save would write first and be overwritten.
+    (deps.kv.getItem as jest.Mock).mockImplementationOnce(async (k: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return kv.get(k) ?? null;
+    });
+    await Promise.all([store.getState().saveTimer(core.id, running), store.getState().saveTimer(core.id, paused)]);
+    expect(await store.getState().timer(core.id)).toEqual(paused);
+  });
+
+  it('are forgotten with everything else when the phone starts over', async () => {
+    const { store, kv } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    await store.getState().saveTimer(core.id, running);
+    await store.getState().startOver();
+    expect(kv.has(TIMERS_KEY)).toBe(false);
+    expect(store.getState().celebrations).toEqual([]);
   });
 });

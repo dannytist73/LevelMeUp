@@ -1,11 +1,14 @@
 // The game store the screens read (M4 plan, Task 11): the cached server state, the outbox, the notices, what to show,
 // how the last sync went, and the onboarding (M5): the interview's draft, the reveal and the account. Every action goes
 // through the outbox first, then a sync is requested.
+// M6a adds the celebration queue, the quest-art manifest and the quest timers.
 import { createContext, createElement, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
+import { parseArtManifest } from '../art/manifest.ts';
+import type { ArtManifest } from '../art/manifest.ts';
 import type { Account, GoogleProblem, GoogleResult } from '../auth/google.ts';
 import type { SessionState } from '../auth/session.ts';
 import type { Blobs } from '../auth/sessionStorage.ts';
@@ -16,6 +19,8 @@ import type { PhoneEvent, Reveal } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
 import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
 import type { Draft } from '../onboarding/flow.ts';
+import { parseTimers } from '../quest/timer.ts';
+import type { TimerState } from '../quest/timer.ts';
 import { syncOnce } from '../sync/engine.ts';
 import type { Notice, SyncOutcome } from '../sync/engine.ts';
 import { makeScheduler } from '../sync/scheduler.ts';
@@ -38,6 +43,8 @@ export type GameDeps = {
   /** Who is signed in, read from the stored session. */
   account: () => Promise<Account>;
   google: { link: () => Promise<GoogleResult>; signIn: () => Promise<GoogleResult> };
+  /** The quest-art manifest from the art bucket (M6a); whatever arrives is checked, null when it can't be fetched. */
+  artManifest: () => Promise<unknown>;
 };
 
 /** `loading`: nothing cached yet; `not_started`: signed in, but no character. */
@@ -50,6 +57,11 @@ export const SIGN_IN_LOST_TEXT =
 
 export const DRAFT_KEY = 'lmu.onboarding-draft';
 export const VOW_KEY = 'lmu.vow';
+export const TIMERS_KEY = 'lmu.timers';
+export const ART_KEY = 'lmu.art-manifest';
+
+/** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
+export type Celebration = { kind: 'level'; level: number } | { kind: 'achievement'; id: string };
 
 export type StartResult = { ok: true } | { ok: false; code: string };
 /** `found: 'unknown'`: signed in, but the sync that would find the character didn't finish (no connection). */
@@ -72,6 +84,10 @@ export type GameState = {
   /** The words of the reveal the last analysis returned. */
   reveal: Reveal | null;
   account: Account;
+  /** Level-ups and achievements the server confirmed, shown one at a time. */
+  celebrations: Celebration[];
+  /** Which quest pictures exist online. */
+  art: ArtManifest | null;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -89,12 +105,26 @@ export type GameState = {
   /** Forget this phone's character and sign-in and start as a new guest (after the player confirms). */
   startOver: () => Promise<void>;
   dismissNotice: (eventId: string) => Promise<void>;
+  dismissCelebration: () => void;
+  /** A quest's stored timer, or null. */
+  timer: (questId: number) => Promise<TimerState | null>;
+  /** Stores a quest's timer (null forgets it); timers of quests no longer today's are dropped. */
+  saveTimer: (questId: number, state: TimerState | null) => Promise<void>;
   stop: () => void;
 };
 
 /** A sync shortly after today ends, so the next day appears while the app is open. */
 const DAY_END_GRACE_MS = 2_000;
 const MAX_TIMER_MS = 2_147_483_647;
+
+function readKeptArt(text: string | null): ArtManifest | null {
+  if (text === null) return null;
+  try {
+    return parseArtManifest(JSON.parse(text));
+  } catch {
+    return null;
+  }
+}
 
 export function createGameStore(deps: GameDeps): StoreApi<GameState> {
   return createStore<GameState>()((set, get) => {
@@ -123,6 +153,24 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
      */
     let generation = 0;
 
+    /** The art manifest is fetched once per launch, after the first sync. */
+    let artChecked = false;
+    const refreshArt = async (): Promise<void> => {
+      const manifest = parseArtManifest(await deps.artManifest().catch(() => null));
+      if (manifest === null) return;
+      set({ art: manifest });
+      await deps.kv.setItem(ART_KEY, JSON.stringify(manifest)).catch(() => {});
+    };
+
+    /**
+     * The level of the last state a sync confirmed. Not the cached state: anything that reloads the screen while a sync
+     * finishes reads the new state early, and the level-up would be missed.
+     */
+    let confirmedLevel: number | null = null;
+
+    /** Timer saves run one after another, so a quick start and pause can't overwrite each other's read. */
+    let timerWrites: Promise<void> = Promise.resolve();
+
     const run = async (): Promise<SyncOutcome> => {
       const mine = ++generation;
       set({ status: 'syncing' });
@@ -148,7 +196,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.signOut();
       await deps.kv.removeItem(DRAFT_KEY);
       await deps.kv.removeItem(VOW_KEY); // the next player on this phone never sees it (M5 review)
-      set({ draft: NEW_DRAFT, reveal: null, account: await deps.account() });
+      await deps.kv.removeItem(TIMERS_KEY);
+      confirmedLevel = null;
+      set({ draft: NEW_DRAFT, reveal: null, celebrations: [], account: await deps.account() });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
 
@@ -161,9 +211,22 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
     const handle = async (outcome: SyncOutcome): Promise<void> => {
       switch (outcome.kind) {
-        case 'synced':
+        case 'synced': {
+          const before = confirmedLevel;
           await refresh({ phase: 'ready', status: 'idle', error: null });
+          const after = get().cached?.state.character.level ?? null;
+          confirmedLevel = after;
+          const found: Celebration[] = [];
+          // Only a level the server confirms (M3: an undo can take one back); nothing on a phone's first state.
+          if (before !== null && after !== null && after > before) found.push({ kind: 'level', level: after });
+          for (const id of outcome.newAchievements) found.push({ kind: 'achievement', id });
+          if (found.length > 0) set({ celebrations: [...get().celebrations, ...found] });
+          if (!artChecked) {
+            artChecked = true;
+            void refreshArt();
+          }
           return;
+        }
         case 'not_started':
           // A new guest is only made on an empty phone, so this is the same sign-in: its character is gone on the
           // server, and anything cached is stale.
@@ -207,14 +270,21 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       draft: NEW_DRAFT,
       reveal: null,
       account: { kind: 'none' },
+      celebrations: [],
+      art: null,
 
       boot: async () => {
-        const [saved, account] = await Promise.all([deps.kv.getItem(DRAFT_KEY).catch(() => null), deps.account()]);
+        const [saved, account, keptArt] = await Promise.all([
+          deps.kv.getItem(DRAFT_KEY).catch(() => null),
+          deps.account(),
+          deps.kv.getItem(ART_KEY).catch(() => null),
+        ]);
         await refresh();
+        confirmedLevel = get().cached?.state.character.level ?? null;
         const holding = get().cached !== null;
         // A character already exists, so the onboarding is over: its draft (a name, goals, limits) isn't kept (M5 review).
         if (holding && saved !== null) await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
-        set({ draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading' });
+        set({ draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt) });
         await scheduler.request();
       },
 
@@ -309,6 +379,25 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       dismissNotice: async (eventId) => {
         await deps.local.dismissNotice(eventId);
         await refresh();
+      },
+
+      dismissCelebration: () => set({ celebrations: get().celebrations.slice(1) }),
+
+      timer: async (questId) => parseTimers(await deps.kv.getItem(TIMERS_KEY).catch(() => null))[questId] ?? null,
+
+      saveTimer: (questId, state) => {
+        const write = async (): Promise<void> => {
+          const today = new Set((get().view?.today?.quests ?? []).map((q) => q.id));
+          const kept: Record<number, TimerState> = Object.fromEntries(
+            Object.entries(parseTimers(await deps.kv.getItem(TIMERS_KEY).catch(() => null)))
+              .filter(([id]) => today.has(Number(id)) && Number(id) !== questId),
+          );
+          if (state !== null) kept[questId] = state;
+          await deps.kv.setItem(TIMERS_KEY, JSON.stringify(kept));
+        };
+        const next = timerWrites.then(write);
+        timerWrites = next.catch(() => {}); // a failed save doesn't hold up the next one
+        return next;
       },
 
       stop: () => {

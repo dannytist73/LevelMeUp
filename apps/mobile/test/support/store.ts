@@ -22,6 +22,8 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     draft: NEW_DRAFT,
     reveal: null,
     account: { kind: 'guest' },
+    celebrations: [],
+    art: null,
     boot: jest.fn(async () => {}),
     enqueue: jest.fn(async () => {}),
     syncNow: jest.fn(async () => {}),
@@ -34,6 +36,9 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     deleteTestCharacter: jest.fn(async () => ({ ok: true as const })),
     startOver: jest.fn(async () => {}),
     dismissNotice: jest.fn(async () => {}),
+    dismissCelebration: jest.fn(),
+    timer: jest.fn(async () => null),
+    saveTimer: jest.fn(async () => {}),
     stop: jest.fn(),
     ...over,
   }));
