@@ -8,3 +8,5 @@ export * from './why.ts';
 export * from './achievements.ts';
 export * from './shadow.ts';
 export * from './onboarding.ts';
+export * from './art.ts';
+export * from './play.ts';
