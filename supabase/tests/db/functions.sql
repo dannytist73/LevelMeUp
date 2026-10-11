@@ -281,3 +281,31 @@ begin
   return next is((select completed_at is not null from levelmeup.quest_instances where id = core), true, 'and the first action stands');
   return next is((select completed_at from levelmeup.quest_instances where id = side), null, 'and the other quest is untouched');
 end $$;
+
+create function lmu_test.test_restart_player() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  b uuid := lmu_test.start(2);
+  again jsonb := '{"name": "Again", "voice": "mentor", "classId": "monk", "timeZone": "Asia/Manila", "boundaryMinutes": 300,
+    "minutesPerDay": 15, "difficulty": "gentle", "goals": ["energy"], "limitations": [], "gentleStart": true,
+    "ownProgram": false, "reveal": {}}';
+  points jsonb := '{"strength": 5, "vitality": 7, "wisdom": 5, "focus": 5, "discipline": 4}';
+  redo text := 'select levelmeup.restart_player(%L, %L, %L, ''{}'', lmu_test.day(1, now(), now() + interval ''8 hours''))';
+begin
+  perform levelmeup.reserve_ai_call(a, 'onboarding', 'test-model', 3);
+  perform levelmeup.restart_player(a, again, points, '{}', lmu_test.day(1, now(), now() + interval '8 hours'));
+  return next is((select class_id || '/' || voice || '/' || minutes_per_day from levelmeup.profiles where user_id = a),
+    'monk/mentor/15', 'the corrected profile replaces the first one');
+  return next is((select start_vitality from levelmeup.character_state where user_id = a), 7::smallint, 'and the start points');
+  return next is((select count(*) from levelmeup.ladder_states where user_id = a), 0::bigint, 'and the starting ladders');
+  return next is((select count(*) from levelmeup.quest_days where user_id = a), 1::bigint, 'day 1 is built again, once');
+  return next is(lmu_test.version(a), 1, 'it is still a new character');
+  return next is((select count(*) from levelmeup.ai_generations where user_id = a), 1::bigint,
+    'the Claude calls already made still count towards the cap');
+
+  perform levelmeup.complete_quest(b, lmu_test.ev(1), lmu_test.quest(b, 'core'), now(), null, null);
+  return next throws_ok(format(redo, b, again, points), 'P0001', 'lmu:locked', 'once the player has done something, it can''t run again');
+  return next is((select class_id from levelmeup.profiles where user_id = b), 'warrior', 'and the profile is untouched');
+  return next is((select xp_vitality from levelmeup.character_state where user_id = b), 20, 'and nothing earned is lost');
+  return next throws_ok(format(redo, lmu_test.uid(9), again, points), 'P0001', 'lmu:not_started', 'there is nothing to redo before onboarding');
+end $$;
