@@ -1,11 +1,10 @@
 // Lazy day closing and the next day (architecture §4.3, spec §2.4, §3.3, §3.7). Pure: it reads a snapshot of the
 // player's state and returns what `levelmeup.advance` should write, or null when nothing is due.
 import {
-  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, REENTRY_AWAY_MS, RUNG_BONUS_XP, STREAK_SLOTS, applyDay, buildDay,
-  closedDayResolution, firstDayWindow, ladderById, maxRungFor, newLadder, nextDayWindow, recordCompletion, recordMiss,
-  recordReentry,
+  DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, STREAK_SLOTS, applyDay, buildDay, closeLadders, closedDayResolution,
+  followingDay, ladderById, reenterLadders,
 } from '../../../packages/rules/src/index.ts';
-import type { DayWindow, LadderChange, LadderState, QuestLibrary, Stat, StreakState } from '../../../packages/rules/src/index.ts';
+import type { LadderState, QuestLibrary, Stat, StreakState } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
 import { dayWindow, ladderMap, pastDays, startPoints, statXp, streakState, toProfile } from './state.ts';
 import type { CharacterRow, DayDraft, DayRow, InstanceDraft, InstanceRow, LadderRow, ProfileRow } from './state.ts';
@@ -58,19 +57,15 @@ export type Outcome = {
   buildError: string | null;
 };
 
-/** Away days counted one by one; a longer absence starts a fresh day from now. */
-const MAX_AWAY_DAYS = 400;
-
 export function planAdvance(input: AdvanceInput): Outcome | null {
   const { library, nowMs, profile } = input;
   const days = [...input.days].sort((a, b) => a.day_number - b.day_number);
   if (days.length === 0) return null;
-  const knownLadders = new Set(library.ladders.map((l) => l.id));
   const ladders = ladderMap(input.ladders);
   const changed: Record<string, LadderState> = {};
-  const setLadder = (id: string, change: LadderChange): void => {
-    ladders[id] = change.state;
-    changed[id] = change.state;
+  const setLadders = (states: Readonly<Record<string, LadderState>>): void => {
+    Object.assign(ladders, states);
+    Object.assign(changed, states);
   };
   const start = startPoints(input.character);
   const xp = statXp(input.character);
@@ -113,21 +108,15 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     if (coreDone && day.comeback) counters.comebacks++;
 
     // Ladders move only now, with each quest's final rating and the rung it was built at (M1 review). A protected
-    // day (planned rest, no quests) never counts as a missed session.
-    const at = day.starts_at.getTime();
-    for (const q of quests) {
-      if (q.ladder_id === null || q.rung === null || !knownLadders.has(q.ladder_id)) continue;
-      const state = ladders[q.ladder_id] ?? newLadder();
-      if (q.completed_at !== null) {
-        const maxRung = maxRungFor(library, q.ladder_id, rulesProfile());
-        const change = recordCompletion(state, { at, rung: q.rung, rating: q.rating ?? 'right', difficulty: profile.difficulty, maxRung });
-        setLadder(q.ladder_id, change);
-        if (change.newHighestRung) {
-          pay({ sourceType: 'rung', sourceId: `rung:${q.ladder_id}:${change.state.rung}`, stat: ladderById(library, q.ladder_id).stat, amount: RUNG_BONUS_XP });
-        }
-      } else if (day.protection === null) {
-        setLadder(q.ladder_id, recordMiss(state, { at, rung: q.rung }));
-      }
+    // day (planned rest, no quests) never counts as a missed session. The phone closes a day it holds the same way (M6e).
+    const closed = closeLadders(library, ladders, {
+      startsAt: day.starts_at.getTime(),
+      protected: day.protection !== null,
+      quests: quests.map((q) => ({ ladder: q.ladder_id, rung: q.rung, done: q.completed_at !== null, rating: q.rating })),
+    }, rulesProfile());
+    setLadders(closed.changed);
+    for (const { ladder, rung } of closed.newRungs) {
+      pay({ sourceType: 'rung', sourceId: `rung:${ladder}:${rung}`, stat: ladderById(library, ladder).stat, amount: RUNG_BONUS_XP });
     }
     close.push({ dayId: Number(day.id), resolution: resolution.kind, streakApplied, checkin });
   }
@@ -138,17 +127,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   let buildError: string | null = null;
   if (!running) {
     const last = days[days.length - 1]!;
-    let window: DayWindow = nextDayWindow(dayWindow(last), input.timeZone, profile.boundary_minutes);
-    let away = 0;
-    while (window.endsAt <= nowMs && away < MAX_AWAY_DAYS) {
-      away++;
-      window = nextDayWindow(window, input.timeZone, profile.boundary_minutes);
-    }
-    if (window.endsAt <= nowMs) {
-      window = firstDayWindow(nowMs, input.timeZone, profile.boundary_minutes);
-      away = Math.max(away, Math.floor((nowMs - last.ends_at.getTime()) / DAY_MS));
-    }
-    const dayNumber = last.day_number + 1 + away;
+    const { window, dayNumber, away, comeback } = followingDay(dayWindow(last), last.day_number, input.timeZone, profile.boundary_minutes, nowMs);
 
     // Away days are one gap check-in; a pending check-in covers them; behind a waiting day they wait too (M7 replays
     // them from the jump in day numbers).
@@ -157,13 +136,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
       gap = { from: last.day_number + 1, to: dayNumber - 1 };
     }
     // Measured in time, like recordReentry, so a light comeback day and the rung step-down always come together.
-    const comeback = window.startsAt - last.ends_at.getTime() >= REENTRY_AWAY_MS;
-    if (comeback) {
-      for (const id of Object.keys(ladders)) {
-        const change = recordReentry(ladders[id]!, window.startsAt, last.ends_at.getTime());
-        if (change.steppedDown) setLadder(id, change);
-      }
-    }
+    if (comeback) setLadders(reenterLadders(ladders, window.startsAt, last.ends_at.getTime()));
 
     const history = pastDays(days, input.instances).slice(-7);
     let quests: InstanceDraft[] = [];
