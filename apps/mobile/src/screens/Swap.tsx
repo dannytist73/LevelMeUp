@@ -21,7 +21,7 @@ export type SwapProps = { questId: number | null; onDone: () => void; onBack: ()
 
 export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   const insets = useSafeAreaInsets();
-  const [view, leave] = useLeavingView();
+  const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const today = view?.today ?? null;
   const swappable = (today?.quests ?? []).filter((q) => q.completedAt === null && q.swaps.length > 0);
@@ -52,6 +52,7 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
     try {
       await enqueue({ type: 'swap', instanceId: quest.id, templateId: choice });
     } catch {
+      stay();
       setBusy(false);
       return;
     }

@@ -107,6 +107,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | Hardening from the M6b review: `levelmeup.adjust` could check that a change's parts match its event type (only the planner calls it today); the swap sheet's "Which quest?" list reads as radio buttons, where plain buttons would describe it better. |
 | M6c | On a hard day, a quest title that names minutes ("Walk 5 minutes") keeps the full version's number while its target says 3 minutes (M2's voice-line item, now seen in titles): give hard-day versions their own title or keep numbers out of titles. |
 | Later | The hard-day and rest confirms open at the bottom of Today, below the buttons; scroll them into view when they open. |
+| Later | Screens keep what they show only after they send (`useLeavingView`); freezing every screen on `beforeRemove` would also cover a sync landing while a screen closes (e.g. Quest → Continue). Device-test it before relying on it (M6b device check, review). |
 | Owner | Row 10 (step down after "Too hard") needs a quest above its ladder's first rung, which day 1 never has: check it on a later day. Run the Find X9 rows of the M6b checklist (1–12) after M5's and M6a's. Stillness, Dawn Ritual and Vanish on a device once a test character reaches a Monk's level 5 or 10 or a Rogue's level 10 (unit tests cover them; the development build already contains `expo-keep-awake`). |
 
 ## Spikes and where they run

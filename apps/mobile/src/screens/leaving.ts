@@ -4,9 +4,12 @@ import { useState } from 'react';
 import type { Shown } from '../game/project.ts';
 import { useGame } from '../state/store.ts';
 
-/** The game view to show, and `leave`, which keeps the current one from then on (call it before sending). */
-export function useLeavingView(): [Shown | null, () => void] {
+/**
+ * The game view to show; `leave` keeps the current one from then on (call it before sending), and `stay` follows the
+ * game again (when the send failed and the screen stays open).
+ */
+export function useLeavingView(): [Shown | null, () => void, () => void] {
   const live = useGame((s) => s.view);
   const [kept, setKept] = useState<Shown | null>(null);
-  return [kept ?? live, () => setKept(live)];
+  return [kept ?? live, () => setKept(live), () => setKept(null)];
 }

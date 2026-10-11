@@ -20,14 +20,15 @@ const T = ADJUST_TEXT.pain;
 
 /** "Instead: Walk 5 minutes", with the target only when the title doesn't already say it (device check). */
 export function gentleLine(title: string, summary: string): string {
-  return title.includes(summary) ? fillText(T.gentleTitle, { title }) : fillText(T.gentleLine, { title, summary });
+  const says = title === summary || title.endsWith(` ${summary}`);
+  return says ? fillText(T.gentleTitle, { title }) : fillText(T.gentleLine, { title, summary });
 }
 
 export type PainProps = { questId: number; onDone: () => void; onBack: () => void; now?: () => number };
 
 export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
   const insets = useSafeAreaInsets();
-  const [view, leave] = useLeavingView();
+  const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const [busy, setBusy] = useState(false);
   const today = view?.today ?? null;
@@ -57,6 +58,7 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
     try {
       await enqueue({ type: 'pain', instanceId: quest.id, choice });
     } catch {
+      stay();
       setBusy(false);
       return;
     }

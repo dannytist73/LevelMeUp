@@ -38,7 +38,7 @@ export type ClassChangeProps = { onDone: () => void; onBack: () => void; now?: (
 
 export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps) {
   const insets = useSafeAreaInsets();
-  const [view, leave] = useLeavingView();
+  const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const [picked, setPicked] = useState<ClassId | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,6 +60,7 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
     try {
       await enqueue({ type: 'class_change', classId: picked });
     } catch {
+      stay();
       setBusy(false);
       return;
     }

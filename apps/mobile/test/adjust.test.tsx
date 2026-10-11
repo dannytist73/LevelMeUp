@@ -162,6 +162,7 @@ describe('"I felt pain" (spec §3.3, §3.4)', () => {
   it("names the gentle quest without repeating it: 'Walk 5 minutes', not 'Walk 5 minutes (5 minutes)' (device check)", () => {
     expect(gentleLine('Walk 5 minutes', '5 minutes')).toBe('Instead: Walk 5 minutes');
     expect(gentleLine('Gentle stretch', '3 minutes')).toBe('Instead: Gentle stretch (3 minutes)');
+    expect(gentleLine('Walk 15 minutes', '5 minutes')).toBe('Instead: Walk 15 minutes (5 minutes)'); // a whole match only (review)
   });
 
   it('after the day ends the choices go, but the advice to see a professional stays (review)', async () => {
@@ -257,6 +258,23 @@ describe('a screen that sends a change keeps what it shows while it closes (M6b 
     expect(onDone).toHaveBeenCalled();
     expect(screen.getByText('Warrior · current')).toBeTruthy();
     expect(screen.queryByText(A.classChange.willSync)).toBeNull();
+  });
+
+  it('if sending fails, the screen follows the game again and can be used (review)', async () => {
+    const store = applying();
+    const send = store.getState().enqueue as jest.Mock;
+    store.setState({
+      enqueue: jest.fn(async (event: NewEvent) => {
+        await send(event);
+        throw new Error('disk full');
+      }),
+    });
+    const onDone = jest.fn();
+    await render(withStore(store, <ClassChange now={now} onDone={onDone} onBack={jest.fn()} />));
+    await fireEvent.press(screen.getByText('Monk'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Become a Monk' }));
+    expect(onDone).not.toHaveBeenCalled();
+    expect(screen.getByText(A.classChange.willSync)).toBeTruthy(); // the live view again
   });
 
   it('the swap sheet', async () => {
