@@ -122,6 +122,8 @@ declare
   b uuid := lmu_test.add_player(2);
   t text;
   n bigint;
+  -- The live project keeps the Claude usage of every deleted player (live tests delete theirs), so count only this one's.
+  orphans bigint := (select count(*) from levelmeup.ai_generations where user_id is null);
 begin
   delete from auth.users where id = a;
   for t in select lmu_test.player_tables() loop
@@ -130,5 +132,5 @@ begin
     execute format('select count(*) from levelmeup.%I where user_id = %L', t, b) into n;
     return next is(n, 1::bigint, format('%s rows of other players stay', t));
   end loop;
-  return next is((select count(*) from levelmeup.ai_generations where user_id is null), 1::bigint, 'AI usage stays for cost tracking, without the player');
+  return next is((select count(*) from levelmeup.ai_generations where user_id is null) - orphans, 1::bigint, 'AI usage stays for cost tracking, without the player');
 end $$;

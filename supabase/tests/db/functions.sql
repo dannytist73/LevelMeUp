@@ -224,6 +224,8 @@ declare
   a uuid := lmu_test.start(1);
   b uuid := lmu_test.start(2);
   counts jsonb;
+  -- The live project keeps the Claude usage of every deleted player (live tests delete theirs), so count only this one's.
+  orphans bigint := (select count(*) from levelmeup.ai_generations where user_id is null);
 begin
   perform levelmeup.complete_quest(a, lmu_test.ev(1), lmu_test.quest(a, 'core'), now(), null, null);
   perform levelmeup.award_achievements(a, array['first-quest']);
@@ -235,7 +237,7 @@ begin
   return next is((select count(*) from levelmeup.profiles where user_id = a) + (select count(*) from levelmeup.character_state where user_id = a)
     + (select count(*) from levelmeup.events where user_id = a) + (select count(*) from levelmeup.achievements_earned where user_id = a), 0::bigint,
     'nothing of the player is left');
-  return next is((select count(*) from levelmeup.ai_generations where user_id is null), 1::bigint, 'AI usage stays, without the player');
+  return next is((select count(*) from levelmeup.ai_generations where user_id is null) - orphans, 1::bigint, 'AI usage stays, without the player');
   return next is((select count(*) from levelmeup.quest_days where user_id = b), 1::bigint, 'other players are untouched');
 end $$;
 
