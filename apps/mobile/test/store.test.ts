@@ -1,8 +1,12 @@
 /** @jest-environment node */
+import { LIBRARY } from '@levelmeup/content';
+import { stateView } from '../../../supabase/functions/_shared/state.ts';
+import { dayOffers } from '../../../supabase/functions/_shared/today.ts';
+import { dayTwoSnapshot, historyOf } from '../../../supabase/tests/unit/fixtures.ts';
 import type { Account, GoogleResult } from '../src/auth/google.ts';
 import type { SessionState } from '../src/auth/session.ts';
 import { makeLocal, migrate } from '../src/data/local.ts';
-import type { ServerState, SyncResponse } from '../src/game/types.ts';
+import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import { ART_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, VOW_KEY, createGameStore } from '../src/state/store.ts';
@@ -688,5 +692,63 @@ describe('adjustments and quest timers (M6b)', () => {
     const option = day2.today!.quests.find((q) => q.id === 201)!.swaps[0]!;
     await store.getState().enqueue({ type: 'swap', instanceId: 201, templateId: option.templateId });
     expect(await store.getState().timer(201)).toBeNull();
+  });
+});
+
+describe('a day built offline (M6e)', () => {
+  const END = Date.parse(SERVER.today!.endsAt!);
+  const HOUR = 3_600_000;
+  const offline = { ok: false as const, status: 0, code: 'network' };
+
+  it("when today has ended and the server can't be reached, builds the next day and shows it", async () => {
+    const { store, local } = await setup([ok(SERVER), offline], { now: () => END + HOUR });
+    await store.getState().boot();
+    await store.getState().syncNow();
+    const { view, pending } = store.getState();
+    expect(view!.offline).toBe(true);
+    expect(view!.today!.dayNumber).toBe(2);
+    expect(pending.map((e) => e.type)).toEqual(['provisional_day']);
+    expect(await local.pending(10)).toHaveLength(1);
+    // Another failed sync builds nothing more: one offline day at a time.
+    await store.getState().syncNow();
+    expect(store.getState().pending).toHaveLength(1);
+  });
+
+  it('builds nothing while the day still runs', async () => {
+    const { store } = await setup([ok(SERVER), offline]);
+    await store.getState().boot();
+    await store.getState().syncNow();
+    expect(store.getState().pending).toEqual([]);
+    expect(store.getState().view!.offline).toBe(false);
+  });
+
+  it('a completion on the offline day names its quest by day and slot', async () => {
+    const { store } = await setup([ok(SERVER), offline], { now: () => END + HOUR });
+    await store.getState().boot();
+    await store.getState().syncNow();
+    const core = store.getState().view!.today!.quests[0]!;
+    await store.getState().enqueue({ type: 'complete', instanceId: core.id, completedAt: END + 2 * HOUR, rating: null, payload: {} });
+    expect(store.getState().pending.at(-1)).toMatchObject({
+      type: 'complete', instanceId: null, ref: { dayNumber: 2, slot: 'core', templateId: core.templateId },
+    });
+    expect(store.getState().view!.today!.quests[0]!.completedAt).not.toBeNull();
+  });
+
+  it("a timer started on an offline quest moves to the server's quest in its slot after the sync", async () => {
+    const replies: Parameters<typeof setup>[0] = [ok(SERVER), offline];
+    const { store, kv } = await setup(replies, { now: () => END + HOUR });
+    await store.getState().boot();
+    await store.getState().syncNow();
+    const built = store.getState().pending[0] as Extract<PhoneEvent, { type: 'provisional_day' }>;
+    const timer = { segments: [{ start: END + HOUR, end: END + HOUR + 60_000 }], runningSince: null };
+    await store.getState().saveTimer(-1, timer);
+    const slots = Object.fromEntries(built.quests.map((q) => [q.slot, q.templateId])) as { core: string; side1: string; side2: string };
+    const snapshot = dayTwoSnapshot(slots);
+    replies.length = 0;
+    replies.push(ok(stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot))));
+    await store.getState().syncNow();
+    await settle();
+    expect(store.getState().view!.offline).toBe(false);
+    expect(JSON.parse(kv.get(TIMERS_KEY)!)).toEqual({ 200: timer });
   });
 });

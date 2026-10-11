@@ -4,6 +4,8 @@
 // M6a adds the celebration queue, the quest-art manifest and the quest timers.
 // M6b: adjustments go through the same outbox; a quest replaced by a swap, gentle movement or an ability loses its stored
 // timer.
+// M6e: when today has ended and the server can't be reached, the store builds the next day (`offlineDay`) and queues it;
+// events on its quests name them by day and slot; their timers move to the server's quests.
 import { createContext, createElement, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
@@ -15,6 +17,8 @@ import type { Account, GoogleProblem, GoogleResult } from '../auth/google.ts';
 import type { SessionState } from '../auth/session.ts';
 import type { Blobs } from '../auth/sessionStorage.ts';
 import type { Cached, Local } from '../data/local.ts';
+import { carriedTimers, withRef } from '../game/offline.ts';
+import { offlineDay } from '../game/offlineDay.ts';
 import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
 import type { PhoneEvent, Reveal } from '../game/types.ts';
@@ -169,6 +173,19 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     };
 
     /**
+     * M6e: the day on screen has ended and the server can't be reached: build the next one here and queue it. No new sync
+     * is asked for; the scheduler's back-off keeps trying (decision 10).
+     */
+    const buildOffline = async (): Promise<void> => {
+      const { cached, view } = get();
+      if (cached === null || view === null) return;
+      const event = offlineDay(cached.state, view, deps.now(), deps.timeZone());
+      if (event === null) return;
+      await deps.local.enqueue({ ...event, id: deps.newId() }, deps.now());
+      await refresh();
+    };
+
+    /**
      * Each run gets a number, and every exclusive section moves it on: a run the scheduler gave up on (its deadline
      * passed) may not write, or make a guest, when it wakes up (M4 re-review).
      */
@@ -191,6 +208,17 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
     /** Timer saves run one after another, so a quick start and pause can't overwrite each other's read. */
     let timerWrites: Promise<void> = Promise.resolve();
+
+    /** M6e: a timer running on an offline quest moves to the server's quest in its slot once that day arrives. */
+    const moveTimers = (before: Shown | null): Promise<void> => {
+      const write = async (): Promise<void> => {
+        const next = carriedTimers(parseTimers(await deps.kv.getItem(TIMERS_KEY).catch(() => null)), before, get().view);
+        if (next !== null) await deps.kv.setItem(TIMERS_KEY, JSON.stringify(next));
+      };
+      const done = timerWrites.then(write);
+      timerWrites = done.catch(() => {});
+      return done;
+    };
 
     const run = async (): Promise<SyncOutcome> => {
       const mine = ++generation;
@@ -235,7 +263,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       switch (outcome.kind) {
         case 'synced': {
           const before = confirmedLevel;
+          const shownBefore = get().view;
           await refresh({ phase: 'ready', status: 'idle', error: null });
+          void moveTimers(shownBefore);
           const after = get().cached?.state.character.level ?? null;
           confirmedLevel = after;
           const found: Celebration[] = [];
@@ -266,9 +296,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           return;
         case 'offline':
           set({ status: 'offline' });
+          await buildOffline();
           return;
         case 'retry':
           set({ status: 'retrying' });
+          await buildOffline();
           return;
         case 'sign_in_lost':
           set({ status: 'idle', signInLost: true });
@@ -319,8 +351,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       enqueue: async (event) => {
-        const replaced = replacedQuest(event, get().view);
-        await deps.local.enqueue({ ...event, id: deps.newId() } as PhoneEvent, deps.now());
+        const view = get().view;
+        const replaced = replacedQuest(event, view);
+        // A quest of the offline day is named by day and slot (M6e decision 7).
+        await deps.local.enqueue({ ...withRef(event, view), id: deps.newId() } as PhoneEvent, deps.now());
         if (replaced !== null) await get().saveTimer(replaced, null).catch(() => {});
         await refresh();
         void scheduler.request();
