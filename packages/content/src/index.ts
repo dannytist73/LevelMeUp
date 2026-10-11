@@ -11,3 +11,5 @@ export * from './onboarding.ts';
 export * from './art.ts';
 export * from './play.ts';
 export * from './adjust.ts';
+export * from './training/moves.ts';
+export * from './training/programs.ts';

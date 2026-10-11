@@ -3,6 +3,8 @@ import { MIND_LADDERS, MIND_TEMPLATES } from './quests/mind.ts';
 import { SPECIAL_TEMPLATES } from './quests/special.ts';
 import { STRENGTH_LADDERS, STRENGTH_TEMPLATES } from './quests/strength.ts';
 import { VITALITY_LADDERS, VITALITY_TEMPLATES } from './quests/vitality.ts';
+import { MOVES } from './training/moves.ts';
+import { PROGRAMS } from './training/programs.ts';
 import type { AuthoredTemplate } from './types.ts';
 
 /** Bump when a template's meaning changes; each quest instance stores the version it was built from (architecture §3). */
@@ -21,7 +23,7 @@ export const LIBRARY: QuestLibrary = {
   ladders: LADDERS,
   templates: TEMPLATES,
   recovery: { warrior: 'recovery-walk', rogue: 'recovery-walk', mage: 'recovery-read', monk: 'recovery-breath' },
-  training: { moves: [], programs: { men: [], women: [], none: [] } },
+  training: { moves: MOVES, programs: PROGRAMS },
 };
 
 export function authoredTemplate(id: string): AuthoredTemplate {
