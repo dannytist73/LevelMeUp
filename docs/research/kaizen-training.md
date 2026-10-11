@@ -26,8 +26,8 @@ set/rep numbers are listed in full because they are facts. Do not ship Kaizen's 
 - The docs add habit rules that can become quests: 7,500–10,000 steps a day, a morning weigh-in under the same
   conditions every day, measurements and photos every 2 weeks, logging everything, a weekly review, accountability,
   a hard week before each deload, and losing about 0.5–1 % of bodyweight a week on a cut.
-- Not yet usable: the 14 lesson videos (not transcribed) and the lesson notes and infographics that the PDFs link
-  to (outside this task).
+- The lesson videos were transcribed later (2026-10-11): their training points, and what LevelMeUp takes from them,
+  are in `kaizen-videos.md`. Still unread: the lesson notes and infographics that the PDFs link to.
 
 ---
 
@@ -63,7 +63,7 @@ set/rep numbers are listed in full because they are facts. Do not ship Kaizen's 
 | 0 - Week 13 - Action Items | 1E5K80HDIBPBqAZBhVw62jPoHRAy5__18 | PDF | **Read OK** (trailing link list cut off). |
 | 0 - Week 15 Action Items | 1qYJrDgbADt0PAeAuQUt8kHbTy2Vu7mRa | PDF | **Read OK** (trailing link list cut off). |
 
-**Lesson videos: not yet transcribed** (in the Kaizen folder `16CTKFkOg99FXRc8XNQxTfYxb1d7jFLvF`; titles and sizes
+**Lesson videos** (transcribed on the laptop on 2026-10-11; notes in `kaizen-videos.md`) (in the Kaizen folder `16CTKFkOg99FXRc8XNQxTfYxb1d7jFLvF`; titles and sizes
 only, nothing downloaded):
 
 | Title | Size |
