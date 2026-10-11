@@ -7,3 +7,4 @@ export * from './library.ts';
 export * from './why.ts';
 export * from './achievements.ts';
 export * from './shadow.ts';
+export * from './onboarding.ts';
