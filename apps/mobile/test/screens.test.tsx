@@ -27,8 +27,10 @@ async function renderToday(over: Parameters<typeof testStore>[0] = {}, server: S
   const store = testStore({ view: project(server, []), ...over });
   const onSettings = jest.fn();
   const onOpenQuest = jest.fn();
-  await render(withStore(store, <Today onSettings={onSettings} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} now={now} />));
-  return { store, onSettings, onOpenQuest };
+  const onTraining = jest.fn();
+  await render(withStore(store,
+    <Today onSettings={onSettings} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={onTraining} now={now} />));
+  return { store, onSettings, onOpenQuest, onTraining };
 }
 
 describe('Today', () => {
@@ -381,7 +383,7 @@ describe('Celebration (M6a decision 8)', () => {
 it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core quest (M6b)', async () => {
   const onPain = jest.fn();
   await render(withStore(testStore({ view: project(adjustState(), []) }),
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={onPain} onVanish={jest.fn()} now={() => DAY_TWO_NOW} />));
+    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={onPain} onVanish={jest.fn()} onTraining={jest.fn()} now={() => DAY_TWO_NOW} />));
   expect(screen.getByRole('button', { name: 'Swap · 1 left' })).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
   expect(onPain).toHaveBeenCalledWith(200);
@@ -390,7 +392,7 @@ it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core
 it("Today tags a quest whose exercise is resting after pain (M6b review)", async () => {
   const resting = adjustState({ ladders: ladderRows({ push: { ...newLadder(1), paused: true } }) });
   await render(withStore(testStore({ view: project(resting, []) }),
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} now={() => DAY_TWO_NOW} />));
+    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} now={() => DAY_TWO_NOW} />));
   expect(screen.getAllByText(ADJUST_TEXT.paused.tag)).toHaveLength(1); // the core quest, push-1
 });
 
@@ -467,7 +469,39 @@ describe("Scholar's Path: the book screen (M6d decision 12)", () => {
     const server = adjustState();
     const quests = server.today!.quests.map((q) => (q.slot === 'core' || q.slot === 'side2' ? { ...q, book: 'Dune' } : q));
     await render(withStore(testStore({ view: project({ ...server, today: { ...server.today!, quests } }, []) }),
-      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} now={() => DAY_TWO_NOW} />));
+      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} now={() => DAY_TWO_NOW} />));
     expect(screen.getAllByText('Reading: Dune')).toHaveLength(2); // the core card and an open side card
+  });
+});
+
+describe('the training notice (M6d decision 13)', () => {
+  const NOTICE = `System: ${ADJUST_TEXT.training.notice}`;
+
+  it('shows once to a player with the default training; "Set up training" opens Settings → Training', async () => {
+    const { store, onTraining } = await renderToday({ trainingNoticeSeen: false });
+    expect(screen.getByLabelText(NOTICE)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.training.setUp }));
+    expect(onTraining).toHaveBeenCalled();
+    expect(store.getState().dismissTrainingNotice).toHaveBeenCalled();
+  });
+
+  it('"Not now" only puts it away', async () => {
+    const { store, onTraining } = await renderToday({ trainingNoticeSeen: false });
+    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.day.notNow }));
+    expect(store.getState().dismissTrainingNotice).toHaveBeenCalled();
+    expect(onTraining).not.toHaveBeenCalled();
+  });
+
+  it('is gone once seen', async () => {
+    await renderToday();
+    expect(screen.queryByLabelText(NOTICE)).toBeNull();
+  });
+
+  it.each([
+    [{ equipment: ['bands' as const] }], [{ programStyle: 'women' as const }], [{ ownProgram: true }], [{ gentleStart: true }],
+  ])('never shows to a player whose training is set: %j', async (profile) => {
+    const view = project(SERVER, []);
+    await renderToday({ view: { ...view, profile: { ...view.profile, ...profile } }, trainingNoticeSeen: false });
+    expect(screen.queryByLabelText(NOTICE)).toBeNull();
   });
 });

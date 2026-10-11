@@ -1,12 +1,13 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
 // quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx). The article reader arrives in M8.
-import { CLASS_NAMES, artKey, authoredTemplate } from '@levelmeup/content';
+import { ADJUST_TEXT, CLASS_NAMES, artKey, authoredTemplate } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
 import { isExercise, isResting } from '../game/adjust.ts';
+import { trainingUnset } from '../game/character.ts';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
@@ -30,6 +31,8 @@ export type TodayProps = {
   onSwap: () => void;
   onPain: (questId: number) => void;
   onVanish: () => void;
+  /** Settings → Training, from the one-time training notice (M6d). */
+  onTraining: () => void;
   now?: () => number;
 };
 
@@ -37,7 +40,7 @@ const SECTION: Record<QuestView['slot'], string> = {
   core: 'Core quest', side1: 'Side quests', side2: 'Side quests', article: "Today's reading", recovery: 'Recovery',
 };
 
-export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, now = Date.now }: TodayProps) {
+export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTraining, now = Date.now }: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
@@ -49,6 +52,8 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, now =
   const enqueue = useGame((s) => s.enqueue);
   const signInLost = useGame((s) => s.signInLost);
   const startOver = useGame((s) => s.startOver);
+  const trainingNoticeSeen = useGame((s) => s.trainingNoticeSeen);
+  const dismissTrainingNotice = useGame((s) => s.dismissTrainingNotice);
   const [confirming, setConfirming] = useState(false);
 
   const today = view?.today ?? null;
@@ -174,6 +179,14 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, now =
         )}
       </HalftoneHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
+        {view !== null && !trainingNoticeSeen && trainingUnset(view.profile) && (
+          // Players from before M6c never chose a training setup: asked once (M6d decision 13).
+          <View style={{ gap: 8 }}>
+            <NarrationBox>{ADJUST_TEXT.training.notice}</NarrationBox>
+            <Button label={ADJUST_TEXT.training.setUp} onPress={() => { void dismissTrainingNotice(); onTraining(); }} />
+            <Button label={ADJUST_TEXT.day.notNow} variant="secondary" onPress={() => void dismissTrainingNotice()} />
+          </View>
+        )}
         {noticeBoxes}
         {body}
       </View>
