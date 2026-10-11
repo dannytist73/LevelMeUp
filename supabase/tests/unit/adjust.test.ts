@@ -10,7 +10,7 @@ import { NO_OFFERS, startPoints, stateView, statXp, toProfile } from '../../func
 import type { CharacterRow, DayRow, Snapshot } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
 import {
-  DAY_MS, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay,
+  DAY_MS, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows, manilaDay,
   onboardingBody, profileRow,
 } from './fixtures.ts';
 
@@ -94,7 +94,7 @@ describe('what the phone may offer today (today.ts)', () => {
       profile: profileRow(choices), character: characterRow(start as Partial<CharacterRow>), ladders: ladderRows(args.ladders), days: [dayRow(args.day, 1)],
       instances: instanceRows(args.day, 1), checkins: [], earned: [], queued: false, painReports: 0, workoutsDone: 0,
     };
-    const open = stateView(s, dayOffers(s, LIBRARY)).today!.quests.filter((q) => q.slot !== 'article');
+    const open = stateView(s, dayOffers(s, LIBRARY), historyOf(s)).today!.quests.filter((q) => q.slot !== 'article');
     const hurt = open.find((q) => templateById(LIBRARY, q.templateId).exercise !== null);
     expect(hurt).toBeDefined();
     expect(open.some((q) => q.swaps.length > 0 && q.id !== hurt!.id)).toBe(true);
@@ -104,7 +104,7 @@ describe('what the phone may offer today (today.ts)', () => {
 describe('the state view carries the offers (M6b)', () => {
   it('per quest, for today and for the player', () => {
     const s = at({ ladders: ladderRows({ push: newLadder(1), squat: { ...newLadder(), paused: true } }), painReports: 1 });
-    const view = stateView(s, dayOffers(s, LIBRARY));
+    const view = stateView(s, dayOffers(s, LIBRARY), historyOf(s));
     expect(view.today).toMatchObject({ swapsLeft: 1, restAllowed: true, abilities: [] });
     const core = view.today!.quests.find((q) => q.slot === 'core')!;
     expect(core.swaps.length).toBeGreaterThan(0);

@@ -1,6 +1,6 @@
 // Database rows and what the rules make of them. Pure: no database access here.
 import {
-  STATS, TRAINABLE_STATS, levelForXp, levelProgress, newLadder, rankFor, statPoints, xpToNextPoint,
+  STATS, TRAINABLE_STATS, levelForXp, levelProgress, localDateKey, newLadder, rankFor, statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
   AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState, Limitation,
@@ -27,6 +27,10 @@ export type ProfileRow = {
   equipment: Equipment[];
   program_style: ProgramStyle;
   book: string | null;
+  /** M6d: when the current Scholar's Path book was set. */
+  book_started_at: Date | null;
+  /** M6d: finished books, oldest first (the newest 100). */
+  books_finished: FinishedBook[];
   reveal: unknown;
   accountability_level: number;
 };
@@ -88,6 +92,39 @@ export type InstanceRow = {
 };
 
 export type CheckinRow = { id: Id; day_id: Id | null; gap_from: number | null; gap_to: number | null; answer: string | null };
+
+/** A Scholar's Path book the player finished (profiles.books_finished; times as ISO strings). */
+export type FinishedBook = { title: string; startedAt: string | null; finishedAt: string; sessions: number; minutes: number };
+
+/** What the Chronicle's calendar reads of a day (M6d). */
+export type CalendarRow = Pick<DayRow, 'day_number' | 'starts_at' | 'time_zone' | 'status' | 'resolution' | 'protection' | 'hard_day'>;
+
+/** Days the calendar covers (decision 3). */
+export const CALENDAR_DAYS = 92;
+
+/** What only Character and Chronicle need (M6d decision 2), read once per response by `loadHistory`. */
+export type History = {
+  /** The latest days, newest first, at most CALENDAR_DAYS. */
+  days: CalendarRow[];
+  /** Day 1's start and zone, or null. */
+  dayOne: Pick<DayRow, 'starts_at' | 'time_zone'> | null;
+  /** New rungs reached: the rung bonuses paid. */
+  newRungs: number;
+  /** Quests cleared with the current book since it was set. */
+  reading: { sessions: number; minutes: number };
+};
+
+export type CalendarMark = 'open' | 'cleared' | 'hard' | 'rest' | 'paused' | 'none';
+
+const REST: readonly Protection[] = ['planned_rest', 'pain'];
+
+/** How the calendar draws a day (decision 3). A closed day that is neither cleared nor protected is never a "miss". */
+export function calendarMark(d: CalendarRow): CalendarMark {
+  if (d.status === 'open') return 'open';
+  if (d.resolution === 'streak_day') return d.hard_day ? 'hard' : 'cleared';
+  if (d.resolution === 'protected') return d.protection !== null && REST.includes(d.protection) ? 'rest' : 'paused';
+  return 'none';
+}
 
 /** A quest as `start_player` and `advance` store it (camelCase, the shape `levelmeup.insert_day` reads). */
 export type InstanceDraft = {
@@ -207,6 +244,7 @@ export function characterView(c: CharacterRow) {
     ...levelProgress(totalOf(xp)),
     stats,
     streak: streakState(c),
+    abilityLastUsed: c.ability_last_used,
     version: c.version,
   };
 }
@@ -257,8 +295,24 @@ export type Snapshot = {
 const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];
 const iso = (d: Date | null): string | null => (d === null ? null : d.toISOString());
 
-/** The phone's copy of the player's state (the `lmu-sync` and `lmu-onboarding` responses), with today's offers (M6b). */
-export function stateView(s: Snapshot, offers: DayOffers) {
+/** Growth since day 1 (decision 5): points gained per stat, levels gained, quests cleared, new rungs. */
+function growthOf(c: CharacterRow, history: History) {
+  const view = characterView(c);
+  const start = startPoints(c);
+  return {
+    since: history.dayOne === null ? null : localDateKey(history.dayOne.time_zone, history.dayOne.starts_at.getTime()),
+    levels: view.level - 1,
+    stats: Object.fromEntries(STATS.map((s) => [s, view.stats[s].points - start[s]])) as StatMap,
+    questsCleared: c.quests_cleared,
+    newRungs: history.newRungs,
+  };
+}
+
+/**
+ * The phone's copy of the player's state (the `lmu-sync` and `lmu-onboarding` responses), with today's offers (M6b) and
+ * the history Character and Chronicle show (M6d).
+ */
+export function stateView(s: Snapshot, offers: DayOffers, history: History) {
   const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
   const today = days[0] ?? null;
   const questsOf = (day: DayRow) => s.instances.filter((q) => String(q.day_id) === String(day.id));
@@ -269,7 +323,8 @@ export function stateView(s: Snapshot, offers: DayOffers) {
       boundaryMinutes: s.profile.boundary_minutes, minutesPerDay: s.profile.minutes_per_day, difficulty: s.profile.difficulty,
       goals: s.profile.goals, limitations: s.profile.limitations, gentleStart: s.profile.gentle_start, ownProgram: s.profile.own_program,
       equipment: s.profile.equipment, programStyle: s.profile.program_style,
-      book: s.profile.book, reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
+      book: s.profile.book, bookStartedAt: iso(s.profile.book_started_at), booksFinished: s.profile.books_finished,
+      reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
     },
     character: characterView(s.character),
     today: today === null ? null : {
@@ -294,9 +349,17 @@ export function stateView(s: Snapshot, offers: DayOffers) {
       dayNumber: d.day_number, startsAt: iso(d.starts_at), status: d.status, resolution: d.resolution,
       cleared: questsOf(d).filter((q) => q.completed_at !== null).length,
     })),
-    achievements: [...s.earned].sort(),
+    /** In earned order, oldest first (M6d decision 6). */
+    achievements: [...s.earned],
     /** Ladders, or standalone exercise quests, resting after pain. */
     paused: s.ladders.filter((l) => l.state.paused).map((l) => l.ladder_id).sort(),
     painReports: s.painReports,
+    /** M6d: the last CALENDAR_DAYS days, newest first. */
+    calendar: history.days.map((d) => ({
+      dayNumber: d.day_number, date: localDateKey(d.time_zone, d.starts_at.getTime()), mark: calendarMark(d),
+    })),
+    growth: growthOf(s.character, history),
+    /** Scholar's Path: sessions and minutes with the current book, or null without one. */
+    reading: s.profile.book === null ? null : history.reading,
   };
 }

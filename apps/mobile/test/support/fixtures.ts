@@ -6,7 +6,7 @@ import { stateView } from '../../../../supabase/functions/_shared/state.ts';
 import type { CharacterRow, DayRow, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
 import { dayOffers } from '../../../../supabase/functions/_shared/today.ts';
 import {
-  DAY1, DAY_TWO_SLOTS, HOUR, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay, profileRow,
+  DAY1, DAY_TWO_SLOTS, HOUR, characterRow, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows, manilaDay, profileRow,
 } from '../../../../supabase/tests/unit/fixtures.ts';
 import type { PhoneEvent, Reveal, ServerState } from '../../src/game/types.ts';
 import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
@@ -32,7 +32,7 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     painReports: 0,
     workoutsDone: 0,
   };
-  return stateView(snapshot, dayOffers(snapshot, LIBRARY));
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
 }
 
 /** A time inside day 2 of `adjustState`. */
@@ -44,7 +44,7 @@ export const DAY_TWO_NOW = manilaDay(2).startsAt + HOUR;
  */
 export function adjustState(over: Partial<Snapshot> = {}, day: Partial<DayRow> = {}): ServerState {
   const snapshot = dayTwoSnapshot(DAY_TWO_SLOTS, { ladders: ladderRows({ push: newLadder(1) }), ...over }, day);
-  return stateView(snapshot, dayOffers(snapshot, LIBRARY));
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
 }
 
 let next = 1;
@@ -67,5 +67,5 @@ export const REVEAL: Reveal = { narrative: 'Rin. Class: Warrior.', strengths: ['
 /** Day 2 with a workout (workout-0, planned for the default player) as its core quest, id 200. */
 export function workoutState(over: Partial<Snapshot> = {}): ServerState {
   const snapshot = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'workout-0' }, over);
-  return stateView(snapshot, dayOffers(snapshot, LIBRARY));
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
 }

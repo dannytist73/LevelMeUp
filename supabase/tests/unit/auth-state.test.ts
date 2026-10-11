@@ -5,7 +5,8 @@ import { playerFromAuthHeader } from '../../functions/_shared/auth.ts';
 import { readJson } from '../../functions/_shared/http.ts';
 import { startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import { NO_OFFERS, achievementProgress, characterView, pastDays, stateView, toProfile } from '../../functions/_shared/state.ts';
-import { DAY1, characterRow, choices, dayRow, instanceRows, manilaDay, profileRow } from './fixtures.ts';
+import type { Snapshot } from '../../functions/_shared/state.ts';
+import { DAY1, characterRow, choices, dayRow, historyOf, instanceRows, manilaDay, profileRow } from './fixtures.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 12);
 const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
@@ -87,7 +88,7 @@ describe('what the rules make of the rows', () => {
 describe('the state the phone receives', () => {
   it('shows today with its quests in slot order, earlier days, pending check-ins and achievements', () => {
     const day2 = { ...DAY1, dayNumber: 2, startsAt: new Date(manilaDay(2).startsAt).toISOString(), endsAt: new Date(manilaDay(2).endsAt).toISOString() };
-    const view = stateView({
+    const s: Snapshot = {
       profile: profileRow(),
       character: characterRow({ xp_vitality: 20 }),
       ladders: [],
@@ -98,13 +99,14 @@ describe('the state the phone receives', () => {
       queued: false,
       painReports: 0,
       workoutsDone: 0,
-    }, NO_OFFERS);
+    };
+    const view = stateView(s, NO_OFFERS, historyOf(s));
     expect(view.today).toMatchObject({ id: 2, dayNumber: 2, status: 'open' });
     expect(view.today!.quests.map((q) => q.slot)).toEqual(DAY1.quests.map((q) => q.slot));
     expect(view.today!.quests[0]).toMatchObject({ id: 200, completedAt: null });
     expect(view.recentDays).toEqual([{ dayNumber: 1, startsAt: DAY1.startsAt, status: 'closed', resolution: 'streak_day', cleared: 1 }]);
     expect(view.checkinsDue).toEqual([{ id: 7, dayId: null, gapFrom: 3, gapTo: 4 }]);
-    expect(view.achievements).toEqual(['first-trial', 'level-5']);
+    expect(view.achievements).toEqual(['level-5', 'first-trial']); // earned order (M6d)
     expect(view.character.totalXp).toBe(20);
     expect(view.profile).toMatchObject({ classId: 'warrior', minutesPerDay: 25 });
   });

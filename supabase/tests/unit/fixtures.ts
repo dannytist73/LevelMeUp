@@ -7,7 +7,7 @@ import type { Choices } from '../../functions/_shared/onboarding.ts';
 import type { AdvanceInput } from '../../functions/_shared/advance.ts';
 import { toDraft } from '../../functions/_shared/drafts.ts';
 import { startPoints, statXp, toProfile } from '../../functions/_shared/state.ts';
-import type { CharacterRow, DayDraft, DayRow, InstanceDraft, InstanceRow, LadderRow, ProfileRow, Snapshot } from '../../functions/_shared/state.ts';
+import type { CharacterRow, DayDraft, DayRow, History, InstanceDraft, InstanceRow, LadderRow, ProfileRow, Snapshot } from '../../functions/_shared/state.ts';
 
 /** Onboarding at 8 PM in Manila on 10 October 2026; day 1 runs to 4 AM. */
 export const ONBOARDED = Date.UTC(2026, 9, 10, 12, 0);
@@ -38,7 +38,7 @@ export function profileRow(c: Choices = choices(), over: Partial<ProfileRow> = {
     time_zone: c.timeZone,
     boundary_minutes: c.boundaryMinutes, minutes_per_day: c.minutesPerDay, difficulty: c.difficulty, goals: c.goals,
     limitations: c.limitations, gentle_start: c.gentleStart, own_program: c.ownProgram, equipment: c.equipment,
-    program_style: c.programStyle, book: null, reveal: {}, accountability_level: 0, ...over,
+    program_style: c.programStyle, book: null, book_started_at: null, books_finished: [], reveal: {}, accountability_level: 0, ...over,
   };
 }
 
@@ -134,6 +134,13 @@ export function dayTwoSnapshot(
     workoutsDone: 0,
     ...over,
   };
+}
+
+/** The history `loadHistory` would read for a snapshot: its days, day 1, no rungs, nothing read. */
+export function historyOf(s: Snapshot): History {
+  const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
+  const one = days.find((d) => d.day_number === 1);
+  return { days, dayOne: one === undefined ? null : one, newRungs: 0, reading: { sessions: 0, minutes: 0 } };
 }
 
 export { DAY_MS };

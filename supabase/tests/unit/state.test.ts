@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import { LIBRARY } from '../../../packages/content/src/index.ts';
+import { CALENDAR_DAYS, calendarMark, stateView } from '../../functions/_shared/state.ts';
+import type { CalendarRow } from '../../functions/_shared/state.ts';
+import { dayOffers } from '../../functions/_shared/today.ts';
+import { characterRow, dayTwoSnapshot, historyOf, profileRow } from './fixtures.ts';
+
+const row = (over: Partial<CalendarRow>): CalendarRow => ({
+  day_number: 3, starts_at: new Date(Date.UTC(2026, 9, 11, 22)), time_zone: 'Asia/Manila', status: 'closed',
+  resolution: 'streak_day', protection: null, hard_day: false, ...over,
+});
+
+describe('the calendar mark (M6d decision 3)', () => {
+  it('names each closed day plainly, never as a miss', () => {
+    expect(calendarMark(row({}))).toBe('cleared');
+    expect(calendarMark(row({ hard_day: true }))).toBe('hard');
+    expect(calendarMark(row({ resolution: 'protected', protection: 'planned_rest' }))).toBe('rest');
+    expect(calendarMark(row({ resolution: 'protected', protection: 'pain' }))).toBe('rest');
+    expect(calendarMark(row({ resolution: 'protected', protection: 'outage' }))).toBe('paused');
+    expect(calendarMark(row({ resolution: 'protected', protection: 'no_quests' }))).toBe('paused');
+    expect(calendarMark(row({ resolution: 'awaiting_checkin' }))).toBe('none');
+    expect(calendarMark(row({ status: 'open', resolution: null }))).toBe('open');
+  });
+
+  it('keeps about three months', () => {
+    expect(CALENDAR_DAYS).toBe(92);
+  });
+});
+
+describe('the state for Character and Chronicle (M6d)', () => {
+  it('dates each day in its own zone, newest first', () => {
+    const s = dayTwoSnapshot();
+    const view = stateView(s, dayOffers(s, LIBRARY), historyOf(s));
+    expect(view.calendar.map((d) => d.dayNumber)).toEqual([2, 1]);
+    expect(view.calendar[0]).toEqual({ dayNumber: 2, date: expect.stringMatching(/^2026-10-\d\d$/), mark: 'open' });
+    expect(view.calendar[1]!.mark).toBe('cleared');
+  });
+
+  it('shows growth since day 1: points gained per stat, levels, quests cleared and new rungs', () => {
+    const s = dayTwoSnapshot(undefined, {
+      character: characterRow({ xp_strength: 88, xp_discipline: 22, total_xp: 110, quests_cleared: 4 }),
+    });
+    const view = stateView(s, dayOffers(s, LIBRARY), { ...historyOf(s), newRungs: 2 });
+    expect(view.growth).toEqual({
+      since: expect.stringMatching(/^2026-10-\d\d$/), levels: view.character.level - 1,
+      stats: { strength: 2, vitality: 0, wisdom: 0, focus: 0, discipline: 1 }, questsCleared: 4, newRungs: 2,
+    });
+  });
+
+  it('carries the abilities\' last use, the book, its progress and the finished books', () => {
+    const finished = [{ title: 'Meditations', startedAt: null, finishedAt: '2026-10-01T10:00:00.000Z', sessions: 9, minutes: 140 }];
+    const s = dayTwoSnapshot(undefined, {
+      profile: profileRow(undefined, { book: 'Dune', book_started_at: new Date(Date.UTC(2026, 9, 5)), books_finished: finished }),
+      character: characterRow({ ability_last_used: { stillness: 4 } }),
+    });
+    const view = stateView(s, dayOffers(s, LIBRARY), { ...historyOf(s), reading: { sessions: 3, minutes: 45 } });
+    expect(view.character.abilityLastUsed).toEqual({ stillness: 4 });
+    expect(view.profile).toMatchObject({ book: 'Dune', bookStartedAt: '2026-10-05T00:00:00.000Z', booksFinished: finished });
+    expect(view.reading).toEqual({ sessions: 3, minutes: 45 });
+  });
+
+  it('has no reading without a book, and keeps the achievements in earned order', () => {
+    const s = dayTwoSnapshot(undefined, { earned: ['level-5', 'first-trial'] });
+    const view = stateView(s, dayOffers(s, LIBRARY), { ...historyOf(s), reading: { sessions: 3, minutes: 45 } });
+    expect(view.reading).toBeNull();
+    expect(view.achievements).toEqual(['level-5', 'first-trial']);
+  });
+});
