@@ -32,14 +32,16 @@ describe('the completion panels (spec §3.6)', () => {
     const onClaim = jest.fn();
     const props = { targetMs: 20 * MIN, disabled: false, onChange, onClaim };
     const view = await render(<TimerPanel timer={NEW_TIMER} now={() => T0} {...props} />);
-    expect(screen.getByText('00:00 / 20:00')).toBeTruthy();
+    expect(screen.getByLabelText('00:00 of 20:00')).toBeTruthy();
+    expect(screen.getByText('00:00')).toBeTruthy(); // the elapsed time, large
+    expect(screen.getByText('/ 20:00')).toBeTruthy(); // the target beside it
     expect(screen.getByText(/claim it from 16:00/)).toBeTruthy();
     expect(disabled('Claim')).toBe(true);
     await fireEvent.press(screen.getByRole('button', { name: 'Start' }));
     expect(onChange).toHaveBeenCalledWith({ segments: [], runningSince: T0 });
 
     await view.rerender(<TimerPanel timer={startTimer(NEW_TIMER, T0)} now={() => T0 + 16 * MIN} {...props} />);
-    expect(screen.getByText('16:00 / 20:00')).toBeTruthy();
+    expect(screen.getByLabelText('16:00 of 20:00')).toBeTruthy();
     expect(screen.getByText('Ready to claim.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
@@ -50,7 +52,7 @@ describe('the completion panels (spec §3.6)', () => {
     const paused = { segments: [{ start: T0, end: T0 + MIN }], runningSince: null };
     await render(<TimerPanel timer={paused} now={() => T0 + 5 * MIN} targetMs={20 * MIN} disabled={false} onChange={jest.fn()} onClaim={jest.fn()} />);
     expect(screen.getByRole('button', { name: 'Resume' })).toBeTruthy();
-    expect(screen.getByText('01:00 / 20:00')).toBeTruthy();
+    expect(screen.getByLabelText('01:00 of 20:00')).toBeTruthy();
   });
 
   it('formats long timers with hours, and never below zero', () => {
@@ -119,7 +121,7 @@ async function renderCleared(over: Partial<ClearedProps> = {}) {
 describe('"Quest cleared" (board D2)', () => {
   it('shows the XP, the stat up with its rank, Discipline, the streak and the level bar', async () => {
     await renderCleared();
-    expect(screen.getByText('CLEARED')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'CLEARED' })).toBeTruthy();
     expect(screen.getByText('CORE QUEST · KNEE PUSH-UPS')).toBeTruthy();
     expect(screen.getByLabelText('+20 XP')).toBeTruthy();
     expect(screen.getByText('STRENGTH 11 → 12')).toBeTruthy();
@@ -219,7 +221,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const { enqueue } = await renderQuest(server, core.id);
     await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared' }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: core.id, completedAt: NOW, rating: null, payload: {} });
-    expect(screen.getByText('CLEARED')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'CLEARED' })).toBeTruthy();
     expect(screen.getByText('Discipline · today counts')).toBeTruthy();
   });
 
@@ -238,7 +240,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const timer = jest.fn(async () => stored);
     const { enqueue, store } = await renderQuest(server, core.id, { timer });
     expect(timer).toHaveBeenCalledWith(core.id);
-    expect(await screen.findByText('09:00 / 10:00')).toBeTruthy();
+    expect(await screen.findByLabelText('09:00 of 10:00')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
     expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { segments: stored.segments } }));
     expect(store.getState().saveTimer).toHaveBeenCalledWith(core.id, null);
@@ -252,10 +254,10 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const timer = jest.fn(async () => kept);
     const saveTimer = jest.fn(async (_id: number, state: TimerState | null) => void (kept = state));
     await renderQuest(server, core.id, { timer, saveTimer });
-    await screen.findByText('09:00 / 10:00');
+    await screen.findByLabelText('09:00 of 10:00');
     await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
-    expect(await screen.findByText('00:00 / 10:00')).toBeTruthy();
+    expect(await screen.findByLabelText('00:00 of 10:00')).toBeTruthy();
   });
 
   it('a cleared quest rates and undoes through the outbox', async () => {

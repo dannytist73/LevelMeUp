@@ -8,7 +8,7 @@ import { timerPayload } from '../../quest/payload.ts';
 import { pauseTimer, startTimer, timerDone, timerElapsed } from '../../quest/timer.ts';
 import type { TimerState } from '../../quest/timer.ts';
 import { Button } from '../../ui/Button.tsx';
-import { Display, Small } from '../../ui/Text.tsx';
+import { Display, Heading, Small } from '../../ui/Text.tsx';
 import { XpBar } from '../../ui/XpBar.tsx';
 
 const T = PLAY_TEXT.timer;
@@ -46,7 +46,11 @@ export function TimerPanel({ timer, targetMs, now, disabled, onChange, onClaim }
   const started = running || timer.segments.length > 0;
   return (
     <View style={{ gap: 12 }}>
-      <Display accessibilityLabel={`${clock(elapsed)} of ${clock(targetMs)}`}>{`${clock(elapsed)} / ${clock(targetMs)}`}</Display>
+      {/* The elapsed time large, the target beside it: "mm:ss / mm:ss" at display size wrapped onto two lines (emulator). */}
+      <View accessible accessibilityLabel={`${clock(elapsed)} of ${clock(targetMs)}`} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10 }}>
+        <Display>{clock(elapsed)}</Display>
+        <Heading tone="ash">{`/ ${clock(targetMs)}`}</Heading>
+      </View>
       <XpBar value={Math.min(elapsed, targetMs)} max={targetMs} label={T.progress} />
       <Small>{done ? T.ready : fillText(T.note, { at: clock(targetMs * TIMER_COMPLETE_FRACTION) })}</Small>
       <Button
