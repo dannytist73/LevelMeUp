@@ -219,6 +219,8 @@ describe('Character reveal (O08)', () => {
     expect(screen.queryByRole('button', { name: ONBOARDING_TEXT.reveal.fixMind })).toBeNull(); // no Learn or Focus goal
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.fixBody }));
     expect(onFix).toHaveBeenCalledWith(STEP_PATH.body);
+    // The analysis comes back to this same screen: it shows the new reveal, not the list (emulator, M5).
+    expect(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.accept })).toBeTruthy();
   });
 
   it('accepting the class moves on', async () => {

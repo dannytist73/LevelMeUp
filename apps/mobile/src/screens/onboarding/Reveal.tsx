@@ -80,7 +80,17 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
     body = (
       <View style={{ gap: 12 }}>
         <Heading>{T.fixWhat}</Heading>
-        {fixes.map(([label, path]) => <Button key={path} label={label} variant="secondary" onPress={() => onFix(path)} />)}
+        {fixes.map(([label, path]) => (
+          <Button
+            key={path}
+            label={label}
+            variant="secondary"
+            onPress={() => {
+              setMode('reveal'); // the analysis returns to this same screen, to show the new reveal (emulator, M5)
+              onFix(path);
+            }}
+          />
+        ))}
         <Button label={T.back} variant="secondary" onPress={() => setMode('reveal')} />
       </View>
     );
