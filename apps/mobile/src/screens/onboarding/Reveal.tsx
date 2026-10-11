@@ -70,7 +70,7 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
       <View style={{ gap: 12 }}>
         <Heading>{T.pickClass}</Heading>
         {CLASS_IDS.map((c) => (
-          <OptionCard key={c} label={CLASS_NAMES[c]} detail={`${classStats(c)}. ${CLASS_DAYS[c]}`} selected={c === profile.classId}
+          <OptionCard key={c} label={CLASS_NAMES[c]} detail={`${classStats(CLASSES[c])}. ${CLASS_DAYS[c]}`} selected={c === profile.classId}
             onPress={() => void changeClass(c)} />
         ))}
         <Button label={T.back} variant="secondary" onPress={() => setMode('reveal')} />
@@ -90,7 +90,7 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
         <View style={{ gap: 4 }}>
           <Label>{T.classLabel}</Label>
           <Display>{CLASS_NAMES[profile.classId].toUpperCase()}</Display>
-          <Label tone="chalk">{classStats(profile.classId)}</Label>
+          <Label tone="chalk">{classStats(CLASSES[profile.classId])}</Label>
         </View>
         <NarrationBox>{busy ? T.rewriting : reveal.narrative}</NarrationBox>
         {failure !== null && (
@@ -120,7 +120,7 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
         </View>
         <View style={{ gap: 6 }}>
           <Label>{T.routine}</Label>
-          <Body>{routineLine({ classId: profile.classId, minutesPerDay: profile.minutesPerDay, difficulty: profile.difficulty, gentleStart: profile.gentleStart })}</Body>
+          <Body>{routineLine({ stats: CLASSES[profile.classId], minutesPerDay: profile.minutesPerDay, difficulty: profile.difficulty, gentleStart: profile.gentleStart })}</Body>
         </View>
         {draft.slip !== null && (
           <NightCard>

@@ -1,8 +1,7 @@
 // The onboarding's words (boards O01–O10 in docs/design/ink-panel, spec §1.1) and which answer seeds which ladder. The
 // numbers come from the rules (packages/rules/src/onboarding.ts). Every line is player-facing, so the lint and the
 // app's font-subset test cover it.
-import { CLASSES } from '../../rules/src/index.ts';
-import type { ClassId, Difficulty, Goal, Habit, Seed, Slip, Training } from '../../rules/src/index.ts';
+import type { ClassId, Difficulty, Goal, Habit, Seed, Slip, TrainableStat, Training } from '../../rules/src/index.ts';
 import { STAT_NAMES } from './names.ts';
 import type { Voice } from './types.ts';
 
@@ -81,15 +80,17 @@ export const CLASS_DAYS: Readonly<Record<ClassId, string>> = {
   monk: 'Sleep routine, mobility, breathing and gentle walks.',
 };
 
+/** A class's main and second stat, as the rules' `CLASSES` gives them (content imports only types from the rules). */
+export type ClassStats = { main: TrainableStat; second: TrainableStat };
+
 /** "Strength · Vitality": a class's main and second stat. */
-export function classStats(classId: ClassId): string {
-  const { main, second } = CLASSES[classId];
+export function classStats({ main, second }: ClassStats): string {
   return `${STAT_NAMES[main]} · ${STAT_NAMES[second]}`;
 }
 
 /** The reveal's starting routine (O08 board), from the rules' numbers. */
-export function routineLine(p: { classId: ClassId; minutesPerDay: number; difficulty: Difficulty; gentleStart: boolean }): string {
-  const { main, second } = CLASSES[p.classId];
+export function routineLine(p: { stats: ClassStats; minutesPerDay: number; difficulty: Difficulty; gentleStart: boolean }): string {
+  const { main, second } = p.stats;
   const line =
     `${p.minutesPerDay} min a day, ${DIFFICULTY_CHOICES[p.difficulty].name.toLowerCase()}. Your core quest trains ` +
     `${STAT_NAMES[main]} on most days and ${STAT_NAMES[second]} on others, with a balance quest once a week.`;

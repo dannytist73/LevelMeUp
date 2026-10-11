@@ -1,6 +1,7 @@
 import {
   CLASS_DAYS, GOAL_CHOICES, GOOGLE_ERRORS, ONBOARDING_TEXT, SAFETY_CHECK, SLIP_SUGGESTIONS, VOICE_SAMPLES, classStats, routineLine,
 } from '@levelmeup/content';
+import { CLASSES } from '@levelmeup/rules';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import { project } from '../src/game/project.ts';
@@ -172,18 +173,18 @@ describe('Character reveal (O08)', () => {
   it('shows the class, the words, the stats as game estimates, the routine and the pact suggestion', async () => {
     await show(<Reveal onAccept={() => {}} onFix={() => {}} />, READY_DRAFT, revealed());
     expect(screen.getByText('WARRIOR')).toBeTruthy();
-    expect(screen.getByText(classStats('warrior'))).toBeTruthy();
+    expect(screen.getByText(classStats(CLASSES.warrior))).toBeTruthy();
     expect(screen.getByLabelText(`System: ${REVEAL.narrative}`)).toBeTruthy();
     expect(screen.getByText(ONBOARDING_TEXT.reveal.estimates)).toBeTruthy();
     const p = SERVER.profile;
-    expect(screen.getByText(routineLine({ classId: p.classId, minutesPerDay: p.minutesPerDay, difficulty: p.difficulty, gentleStart: p.gentleStart }))).toBeTruthy();
+    expect(screen.getByText(routineLine({ stats: CLASSES[p.classId], minutesPerDay: p.minutesPerDay, difficulty: p.difficulty, gentleStart: p.gentleStart }))).toBeTruthy();
     expect(screen.getByText(SLIP_SUGGESTIONS.stakes)).toBeTruthy();
   });
 
   it('changing class runs the analysis again with the player\'s class', async () => {
     const store = await show(<Reveal onAccept={() => {}} onFix={() => {}} />, READY_DRAFT, revealed());
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.change }));
-    await fireEvent.press(screen.getByRole('radio', { name: `Monk. ${classStats('monk')}. ${CLASS_DAYS.monk}` }));
+    await fireEvent.press(screen.getByRole('radio', { name: `Monk. ${classStats(CLASSES.monk)}. ${CLASS_DAYS.monk}` }));
     await waitFor(() => expect(store.getState().startCharacter).toHaveBeenCalled());
     expect(store.getState().draft.classId).toBe('monk');
   });

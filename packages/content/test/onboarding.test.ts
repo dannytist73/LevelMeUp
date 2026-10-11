@@ -26,7 +26,7 @@ describe('the onboarding words', () => {
     ...strings(TRAINING_CHOICES), ...strings(READING_CHOICES), ...strings(FOCUS_CHOICES), ...strings(DIFFICULTY_CHOICES),
     ...strings(SLIP_CHOICES), ...strings(SLIP_SUGGESTIONS), ...SAFETY_CHECK, ...strings(CLASS_DAYS), ...strings(GOOGLE_ERRORS),
     voiceLine('Rin'), analysisLine('Rin'), boundaryLine('4:00 AM'), goalsCount(2),
-    ...(Object.keys(CLASSES) as ClassId[]).flatMap((c) => [classStats(c), routineLine({ classId: c, minutesPerDay: 25, difficulty: 'steady', gentleStart: true })]),
+    ...(Object.keys(CLASSES) as ClassId[]).flatMap((c) => [classStats(CLASSES[c]), routineLine({ stats: CLASSES[c], minutesPerDay: 25, difficulty: 'steady', gentleStart: true })]),
   ];
 
   it('pass the lint', () => {
@@ -56,10 +56,10 @@ describe('the onboarding words', () => {
   });
 
   it('describe the starting routine from the rules\' numbers', () => {
-    expect(routineLine({ classId: 'warrior', minutesPerDay: 25, difficulty: 'steady', gentleStart: false }))
+    expect(routineLine({ stats: CLASSES.warrior, minutesPerDay: 25, difficulty: 'steady', gentleStart: false }))
       .toBe('25 min a day, steady. Your core quest trains Strength on most days and Vitality on others, with a balance quest once a week.');
-    expect(routineLine({ classId: 'monk', minutesPerDay: 10, difficulty: 'gentle', gentleStart: true })).toMatch(/Exercise stays gentle/);
-    expect(classStats('mage')).toBe('Wisdom · Focus');
+    expect(routineLine({ stats: CLASSES.monk, minutesPerDay: 10, difficulty: 'gentle', gentleStart: true })).toMatch(/Exercise stays gentle/);
+    expect(classStats(CLASSES.mage)).toBe('Wisdom · Focus');
   });
 });
 
