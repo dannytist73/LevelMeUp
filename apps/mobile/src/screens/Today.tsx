@@ -1,5 +1,5 @@
-// Today (spec §1.2–1.4, D1 board), M4's read-only version: the day's header and every quest of the day, with the §1.4
-// loading, empty and offline states. Quest actions, swap, hard day and the article reader arrive in M6–M8.
+// Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
+// the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Quest actions, swap, hard day and the article reader arrive in M6–M8.
 import { CLASS_NAMES } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -22,8 +22,6 @@ import { syncMark } from './syncLine.ts';
 
 export type TodayProps = {
   onSettings: () => void;
-  /** Development builds only (M4's way to make a test character until onboarding exists). */
-  onDeveloper?: () => void;
   now?: () => number;
 };
 
@@ -31,7 +29,7 @@ const SECTION: Record<QuestView['slot'], string> = {
   core: 'Core quest', side1: 'Side quests', side2: 'Side quests', article: "Today's reading", recovery: 'Recovery',
 };
 
-export function Today({ onSettings, onDeveloper, now = Date.now }: TodayProps) {
+export function Today({ onSettings, now = Date.now }: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
@@ -71,13 +69,6 @@ export function Today({ onSettings, onDeveloper, now = Date.now }: TodayProps) {
         ) : (
           <Button label="Start again as a new guest" variant="secondary" onPress={() => setConfirming(true)} />
         )}
-      </View>
-    );
-  } else if (phase === 'not_started') {
-    body = (
-      <View style={{ gap: 16 }}>
-        <NarrationBox>The System is waiting for you.</NarrationBox>
-        {onDeveloper !== undefined && <Button label="Developer screen" variant="secondary" onPress={onDeveloper} />}
       </View>
     );
   } else if (!usable) {

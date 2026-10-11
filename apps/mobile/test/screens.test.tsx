@@ -21,9 +21,8 @@ const xpOf = (q: (typeof quests)[number]) => Object.values(q.xp).reduce((s, x) =
 async function renderToday(over: Parameters<typeof testStore>[0] = {}, server: ServerState = SERVER) {
   const store = testStore({ view: project(server, []), ...over });
   const onSettings = jest.fn();
-  const onDeveloper = jest.fn();
-  await render(withStore(store, <Today onSettings={onSettings} onDeveloper={onDeveloper} now={now} />));
-  return { store, onSettings, onDeveloper };
+  await render(withStore(store, <Today onSettings={onSettings} now={now} />));
+  return { store, onSettings };
 }
 
 describe('Today', () => {
@@ -87,13 +86,6 @@ describe('Today', () => {
     await renderToday({ status: 'offline' }, ended);
     expect(screen.getByLabelText('System: The System is preparing your trials.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
-  });
-
-  it('no character yet: the System waits; development builds link the developer screen', async () => {
-    const { onDeveloper } = await renderToday({ phase: 'not_started', view: null });
-    expect(screen.getByLabelText('System: The System is waiting for you.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Developer screen' }));
-    expect(onDeveloper).toHaveBeenCalled();
   });
 
   it('a lost sign-in is explained, and starting again needs a second, explicit tap', async () => {

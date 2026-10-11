@@ -1,6 +1,7 @@
 // The three tabs (spec §1.3) with the Ink Panel tab bar.
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useGame } from '../../src/state/store.ts';
 import { colors } from '../../src/theme/tokens.ts';
 import { InkTabBar } from '../../src/ui/InkTabBar.tsx';
 import type { TabItem } from '../../src/ui/InkTabBar.tsx';
@@ -13,6 +14,9 @@ const TABS: readonly TabItem[] = [
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const phase = useGame((s) => s.phase);
+  // No character yet (M5): the onboarding, never Today's empty state.
+  if (phase === 'not_started') return <Redirect href="/onboarding" />;
   return (
     <Tabs
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.night } }}
