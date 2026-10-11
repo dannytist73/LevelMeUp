@@ -1,4 +1,4 @@
-import { clockTime, dateLine, dayLabel } from '../src/lib/dates.ts';
+import { clockTime, dateKeyLabel, dateLine, dayLabel, monthLabel } from '../src/lib/dates.ts';
 
 describe('dates on screen', () => {
   it('labels a quest day by its local start, whatever the phone language', () => {
@@ -16,4 +16,12 @@ describe('dates on screen', () => {
 it('writes a date for a sentence: "Sat 24 Oct", in the given zone', () => {
   expect(dateLine(Date.UTC(2026, 9, 24, 2), 'Asia/Manila')).toBe('Sat 24 Oct');
   expect(dateLine(Date.UTC(2026, 9, 24, 2), 'America/New_York')).toBe('Fri 23 Oct');
+});
+
+describe('calendar dates (M6d)', () => {
+  it('names a date key and a month', () => {
+    expect(dateKeyLabel('2026-10-12')).toBe('Mon 12 Oct');
+    expect(dateKeyLabel('2026-09-29')).toBe('Tue 29 Sep');
+    expect(monthLabel({ year: 2026, month: 10 })).toBe('OCTOBER 2026');
+  });
 });

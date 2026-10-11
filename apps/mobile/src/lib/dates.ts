@@ -4,6 +4,9 @@ import { localParts } from '@levelmeup/rules';
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] as const;
+const MONTH_NAMES = [
+  'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
+] as const;
 
 export function dayLabel(iso: string, timeZone: string): string {
   const p = localParts(timeZone, Date.parse(iso));
@@ -30,3 +33,13 @@ export function dateLine(ms: number, timeZone: string): string {
   const weekday = WEEKDAYS[new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay()]!;
   return `${titleCase(weekday)} ${p.day} ${titleCase(MONTHS[p.month - 1]!)}`;
 }
+
+/** "Mon 12 Oct" for a `YYYY-MM-DD` date (calendar cells, "Since day 1"). */
+export function dateKeyLabel(date: string): string {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]!;
+  return `${titleCase(weekday)} ${d} ${titleCase(MONTHS[m - 1]!)}`;
+}
+
+/** "OCTOBER 2026" (the calendar's title). */
+export const monthLabel = ({ year, month }: { year: number; month: number }): string => `${MONTH_NAMES[month - 1]!} ${year}`;

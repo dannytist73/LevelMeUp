@@ -1,13 +1,14 @@
-import { ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
+import { ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
+import { dateKeyLabel } from '../src/lib/dates.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { Book } from '../src/screens/Book.tsx';
 import { Celebration } from '../src/screens/Celebration.tsx';
 import { Character } from '../src/screens/Character.tsx';
-import { Chronicle, dayOutcome } from '../src/screens/Chronicle.tsx';
+import { Chronicle } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { DAY_TWO_NOW, adjustState, characterRow, completeEvent, ladderRows, profileRow, serverState } from './support/fixtures.ts';
@@ -210,29 +211,84 @@ describe('Character (M6d)', () => {
   });
 });
 
-describe('Chronicle', () => {
-  it('on day 1: the streak and "your chronicle begins today"', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []) }), <Chronicle />));
-    expect(screen.getByText('0-day streak')).toBeTruthy();
-    expect(screen.getByLabelText('System: Your chronicle begins today.')).toBeTruthy();
+describe('Chronicle (M6d)', () => {
+  type Calendar = ServerState['calendar'];
+  const withCalendar = (calendar: Calendar, over: Partial<ServerState> = {}) => ({ ...project(SERVER, []), calendar, ...over });
+  const disabled = (name: string) => screen.getByRole('button', { name }).props.accessibilityState.disabled;
+
+  it('shows the streak, the best streak and the shields as tiles', async () => {
+    const view = project(SERVER, []);
+    const streak = { ...view.character.streak, current: 3, best: 5, shields: 1 };
+    await render(withStore(testStore({ view: { ...view, character: { ...view.character, streak } } }), <Chronicle />));
+    expect(screen.getByLabelText('Streak 3')).toBeTruthy();
+    expect(screen.getByLabelText('Best 5')).toBeTruthy();
+    expect(screen.getByLabelText('Shields 1 / 2')).toBeTruthy();
   });
 
-  it('lists the recent days with their outcome', async () => {
-    const recentDays: ServerState['recentDays'] = [
-      { dayNumber: 3, startsAt: '2026-10-11T20:00:00.000Z', status: 'closed', resolution: 'streak_day', cleared: 2 },
-      { dayNumber: 2, startsAt: '2026-10-10T20:00:00.000Z', status: 'closed', resolution: 'awaiting_checkin', cleared: 0 },
+  it('on day 1: today on the calendar, and the first quests waiting', async () => {
+    const view = project(SERVER, []);
+    await render(withStore(testStore({ view }), <Chronicle />));
+    expect(view.calendar).toHaveLength(1);
+    expect(screen.getByLabelText(`${dateKeyLabel(view.calendar[0]!.date)}, today`)).toBeTruthy();
+    expect(screen.getByText('Your first quests are waiting.')).toBeTruthy();
+  });
+
+  it('names each day of the month by its date and mark, never as a miss', async () => {
+    const calendar: Calendar = [
+      { dayNumber: 6, date: '2026-10-15', mark: 'open' },
+      { dayNumber: 5, date: '2026-10-14', mark: 'cleared' },
+      { dayNumber: 4, date: '2026-10-13', mark: 'hard' },
+      { dayNumber: 3, date: '2026-10-12', mark: 'rest' },
+      { dayNumber: 2, date: '2026-10-11', mark: 'paused' },
+      { dayNumber: 1, date: '2026-10-10', mark: 'none' },
     ];
-    await render(withStore(testStore({ view: { ...project(SERVER, []), recentDays } }), <Chronicle />));
-    expect(screen.getByText('Day 3')).toBeTruthy();
-    expect(screen.getByText('MON · 12 OCT')).toBeTruthy();
-    expect(screen.getByText('Cleared 2')).toBeTruthy();
-    expect(screen.getByText('Check-in due')).toBeTruthy();
+    await render(withStore(testStore({ view: withCalendar(calendar) }), <Chronicle />));
+    expect(screen.getByText('OCTOBER 2026')).toBeTruthy();
+    expect(screen.getByLabelText('Thu 15 Oct, today')).toBeTruthy();
+    expect(screen.getByLabelText('Wed 14 Oct, cleared')).toBeTruthy();
+    expect(screen.getByLabelText('Tue 13 Oct, hard day')).toBeTruthy();
+    expect(screen.getByLabelText('Mon 12 Oct, rest')).toBeTruthy();
+    expect(screen.getByLabelText('Sun 11 Oct, paused')).toBeTruthy();
+    expect(screen.getByLabelText('Sat 10 Oct')).toBeTruthy();
+    expect(screen.getByLabelText('Fri 16 Oct')).toBeTruthy();
+    expect(screen.getAllByLabelText(/^\w{3} \d+ Oct/)).toHaveLength(31);
   });
 
-  it('names each outcome plainly', () => {
-    const day = { dayNumber: 1, startsAt: '', status: 'closed' as const, resolution: null, cleared: 0 };
-    expect(dayOutcome({ ...day, resolution: 'protected' })).toBe('Protected');
-    expect(dayOutcome({ ...day, status: 'open' })).toBe('In progress');
+  it("goes back to an earlier month the chronicle reaches, and forward again; no further", async () => {
+    const calendar: Calendar = [
+      { dayNumber: 2, date: '2026-10-01', mark: 'open' },
+      { dayNumber: 1, date: '2026-09-30', mark: 'cleared' },
+    ];
+    await render(withStore(testStore({ view: withCalendar(calendar) }), <Chronicle />));
+    expect(disabled(CHRONICLE_TEXT.next)).toBe(true);
+    await fireEvent.press(screen.getByRole('button', { name: CHRONICLE_TEXT.previous }));
+    expect(screen.getByText('SEPTEMBER 2026')).toBeTruthy();
+    expect(screen.getByLabelText('Wed 30 Sep, cleared')).toBeTruthy();
+    expect(disabled(CHRONICLE_TEXT.previous)).toBe(true);
+    await fireEvent.press(screen.getByRole('button', { name: CHRONICLE_TEXT.next }));
+    expect(screen.getByText('OCTOBER 2026')).toBeTruthy();
+  });
+
+  it('with no earlier days there is no earlier month', async () => {
+    await render(withStore(testStore({ view: project(SERVER, []) }), <Chronicle />));
+    expect(disabled(CHRONICLE_TEXT.previous)).toBe(true);
+    expect(disabled(CHRONICLE_TEXT.next)).toBe(true);
+  });
+
+  it('shows growth since day 1', async () => {
+    const growth: ServerState['growth'] = {
+      since: '2026-09-29', levels: 1, stats: { strength: 2, vitality: 1, wisdom: 0, focus: 0, discipline: 3 }, questsCleared: 4, newRungs: 2,
+    };
+    await render(withStore(testStore({ view: { ...project(SERVER, []), growth } }), <Chronicle />));
+    expect(screen.getByText('Since day 1 · Tue 29 Sep')).toBeTruthy();
+    expect(screen.getByLabelText('Strength +2')).toBeTruthy();
+    expect(screen.getByText('STR')).toBeTruthy();
+    expect(screen.getByText('1 level gained, 4 quests cleared, 2 new rungs reached.')).toBeTruthy();
+  });
+
+  it('before any day: "your chronicle begins today"', async () => {
+    await render(withStore(testStore({ view: null }), <Chronicle />));
+    expect(screen.getByLabelText(`System: ${CHRONICLE_TEXT.empty}`)).toBeTruthy();
   });
 });
 
