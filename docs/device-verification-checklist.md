@@ -70,18 +70,37 @@ on the Find X9 (the owner signs in to Google there); the rest run on the emulato
 
 | # | Check | Emulator | Find X9 | Automated coverage |
 |---|---|---|---|---|
-| 1 | Fresh install: the app opens on "Signal found" (Awakening); no sign-in screen; no guest sign-in is made until the analysis. | | | Store test (a sync never makes a guest) |
-| 2 | The interview at the default font size: the progress bars match the screens (6, or 7 with Learn or Focus); Continue waits for each screen's answers; the mind screen appears only for Learn or Focus; sleep 8:00 AM → wake 4:00 PM shows "turns over at 12:00 PM". | | | Flow and screen tests |
-| 3 | Safety check: one "Yes" shows "Gentle start"; the reveal's routine says exercise stays gentle; day 1 on Today has only walks and stretches for exercise. | | | Server and content tests (gentle start) |
-| 4 | Analysis online: the reveal appears within 15 s, in the chosen voice. | | | Live test (Claude-written reveal) |
-| 5 | Analysis offline (local Metro, Wi-Fi and data off): "needs a connection… answers are kept"; back online, Try again gives the reveal. | | | Store and screen tests |
-| 6 | Reveal: Change class → Mage: class, stats (the +2 moves to Wisdom) and routine change; Fix an assumption → Body → another training answer → the analysis runs again; Today then shows the corrected character. | | | Live test (redo); DB test (restart_player) |
-| 7 | Vow: letting go before 2 s does nothing; a 2-second hold swears it ("Sworn"); with TalkBack on, Swear then Confirm. | | | HoldButton tests |
-| 8 | Save → "Not now · begin Day 1": Today shows day 1 (light); the back button then leaves the app instead of returning to the interview; Settings shows "Playing as a guest" with "Save with Google". | | | Screen tests |
-| 9 | Largest font size and largest display size: no cut-off text on the eleven onboarding screens. | | | No `numberOfLines` (text tests) |
-| 10 | Remove animations on: every onboarding screen works; nothing needed is animated. | | | — |
+| 1 | Fresh install: the app opens on "Signal found" (Awakening); no sign-in screen; no guest sign-in is made until the analysis. | Pass: opens on "Signal found", no sign-in screen; live guests 2 before, 2 after the whole interview, 3 right after the analysis (2026-10-11) | | Store test (a sync never makes a guest) |
+| 2 | The interview at the default font size: the progress bars match the screens (6, or 7 with Learn or Focus); Continue waits for each screen's answers; the mind screen appears only for Learn or Focus; sleep 8:00 AM → wake 4:00 PM shows "turns over at 12:00 PM". | Pass: 6 bars, 7 with Learn ("Step 3 of 7"); Continue waits on each screen; the mind screen asks only the picked goal's question; 8:00 AM / 4:00 PM shows "turns over at 12:00 PM" (2026-10-11) | | Flow and screen tests |
+| 3 | Safety check: one "Yes" shows "Gentle start"; the reveal's routine says exercise stays gentle; day 1 on Today has only walks and stretches for exercise. | Pass: one Yes shows "Safety check · Gentle start"; the routine says "Exercise stays gentle for now"; day 1 (a Mage) had no exercise quest (2026-10-11) | | Server and content tests (gentle start) |
+| 4 | Analysis online: the reveal appears within 15 s, in the chosen voice. | Pass: the reveal after 12 s, Claude-written, in the Mentor voice; numbers as the rules say (Strength 7, Wisdom 6 from reading most days) (2026-10-11) | | Live test (Claude-written reveal) |
+| 5 | Analysis offline (local Metro, Wi-Fi and data off): "needs a connection… answers are kept"; back online, Try again gives the reveal. | Pass: offline (Wi-Fi and data off) the analysis says it needs a connection and keeps the answers; back online, Try again gave the reveal in 11 s (2026-10-11) | | Store and screen tests |
+| 6 | Reveal: Change class → Mage: class, stats (the +2 moves to Wisdom) and routine change; Fix an assumption → Body → another training answer → the analysis runs again; Today then shows the corrected character. | Pass after finding 1: Change class → Mage moved the +2 to Wisdom (8) and rewrote the record and routine; Fix → Body → "Most weeks" rebuilt it (Strength and Vitality 6); Today showed the corrected Mage (2026-10-11) | | Live test (redo); DB test (restart_player) |
+| 7 | Vow: letting go before 2 s does nothing; a 2-second hold swears it ("Sworn"); with TalkBack on, Swear then Confirm. | Pass: a 1 s hold does nothing, a 2.6 s hold swears it ("Sworn"); the TalkBack tap-then-confirm path only in the HoldButton tests (2026-10-11) | | HoldButton tests |
+| 8 | Save → "Not now · begin Day 1": Today shows day 1 (light); the back button then leaves the app instead of returning to the interview; Settings shows "Playing as a guest" with "Save with Google". | Pass: Today shows day 1 (light); Back leaves the app; Settings shows "Playing as a guest." with "Save with Google" (2026-10-11) | | Screen tests |
+| 9 | Largest font size and largest display size: no cut-off text on the eleven onboarding screens. | Pass: all eleven onboarding screens at font 2.0 and density 540, nothing cut off (the time steppers stack, the minute choices wrap) (2026-10-11) | | No `numberOfLines` (text tests) |
+| 10 | Remove animations on: every onboarding screen works; nothing needed is animated. | Pass: every screen works with the three animation scales at 0; the vow's fill still runs (about 60 % at 1.3 s) (2026-10-11) | | — |
 | G1 | Spike 2 (Task 10): Developer → Save with Google links the guest: same user id, now not anonymous, a Google identity. | — | | google.ts tests |
 | G2 | After G1 (signed in with Google, no character): the onboarding skips the Save screen after the vow and opens Today. | — | | Route logic |
 | G3 | Clear storage → Awakening → "Saved a character before? Sign in with Google" → the G2 character on Today. | — | | Store test (restore) |
 | G4 | Clear storage → onboarding as a new guest → Save with the G1 Google account → "already in use"; progress kept; Not now → Today. Then Developer → delete this test character. | — | | google.ts tests (taken) |
 | G5 | On Save, open Google's page and close it: "Not saved…", nothing lost. | — | | google.ts tests (cancelled) |
+
+### What the emulator found (M5, 2026-10-11)
+
+1. **After "Fix an assumption", the reveal came back showing the correction list**, not the new result: the analysis
+   returns to the same reveal screen, which kept its own "fix" mode. Choosing what to correct now resets it; a screen
+   test checks it, and a third emulator run confirmed it.
+2. **Security: the Google sign-in's PKCE fell back to "plain".** Metro logged supabase-js's "WebCrypto API is not
+   supported": Hermes has no `crypto.subtle` (and no `crypto.getRandomValues`, so the verifier would have come from
+   `Math.random`). `src/auth/webCrypto.ts` now supplies SHA-256 and secure random values from expo-crypto before the
+   client is made; the warning is gone on the emulator.
+3. The reveal's list of strong points was headed "Strength", right under the Strength stat; now "Strengths". The
+   developer screen's delete message still described M4's guest-on-sync; reworded.
+4. Not a bug: one Questmaster reveal from Claude failed validation ("invalid reveal" in `ai_generations`), so the
+   template's words showed, as designed. Before the Google setup, "Continue with Google" shows "Google sign-in didn't
+   finish. Your progress is kept…", as designed.
+
+Test data: three test characters were made on the emulator (one per run) and each was deleted from the developer
+screen with its guest sign-in; the live project ended with the same 2 guests it started with. The two live-test runs
+(one by mistake) left their Claude-call rows without a player, as designed (cost tracking).
