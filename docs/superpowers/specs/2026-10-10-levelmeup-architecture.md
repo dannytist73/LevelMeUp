@@ -98,6 +98,11 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 - Definitions that never change per player (quest templates, ladders, achievements, Shadow lines, XP tables) live in
   `packages/content` and `packages/rules`, versioned in git and reviewed by the owner. Each quest instance stores a
   snapshot (template id, content version, XP), so a content change never rewrites history.
+- M6c (2026-10-12, migration 0009): `profiles` gains `equipment` (a subset of bands, dumbbells, bench, pullup_bar, gym;
+  empty for bodyweight) and `program_style` (men, women or none), both server-written (onboarding and the `training`
+  event). A workout quest stores its planned exercises in `quest_instances.condition` as a `session` condition (each
+  exercise with its range and sets); its log must have exactly that many sets. Workouts done so far (the program day
+  of the next one) are counted from completed `session` quests, so no new column is needed.
 - Character totals are cached in `character_state` and updated in the same transaction as the ledger, so the
   ledger is the audit trail and the cache is what screens read.
 
@@ -121,6 +126,10 @@ M6b (2026-10-11): the adjustments (`swap`, `hard_day`, `plan_rest`, `pain`, `res
 the refusal), and `levelmeup.adjust` (migration 0008) re-checks the version and the guards, writes the change and
 records the event. A version conflict plans again (3 tries). `quest_days` gains `swaps_used`, and `protection` gains
 `pain` (a day rested after "I felt pain", which never counts as a planned rest day).
+
+M6c (2026-10-12): `training` (equipment and program style, from Settings → Training) joins the adjustments: the
+planner stores the setup and re-plans today's open, uncleared workout with it (same rung and reward); after the day
+ended only the setup changes. `levelmeup.adjust` (migration 0009) writes it; the table's checks refuse unknown values.
 
 ### 4.2 How a write happens
 

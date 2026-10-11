@@ -25,6 +25,11 @@ The System "awakens" and interviews the player, asking only what changes their q
    *M5 (owner decision 2026-10-11): everyone sees the Body screen and its safety check, whatever their goals, since
    every class gets walks and stretches. Equipment is dropped (no quest uses it); "I follow my own plan" is a fourth
    training answer. One mind screen (reading, focus) appears only for the Learn or Focus goal.*
+   *Built in M6c (2026-10-12): equipment returns with the workouts that use it. A Training step after Body asks what the
+   player can train with (resistance bands, dumbbells, a bench, a pull-up bar, a gym, or "Just my body") and which
+   program they follow (Men's, Women's or No preference; anyone may pick any). It appears only when strength work is
+   possible (not "I follow my own plan", a clear safety check); otherwise no equipment and No preference are sent.
+   Both can be changed later in Settings → Training.*
 5. **Rhythm:** wake and sleep times set the personal day boundary (default 4 AM local; works for shift workers).
 6. **Time and difficulty:** minutes per day; gentle, steady or hard.
 7. **"When you slip, what helps?"** Suggests an accountability style, shown on the reveal; nothing activates
@@ -194,6 +199,14 @@ About 25 in the MVP across milestones, streaks, ladder rungs, class feats, artic
   version is part of the template. A standard quest takes at least 8 minutes and a major one at least 23; a minor
   quest may take longer when it is very easy (phone-free blocks). Tiny standalone quests (a glass of water, two pages,
   tomorrow's hardest task) keep 10-minute days possible.
+- **Built in M6c** (2026-10-12): a 13th ladder, `workout` (6 rungs, 80 templates in all). A workout is 3–4 exercises
+  from a 53-exercise library in 15 movement slots (`packages/content/src/training/`), planned by the rules for the
+  player's equipment, reported limits and program day (`planWorkout`; a missed workout repeats). Exercise names, slots
+  and rep ranges follow the owner's Kaizen workout builders; every step and cue is written in LevelMeUp's own words.
+  The workout ladder is the strength ladder every class prefers, so a strength core quest is a workout whenever one
+  fits (25 minutes a day or more); push-ups, squats and core training stay for side quests, swaps and shorter days.
+  The day after a workout builds no strength quest. A quest stores its planned exercises and their sets (a `session`
+  condition), so a content change never rewrites a day. Titles name no numbers (the target line carries them).
 
 ### 3.2 Generating a day (deterministic, a pure TypeScript rules package)
 
@@ -237,6 +250,11 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
   quest (the small strength quest) rests by its own id. From the second report in 14 days the flow leads with "see a
   doctor or physiotherapist". Nothing costs XP. A report always rests the exercise, even when it reaches the server
   after its day ended; only the day itself can't change then.
+- Built in M6c (2026-10-12): the workout ladder climbs harder exercises first (rungs 0–2: level 1, 2, 3 versions,
+  e.g. wall → incline → floor push-ups; machines → dumbbells → barbells, 3 × 2 sets, 16 minutes), then more sets
+  (rung 3: 3 × 3, 23 minutes), then a fourth exercise (rung 4: 4 × 3, 29; rung 5: 4, 3, 3, 3 sets, 32), with the same
+  step-up and step-down rules. Pain on any exercise rests the whole workout ladder. Every set ends with 1–2 good reps
+  left (nothing goes to failure); barbell lifts are the hardest level only and say to learn them with a light bar.
 
 ### 3.4 Safety
 
@@ -259,6 +277,9 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
 - Built in M6b (2026-10-11): swap, hard day and rest from Today; a swap replaces the quest in place and the button
   hides when no swap is left or nothing fits. Rest is for today only; planning rest days ahead waits for the morning
   briefing (M7).
+- Built in M6c (2026-10-12): a hard-day workout is one set of its first two exercises (7 minutes, half XP), the
+  smallest session that keeps the habit. A swap can offer a workout; Second Wind redoes a missed workout with today's
+  plan; changing the equipment or program re-plans today's open workout (same rung and reward).
 
 ### 3.6 Completion
 

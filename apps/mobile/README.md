@@ -49,7 +49,15 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   asks for what the server accepts; `src/game/project.ts` shows the chosen option at once (`src/game/adjust.ts` drafts a
   hard-day version with the server's own `toDraft`). A quest replaced by a swap, gentle movement or an ability loses its
   stored timer. Vanish never reaches the server: `expo-keep-awake` keeps the screen on, and leaving the app pauses it.
+- **Kaizen training** (M6c): onboarding asks for the equipment and program on a Training step after Body
+  (`app/onboarding/gear.tsx`, `src/screens/onboarding/GearStep.tsx`; skipped for an own plan or a gentle start).
+  A workout quest stores its planned exercises (a `session` condition); the quest screen logs it with
+  `src/screens/quest/WorkoutLog.tsx` (each exercise's target, cue, progress line and steps; one counter per set, starting
+  at the bottom of the range; every set is sent and the server checks the count). Settings → Training
+  (`app/training.tsx`, `src/screens/Training.tsx`) sends a `training` event; `src/game/project.ts` shows the new setup at
+  once and marks today's open workout "Will sync" until the server re-plans it. The cache dropped older states (version 4).
 - `app/dev/` exists only in development builds: the account and "Save with Google", the outbox and notices, the
-  self-check (time zones on Hermes, AES, SQLite) and the component kit.
+  self-check (time zones on Hermes, AES, SQLite), the component kit and the workout preview (`app/dev/workout.tsx`: a
+  workout planned on the phone for any equipment, program, rung and program day; nothing is sent).
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).
