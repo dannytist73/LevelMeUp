@@ -96,11 +96,11 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
 | 1 Awakening (name) | §1.1 beat 1 | No sign-up; "You can save your character later" |
 | 2 Voice | beat 2 | Three voices with a sample line each |
 | 3 Goals | beat 3 | Up to 2 of 5 |
-| 4 Body and safety | beat 4, §3.4 | Training level, equipment, limits; safety check result only (answers not stored) |
+| 4 Body and safety | beat 4, §3.4 | Training level, equipment, limits; safety check result only (answers not stored). *M5: equipment replaced by "I follow my own plan" (owner decision 2026-10-11).* |
 | 5 Rhythm and effort | beats 5–6 | **Merged into one screen** (wake/sleep, minutes, difficulty) |
 | 6 When you slip | beat 7 | "Nothing turns on until you sign the Pact yourself" |
 | 7 Analysis | beat 8 | Auto-advances; at most 15 s, then the template reveal |
-| 8 Character reveal | beat 9 | Class, stats ("game estimates"), strength/growth, routine, Pact suggestion, change class, fix an assumption |
+| 8 Character reveal | beat 9 | Class, stats ("game estimates"), strength/growth, routine, Pact suggestion, change class, fix an assumption. *M5: the class portrait waits for M9's class art.* |
 | 9 The vow | beat 10 | Optional, hold to swear, skippable |
 | 10 Save your character | §1.1, §1.5 | Google only in the pilot; "Not now · begin Day 1" |
 | Today | §1.2–1.3, §3 | Every quest card shows its "why"; exercise safety line and "I felt pain" |

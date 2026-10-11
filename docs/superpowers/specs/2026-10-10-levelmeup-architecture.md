@@ -148,10 +148,15 @@ last line of defence.
 ### 4.4 Authentication
 
 - First launch: anonymous Supabase sign-in (needs a connection at the end of onboarding; answers are kept on the
-  phone if offline).
+  phone if offline). *M5: the guest is made at the onboarding's analysis, not at launch, so installs that never finish
+  the interview leave no empty guests.*
 - "Save your character": email via `updateUser({ email })` with a verification email; Google via identity linking.
   To verify in a spike: whether supabase-js links a native Google ID token to an anonymous user; fallback is the
   browser-based `linkIdentity` flow. Manual linking must be enabled in Auth settings.
+  *Owner decision 2026-10-11 (M5): the browser-based flow, not a native ID token. `auth.linkIdentity` (save) and
+  `auth.signInWithOAuth` (restore on a new phone) with PKCE, opened with expo-web-browser's `openAuthSessionAsync` and
+  redirected to `levelmeup://auth-callback`; the app trades the code for the session. Linking keeps the user id, so
+  the character stays put. Google's page shows the shared project's address.*
 - Before the public launch (not the pilot): CAPTCHA (Turnstile) on anonymous sign-ins to stop abuse.
 - **Shared with the wedding site** (one Auth per project): the user list, anonymous sign-ins (already on), the
   email sender and templates, redirect URLs and providers. LevelMeUp needs three additive changes, each confirmed

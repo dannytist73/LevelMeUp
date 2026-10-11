@@ -21,11 +21,20 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
 - `src/state/store.ts` is what screens read. Every action goes to the **outbox** (`src/data/local.ts`, SQLite) first;
   the screens show the last server state with the outbox applied by `src/game/project.ts` (the rules' numbers). The
   **sync engine** (`src/sync/`) sends the outbox to `lmu-sync` and stores the answer; the server's numbers always win.
-- Sign-in is an anonymous Supabase guest (`src/auth/`). The session is sealed with AES-256-GCM; only its key is in
-  SecureStore. The app ships only the publishable key (`src/config.ts`), never a secret one.
+- Sign-in is an anonymous Supabase guest (`src/auth/`), made at the onboarding's analysis (M5), never by a sync: an
+  empty phone without a sign-in goes straight to the onboarding. The session is sealed with AES-256-GCM; only its key
+  is in SecureStore. The app ships only the publishable key (`src/config.ts`), never a secret one.
+- **The onboarding** (`app/onboarding/`, screens in `src/screens/onboarding/`, the interview's rules in
+  `src/onboarding/flow.ts`): the tabs hand a player with no character to it. The draft is kept in the SQLite key-value
+  store (`lmu.onboarding-draft`) **without the safety answers**, which live only in memory; the vow is kept on the
+  phone (`lmu.vow`). The analysis sends answers only; the server computes every number.
+- **Google** (`src/auth/google.ts`): "Save your character" links Google to the guest with Supabase's browser flow
+  (`linkIdentity`, PKCE, expo-web-browser, redirect `levelmeup://auth-callback`); "Sign in with Google" on the first
+  screen brings a saved character to a new phone. It needs the owner's dashboard settings (Google provider, manual
+  linking, the redirect URL). expo-web-browser is a native module: it needs a development build from M5 on.
 - The shared packages are imported by name (`@levelmeup/rules`, `@levelmeup/content`); the server's response types come
   from `supabase/functions/_shared` with `import type`, so the phone and the server can't drift apart.
-- `app/dev/` exists only in development builds: a live test character (until M5's onboarding), sample completions, the
-  self-check (time zones on Hermes, AES, SQLite) and the component kit.
+- `app/dev/` exists only in development builds: the account and "Save with Google", sample completions on today's
+  quests, the self-check (time zones on Hermes, AES, SQLite) and the component kit.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

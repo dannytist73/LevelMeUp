@@ -62,3 +62,26 @@ Find X9.
    itself and shrinks to fit.
 4. **Scrolled text ran under the status bar** on every screen (headers bleed behind it by design). `ScreenScroll` fades
    in a night band behind the status bar as the page scrolls.
+
+## M5 — Onboarding
+
+Clear the app's storage between runs: Android Settings → Apps → LevelMeUp → Storage → Clear storage. Google rows run
+on the Find X9 (the owner signs in to Google there); the rest run on the emulator first.
+
+| # | Check | Emulator | Find X9 | Automated coverage |
+|---|---|---|---|---|
+| 1 | Fresh install: the app opens on "Signal found" (Awakening); no sign-in screen; no guest sign-in is made until the analysis. | | | Store test (a sync never makes a guest) |
+| 2 | The interview at the default font size: the progress bars match the screens (6, or 7 with Learn or Focus); Continue waits for each screen's answers; the mind screen appears only for Learn or Focus; sleep 8:00 AM → wake 4:00 PM shows "turns over at 12:00 PM". | | | Flow and screen tests |
+| 3 | Safety check: one "Yes" shows "Gentle start"; the reveal's routine says exercise stays gentle; day 1 on Today has only walks and stretches for exercise. | | | Server and content tests (gentle start) |
+| 4 | Analysis online: the reveal appears within 15 s, in the chosen voice. | | | Live test (Claude-written reveal) |
+| 5 | Analysis offline (local Metro, Wi-Fi and data off): "needs a connection… answers are kept"; back online, Try again gives the reveal. | | | Store and screen tests |
+| 6 | Reveal: Change class → Mage: class, stats (the +2 moves to Wisdom) and routine change; Fix an assumption → Body → another training answer → the analysis runs again; Today then shows the corrected character. | | | Live test (redo); DB test (restart_player) |
+| 7 | Vow: letting go before 2 s does nothing; a 2-second hold swears it ("Sworn"); with TalkBack on, Swear then Confirm. | | | HoldButton tests |
+| 8 | Save → "Not now · begin Day 1": Today shows day 1 (light); the back button then leaves the app instead of returning to the interview; Settings shows "Playing as a guest" with "Save with Google". | | | Screen tests |
+| 9 | Largest font size and largest display size: no cut-off text on the eleven onboarding screens. | | | No `numberOfLines` (text tests) |
+| 10 | Remove animations on: every onboarding screen works; nothing needed is animated. | | | — |
+| G1 | Spike 2 (Task 10): Developer → Save with Google links the guest: same user id, now not anonymous, a Google identity. | — | | google.ts tests |
+| G2 | After G1 (signed in with Google, no character): the onboarding skips the Save screen after the vow and opens Today. | — | | Route logic |
+| G3 | Clear storage → Awakening → "Saved a character before? Sign in with Google" → the G2 character on Today. | — | | Store test (restore) |
+| G4 | Clear storage → onboarding as a new guest → Save with the G1 Google account → "already in use"; progress kept; Not now → Today. Then Developer → delete this test character. | — | | google.ts tests (taken) |
+| G5 | On Save, open Google's page and close it: "Not saved…", nothing lost. | — | | google.ts tests (cancelled) |

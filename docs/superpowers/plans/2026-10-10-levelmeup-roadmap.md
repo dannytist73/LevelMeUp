@@ -72,6 +72,15 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Owner | *(Done 2026-10-11, owner's yes.)* Empty anonymous sign-ins from the M4 device check (before the sign-in fix): 21 deleted by exact id, all or nothing, after a backup to `.backups/2026-10-11-orphan-guests.json` (gitignored). Kept: the Find X9's current guest and one older browser sign-in that isn't LevelMeUp's. |
 | Before launch | `npm audit` (2026-10-11): 67 advisories, all in Expo SDK 57's toolchain (Jest, Metro, the Expo CLI, ngrok, config plugins); none fixable without a Jest 30 that jest-expo 57 doesn't support. Only `decode-uri-component` (via expo-router's query-string, moderate: slow parsing of malformed percent-encoded links) ships in the app. Re-run on the next Expo SDK. |
 
+## Carried forward from M5
+
+| Milestone | Item |
+|---|---|
+| M6 | Show the vow (`lmu.vow` in the phone's key-value store) on Character. Class change after onboarding (the analysis's "locked" message points there). |
+| M7 | The reveal's "Read the pact" link once the Pact screen exists. Settings changes the voice, as the Voice screen promises. Deleting a Google-linked account deletes all LevelMeUp data and keeps the shared sign-in (M3 decision); the delete screen says so. |
+| M9 | The class portrait on the reveal (the board's frame waits for the class art). Re-run `npm run pacing` (experienced players included) before the pilot. |
+| Before launch | Google's sign-in page shows the shared project's address (`knlgpcwoaaygncmlnbsm.supabase.co`); a custom domain or LevelMeUp's own project changes that (decide with the move question, architecture §12). |
+
 ## Spikes and where they run
 
 | Spike (architecture §13) | Milestone |

@@ -22,6 +22,9 @@ The System "awakens" and interviews the player, asking only what changes their q
    build a routine.
 4. **Branch questions** for the chosen goals only (1–3 each): fitness level, equipment, injuries and limits;
    reading habit and interests; main distractions; and so on.
+   *M5 (owner decision 2026-10-11): everyone sees the Body screen and its safety check, whatever their goals, since
+   every class gets walks and stretches. Equipment is dropped (no quest uses it); "I follow my own plan" is a fourth
+   training answer. One mind screen (reading, focus) appears only for the Learn or Focus goal.*
 5. **Rhythm:** wake and sleep times set the personal day boundary (default 4 AM local; works for shift workers).
 6. **Time and difficulty:** minutes per day; gentle, steady or hard.
 7. **"When you slip, what helps?"** Suggests an accountability style, shown on the reveal; nothing activates
@@ -30,6 +33,8 @@ The System "awakens" and interviews the player, asking only what changes their q
    is used if the call fails or takes longer than 15 s (§4.2).
 9. **Character reveal:** class, stats, strengths, growth areas, starting routine, a short narrative, labelled
    "stats are game estimates". The player can change class and correct wrong assumptions.
+   *M5: a correction runs the analysis again with the corrected answers; the server allows it until the player's
+   first action (`restart_player`), and the Claude calls already made still count towards the cap.*
 10. **Optional vow** (hold to accept), then Day 1, deliberately light.
 
 - **No sign-up wall.** The player starts as an anonymous Supabase user (the wedding site's pattern) and is asked to

@@ -46,3 +46,7 @@ model keys never leave Supabase.
   (`db.ts`, `claude.ts`, `session.ts`).
 - Rewards come from the XP snapshot stored with each quest, once per event. Level, stat points and ranks are never
   stored; the rules compute them from stat XP on every read.
+- `lmu-onboarding` takes the interview's answers (M5) and the rules compute the class (unless the player picked one on
+  the reveal), the estimates, the starting rungs and the gentle start; the safety answers themselves are never stored.
+  With `redo: true` it builds the character again through `restart_player` (`0006`), which refuses (`lmu:locked`) once
+  the player has any event or XP ledger row; the Claude-call log is kept, so the 3-call cap holds across redos.
