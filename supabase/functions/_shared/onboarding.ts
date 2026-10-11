@@ -1,16 +1,45 @@
-// `lmu-onboarding`: the player's choices become a character and day 1 (spec §1.1, §4.2). The rules compute every
-// number; Claude (when configured) only writes the reveal's words, which are validated like any untrusted input.
+// `lmu-onboarding`: the player's answers become a character and day 1 (spec §1.1, §4.2). The rules compute every
+// number from the answers, here on the server (M5: the phone no longer sends a class or estimates, only its own pick on
+// the reveal); Claude (when configured) only writes the reveal's words, validated like any untrusted input.
 import {
-  CLASSES, GOALS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, STATS, TRAINABLE_STATS, buildDay, canonicalTimeZone,
-  firstDayWindow, isValidTimeZone, startingStats,
+  CLASSES, GOALS, HABITS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, SAFETY_QUESTIONS, STATS, TRAINABLE_STATS, TRAININGS,
+  buildDay, canonicalTimeZone, firstDayWindow, isValidTimeZone, onboardingEstimates, startingLadders, startingStats,
+  suggestedClass,
 } from '../../../packages/rules/src/index.ts';
-import type { ClassId, Difficulty, Goal, Limitation, QuestLibrary, StatMap, TrainableStat } from '../../../packages/rules/src/index.ts';
-import { CLASS_NAMES, CONTENT_VERSION, GOAL_NAMES, STAT_NAMES, VOICES, lintText } from '../../../packages/content/src/index.ts';
+import type {
+  ClassId, Difficulty, Goal, Habit, LadderState, Limitation, PlayerProfile, QuestLibrary, StatMap, TrainableStat, Training,
+} from '../../../packages/rules/src/index.ts';
+import {
+  CLASS_NAMES, CONTENT_VERSION, GOAL_NAMES, LIMITATION_NAMES, SEEDS, STAT_NAMES, VOICES, lintText,
+} from '../../../packages/content/src/index.ts';
 import type { Voice } from '../../../packages/content/src/index.ts';
-import { isObject, problem } from './http.ts';
+import { isObject, isProblem, problem } from './http.ts';
 import type { Problem } from './http.ts';
 import { toDraft } from './drafts.ts';
 import type { DayDraft } from './state.ts';
+
+/** What the phone sends (apps/mobile/src/onboarding/flow.ts builds it). */
+export type OnboardingBody = {
+  name: string;
+  voice: Voice;
+  goals: Goal[];
+  /** The player's own pick on the reveal; without it the rules suggest one. */
+  classId?: ClassId;
+  training: Training;
+  /** Required with the Learn goal, ignored otherwise. */
+  reading: Habit | null;
+  /** Required with the Focus goal, ignored otherwise. */
+  focus: Habit | null;
+  limitations: Limitation[];
+  /** The safety check's answers: read here, never stored (spec §4.5). */
+  safety: boolean[];
+  minutesPerDay: number;
+  difficulty: Difficulty;
+  boundaryMinutes: number;
+  timeZone: string;
+  /** Corrections on the reveal: build the character again (allowed until the player's first applied event). */
+  redo?: boolean;
+};
 
 export type Choices = {
   name: string;
@@ -18,6 +47,9 @@ export type Choices = {
   goals: Goal[];
   classId: ClassId;
   estimates: StatMap;
+  training: Training;
+  reading: Habit | null;
+  focus: Habit | null;
   minutesPerDay: number;
   difficulty: Difficulty;
   boundaryMinutes: number;
@@ -32,7 +64,7 @@ export type Reveal = { narrative: string; strengths: string[]; growth: string[];
 const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
 const CONTROL = /[\p{Cc}\p{Cf}]/u;
 
-/** The onboarding body, validated field by field; every list is checked against the rules' own constants. */
+/** The onboarding body, validated field by field against the rules' own constants; the numbers are computed here. */
 export function parseOnboarding(body: unknown): Choices | Problem {
   if (!isObject(body)) return problem(400, 'bad_body');
   const bad = (field: string): Problem => problem(400, 'bad_field', field);
@@ -42,9 +74,17 @@ export function parseOnboarding(body: unknown): Choices | Problem {
   const goals = body.goals;
   if (!Array.isArray(goals) || goals.length < 1 || goals.length > MAX_GOALS || new Set(goals).size !== goals.length
     || !goals.every((g) => GOALS.includes(g as Goal))) return bad('goals');
-  if (typeof body.classId !== 'string' || !Object.hasOwn(CLASSES, body.classId)) return bad('classId');
-  const estimates = body.estimates;
-  if (!isObject(estimates) || !STATS.every((s) => typeof estimates[s] === 'number' && Number.isFinite(estimates[s]))) return bad('estimates');
+  const picked = goals as Goal[];
+  if (body.classId !== undefined && (typeof body.classId !== 'string' || !Object.hasOwn(CLASSES, body.classId))) return bad('classId');
+  if (!TRAININGS.includes(body.training as Training)) return bad('training');
+  const habit = (field: 'reading' | 'focus', goal: Goal): Habit | null | Problem =>
+    !picked.includes(goal) ? null : HABITS.includes(body[field] as Habit) ? (body[field] as Habit) : bad(field);
+  const reading = habit('reading', 'learn');
+  if (isProblem(reading)) return reading;
+  const focus = habit('focus', 'focus');
+  if (isProblem(focus)) return focus;
+  const safety = body.safety;
+  if (!Array.isArray(safety) || safety.length !== SAFETY_QUESTIONS || !safety.every((a) => typeof a === 'boolean')) return bad('safety');
   if (!MINUTES_OPTIONS.includes(body.minutesPerDay as number)) return bad('minutesPerDay');
   if (!DIFFICULTIES.includes(body.difficulty as Difficulty)) return bad('difficulty');
   const boundary = body.boundaryMinutes ?? 240;
@@ -52,21 +92,23 @@ export function parseOnboarding(body: unknown): Choices | Problem {
   if (typeof body.timeZone !== 'string' || !isValidTimeZone(body.timeZone)) return bad('timeZone');
   const limitations = body.limitations ?? [];
   if (!Array.isArray(limitations) || !limitations.every((l) => LIMITATIONS.includes(l as Limitation))) return bad('limitations');
-  if (typeof (body.gentleStart ?? false) !== 'boolean') return bad('gentleStart');
-  if (typeof (body.ownProgram ?? false) !== 'boolean') return bad('ownProgram');
+  const training = body.training as Training;
   return {
     name,
     voice: body.voice as Voice,
-    goals: goals as Goal[],
-    classId: body.classId as ClassId,
-    estimates: Object.fromEntries(STATS.map((s) => [s, estimates[s] as number])) as StatMap,
+    goals: picked,
+    classId: (body.classId as ClassId | undefined) ?? suggestedClass(picked),
+    estimates: onboardingEstimates({ goals: picked, training, reading, focus }),
+    training,
+    reading,
+    focus,
     minutesPerDay: body.minutesPerDay as number,
     difficulty: body.difficulty as Difficulty,
     boundaryMinutes: boundary as number,
     timeZone: canonicalTimeZone(body.timeZone),
     limitations: [...new Set(limitations as Limitation[])],
-    gentleStart: (body.gentleStart ?? false) as boolean,
-    ownProgram: (body.ownProgram ?? false) as boolean,
+    gentleStart: safety.some((a) => a === true),
+    ownProgram: training === 'own',
   };
 }
 
@@ -132,32 +174,30 @@ export function revealFacts(choices: Choices): string {
     startingPoints: Object.fromEntries(STATS.map((s) => [STAT_NAMES[s], points[s]])),
     minutesPerDay: choices.minutesPerDay,
     difficulty: choices.difficulty,
+    exercise: choices.gentleStart ? 'gentle only: easy walks and stretches' : 'normal',
+    limits: choices.limitations.map((l) => LIMITATION_NAMES[l]),
   });
 }
 
 export type StartArgs = {
   profile: Record<string, unknown>;
   character: StatMap;
-  ladders: Record<string, never>;
+  ladders: Record<string, LadderState>;
   day: DayDraft;
 };
 
-/** Everything `levelmeup.start_player` stores: the profile, start points, day 1 (light) with its quests. */
+/** Everything `levelmeup.start_player` stores: the profile, start points, starting ladders, day 1 (light). */
 export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, library: QuestLibrary): StartArgs {
   const character = startingStats(choices.estimates, choices.classId);
   const window = firstDayWindow(nowMs, choices.timeZone, choices.boundaryMinutes);
   const stats = Object.fromEntries(TRAINABLE_STATS.map((s) => [s, character[s]])) as Record<TrainableStat, number>;
-  const built = buildDay(library, {
-    dayNumber: 1,
-    profile: {
-      classId: choices.classId, level: 1, goals: choices.goals, minutesPerDay: choices.minutesPerDay, difficulty: choices.difficulty,
-      limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram, stats, book: null,
-    },
-    ladders: {},
-    history: [],
-    light: true,
-    articleId: null,
-  });
+  const player: PlayerProfile = {
+    classId: choices.classId, level: 1, goals: choices.goals, minutesPerDay: choices.minutesPerDay, difficulty: choices.difficulty,
+    limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram, stats, book: null,
+  };
+  const answers = { goals: choices.goals, training: choices.training, reading: choices.reading, focus: choices.focus };
+  const ladders = startingLadders(library, player, answers, SEEDS);
+  const built = buildDay(library, { dayNumber: 1, profile: player, ladders, history: [], light: true, articleId: null });
   return {
     profile: {
       name: choices.name, voice: choices.voice, classId: choices.classId, timeZone: choices.timeZone,
@@ -165,7 +205,7 @@ export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, libra
       goals: choices.goals, limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram, reveal,
     },
     character,
-    ladders: {},
+    ladders,
     day: {
       dayNumber: 1,
       startsAt: new Date(window.startsAt).toISOString(),

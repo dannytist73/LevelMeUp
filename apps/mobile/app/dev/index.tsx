@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { samplePayload } from '../../src/dev/samplePayload.ts';
-import { testChoices } from '../../src/dev/testCharacter.ts';
 import { deviceZone } from '../../src/state/appStore.ts';
 import { useGame } from '../../src/state/store.ts';
 import { colors, fonts, space } from '../../src/theme/tokens.ts';
@@ -24,7 +23,6 @@ export default function Developer() {
   const notices = useGame((s) => s.notices);
   const status = useGame((s) => s.status);
   const enqueue = useGame((s) => s.enqueue);
-  const startTestCharacter = useGame((s) => s.startTestCharacter);
   const deleteTestCharacter = useGame((s) => s.deleteTestCharacter);
   const startOver = useGame((s) => s.startOver);
   const signInLost = useGame((s) => s.signInLost);
@@ -53,16 +51,7 @@ export default function Developer() {
 
       <SectionTitle title="Test character" />
       {phase !== 'ready' ? (
-        <Button
-          label="Start a test character"
-          disabled={busy}
-          onPress={() =>
-            void act(async () => {
-              const r = await startTestCharacter(testChoices(deviceZone()));
-              return r.ok ? `Started. The reveal was written by ${r.source === 'claude' ? 'Claude' : 'the template'}.` : `Not started: ${r.code}`;
-            })
-          }
-        />
+        <Small>No character on this phone yet: the onboarding makes one.</Small>
       ) : (
         today?.quests.map((q) => (
           <NightCard key={q.id} quiet={q.completedAt !== null}>

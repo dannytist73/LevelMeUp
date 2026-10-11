@@ -2,13 +2,40 @@ import { describe, expect, it } from 'vitest';
 import { LIBRARY, VOICES, lintText } from '../../../packages/content/src/index.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
-import { HOUR, choices } from './fixtures.ts';
-
-const body = (over: Record<string, unknown> = {}) => ({ ...choices(), ...over });
+import type { Choices } from '../../functions/_shared/onboarding.ts';
+import { HOUR, choices, onboardingBody } from './fixtures.ts';
 
 describe('the onboarding body', () => {
-  it('accepts valid choices and canonicalises the time zone', () => {
-    expect(parseOnboarding(body({ name: '  Rin  ' }))).toEqual({ ...choices(), name: 'Rin' });
+  it('turns the answers into the character\'s choices, with the time zone canonicalised', () => {
+    expect(parseOnboarding(onboardingBody({ name: '  Rin  ' }))).toEqual(choices());
+  });
+
+  it('computes every number itself: the class from the goals, the estimates from the answers', () => {
+    const parsed = parseOnboarding(onboardingBody({
+      goals: ['learn'], training: 'most', reading: 'high', estimates: { strength: 50 }, gentleStart: false, ownProgram: true,
+    })) as Choices;
+    expect(parsed).toMatchObject({
+      classId: 'mage', estimates: { strength: 6, vitality: 6, wisdom: 6, focus: 5, discipline: 4 }, reading: 'high', focus: null,
+      ownProgram: false,
+    });
+  });
+
+  it('keeps the class the player picked on the reveal', () => {
+    expect(parseOnboarding(onboardingBody({ classId: 'rogue' }))).toMatchObject({ classId: 'rogue' });
+  });
+
+  it('any yes on the safety check means a gentle start, and the answers themselves are not kept', () => {
+    const parsed = parseOnboarding(onboardingBody({ safety: [false, false, true, false, false, false, false] })) as Choices;
+    expect(parsed.gentleStart).toBe(true);
+    expect(Object.keys(parsed)).not.toContain('safety');
+  });
+
+  it('an own plan means the own-program quest', () => {
+    expect(parseOnboarding(onboardingBody({ training: 'own' }))).toMatchObject({ training: 'own', ownProgram: true });
+  });
+
+  it('ignores reading and focus answers for goals the player didn\'t pick', () => {
+    expect(parseOnboarding(onboardingBody({ reading: 'high', focus: 'low' }))).toMatchObject({ reading: null, focus: null });
   });
 
   it.each([
@@ -16,15 +43,17 @@ describe('the onboarding body', () => {
     ['voice', { voice: 'pirate' }],
     ['goals', { goals: [] }], ['goals', { goals: ['body', 'focus', 'learn'] }], ['goals', { goals: ['body', 'body'] }], ['goals', { goals: ['wealth'] }],
     ['classId', { classId: 'paladin' }], ['classId', { classId: '__proto__' }],
-    ['estimates', { estimates: { strength: 5 } }], ['estimates', { estimates: { strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: Number.NaN } }],
+    ['training', { training: 'daily' }], ['training', { training: undefined }],
+    ['reading', { goals: ['learn'], reading: null }], ['reading', { goals: ['learn'], reading: 'lots' }],
+    ['focus', { goals: ['focus'], focus: undefined }],
+    ['safety', { safety: [true] }], ['safety', { safety: Array(7).fill('no') }], ['safety', { safety: undefined }],
     ['minutesPerDay', { minutesPerDay: 30 }],
     ['difficulty', { difficulty: 'nightmare' }],
     ['boundaryMinutes', { boundaryMinutes: 1440 }], ['boundaryMinutes', { boundaryMinutes: 1.5 }],
     ['timeZone', { timeZone: 'Mars/Base' }],
     ['limitations', { limitations: ['neck'] }],
-    ['gentleStart', { gentleStart: 'yes' }],
   ])('rejects a bad %s', (field, over) => {
-    expect(parseOnboarding(body(over))).toEqual({ status: 400, code: 'bad_field', detail: field });
+    expect(parseOnboarding(onboardingBody(over))).toEqual({ status: 400, code: 'bad_field', detail: field });
   });
 
   it('refuses a body that is not an object', () => {
@@ -50,6 +79,14 @@ describe('the start of a character', () => {
       expect(Object.values(q.xp).every((x) => Number.isInteger(x) && x! > 0)).toBe(true);
       expect(q.condition).toHaveProperty('kind');
     }
+  });
+
+  it('starts experienced players one rung up, never past a gentle start', () => {
+    const most = startArgs(choices({ training: 'most' }), templateReveal(choices()), nightOwl, LIBRARY);
+    expect(Object.keys(most.ladders).sort()).toEqual(['core', 'push', 'squat', 'walk']);
+    expect(Object.values(most.ladders).every((l) => l.rung === 1)).toBe(true);
+    const gentle = startArgs(choices({ training: 'most', gentleStart: true }), templateReveal(choices()), nightOwl, LIBRARY);
+    expect(gentle.ladders).toEqual({});
   });
 
   it('respects the safety check: a gentle start gets only gentle exercise', () => {
@@ -91,6 +128,12 @@ describe('the reveal', () => {
     ['not an object', 'Rin the Warrior'],
   ])('rejects %s', (_, value) => {
     expect(parseReveal(value)).toBeNull();
+  });
+
+  it('tells Claude about a gentle start and the limits, so the words never push past them', () => {
+    expect(JSON.parse(revealFacts(choices({ gentleStart: true, limitations: ['knee'] }))))
+      .toMatchObject({ exercise: 'gentle only: easy walks and stretches', limits: ['Knees'] });
+    expect(JSON.parse(revealFacts(choices()))).toMatchObject({ exercise: 'normal', limits: [] });
   });
 
   it('gives Claude the rules\' numbers, not the raw estimates', () => {

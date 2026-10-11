@@ -1,9 +1,6 @@
 /** @jest-environment node */
 import { checkCompletionPayload } from '../../../supabase/functions/_shared/events.ts';
-import { parseOnboarding } from '../../../supabase/functions/_shared/onboarding.ts';
-import { isProblem } from '../../../supabase/functions/_shared/http.ts';
 import { samplePayload } from '../src/dev/samplePayload.ts';
-import { testChoices } from '../src/dev/testCharacter.ts';
 import type { QuestView } from '../src/game/types.ts';
 import { serverState } from './support/fixtures.ts';
 
@@ -37,13 +34,5 @@ describe('the developer screen\'s sample completions', () => {
       const checked = checkCompletionPayload(q, dayRow, samplePayload(q, day, now), now);
       if ('code' in checked) expect(checked.code).toBe('timer_short');
     }
-  });
-});
-
-describe('the developer test character', () => {
-  it('uses fixed answers the onboarding function accepts, in the device\'s zone', () => {
-    const choices = testChoices('America/New_York');
-    expect(choices).toMatchObject({ name: 'Tester', timeZone: 'America/New_York', classId: 'warrior' });
-    expect(isProblem(parseOnboarding(choices))).toBe(false);
   });
 });

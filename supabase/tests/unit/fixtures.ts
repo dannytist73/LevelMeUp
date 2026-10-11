@@ -15,8 +15,18 @@ export function choices(over: Partial<Choices> = {}): Choices {
   return {
     name: 'Rin', voice: 'system', goals: ['body', 'energy'], classId: 'warrior',
     estimates: { strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 4 },
+    training: 'some', reading: null, focus: null,
     minutesPerDay: 25, difficulty: 'steady', boundaryMinutes: 240, timeZone: 'Asia/Manila',
     limitations: [], gentleStart: false, ownProgram: false, ...over,
+  };
+}
+
+/** The body the phone sends for `choices()` (apps/mobile/src/onboarding/flow.ts). */
+export function onboardingBody(over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    name: 'Rin', voice: 'system', goals: ['body', 'energy'], training: 'some', reading: null, focus: null, limitations: [],
+    safety: [false, false, false, false, false, false, false], minutesPerDay: 25, difficulty: 'steady', boundaryMinutes: 240,
+    timeZone: 'Asia/Manila', ...over,
   };
 }
 
