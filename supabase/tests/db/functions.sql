@@ -311,3 +311,22 @@ begin
   return next is((select xp_vitality from levelmeup.character_state where user_id = b), 20, 'and nothing earned is lost');
   return next throws_ok(format(redo, lmu_test.uid(9), again, points), 'P0001', 'lmu:not_started', 'there is nothing to redo before onboarding');
 end $$;
+
+-- M6c: onboarding stores the training setup, or the defaults when an older phone sends none.
+create function lmu_test.test_start_player_training() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.uid(41);
+  b uuid := lmu_test.start(42);
+begin
+  insert into auth.users (id, aud, role, is_anonymous) values (a, 'authenticated', 'authenticated', true);
+  perform levelmeup.start_player(a,
+    '{"name": "Gym", "voice": "system", "classId": "warrior", "timeZone": "Asia/Manila", "boundaryMinutes": 240,
+      "minutesPerDay": 40, "difficulty": "steady", "goals": ["body"], "limitations": [], "gentleStart": false,
+      "ownProgram": false, "equipment": ["dumbbells", "bench"], "programStyle": "women", "reveal": {}}',
+    '{"strength": 9, "vitality": 5, "wisdom": 5, "focus": 5, "discipline": 4}', '{}',
+    lmu_test.day(1, now() - interval '1 hour', now() + interval '10 hours'));
+  return next is((select equipment from levelmeup.profiles where user_id = a), array['dumbbells', 'bench'], 'the equipment is stored');
+  return next is((select program_style from levelmeup.profiles where user_id = a), 'women', 'the program style is stored');
+  return next is((select equipment from levelmeup.profiles where user_id = b), '{}'::text[], 'no equipment by default');
+  return next is((select program_style from levelmeup.profiles where user_id = b), 'none', 'no preference by default');
+end $$;

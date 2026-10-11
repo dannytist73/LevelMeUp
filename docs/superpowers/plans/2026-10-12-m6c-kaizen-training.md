@@ -3821,6 +3821,11 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
   leaves out workout templates (both from Task 6, brought forward so the count stays 20 until Task 6); the app's smoke
   test and the dev self-check (`src/dev/selfcheck.ts`) count 80 templates (was 74); the server's onboarding unit test
   expects `workout` among the "most weeks" starting ladders; the app's quest and Today tests call `questSummary(core)`.
+- **Task 6:** the title renames ran through a helper that keeps each file's line endings (the plan's `Path.write_text`
+  would rewrite them on Windows); the same changes and counts.
+- **Task 7:** `lmu_test.day` has no defaults, so the start_player test passes the window `lmu_test.start` uses
+  (`now() - 1 hour` to `now() + 10 hours`) instead of `lmu_test.day(1)`. The copied `start_player` and `adjust` bodies
+  were diffed against 0003 and 0008: only the M6c parts differ.
 
 ### Pacing re-run (Task 5, 400 runs, 2026-10-12): all targets met, no tuning
 

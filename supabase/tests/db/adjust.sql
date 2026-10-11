@@ -129,3 +129,24 @@ begin
   return next ok(lmu_test.try_role('anon', stmt) like '42501%', 'nor can anyone signed out');
   return next is(lmu_test.try_service(stmt), null, 'the Edge Functions can');
 end $$;
+
+-- M6c: the training setup changes through adjust, re-planned quests with it.
+create function lmu_test.test_adjust_training() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(51);
+  setup jsonb := '{"equipment": ["gym"], "programStyle": "men"}';
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(51), 1, 'training', setup, jsonb_build_object('training', setup));
+  return next is((select equipment from levelmeup.profiles where user_id = a), array['gym'], 'the equipment changes');
+  return next is((select program_style from levelmeup.profiles where user_id = a), 'men', 'the program style changes');
+  return next is((select count(*) from levelmeup.events where user_id = a and type = 'training'), 1::bigint, 'the event is stored');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''training'', ''{}'', %L)', a, lmu_test.ev(52),
+      '{"training": {"equipment": [], "programStyle": "unisex"}}'),
+    '23514', null, 'an unknown program style is refused by the table');
+  perform levelmeup.adjust(a, lmu_test.ev(53), 2, 'training', '{}',
+    jsonb_build_object('training', '{"equipment": [], "programStyle": "none"}'::jsonb, 'day', jsonb_build_object('id', lmu_test.day_of(a)),
+      'quests', jsonb_build_array(lmu_test.swapped(a, 'core'))));
+  return next is((select template_id from levelmeup.quest_instances where id = lmu_test.quest(a, 'core')), 'mobility-0',
+    'a training change can replace an open quest on the day it names');
+  return next is((select equipment from levelmeup.profiles where user_id = a), '{}'::text[], 'and empty equipment means bodyweight');
+end $$;
