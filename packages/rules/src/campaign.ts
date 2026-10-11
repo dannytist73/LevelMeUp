@@ -33,18 +33,28 @@ export const PERSONA_ESTIMATES: StatMap = { strength: 5, vitality: 5, wisdom: 5,
  */
 export const RANK_TARGET = { points: 15, meanMinDay: 72, meanMaxDay: 108, eachMinDay: 42, eachMaxDay: 150 } as const;
 
-export type CampaignOptions = { runs?: number; days?: number; curve?: LevelCurve; divisor?: number };
+export type CampaignOptions = {
+  runs?: number;
+  days?: number;
+  curve?: LevelCurve;
+  divisor?: number;
+  /** Ladders above rung 0 on day 1 (onboarding's starting rungs, M5); none by default. */
+  startLadders?: (persona: Persona) => Record<string, LadderState>;
+};
 export type CampaignResult = { levels: Record<number, number | null>; rankDay: number | null };
 
 type Run = { levelDay: Map<number, number>; rankDay: number | null };
 
-function runCampaign(library: QuestLibrary, persona: Persona, rate: number, seed: number, days: number, curve: LevelCurve, divisor: number): Run {
+function runCampaign(
+  library: QuestLibrary, persona: Persona, rate: number, seed: number, days: number, curve: LevelCurve, divisor: number,
+  startLadders: Readonly<Record<string, LadderState>>,
+): Run {
   const random = mulberry32(seed);
   const start = startingStats(PERSONA_ESTIMATES, persona.classId);
   const statXp: Record<Stat, number> = { strength: 0, vitality: 0, wisdom: 0, focus: 0, discipline: 0 };
   const points = (stat: Stat): number => statPoints(start[stat], statXp[stat], divisor);
   const total = (): number => Object.values(statXp).reduce((sum, xp) => sum + xp, 0);
-  const ladders: Record<string, LadderState> = {};
+  const ladders: Record<string, LadderState> = { ...startLadders };
   const history: PastDay[] = [];
   const levelDay = new Map<number, number>();
   const main = CLASSES[persona.classId].main;
@@ -106,13 +116,14 @@ function runCampaign(library: QuestLibrary, persona: Persona, rate: number, seed
  * The default 180 days runs past the slowest class's rank C.
  */
 export function campaignPacing(library: QuestLibrary, persona: Persona, rate: number, options: CampaignOptions = {}): CampaignResult {
-  const { runs = 200, days = 180, curve = LEVEL_CURVE, divisor = STAT_XP_DIVISOR } = options;
+  const { runs = 200, days = 180, curve = LEVEL_CURVE, divisor = STAT_XP_DIVISOR, startLadders } = options;
+  const start = startLadders?.(persona) ?? {};
   const totals = new Map<number, number>();
   const unreached = new Set<number>();
   let rankTotal = 0;
   let rankMissed = false;
   for (let seed = 1; seed <= runs; seed++) {
-    const run = runCampaign(library, persona, rate, seed, days, curve, divisor);
+    const run = runCampaign(library, persona, rate, seed, days, curve, divisor, start);
     for (const level of PACING_LEVELS) {
       const day = run.levelDay.get(level);
       if (day === undefined) unreached.add(level);

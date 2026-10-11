@@ -3,6 +3,7 @@ import {
   LEVEL_CURVE, PACING_LEVELS, PACING_PROFILES, PERSONAS, STAT_XP_DIVISOR, campaignFailures, campaignPacing,
 } from '../../rules/src/index.ts';
 import { LIBRARY } from '../src/index.ts';
+import { trainedStart } from '../test/trained.ts';
 
 const show = (day: number | null | undefined): string => (day == null ? '—' : day.toFixed(1)).padStart(7);
 const runs = Number(process.argv[2] ?? 400);
@@ -12,6 +13,13 @@ console.log(`${'persona'.padEnd(22)}${PACING_LEVELS.map((l) => `L${l}`.padStart(
 for (const persona of PERSONAS) {
   for (const [name, rate] of Object.entries(PACING_PROFILES)) {
     const r = campaignPacing(LIBRARY, persona, rate, { runs });
+    console.log(`${`${persona.name} ${name}`.padEnd(22)}${PACING_LEVELS.map((l) => show(r.levels[l])).join('')}  ${show(r.rankDay)}`);
+  }
+}
+console.log('\nExperienced players (one rung up on day 1):');
+for (const persona of PERSONAS) {
+  for (const [name, rate] of Object.entries(PACING_PROFILES)) {
+    const r = campaignPacing(LIBRARY, persona, rate, { runs, startLadders: trainedStart });
     console.log(`${`${persona.name} ${name}`.padEnd(22)}${PACING_LEVELS.map((l) => show(r.levels[l])).join('')}  ${show(r.rankDay)}`);
   }
 }
