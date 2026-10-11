@@ -1,8 +1,10 @@
 // "Quest cleared" (board D2; spec §2, §3.3; M6a decisions 5–7): the XP stamp, what went up, what today now counts for,
-// the XP bar, an optional rating, Continue, and Undo while the day is open.
-import { PLAY_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
+// the XP bar, an optional rating, Continue, and Undo while the day is open. M6b: after "Too hard", the offer to step the
+// exercise down a rung; "I felt pain" stays reachable.
+import { ADJUST_TEXT, PLAY_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ClearedNumbers } from '../../quest/cleared.ts';
@@ -32,6 +34,11 @@ export type ClearedProps = {
   onRate: (rating: Rating) => void;
   onUndo: () => void;
   onContinue: () => void;
+  /** "Too hard" can step this quest's ladder down (spec §3.3: offered at once). */
+  canStepDown: boolean;
+  onStepDown: () => void;
+  /** An exercise quest: "I felt pain" stays reachable after clearing it. */
+  onPain: (() => void) | null;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -62,8 +69,12 @@ function RateButton({ label, selected, onPress }: { label: string; selected: boo
   );
 }
 
-export function Cleared({ heading, line, numbers, rating, dayOpen, waiting, onRate, onUndo, onContinue }: ClearedProps) {
+export function Cleared({
+  heading, line, numbers, rating, dayOpen, waiting, onRate, onUndo, onContinue, canStepDown, onStepDown, onPain,
+}: ClearedProps) {
   const insets = useSafeAreaInsets();
+  /** The step down was just sent: say so, rather than "if it stays too hard" (the offer itself is gone). */
+  const [eased, setEased] = useState(false);
   const { level, xpIntoLevel, xpForLevel } = numbers.level;
   const shown: Rating = rating ?? 'right';
   return (
@@ -115,12 +126,30 @@ export function Cleared({ heading, line, numbers, rating, dayOpen, waiting, onRa
               <RateButton key={value} label={label} selected={shown === value} onPress={() => { if (value !== shown) onRate(value); }} />
             ))}
           </View>
-          {rating === 'too_hard' && <Small>{C.tooHardNote}</Small>}
+          {rating === 'too_hard' &&
+            (eased ? (
+              <Small>{ADJUST_TEXT.stepDown.done}</Small>
+            ) : canStepDown ? (
+              <View style={{ gap: 8 }}>
+                <Body>{ADJUST_TEXT.stepDown.offer}</Body>
+                <Button
+                  label={ADJUST_TEXT.stepDown.accept}
+                  variant="secondary"
+                  onPress={() => {
+                    setEased(true);
+                    onStepDown();
+                  }}
+                />
+              </View>
+            ) : (
+              <Small>{C.tooHardNote}</Small>
+            ))}
         </View>
       )}
 
       <Button label={C.continue} onPress={onContinue} />
       {dayOpen && <Button label={C.undo} variant="secondary" onPress={onUndo} />}
+      {dayOpen && onPain !== null && <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} />}
       {waiting && <Caption>{PLAY_TEXT.quest.willSync}</Caption>}
     </ScreenScroll>
   );

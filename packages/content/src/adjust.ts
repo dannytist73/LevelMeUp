@@ -63,6 +63,7 @@ export const ADJUST_TEXT = {
   stepDown: {
     offer: 'Step this exercise down a rung? Your next one will be easier.',
     accept: 'Yes, ease it',
+    done: 'Eased. Your next one is a rung lower.',
   },
   abilities: {
     stillness: 'Stillness: a gentle restoration quest replaces your core quest, and today still grows your streak. Ready again in 7 days.',

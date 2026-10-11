@@ -1,9 +1,10 @@
-import { ADJUST_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
+import { ADJUST_TEXT, PLAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
 import { newLadder } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { DayActions, DayBanners, PausedExercises } from '../src/screens/DayActions.tsx';
+import { Pain } from '../src/screens/Pain.tsx';
 import { Swap } from '../src/screens/Swap.tsx';
 import { DAY_TWO_NOW, adjustState, characterRow, ladderRows, profileRow } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -103,5 +104,39 @@ describe('the swap sheet (spec §3.5)', () => {
     await render(withStore(testStore({ view: shown(adjustState({}, { swaps_used: 1 })) }),
       <Swap questId={200} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
     expect(screen.getByText(A.swap.none)).toBeTruthy();
+  });
+});
+
+describe('"I felt pain" (spec §3.3, §3.4)', () => {
+  const completeCore = { id: '00000000-0000-4000-9000-000000000001', type: 'complete', instanceId: 200, completedAt: DAY_TWO_NOW, rating: null, payload: {} } as const;
+
+  it('an open exercise quest: gentle movement instead, or rest; the exercise rests either way', async () => {
+    const store = testStore({ view: shown() });
+    const onDone = jest.fn();
+    await render(withStore(store, <Pain questId={200} now={now} onDone={onDone} onBack={jest.fn()} />));
+    expect(screen.getByText(fillText(A.pain.paused, { name: 'Push-ups' }))).toBeTruthy();
+    expect(screen.getByText(A.pain.advice)).toBeTruthy();
+    expect(screen.getByRole('button', { name: A.pain.rest })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: A.pain.gentle }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'pain', instanceId: 200, choice: 'gentle' });
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('from the second report in two weeks it leads with a doctor or physiotherapist', async () => {
+    const store = testStore({ view: shown(adjustState({ painReports: 1 })) });
+    await render(withStore(store, <Pain questId={201} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(fillText(A.pain.persists, { count: 2 }))).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: A.pain.rest }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'pain', instanceId: 201, choice: 'rest' });
+  });
+
+  it('a cleared exercise quest can be paused; a quest with no exercise has no pain flow', async () => {
+    const store = testStore({ view: project(adjustState(), [completeCore]) });
+    const view = await render(withStore(store, <Pain questId={200} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.queryByRole('button', { name: A.pain.gentle })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: A.pain.pause }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'pain', instanceId: 200, choice: 'pause' });
+    await view.rerender(withStore(testStore({ view: shown() }), <Pain questId={202} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(PLAY_TEXT.quest.gone)).toBeTruthy();
   });
 });

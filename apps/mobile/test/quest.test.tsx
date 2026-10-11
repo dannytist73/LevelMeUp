@@ -1,4 +1,4 @@
-import { ADJUST_TEXT, EXERCISE_SAFETY_LINE, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
+import { ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
@@ -120,7 +120,7 @@ const NUMBERS: ClearedNumbers = {
 async function renderCleared(over: Partial<ClearedProps> = {}) {
   const props: ClearedProps = {
     heading: 'CORE QUEST · KNEE PUSH-UPS', line: '3 sets of 8', numbers: NUMBERS, rating: null, dayOpen: true, waiting: false,
-    onRate: jest.fn(), onUndo: jest.fn(), onContinue: jest.fn(), ...over,
+    onRate: jest.fn(), onUndo: jest.fn(), onContinue: jest.fn(), canStepDown: false, onStepDown: jest.fn(), onPain: null, ...over,
   };
   await render(<Cleared {...props} />);
   return props;
@@ -373,5 +373,29 @@ describe('adjusting from the quest screen (M6b)', () => {
       <Quest questId={202} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.pain.open })).toBeNull();
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.swap.open })).toBeNull();
+  });
+});
+
+describe('stepping down after "Too hard" (spec §3.3)', () => {
+  const tooHard = { id: '00000000-0000-4000-9000-000000000002', type: 'complete', instanceId: 200, completedAt: DAY_TWO_NOW, rating: 'too_hard', payload: {} } as const;
+
+  it('Quest cleared offers the step down at the ladder\'s rung and sends it; "I felt pain" stays reachable', async () => {
+    const store = testStore({ view: project(adjustState(), [tooHard]) });
+    const onPain = jest.fn();
+    await render(withStore(store, <Quest questId={200} now={() => DAY_TWO_NOW} onBack={jest.fn()} onSwap={jest.fn()} onPain={onPain} />));
+    expect(screen.getByText(ADJUST_TEXT.stepDown.offer)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.stepDown.accept }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'step_down', instanceId: 200 });
+    expect(screen.getByText(ADJUST_TEXT.stepDown.done)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
+    expect(onPain).toHaveBeenCalledWith(200);
+  });
+
+  it('a quest that can\'t step down keeps the plain "too hard" note', async () => {
+    const walk = { ...tooHard, instanceId: 201 };
+    await render(withStore(testStore({ view: project(adjustState(), [walk]) }),
+      <Quest questId={201} now={() => DAY_TWO_NOW} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+    expect(screen.getByText(PLAY_TEXT.cleared.tooHardNote)).toBeTruthy();
+    expect(screen.queryByText(ADJUST_TEXT.stepDown.offer)).toBeNull();
   });
 });

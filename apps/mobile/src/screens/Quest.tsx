@@ -126,6 +126,11 @@ export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: Quest
           void enqueue({ type: 'undo', instanceId: quest.id });
         }}
         onContinue={onBack}
+        canStepDown={quest.canStepDown}
+        onStepDown={() => {
+          if (stillOpen()) void enqueue({ type: 'step_down', instanceId: quest.id });
+        }}
+        onPain={template.exercise !== null ? () => onPain(quest.id) : null}
       />
     );
   }
