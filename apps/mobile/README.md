@@ -34,7 +34,14 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   linking, the redirect URL). expo-web-browser is a native module: it needs a development build from M5 on.
 - The shared packages are imported by name (`@levelmeup/rules`, `@levelmeup/content`); the server's response types come
   from `supabase/functions/_shared` with `import type`, so the phone and the server can't drift apart.
-- `app/dev/` exists only in development builds: the account and "Save with Google", sample completions on today's
-  quests, the self-check (time zones on Hermes, AES, SQLite) and the component kit.
+- **Quest play** (M6a): every card on Today opens `app/quest/[id].tsx` (`src/screens/Quest.tsx`), which logs the quest
+  with its panel (`src/screens/quest/`: check-off, timer, rep log, one sentence) through the outbox, then shows "Quest
+  cleared" (numbers from `src/quest/cleared.ts`). Payloads come from `src/quest/payload.ts`, tested against the server's
+  own `checkCompletionPayload`. Timers are timestamps kept in `lmu.timers` (`src/quest/timer.ts`), so they keep counting
+  with the screen off. Level-ups and achievements queue in the store after the server confirms them and show in a modal
+  (`src/screens/Celebration.tsx`). Quest pictures come from the public `lmu-art` bucket: its `v2/manifest.json` is fetched
+  once per launch and kept in `lmu.art-manifest` (`src/art/manifest.ts`); without it, an ink panel shows.
+- `app/dev/` exists only in development builds: the account and "Save with Google", the outbox and notices, the
+  self-check (time zones on Hermes, AES, SQLite) and the component kit.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

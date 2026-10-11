@@ -126,6 +126,11 @@ screens, the swap sheet, the hard-day and planned-rest confirms, the "I felt pai
 change, the notification permission ask (shown when the briefing time is set), the delete-account confirm, and every
 loading, empty and error state in spec §1.4 (for example "The System is preparing your trials" and the "will sync" mark).
 
+Built in M6a (2026-10-11): the quest screen (picture, words, why, steps, safety), the four completion panels (check-off,
+timer, rep log, one sentence), "Quest cleared" (board D2, its title the outlined `OutlinedTitle`, the XP stamp under the
+target line so it never covers words at large text sizes) and the level-up and achievement moment (a full-screen modal
+with speed lines and Continue).
+
 ## 5. React Native notes
 
 The boards are HTML/CSS. These effects need a native equivalent:
@@ -143,4 +148,5 @@ The boards are HTML/CSS. These effects need a native equivalent:
 
 Class portraits (four classes, changing with level) and the Shadow, from the Inkbound manhwa art pipeline; the
 achievement names and titles (the canvas uses placeholders such as "First Trial" and "The Steady"); the article
-sources (placeholders on the reading board).
+sources (placeholders on the reading board). The quest art set (M6a): 20 pictures, one per kind of quest, made with the
+same local pipeline (`docs/design/quest-art.md`, `scripts/art/quest-art.py`); more variants per kind later.

@@ -104,3 +104,40 @@ on the Find X9 (the owner signs in to Google there); the rest run on the emulato
 Test data: three test characters were made on the emulator (one per run) and each was deleted from the developer
 screen with its guest sign-in; the live project ended with the same 2 guests it started with. The two live-test runs
 (one by mistake) left their Claude-call rows without a player, as designed (cost tracking).
+
+## M6a — Quest play
+
+No new build: the M5 development build runs M6a's JavaScript. Rows 1–11 and 13 on the emulator first; rows 1–9 and 12
+on the Find X9 (the owner).
+
+| # | Check | Emulator | Find X9 | Automated coverage |
+|---|---|---|---|---|
+| 1 | Every quest card on Today opens its quest screen: picture (or the ink fallback), title in the player's voice, target, why, steps, safety lines; Back returns to Today. | Pass: every card opens its quest (core rep log, check-off, one sentence, reading); the ink fallback picture, title, target, why, steps and safety lines; Back returns to Today (2026-10-11) | | Quest and Today screen tests |
+| 2 | A check-off quest: Mark cleared → "Quest cleared" with the XP stamp, Discipline for the core quest, the streak line when today now counts, the XP bar; Today shows "Cleared +XP"; after the sync no "Will sync". | Pass: Mark cleared → Quest cleared; the core shows Discipline · today counts and 0 → 1 DAYS; a single side quest shows neither (not a streak day yet); Today shows "Cleared +10" and 1 / 2; "Will sync" gone after the sync (2026-10-11) | | Quest, Cleared and store tests |
+| 3 | A timer quest: Start, lock the phone for 2 minutes, unlock: the time moved on; leave the app and come back: still counting; Claim unlocks at 80 %; the server accepts it (no "timer_short" notice). | Pass after finding 3: a 5-minute focus timer: locked 2 minutes → 02:53; home screen a minute → 04:27 and "Ready to claim"; Claim → the server accepted it ("First Trial" arrived, no notice) (2026-10-11) | | Timer and payload tests (server check) |
+| 4 | A rep log: −/+ per set, add and remove sets, log less than the target; the server accepts it. | Pass: − twice on set 2 (8), Add a set (copies 8), Remove the last set, logged 10 + 8; accepted (2026-10-11) | | Panel and payload tests |
+| 5 | One sentence: logged; the server accepts it. | Pass: "The walk in the sun felt good." logged and accepted; the second side quest made today count (0 → 1 DAYS) (2026-10-11) | | Panel and payload tests |
+| 6 | Rating: Right shows first; Easy or Too hard sends; "Too hard" shows its note; reopening the quest after a sync shows the chosen rating. | Pass: Right shows first; Too hard sends and shows its note; reopened after the sync, Too hard is still selected (2026-10-11) | | Cleared and quest tests |
+| 7 | Undo: the quest is open again and the XP goes back; after the sync it stays undone. | Pass: Undo opens the quest again and the XP goes back (0 / 30); after the sync it stays undone; an undone timer starts again from 00:00 (2026-10-11) | | Quest test |
+| 8 | Level-up and achievements: the first completion of a new character shows "First Trial" after the sync; crossing a level shows "LEVEL UP"; Continue dismisses each. | Pass after finding 2: "First Trial" after the first sync; reaching 30 XP showed LEVEL UP · LV 2 after the sync; Continue (or Back) dismisses each (2026-10-11) | | Store and Celebration tests |
+| 9 | Offline (airplane mode): a completion shows "Quest cleared" and "Will sync"; back online it syncs. | Pass: Wi-Fi and data off: undo and re-clear showed Quest cleared and "Will sync"; back online it synced in about 10 s, no level change (2026-10-11) | | Store tests |
+| 10 | Largest font and display size: quest screen, the four panels, "Quest cleared", the overlay: nothing cut off. | Pass after finding 1: font 2.0 and density 540: the quest screen, rep log, one sentence, timer, Quest cleared and the overlay; nothing cut off (2026-10-11) | | No `numberOfLines` |
+| 11 | Remove animations: every step works. | Pass: the three animation scales at 0: opening, logging and Quest cleared all work (2026-10-11) | | — |
+| 12 | After the art upload: pictures on the core card and quest screens; in airplane mode after they loaded once, they still show (cache); a key without a picture shows the ink fallback. | Pass (v2): the focus picture on the core card and the sit-to-stand picture on its quest screen; offline after a restart both still show from the cache; before the upload every card showed the ink fallback (2026-10-11) | | QuestArt and manifest tests |
+| 13 | TalkBack: cards are announced as buttons; the rep log's − and + say which set; the timer reads "x of y". | Pass (accessibility tree): cards are android.widget.Button; the steppers read "Set 1, one less"; the timer reads "00:00 of 05:00"; TalkBack itself not driven (2026-10-11) | | — |
+
+### What the emulator found (M6a, 2026-10-11)
+
+1. **"Quest cleared" at the largest text size:** the XP stamp covered the heading and "CLEARED" broke mid-word
+   ("CLEA / RED"). The title is now the board's outlined title (D2), shrunk to fit; the stamp sits under the target line;
+   the paper panel's first row no longer starts under its slant.
+2. **The level-up overlay let taps through** to the screen behind (a tap could have reached Undo) and left that screen in
+   TalkBack's reach. It is now a modal: the screen behind can't be touched or reached, and Back dismisses it.
+3. **The timer's "mm:ss / mm:ss" wrapped onto two lines** at the default size; the elapsed time is now large with the
+   target beside it, read as one "x of y".
+4. **The art set's small strength picture showed wall push-ups** on "Sit-to-stands" (its only quest): redrawn as a
+   sit-to-stand and published as `lmu-art/v2` (the app reads v2; v1 stays until the owner deletes it).
+5. Not bugs: the first sync after a completion took up to 10 s (the function's cold start); undoing and re-logging a
+   level-crossing quest shows LEVEL UP again, because the server confirmed the level again.
+
+Test data: two test characters (Kai, Mira) were made on the emulator and deleted from the developer screen.

@@ -8,7 +8,9 @@ highlights, one vermilion red accent, light halftone. Adults (twenties to fortie
 clothes. Dynamic but calm; the person is doing the quest. No words, letters, numbers or logos in the picture.
 
 **Made with** the owner's local ComfyUI (Z-Image Turbo, as the Inkbound art), `scripts/art/quest-art.py`; three seeds
-per key, the best one picked; saved as 960×540 WebP (quality 80) in `art/quest/v1/`, uploaded to the `lmu-art` bucket.
+per key, the best one picked; saved as 960×540 WebP (quality 80) in `art/quest/v2/`, uploaded to the `lmu-art`
+bucket's `v2/` folder. A changed set gets a new folder (`v3`), so phones never keep a stale copy. v1 (2026-10-11) drew
+wall push-ups for the small strength quest, whose only quest is slow sit-to-stands; v2 fixed it.
 
 | Key | Picture |
 |---|---|
@@ -24,7 +26,7 @@ per key, the best one picked; saved as 960×540 WebP (quality 80) in `art/quest/
 | `ladder-insight` | a woman writing in a notebook at a desk under a lamp |
 | `ladder-focus` | an adult at a desk with headphones, deep in work, a small timer beside them |
 | `ladder-phone-free` | a phone left in a drawer while its owner walks out into the sunlight |
-| `micro-strength` | a person doing wall push-ups in a kitchen |
+| `micro-strength` | an adult slowly standing up from a sturdy chair in a small kitchen |
 | `micro-vitality` | a woman drinking a glass of water at a sunny window |
 | `micro-wisdom` | an open book with two pages being read on a train |
 | `micro-focus` | a hand writing a single small card at a tidy desk |

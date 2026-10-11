@@ -74,7 +74,8 @@ achievements and history are both "looking back"; fewer tabs keep today's quests
 - Sign-in with Google; anonymous play until then. Email is added once a custom SMTP sender exists (before the
   public launch): the shared project's built-in sender only mails team members (architecture §4.4).
 - Honor-system completions plus in-app timers for focus and reading; Health Connect auto-verify after the MVP.
-- Class art from the Inkbound manhwa pipeline; a visual design canvas for onboarding and the reveal in Phase 4.
+- Class art from the Inkbound manhwa pipeline, and since M6a the quest art (one picture per kind of quest, the
+  `lmu-art` bucket, `docs/design/quest-art.md`); a visual design canvas for onboarding and the reveal in Phase 4.
 
 ## 2. Classes, stats, XP and levels (approved 2026-10-10)
 

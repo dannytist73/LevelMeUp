@@ -25,6 +25,18 @@ M4, M5).
 
 ---
 
+## As built (2026-10-11)
+
+Built as planned, with these changes (each in its commit):
+- The art is published in `lmu-art/v2` (`art/quest/v2/`): v1 drew wall push-ups for the small strength quest (slow
+  sit-to-stands). Subjects say "adult"; the contact sheets are paged.
+- Emulator check: the level-up overlay is a Modal (taps passed through); "Quest cleared" uses the board's outlined title
+  and puts the XP stamp under the target line; the timer shows the elapsed time large with the target beside it.
+- Code review: the quest screen closes itself when its day ends and checks the day before every claim, undo or rate;
+  the timer counts only to the day's end; Undo and the rating go when the day closes; no streak line while a check-in is
+  pending; a second tap sends nothing; store fixes (queued timer saves and reads, the confirmed level, a stopped store
+  arms no timer); the storage lint counts every mention of storage.
+
 ## Plain summary
 
 M6a makes quests playable. When it's done, the player:
