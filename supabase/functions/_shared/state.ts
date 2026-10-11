@@ -198,7 +198,12 @@ export function achievementProgress(c: CharacterRow, ladders: Readonly<Record<st
     questsCleared: c.quests_cleared,
     level: view.level,
     bestStreak: c.streak_best,
-    highestRungs: Object.fromEntries(Object.entries(ladders).map(([id, s]) => [id, (s ?? newLadder()).highestRung])),
+    // A ladder's rung counts only once the player has stepped up in the game: a starting rung from onboarding (M5) is
+    // where they began, not a climb. The highest rung rises only with a step-up, which sets lastStepUpAt.
+    highestRungs: Object.fromEntries(Object.entries(ladders).map(([id, s]) => {
+      const state = s ?? newLadder();
+      return [id, state.lastStepUpAt === null ? 0 : state.highestRung];
+    })),
     articlesRead: c.articles_read,
     recoveriesCleared: c.recoveries_cleared,
     hardDaysCleared: c.hard_days_cleared,

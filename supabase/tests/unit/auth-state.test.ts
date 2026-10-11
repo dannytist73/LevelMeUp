@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { newLadder } from '../../../packages/rules/src/index.ts';
+import { newAchievements, newLadder } from '../../../packages/rules/src/index.ts';
+import { ACHIEVEMENTS, LIBRARY } from '../../../packages/content/src/index.ts';
 import { playerFromAuthHeader } from '../../functions/_shared/auth.ts';
 import { readJson } from '../../functions/_shared/http.ts';
+import { startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import { achievementProgress, characterView, pastDays, stateView, toProfile } from '../../functions/_shared/state.ts';
-import { DAY1, characterRow, dayRow, instanceRows, manilaDay, profileRow } from './fixtures.ts';
+import { DAY1, characterRow, choices, dayRow, instanceRows, manilaDay, profileRow } from './fixtures.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 12);
 const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
@@ -66,9 +68,19 @@ describe('what the rules make of the rows', () => {
 
   it('collects achievement progress', () => {
     const progress = achievementProgress(characterRow({ quests_cleared: 4, streak_best: 7, ability_last_used: { second_wind: 9 } }), {
-      walk: { ...newLadder(2), highestRung: 3 },
+      walk: { ...newLadder(2), highestRung: 3, lastStepUpAt: NOW },
     });
     expect(progress).toMatchObject({ questsCleared: 4, bestStreak: 7, highestRungs: { walk: 3 }, bestRank: 'E', abilitiesUsed: ['second_wind'] });
+  });
+
+  it('a starting rung is not a climb: no rung achievement until the player steps up (M5 review)', () => {
+    const { ladders } = startArgs(choices({ training: 'most' }), templateReveal(choices()), NOW, LIBRARY);
+    expect(Object.keys(ladders).length).toBeGreaterThan(0);
+    const progress = achievementProgress(characterRow(), ladders);
+    expect(Object.values(progress.highestRungs).every((rung) => rung === 0)).toBe(true);
+    expect(newAchievements(ACHIEVEMENTS, progress, []).filter((id) => id.startsWith('rung-'))).toEqual([]);
+    const climbed = achievementProgress(characterRow(), { ...ladders, walk: { ...ladders.walk!, rung: 2, highestRung: 2, lastStepUpAt: NOW } });
+    expect(newAchievements(ACHIEVEMENTS, climbed, [])).toContain('rung-1');
   });
 });
 
