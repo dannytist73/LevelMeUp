@@ -29,6 +29,8 @@ export type Shown = ServerState & {
   waiting: ReadonlySet<number>;
   /** A class change is on its way to the server. */
   changingClass: boolean;
+  /** A Scholar's Path change is on its way. */
+  changingBook: boolean;
 };
 
 const CHANGEABLE: readonly QuestView['slot'][] = ['core', 'side1', 'side2'];
@@ -38,6 +40,8 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   let profile = server.profile;
   let paused = server.paused;
   let changingClass = false;
+  let reading = server.reading;
+  let changingBook = false;
   const today = server.today === null ? null : { ...server.today, quests: server.today.quests.map((q) => ({ ...q })) };
   const quests = today?.quests ?? [];
   const waiting = new Set<number>();
@@ -57,7 +61,19 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       for (const q of quests) if (q.completedAt === null && q.condition.kind === 'session') waiting.add(q.id);
       continue;
     }
-    if (event.type === 'book') continue; // M6d: shown once the phone handles it (T8)
+    if (event.type === 'book') {
+      profile = { ...profile, book: event.title, bookStartedAt: null };
+      reading = event.title === null ? null : { sessions: 0, minutes: 0 };
+      changingBook = true;
+      // Today's open reading quests show the new book; the server re-drafts them (decision 12).
+      for (const q of quests) {
+        if (q.completedAt !== null || !CHANGEABLE.includes(q.slot) || q.ladder === null) continue;
+        if (LIBRARY.ladders.find((l) => l.id === q.ladder)?.tracksBook !== true) continue;
+        q.book = event.title;
+        waiting.add(q.id);
+      }
+      continue;
+    }
     if (today === null) continue;
     if (event.type === 'hard_day' || event.type === 'plan_rest' || event.type === 'ability') {
       if (event.dayId !== today.id) continue;
@@ -130,5 +146,5 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         break;
     }
   }
-  return { ...server, profile, paused, character, today, waiting, changingClass };
+  return { ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook };
 }

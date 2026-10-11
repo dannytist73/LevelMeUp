@@ -18,6 +18,9 @@ const MIGRATIONS: readonly string[] = [
   // M6c: the profile gained the training setup and quests can be workouts; an older copy would break the Training
   // screen until the first sync, so it goes (the outbox stays).
   `delete from cache where key = 'state';`,
+  // M6d: the state gained the calendar, growth, the book's progress and the abilities' last use; an older copy would
+  // break Character and Chronicle until the first sync, so it goes (the outbox stays).
+  `delete from cache where key = 'state';`,
 ];
 
 export async function migrate(sql: Sql): Promise<void> {

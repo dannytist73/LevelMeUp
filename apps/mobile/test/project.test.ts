@@ -48,9 +48,11 @@ describe('what the screens show: the server state plus the unsent events', () =>
 
   it('with nothing pending it is the server state, nothing waiting', () => {
     const shown = project(server, []);
-    expect({ ...shown, waiting: undefined, changingClass: undefined }).toEqual({ ...server, waiting: undefined, changingClass: undefined });
+    const flags = { waiting: undefined, changingClass: undefined, changingBook: undefined };
+    expect({ ...shown, ...flags }).toEqual({ ...server, ...flags });
     expect(shown.waiting.size).toBe(0);
     expect(shown.changingClass).toBe(false);
+    expect(shown.changingBook).toBe(false);
   });
 
   it('a completion clears the quest, adds its stored XP once, and waits for the server', () => {
@@ -151,5 +153,28 @@ describe('adjustments show at once (M6b)', () => {
     // After a hard day still on its way, the ability's quest is its hard-day version, as the server drafts it (review).
     const hardStill = project(monk, [ev({ type: 'hard_day', dayId: 2 }), ev({ type: 'ability', dayId: 2, ability: 'stillness' })]);
     expect(questOf(hardStill, 200)).toMatchObject({ templateId: 'stillness', hardDay: true });
+  });
+});
+
+describe("the Scholar's Path book on the phone (M6d)", () => {
+  const book = (title: string | null, finished = false): PhoneEvent => ({ id: 'b1', type: 'book', title, finished });
+
+  it("shows the new book at once on the profile and on today's open reading quests, marked \"will sync\"", () => {
+    const server = adjustState(); // side2 is reading-0, id 202
+    const shown = project(server, [book('Dune')]);
+    expect(shown.profile.book).toBe('Dune');
+    expect(shown.profile.bookStartedAt).toBeNull();
+    expect(shown.reading).toEqual({ sessions: 0, minutes: 0 });
+    expect(shown.today!.quests.find((q) => q.id === 202)!.book).toBe('Dune');
+    expect(shown.waiting.has(202)).toBe(true);
+    expect(shown.changingBook).toBe(true);
+    expect(shown.today!.quests.find((q) => q.id === 200)!.book).toBeNull(); // push-1 doesn't track a book
+  });
+
+  it('finishing or setting aside clears it', () => {
+    const server = adjustState();
+    const shown = project({ ...server, profile: { ...server.profile, book: 'Dune' } }, [book(null, true)]);
+    expect(shown.profile.book).toBeNull();
+    expect(shown.reading).toBeNull();
   });
 });

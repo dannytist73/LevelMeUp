@@ -5,7 +5,7 @@ import { makeLocal, migrate } from '../src/data/local.ts';
 import type { ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
-import { ART_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, VOW_KEY, createGameStore } from '../src/state/store.ts';
+import { ART_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, VOW_KEY, createGameStore } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { nodeSql } from './support/nodeSql.ts';
 import { DAY_TWO_NOW, READY_DRAFT, REVEAL, adjustState, serverState } from './support/fixtures.ts';
@@ -343,6 +343,48 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('reads the vow at boot and shows a new one at once (M6d)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(VOW_KEY, 'I will rise.');
+    expect(store.getState().vow).toBeNull();
+    await store.getState().boot();
+    expect(store.getState().vow).toBe('I will rise.');
+    await store.getState().saveVow(' I rise ');
+    expect(store.getState().vow).toBe('I rise');
+    await store.getState().saveVow('   ');
+    expect(store.getState().vow).toBeNull();
+    store.getState().stop();
+  });
+
+  it('shows the training notice once, until it is dismissed (M6d decision 13)', async () => {
+    const first = await setup([ok(SERVER)]);
+    await first.local.acknowledge([], [], SERVER, 1);
+    expect(first.store.getState().trainingNoticeSeen).toBe(true); // nothing flashes before boot reads the phone
+    await first.store.getState().boot();
+    expect(first.store.getState().trainingNoticeSeen).toBe(false);
+    await first.store.getState().dismissTrainingNotice();
+    expect(first.store.getState().trainingNoticeSeen).toBe(true);
+    expect(first.kv.get(TRAINING_NOTICE_KEY)).toBe('seen');
+    first.store.getState().stop();
+    const second = await setup([ok(SERVER)]);
+    await second.local.acknowledge([], [], SERVER, 1);
+    second.kv.set(TRAINING_NOTICE_KEY, 'seen');
+    await second.store.getState().boot();
+    expect(second.store.getState().trainingNoticeSeen).toBe(true);
+    second.store.getState().stop();
+  });
+
+  it('a new player never gets the training notice: leaving the onboarding marks it seen', async () => {
+    const { store, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
+    await store.getState().boot();
+    expect(store.getState().trainingNoticeSeen).toBe(false);
+    await store.getState().finishOnboarding();
+    expect(store.getState().trainingNoticeSeen).toBe(true);
+    expect(kv.get(TRAINING_NOTICE_KEY)).toBe('seen');
+    store.getState().stop();
+  });
+
   it('saving with Google links the account and changes nothing else', async () => {
     const { store, local, deps } = await setup([ok(SERVER)]);
     await local.acknowledge([], [], SERVER, 1);
@@ -466,11 +508,15 @@ describe('the game store', () => {
     const { store, local, deps, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
     await local.acknowledge([], [], SERVER, 1);
     await store.getState().saveVow('I will rise.');
+    await store.getState().dismissTrainingNotice();
     kv.set(DRAFT_KEY, '{}');
     await store.getState().startOver();
     expect(deps.signOut).toHaveBeenCalled();
     expect(await local.load()).toBeNull();
     expect(kv.has(VOW_KEY)).toBe(false); // the next player on this phone never sees it (review)
+    expect(store.getState().vow).toBeNull();
+    expect(kv.has(TRAINING_NOTICE_KEY)).toBe(false); // M6d
+    expect(store.getState().trainingNoticeSeen).toBe(false);
     expect(kv.has(DRAFT_KEY)).toBe(false);
     expect(lastAllowNewGuest(deps)).toBe(false); // the onboarding makes the next guest
     store.getState().stop();
