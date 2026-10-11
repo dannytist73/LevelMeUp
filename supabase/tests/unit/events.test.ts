@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_EVENTS, adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody, timerTargetMs } from '../../functions/_shared/events.ts';
-import type { AdjustEvent } from '../../functions/_shared/events.ts';
+import type { AdjustEvent, SyncRequest } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
 import { planWorkout, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
@@ -233,5 +233,60 @@ describe('the book event (M6d decision 12)', () => {
   it('is an adjustment, stored without its id and type', () => {
     expect(isAdjust({ id, type: 'book', title: 'Dune', finished: false })).toBe(true);
     expect(adjustPayload({ id, type: 'book', title: 'Dune', finished: false })).toEqual({ title: 'Dune', finished: false });
+  });
+});
+
+describe('offline-built days (M6e)', () => {
+  const quest = { slot: 'core', templateId: 'push-1', why: { code: 'class_main', stat: 'strength' }, moves: null, book: null };
+  const workout = {
+    slot: 'side1', templateId: 'workout-0', why: { code: 'goal', goal: 'body' }, book: null,
+    moves: [{ move: 'bridge', unit: 'reps', min: 8, max: 12, perSide: false }],
+  };
+  const day = {
+    id: id(40), type: 'provisional_day', dayNumber: 2, builtAt: start + MIN, timeZone: 'Asia/Manila',
+    window: { startsAt: start, endsAt: start + 24 * 60 * MIN }, budget: 25, light: false, quests: [quest, workout],
+  };
+  const parse = (events: unknown[]) => parseSyncBody({ timeZone: 'UTC', events }) as SyncRequest;
+
+  it('reads the day, the zone and each quest, and drops anything else', () => {
+    expect(parse([{ ...day, extra: 1, quests: [{ ...quest, extra: 2 }, workout] }])).toEqual({ timeZone: 'UTC', events: [day], rejected: [] });
+  });
+
+  it('refuses a malformed day', () => {
+    for (const bad of [
+      { dayNumber: 1 }, { dayNumber: 2.5 }, { builtAt: 5 }, { timeZone: 'Mars/Base' }, { window: { startsAt: start, endsAt: start } },
+      { budget: 0 }, { light: 'no' }, { quests: [] }, { quests: [quest, quest] }, { quests: [{ ...quest, slot: 'nope' }] },
+      { quests: [{ ...quest, why: { code: 'nope' } }] }, { quests: [{ ...quest, templateId: 'Push 1' }] },
+      { quests: [{ ...workout, moves: [{ move: 'Bridge', unit: 'reps', min: 8, max: 12, perSide: false }] }] },
+      { quests: [{ ...workout, moves: [{ move: 'bridge', unit: 'laps', min: 8, max: 12, perSide: false }] }] },
+      { quests: [{ ...quest, book: 'Dune\nMessiah' }] },
+    ]) {
+      expect(parse([{ ...day, ...bad }]), JSON.stringify(bad)).toMatchObject({ events: [], rejected: [{ id: id(40), code: 'bad_event' }] });
+    }
+  });
+
+  it('names a quest by its day and slot instead of its id: complete, undo, rate and pain', () => {
+    const ref = { dayNumber: 2, slot: 'core', templateId: 'push-1' };
+    const body = parse([
+      { id: id(50), type: 'complete', ref, completedAt: start + MIN, payload: {} },
+      { id: id(51), type: 'undo', ref },
+      { id: id(52), type: 'rate', ref, rating: 'easy' },
+      { id: id(53), type: 'pain', ref, choice: 'rest' },
+      { id: id(54), type: 'complete', instanceId: 5, ref, completedAt: start + MIN },
+      { id: id(55), type: 'undo', ref: { ...ref, slot: 'nope' } },
+      { id: id(56), type: 'undo', ref: { ...ref, dayNumber: 0 } },
+      { id: id(57), type: 'swap', ref, templateId: 'walk-1' },
+    ]);
+    expect(body.events).toEqual([
+      { id: id(50), type: 'complete', instanceId: null, ref, completedAt: start + MIN, rating: null, payload: {} },
+      { id: id(51), type: 'undo', instanceId: null, ref },
+      { id: id(52), type: 'rate', instanceId: null, ref, rating: 'easy' },
+      { id: id(53), type: 'pain', instanceId: null, ref, choice: 'rest' },
+    ]);
+    expect(body.rejected.map((r) => [r.id, r.code])).toEqual([[id(54), 'bad_event'], [id(55), 'bad_event'], [id(56), 'bad_event'], [id(57), 'bad_event']]);
+  });
+
+  it('an event with an id is read as before (no ref)', () => {
+    expect(parse([{ id: id(60), type: 'undo', instanceId: 7 }]).events).toEqual([{ id: id(60), type: 'undo', instanceId: 7 }]);
   });
 });

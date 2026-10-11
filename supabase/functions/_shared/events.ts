@@ -1,11 +1,14 @@
 // Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; M6b the adjustments (swap, hard
 // day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); M6c the training setup; M6d the Scholar's
-// Path book; the rest arrive with the milestones whose screens send them, and until then are rejected without touching
-// anything.
+// Path book; M6e the offline-built day and quests named by day and slot; the rest arrive with the milestones whose
+// screens send them, and until then are rejected without touching anything.
 import {
-  CLASSES, CLOCK_SKEW_MS, EQUIPMENT, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone, questTimerDone, sessionSets,
+  CLASSES, CLOCK_SKEW_MS, EQUIPMENT, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone, isWhyReason, questTimerDone,
+  sessionSets,
 } from '../../../packages/rules/src/index.ts';
-import type { ClassId, Equipment, ProgramStyle, Rating, Segment } from '../../../packages/rules/src/index.ts';
+import type {
+  ClassId, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
+} from '../../../packages/rules/src/index.ts';
 import { isObject, problem, UUID } from './http.ts';
 import type { Problem } from './http.ts';
 import type { DayRow, InstanceRow } from './state.ts';
@@ -23,15 +26,20 @@ const isTime = (v: unknown): v is number => Number.isSafeInteger(v) && (v as num
 /** Control characters (Postgres refuses \u0000 in jsonb; a sentence has no line breaks). */
 const CONTROL = /\p{Cc}/u;
 
-export type CompleteEvent = { id: string; type: 'complete'; instanceId: number; completedAt: number; rating: Rating | null; payload: unknown };
-export type UndoEvent = { id: string; type: 'undo'; instanceId: number };
-export type RateEvent = { id: string; type: 'rate'; instanceId: number; rating: Rating };
+/** M6e: a quest of a day the phone built offline, named by its day and slot until the server gives it an id. */
+export type SlotRef = { dayNumber: number; slot: Slot; templateId: string };
+/** Which quest an event is about: its id, or (M6e) its day and slot. */
+export type QuestTarget = { instanceId: number; ref?: undefined } | { instanceId: null; ref: SlotRef };
+
+export type CompleteEvent = { id: string; type: 'complete'; completedAt: number; rating: Rating | null; payload: unknown } & QuestTarget;
+export type UndoEvent = { id: string; type: 'undo' } & QuestTarget;
+export type RateEvent = { id: string; type: 'rate'; rating: Rating } & QuestTarget;
 export type PainChoice = 'gentle' | 'rest' | 'pause';
 export type DayAbility = 'stillness' | 'dawn_ritual';
 export type SwapEvent = { id: string; type: 'swap'; instanceId: number; templateId: string };
 export type HardDayEvent = { id: string; type: 'hard_day'; dayId: number };
 export type RestEvent = { id: string; type: 'plan_rest'; dayId: number };
-export type PainEvent = { id: string; type: 'pain'; instanceId: number; choice: PainChoice };
+export type PainEvent = { id: string; type: 'pain'; choice: PainChoice } & QuestTarget;
 /** `ladderId`: a ladder, or a standalone exercise quest resting after pain (rules: painKey). */
 export type ResumeEvent = { id: string; type: 'resume'; ladderId: string };
 export type StepDownEvent = { id: string; type: 'step_down'; instanceId: number };
@@ -42,10 +50,26 @@ export type TrainingEvent = { id: string; type: 'training'; equipment: Equipment
 /** M6d: Scholar's Path. A title starts that book; `finished` first records the current one; null sets it aside. */
 export type BookEvent = { id: string; type: 'book'; title: string | null; finished: boolean };
 export const MAX_BOOK_TITLE = 120;
+/**
+ * M6e: a day the phone built offline (decision 4). The server reads the day number, when it was built, the zone and each
+ * quest's slot, template, why-line and exercises. The window, budget, light flag and books are what the phone showed:
+ * kept with the event, never trusted (the server recomputes them).
+ */
+export type ProvisionalDayEvent = {
+  id: string;
+  type: 'provisional_day';
+  dayNumber: number;
+  builtAt: number;
+  timeZone: string;
+  window: { startsAt: number; endsAt: number };
+  budget: number;
+  light: boolean;
+  quests: (ProvisionalQuest & { book: string | null })[];
+};
 export type AdjustEvent =
   | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent
   | BookEvent;
-export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent;
+export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent | ProvisionalDayEvent;
 export type Rejected = { id: string | null; code: string };
 
 export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
@@ -68,6 +92,41 @@ const isKey = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9][a
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
 const PAIN_CHOICES: readonly PainChoice[] = ['gentle', 'rest', 'pause'];
 const DAY_ABILITIES: readonly DayAbility[] = ['stillness', 'dawn_ritual'];
+const SLOTS: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];
+const MAX_DAY_NUMBER = 100_000;
+const MAX_MOVES = 12;
+const isDayNumber = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 1 && (v as number) <= MAX_DAY_NUMBER;
+const isCount = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= MAX_REPS;
+
+/** The quest an event names: an id, or (M6e) a day and slot — one of the two. */
+function parseTarget(raw: Record<string, unknown>): QuestTarget | null {
+  if (raw.ref === undefined || raw.ref === null) return isId(raw.instanceId) ? { instanceId: raw.instanceId } : null;
+  if (raw.instanceId !== undefined && raw.instanceId !== null) return null;
+  const ref = raw.ref;
+  if (!isObject(ref) || !isDayNumber(ref.dayNumber) || !SLOTS.includes(ref.slot as Slot) || !isKey(ref.templateId)) return null;
+  return { instanceId: null, ref: { dayNumber: ref.dayNumber, slot: ref.slot as Slot, templateId: ref.templateId } };
+}
+
+function parseMoves(raw: unknown): PlannedMove[] | null | undefined {
+  if (raw === null || raw === undefined) return null;
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > MAX_MOVES) return undefined;
+  const moves: PlannedMove[] = [];
+  for (const m of raw) {
+    if (!isObject(m) || !isKey(m.move) || (m.unit !== 'reps' && m.unit !== 'seconds')) return undefined;
+    if (!isCount(m.min) || !isCount(m.max) || typeof m.perSide !== 'boolean') return undefined;
+    moves.push({ move: m.move, unit: m.unit, min: m.min, max: m.max, perSide: m.perSide });
+  }
+  return moves;
+}
+
+function parseProvisionalQuest(raw: unknown): ProvisionalDayEvent['quests'][number] | null {
+  if (!isObject(raw) || !SLOTS.includes(raw.slot as Slot) || !isKey(raw.templateId) || !isWhyReason(raw.why)) return null;
+  const book = raw.book ?? null;
+  if (book !== null && (typeof book !== 'string' || book.length > MAX_BOOK_TITLE || CONTROL.test(book))) return null;
+  const moves = parseMoves(raw.moves);
+  if (moves === undefined) return null;
+  return { slot: raw.slot as Slot, templateId: raw.templateId, why: { ...raw.why }, moves, book };
+}
 
 function parseEvent(raw: unknown): PhoneEvent | Rejected {
   if (!isObject(raw)) return { id: null, code: 'bad_event' };
@@ -76,27 +135,34 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
   const bad: Rejected = { id, code: 'bad_event' };
   switch (raw.type) {
     case 'complete': {
-      if (!isId(raw.instanceId) || !isTime(raw.completedAt)) return bad;
+      const target = parseTarget(raw);
+      if (target === null || !isTime(raw.completedAt)) return bad;
       const rating = raw.rating ?? null;
       if (rating !== null && !RATINGS.includes(rating as Rating)) return { id, code: 'bad_rating' };
-      return { id, type: 'complete', instanceId: raw.instanceId, completedAt: raw.completedAt, rating: rating as Rating | null, payload: raw.payload ?? {} };
+      return { id, type: 'complete', ...target, completedAt: raw.completedAt, rating: rating as Rating | null, payload: raw.payload ?? {} };
     }
-    case 'undo':
-      return isId(raw.instanceId) ? { id, type: 'undo', instanceId: raw.instanceId } : bad;
-    case 'rate':
-      if (!isId(raw.instanceId)) return bad;
+    case 'undo': {
+      const target = parseTarget(raw);
+      return target === null ? bad : { id, type: 'undo', ...target };
+    }
+    case 'rate': {
+      const target = parseTarget(raw);
+      if (target === null) return bad;
       if (!RATINGS.includes(raw.rating as Rating)) return { id, code: 'bad_rating' };
-      return { id, type: 'rate', instanceId: raw.instanceId, rating: raw.rating as Rating };
+      return { id, type: 'rate', ...target, rating: raw.rating as Rating };
+    }
     case 'swap':
       return isId(raw.instanceId) && isKey(raw.templateId) ? { id, type: 'swap', instanceId: raw.instanceId, templateId: raw.templateId } : bad;
     case 'hard_day':
       return isId(raw.dayId) ? { id, type: 'hard_day', dayId: raw.dayId } : bad;
     case 'plan_rest':
       return isId(raw.dayId) ? { id, type: 'plan_rest', dayId: raw.dayId } : bad;
-    case 'pain':
-      return isId(raw.instanceId) && PAIN_CHOICES.includes(raw.choice as PainChoice)
-        ? { id, type: 'pain', instanceId: raw.instanceId, choice: raw.choice as PainChoice }
+    case 'pain': {
+      const target = parseTarget(raw);
+      return target !== null && PAIN_CHOICES.includes(raw.choice as PainChoice)
+        ? { id, type: 'pain', ...target, choice: raw.choice as PainChoice }
         : bad;
+    }
     case 'resume':
       return isKey(raw.ladderId) ? { id, type: 'resume', ladderId: raw.ladderId } : bad;
     case 'step_down':
@@ -120,6 +186,25 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
       const title = raw.title.trim();
       if (title.length < 1 || title.length > MAX_BOOK_TITLE || CONTROL.test(title)) return bad;
       return { id, type: 'book', title, finished: raw.finished };
+    }
+    case 'provisional_day': {
+      if (!isDayNumber(raw.dayNumber) || raw.dayNumber < 2 || !isTime(raw.builtAt)) return bad;
+      if (typeof raw.timeZone !== 'string' || !isValidTimeZone(raw.timeZone)) return bad;
+      const w = raw.window;
+      if (!isObject(w) || !isTime(w.startsAt) || !isTime(w.endsAt) || w.endsAt <= w.startsAt) return bad;
+      if (!Number.isInteger(raw.budget) || (raw.budget as number) < 1 || (raw.budget as number) > 60 || typeof raw.light !== 'boolean') return bad;
+      if (!Array.isArray(raw.quests) || raw.quests.length < 1 || raw.quests.length > SLOTS.length) return bad;
+      const quests: ProvisionalDayEvent['quests'] = [];
+      for (const q of raw.quests) {
+        const parsed = parseProvisionalQuest(q);
+        if (parsed === null) return bad;
+        quests.push(parsed);
+      }
+      if (new Set(quests.map((q) => q.slot)).size !== quests.length) return bad;
+      return {
+        id, type: 'provisional_day', dayNumber: raw.dayNumber, builtAt: raw.builtAt, timeZone: canonicalTimeZone(raw.timeZone),
+        window: { startsAt: w.startsAt, endsAt: w.endsAt }, budget: raw.budget as number, light: raw.light, quests,
+      };
     }
     default:
       return { id, code: 'unsupported_event' };

@@ -102,6 +102,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       }
       continue;
     }
+    if (event.type === 'provisional_day') continue;
     const i = quests.findIndex((q) => q.id === event.instanceId);
     if (i < 0) continue; // not today's quest: only the server can say what happens to it
     const quest = quests[i]!;
