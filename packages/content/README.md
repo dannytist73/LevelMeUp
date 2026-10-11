@@ -9,6 +9,8 @@ dependencies and copies into Deno and Hermes the same way the rules do.
 | File | What it holds |
 |---|---|
 | `src/quests/strength.ts` | Push, squat, core and own-program ladders; the micro sit-to-stands |
+| `src/quests/workout.ts` | The workout ladder (M6c): 6 rungs, each a workout the rules plan for the player |
+| `src/training/moves.ts`, `src/training/programs.ts` | The 53 exercises (slots, family, needs, level, range, steps, cue) and the three programs |
 | `src/quests/vitality.ts` | Walk, mobility, sleep and breathing ladders; the glass of water |
 | `src/quests/mind.ts` | Reading, insight, focus and phone-free ladders; two pages, tomorrow's hardest task |
 | `src/quests/special.ts` | The recovery quests, Stillness, the Dawn Ritual and the article quest |
@@ -18,14 +20,16 @@ dependencies and copies into Deno and Hermes the same way the rules do.
 | `src/achievements.ts` | 27 achievements; 7 grant a title |
 | `src/shadow.ts` | The Shadow's lines for six moments, and `shadowLine` |
 | `src/lint.ts` | Robotic phrases, shaming words, Shadow threats and emoji (reused for articles in M8) |
-| `src/names.ts`, `src/format.ts` | Display names, the exercise safety line, quest targets in words |
+| `src/names.ts`, `src/format.ts` | Display names (also equipment and programs), the exercise safety line, quest targets in words |
 
-The library has 12 ladders and 74 templates. Bump `CONTENT_VERSION` when a template's meaning changes; each quest
-instance stores the version it was built from.
+The library has 13 ladders and 80 templates. Bump `CONTENT_VERSION` when a template's meaning changes; each quest
+instance stores the version it was built from. A workout quest also stores its planned exercises by move id, so keep
+move ids stable (as template ids).
 
 ## Writing quest text
 
 - **name:** the plain exercise or habit name, sentence case, at most 40 characters. It may repeat along a ladder.
+- **title:** names no number (M6c): a hard day shows a smaller target under the same title.
 - **steps:** 1 to 5 plain, imperative steps, at most 160 characters each. Mention the warm-up when the minutes
   include one.
 - **safety:** required on every exercise quest: form cues and when to stop. Never a medical claim. The app always adds

@@ -185,3 +185,25 @@ waits until a test character reaches those levels (carried forward).
 
 Test data: four test characters (Nova, Vega, Lyra, Orin) were made on the emulator and deleted from the developer
 screen; a read-only check found no players left.
+
+## M6c — Kaizen training
+
+No new build: M6c adds no native module. Rows 1–7 on the emulator after the M6c deploy (rows 4 and 8–11 need it);
+rows 8–11 need a test character's first strength day (day 3 for a Warrior); row 12 after the v3 art upload. All rows
+on the Find X9 (the owner). After the M6c deploy, an app bundle from before M6c can't show a workout quest: run phone
+checks from the M6c branch (it contains M5–M6b), or with characters on day 1 or 2.
+
+| # | Check | Emulator | Find X9 | Automated coverage |
+|---|---|---|---|---|
+| 1 | Onboarding shows Training after Body; Continue needs equipment (or "Just my body") and a program. | | | `flow.test.ts`, `onboarding.test.tsx` (Training) |
+| 2 | Training is skipped for "I follow my own plan" and after a safety-check "yes". | | | `flow.test.ts` (`stepsFor`) |
+| 3 | Rhythm says workouts need 25 minutes a day at 10 or 15. | | | `onboarding.test.tsx` (Rhythm) |
+| 4 | Settings → Training shows the setup, saves a change once, and the profile keeps it after a sync. | | | `adjust.test.tsx` (Training), server `adjust.test.ts`, live test |
+| 5 | Developer → Workout preview: every setup lists exercises that use that equipment, with the target, the form cue and the progress line; "How to do it" opens the steps; counters start at the bottom of the range; − and + work. | | | `quest.test.tsx` (a workout), content `training.test.ts` |
+| 6 | The workout log at the largest font size: nothing cut off, buttons at least 44 dp. | | | — |
+| 7 | Titles without numbers: a hard day's walk or reading quest keeps a title that fits the shorter target. | | | content `text.test.ts` |
+| 8 | A strength day's core quest is a workout: its card lists the exercises and minutes, with its family picture (or the ink fallback before v3). | | | rules `day.test.ts`, server `advance.test.ts` |
+| 9 | Log a workout → Quest cleared, XP, the rating; Undo. | | | `quest.test.tsx`, server `events.test.ts` |
+| 10 | Hard day on a workout day: one set of the first two exercises, 7 minutes, half XP. | | | rules `adjust.test.ts` |
+| 11 | "I felt pain" on a workout: workouts rest ("Workouts" under resting exercises); Resume brings them back. | | | rules and server pain tests |
+| 12 | The beginner rungs show their own pictures (wall, incline and knee push-ups; chair and split squats; dead bugs); the side plank keeps the forearm plank. | | | content `art.test.ts` |
