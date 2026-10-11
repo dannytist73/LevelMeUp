@@ -1,6 +1,8 @@
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { invoke, makeApi } from '../src/net/api.ts';
+import { toRequest } from '../src/onboarding/flow.ts';
+import { READY_DRAFT } from './support/fixtures.ts';
 
 function clientReturning(result: () => Promise<{ data: unknown; error: unknown }>) {
   const calls: { name: string; options: unknown }[] = [];
@@ -57,11 +59,11 @@ describe('calling the server functions', () => {
     const { client, calls } = clientReturning(async () => ({ data: {}, error: null }));
     const api = makeApi(client);
     await api.sync({ timeZone: 'Asia/Manila', events: [] });
-    await api.onboarding({ name: 'Rin' });
+    await api.onboarding(toRequest(READY_DRAFT, 'UTC', false));
     await api.deleteAccount();
     expect(calls).toEqual([
       { name: 'lmu-sync', options: { body: { timeZone: 'Asia/Manila', events: [] }, timeout: 20_000 } },
-      { name: 'lmu-onboarding', options: { body: { name: 'Rin' }, timeout: 30_000 } },
+      { name: 'lmu-onboarding', options: { body: toRequest(READY_DRAFT, 'UTC', false), timeout: 30_000 } },
       { name: 'lmu-account-delete', options: { body: { confirm: 'DELETE' }, timeout: 20_000 } },
     ]);
   });

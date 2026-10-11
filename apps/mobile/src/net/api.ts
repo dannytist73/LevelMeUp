@@ -2,7 +2,7 @@
 // Node against the deployed functions (supabase/tests/live/client.test.ts).
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { DeleteResponse, OnboardingResponse, PhoneEvent, SyncResponse } from '../game/types.ts';
+import type { DeleteResponse, OnboardingBody, OnboardingResponse, PhoneEvent, SyncResponse } from '../game/types.ts';
 
 /** `status 0` with `code 'network'` covers no connection, timeouts and relay failures: try again later. */
 export type Call<T> = { ok: true; body: T } | { ok: false; status: number; code: string };
@@ -29,7 +29,7 @@ export async function invoke<T>(client: SupabaseClient, name: FunctionName, body
 export function makeApi(client: SupabaseClient) {
   return {
     sync: (body: { timeZone: string; events: readonly PhoneEvent[] }) => invoke<SyncResponse>(client, 'lmu-sync', body),
-    onboarding: (choices: unknown) => invoke<OnboardingResponse>(client, 'lmu-onboarding', choices),
+    onboarding: (body: OnboardingBody) => invoke<OnboardingResponse>(client, 'lmu-onboarding', body),
     deleteAccount: () => invoke<DeleteResponse>(client, 'lmu-account-delete', { confirm: 'DELETE' }),
   };
 }

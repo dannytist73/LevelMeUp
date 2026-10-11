@@ -15,3 +15,9 @@ export function clockTime(iso: string, timeZone: string): string {
   const p = localParts(timeZone, Date.parse(iso));
   return `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
 }
+
+/** "7:00 AM" for minutes after midnight (the Rhythm board's clock). */
+export function clockLabel(minutes: number): string {
+  const hour = Math.floor(minutes / 60);
+  return `${((hour + 11) % 12) + 1}:${String(minutes % 60).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
+}

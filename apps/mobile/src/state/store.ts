@@ -9,7 +9,7 @@ import type { SessionState } from '../auth/session.ts';
 import type { Cached, Local } from '../data/local.ts';
 import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
-import type { PhoneEvent } from '../game/types.ts';
+import type { OnboardingBody, PhoneEvent } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
 import { syncOnce } from '../sync/engine.ts';
 import type { Notice, SyncOutcome } from '../sync/engine.ts';
@@ -185,7 +185,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         fenced(async () => {
           const signedIn = await deps.ensureSession(() => get().cached === null && get().pending.length === 0);
           if (signedIn !== 'signed_in') return { ok: false as const, code: signedIn === 'offline' ? 'network' : 'no_session' };
-          const started = await deps.api.onboarding(choices);
+          const started = await deps.api.onboarding(choices as OnboardingBody); // Task 9 replaces this
           if (!started.ok) return { ok: false as const, code: started.code };
           await deps.local.acknowledge([], [], started.body.state, deps.now());
           await refresh({ phase: 'ready', status: 'idle' });

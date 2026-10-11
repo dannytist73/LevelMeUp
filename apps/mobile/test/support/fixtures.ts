@@ -1,10 +1,12 @@
 // Phone-side fixtures built with the server's own fixtures and `stateView`, so tests see exactly what `lmu-sync` sends.
-import { STATS } from '@levelmeup/rules';
+import { SAFETY_QUESTIONS, STATS } from '@levelmeup/rules';
 import type { Rating, Slot } from '@levelmeup/rules';
 import { stateView } from '../../../../supabase/functions/_shared/state.ts';
 import type { CharacterRow } from '../../../../supabase/functions/_shared/state.ts';
 import { DAY1, characterRow, dayRow, instanceRows, profileRow } from '../../../../supabase/tests/unit/fixtures.ts';
-import type { PhoneEvent, ServerState } from '../../src/game/types.ts';
+import type { PhoneEvent, Reveal, ServerState } from '../../src/game/types.ts';
+import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
+import type { Draft } from '../../src/onboarding/flow.ts';
 
 export { DAY1, characterRow };
 
@@ -33,3 +35,11 @@ export const completeEvent = (instanceId: number, rating: Rating | null = null):
   ({ id: id(), type: 'complete', instanceId, completedAt: Date.UTC(2026, 9, 10, 13), rating, payload: {} });
 export const undoEvent = (instanceId: number): PhoneEvent => ({ id: id(), type: 'undo', instanceId });
 export const rateEvent = (instanceId: number, rating: 'easy' | 'right' | 'too_hard'): PhoneEvent => ({ id: id(), type: 'rate', instanceId, rating });
+
+/** A finished interview: Rin, mentor voice, a stronger body, trains now and then, no limits, no safety flags. */
+export const READY_DRAFT: Draft = {
+  ...NEW_DRAFT, name: 'Rin', voice: 'mentor', goals: ['body'], training: 'some', noLimits: true,
+  safety: Array<boolean>(SAFETY_QUESTIONS).fill(false), slip: 'stakes',
+};
+
+export const REVEAL: Reveal = { narrative: 'Rin. Class: Warrior.', strengths: ['Strength'], growth: ['Focus'], source: 'template' };
