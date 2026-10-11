@@ -1,7 +1,8 @@
 // Level-ups and achievements (spec §2.3, §2.6; M6a decision 8): shown over every screen once the server confirms them,
-// one at a time, with speed lines and Continue.
+// one at a time, with speed lines and Continue. A modal, so the screen behind can't be tapped or reached by TalkBack, and
+// Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared").
 import { ACHIEVEMENTS, PLAY_TEXT, fillText } from '@levelmeup/content';
-import { StyleSheet, View } from 'react-native';
+import { Modal, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
@@ -39,16 +40,14 @@ export function Celebration() {
     );
   }
   return (
-    <View
-      accessibilityViewIsModal
-      style={[
-        StyleSheet.absoluteFill,
-        { backgroundColor: colors.void, justifyContent: 'center', paddingHorizontal: space.gutter, paddingTop: insets.top, paddingBottom: insets.bottom + 24, gap: 28 },
-      ]}
-    >
-      <SpeedLines opacity={0.18} />
-      <View style={{ alignItems: 'center', gap: 16 }}>{body}</View>
-      <Button label={T.continue} onPress={dismiss} />
-    </View>
+    <Modal testID="celebration" visible animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={dismiss}>
+      <View
+        style={{ flex: 1, backgroundColor: colors.void, justifyContent: 'center', paddingHorizontal: space.gutter, paddingTop: insets.top, paddingBottom: insets.bottom + 24, gap: 28 }}
+      >
+        <SpeedLines opacity={0.18} />
+        <View style={{ alignItems: 'center', gap: 16 }}>{body}</View>
+        <Button label={T.continue} onPress={dismiss} />
+      </View>
+    </Modal>
   );
 }

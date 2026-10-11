@@ -234,6 +234,15 @@ describe('Celebration (M6a decision 8)', () => {
     expect(store.getState().dismissCelebration).toHaveBeenCalled();
   });
 
+  it('is a modal: the screen behind can\'t be touched or reached, and Back dismisses it (emulator check)', async () => {
+    const store = testStore({ celebrations: [{ kind: 'level', level: 3 }] });
+    await render(withStore(store, <Celebration />));
+    const modal = screen.getByTestId('celebration');
+    expect(modal.props.visible).toBe(true);
+    modal.props.onRequestClose();
+    expect(store.getState().dismissCelebration).toHaveBeenCalled();
+  });
+
   it('shows an achievement with its name, what it was for, and its title', async () => {
     const titled = ACHIEVEMENTS.find((a) => a.title !== null)!;
     await render(withStore(testStore({ celebrations: [{ kind: 'achievement', id: titled.id }] }), <Celebration />));
