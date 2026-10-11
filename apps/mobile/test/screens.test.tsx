@@ -1,7 +1,7 @@
 import { ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import { dateKeyLabel } from '../src/lib/dates.ts';
 import type { ServerState } from '../src/game/types.ts';
@@ -269,6 +269,16 @@ describe('Chronicle (M6d)', () => {
     expect(disabled(CHRONICLE_TEXT.previous)).toBe(true);
     await fireEvent.press(screen.getByRole('button', { name: CHRONICLE_TEXT.next }));
     expect(screen.getByText('OCTOBER 2026')).toBeTruthy();
+  });
+
+  it('follows today into a new month (review)', async () => {
+    const store = testStore({ view: withCalendar([{ dayNumber: 1, date: '2026-10-31', mark: 'open' }]) });
+    await render(withStore(store, <Chronicle />));
+    expect(screen.getByText('OCTOBER 2026')).toBeTruthy();
+    await act(async () => {
+      store.setState({ view: withCalendar([{ dayNumber: 2, date: '2026-11-01', mark: 'open' }, { dayNumber: 1, date: '2026-10-31', mark: 'cleared' }]) });
+    });
+    expect(screen.getByText('NOVEMBER 2026')).toBeTruthy();
   });
 
   it('with no earlier days there is no earlier month', async () => {

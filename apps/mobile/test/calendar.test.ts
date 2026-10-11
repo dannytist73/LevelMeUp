@@ -1,4 +1,4 @@
-import { compareMonths, monthOf, monthWeeks, shiftMonth, todayMark } from '../src/lib/calendar.ts';
+import { compareMonths, marksByDate, monthOf, monthWeeks, shiftMonth, todayMark } from '../src/lib/calendar.ts';
 
 describe('the month calendar (M6d decisions 3–4)', () => {
   it('lays a month out in Monday-first weeks, blank outside the month', () => {
@@ -15,6 +15,14 @@ describe('the month calendar (M6d decisions 3–4)', () => {
     expect(shiftMonth({ year: 2026, month: 1 }, -1)).toEqual({ year: 2025, month: 12 });
     expect(shiftMonth({ year: 2026, month: 12 }, 1)).toEqual({ year: 2027, month: 1 });
     expect(compareMonths({ year: 2026, month: 10 }, { year: 2026, month: 9 })).toBeGreaterThan(0);
+  });
+
+  it('keeps the strongest mark when two quest days share a date (a time-zone change; review)', () => {
+    const marks = marksByDate([
+      { date: '2026-10-12', mark: 'none' }, { date: '2026-10-12', mark: 'cleared' }, { date: '2026-10-11', mark: 'rest' },
+      { date: '2026-10-10', mark: 'paused' }, { date: '2026-10-10', mark: 'hard' },
+    ]);
+    expect(Object.fromEntries(marks)).toEqual({ '2026-10-12': 'cleared', '2026-10-11': 'rest', '2026-10-10': 'hard' });
   });
 
   it("draws today from the phone's own day, by the streak rules; never a miss", () => {

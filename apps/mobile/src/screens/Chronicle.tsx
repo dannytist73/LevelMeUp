@@ -64,6 +64,7 @@ export function Chronicle() {
   const lastSyncedAt = useGame((s) => s.lastSyncedAt);
   const stale = status === 'offline' || status === 'retrying';
   const streak = view?.character.streak;
+  const today = view?.calendar.find((d) => d.mark === 'open')?.date ?? null;
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
@@ -83,8 +84,10 @@ export function Chronicle() {
         ) : (
           <>
             <Calendar
+              // A new month remounts it, so the calendar follows today into it (review).
+              key={(today ?? view.calendar[0]!.date).slice(0, 7)}
               days={view.calendar}
-              today={view.calendar.find((d) => d.mark === 'open')?.date ?? null}
+              today={today}
               todayLook={view.today === null ? 'none' : todayMark(view.today)}
             />
             <Growth growth={view.growth} />

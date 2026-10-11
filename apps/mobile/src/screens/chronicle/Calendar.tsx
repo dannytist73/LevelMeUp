@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, Line, Path, Pattern, Rect } from 'react-native-svg';
 import type { ServerState } from '../../game/types.ts';
-import { compareMonths, monthOf, monthWeeks, shiftMonth } from '../../lib/calendar.ts';
+import { compareMonths, marksByDate, monthOf, monthWeeks, shiftMonth } from '../../lib/calendar.ts';
 import type { CellMark, Month } from '../../lib/calendar.ts';
 import { dateKeyLabel, monthLabel } from '../../lib/dates.ts';
 import { colors, fonts } from '../../theme/tokens.ts';
@@ -101,9 +101,7 @@ export function Calendar({ days, today, todayLook }: { days: readonly Day[]; tod
   const [month, setMonth] = useState<Month | null>(newest === null ? null : monthOf(newest));
   if (month === null || newest === null || oldest === null) return null;
 
-  // Oldest first, so the newest day of a date wins (a time-zone change can give two quest days one date).
-  const byDate = new Map<string, Day['mark']>();
-  for (const d of [...days].reverse()) byDate.set(d.date, d.mark);
+  const byDate = marksByDate(days);
   const canGoBack = compareMonths(month, monthOf(oldest)) > 0;
   const canGoOn = compareMonths(month, monthOf(newest)) < 0;
 

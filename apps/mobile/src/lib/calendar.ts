@@ -5,6 +5,8 @@ import type { Protection, Slot } from '@levelmeup/rules';
 
 export type Month = { year: number; month: number };
 export type CellMark = 'cleared' | 'hard' | 'rest' | 'paused' | 'none';
+/** A day's mark from the server (state.ts, `calendarMark`): the cell's, or `open` for the day still running. */
+export type DayMark = CellMark | 'open';
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -42,4 +44,16 @@ export function todayMark(day: { protection: Protection | null; hardDay: boolean
   if (resolution.kind === 'protected') return day.protection !== null && REST.includes(day.protection) ? 'rest' : 'paused';
   if (resolution.kind === 'streak_day') return day.hardDay ? 'hard' : 'cleared';
   return 'none';
+}
+
+const STRENGTH: Readonly<Record<DayMark, number>> = { hard: 5, cleared: 4, rest: 3, paused: 2, open: 1, none: 0 };
+
+/** Each date's mark; when a time-zone change gives two quest days one date, the strongest mark wins (review). */
+export function marksByDate(days: readonly { date: string; mark: DayMark }[]): Map<string, DayMark> {
+  const marks = new Map<string, DayMark>();
+  for (const d of days) {
+    const kept = marks.get(d.date);
+    if (kept === undefined || STRENGTH[d.mark] > STRENGTH[kept]) marks.set(d.date, d.mark);
+  }
+  return marks;
 }
