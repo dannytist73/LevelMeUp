@@ -1,9 +1,10 @@
-// POST /functions/v1/lmu-onboarding — the player's choices become a character and day 1 (spec §1.1, §4.2).
+// POST /functions/v1/lmu-onboarding — the player's answers become a character and day 1; `redo` builds it again until
+// the first action (M5) (spec §1.1, §4.2).
 import type postgres from 'npm:postgres@3.4.9';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { REVEAL_MODEL, claudeConfigured, writeReveal } from '../_shared/claude.ts';
 import { db, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
-import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
+import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../_shared/onboarding.ts';
 import type { Choices, Reveal } from '../_shared/onboarding.ts';
 import { authenticate } from '../_shared/session.ts';
@@ -37,23 +38,31 @@ Deno.serve(async (req) => {
   if (isProblem(body)) return problemResponse(body);
   const choices = parseOnboarding(body);
   if (isProblem(choices)) return problemResponse(choices);
+  // The reveal's corrections (M5): the same call again; the SQL refuses it once the player has done anything.
+  const redo = isObject(body) && body.redo === true;
 
   try {
     const existing = await db().begin((tx) => loadSnapshot(tx, player.userId));
-    if (existing !== null) return problemResponse(problem(409, 'already_started'));
+    if (existing !== null && !redo) return problemResponse(problem(409, 'already_started'));
     const words = await reveal(player.userId, choices);
     const snapshot = await db().begin(async (tx) => {
       const j = (value: unknown) => tx.json(value as postgres.JSONValue);
       // Day 1 starts on the database clock, the one every later check uses.
       const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
       const args = startArgs(choices, words, now.getTime(), LIBRARY);
-      await tx`select levelmeup.start_player(${player.userId}::uuid, ${j(args.profile)}::jsonb, ${j(args.character)}::jsonb,
-        ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
+      if (existing === null) {
+        await tx`select levelmeup.start_player(${player.userId}::uuid, ${j(args.profile)}::jsonb, ${j(args.character)}::jsonb,
+          ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
+      } else {
+        await tx`select levelmeup.restart_player(${player.userId}::uuid, ${j(args.profile)}::jsonb, ${j(args.character)}::jsonb,
+          ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
+      }
       return loadSnapshot(tx, player.userId);
     });
     return json(201, { reveal: words, state: stateView(snapshot!) });
   } catch (error) {
-    if (lmuCode(error) === 'already_started') return problemResponse(problem(409, 'already_started'));
+    const code = lmuCode(error);
+    if (code === 'already_started' || code === 'locked') return problemResponse(problem(409, code));
     console.error('lmu-onboarding failed', error);
     return problemResponse(problem(500, 'internal'));
   }

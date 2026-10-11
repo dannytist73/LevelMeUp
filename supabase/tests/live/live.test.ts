@@ -52,6 +52,12 @@ describe('a player from onboarding to a cleared quest', () => {
     expect(await call('lmu-onboarding', a.token, ONBOARDING)).toMatchObject({ status: 409, body: { error: 'already_started' } });
   });
 
+  it('refuses the M3 body (a class and estimates instead of answers)', async () => {
+    const { training: _training, safety: _safety, ...answersLeftOut } = ONBOARDING;
+    const old = { ...answersLeftOut, classId: 'warrior', estimates: { strength: 8, vitality: 8, wisdom: 8, focus: 8, discipline: 8 } };
+    expect(await call('lmu-onboarding', a.token, old)).toMatchObject({ status: 400, body: { error: 'bad_field', detail: 'training' } });
+  });
+
   it('sync returns the same day', async () => {
     const res = await sync(a);
     expect(res.status).toBe(200);
@@ -108,11 +114,24 @@ describe('a player from onboarding to a cleared quest', () => {
 
   it('another player cannot touch these quests', async () => {
     const b = await newPlayer();
-    expect((await call('lmu-onboarding', b.token, { ...ONBOARDING, classId: 'monk', goals: ['energy'] })).status).toBe(201);
+    const first = await call('lmu-onboarding', b.token, { ...ONBOARDING, goals: ['energy'], safety: [true, false, false, false, false, false, false] });
+    expect(first.status).toBe(201);
+    expect(first.body.state.profile).toMatchObject({ classId: 'monk', gentleStart: true });
+    // The reveal's "Change class" (M5): onboarding again, same answers, the player's class.
+    const changed = await call('lmu-onboarding', b.token, { ...ONBOARDING, goals: ['energy'], safety: [true, false, false, false, false, false, false], classId: 'mage', redo: true });
+    expect(changed.status).toBe(201);
+    expect(changed.body.state.profile).toMatchObject({ classId: 'mage', gentleStart: true });
+    expect(changed.body.state.today.dayNumber).toBe(1);
     const res = await sync(b, [{ id: eventId(), type: 'undo', instanceId: quest(state, 'core').id }]);
     expect(res.body.results[0]).toMatchObject({ ok: false, code: 'not_found' });
     const mine = await sync(a);
     expect(quest(mine.body.state, 'core').completedAt).not.toBeNull();
+  });
+
+  it('once a quest is done, onboarding can\'t run again', async () => {
+    expect(await call('lmu-onboarding', a.token, { ...ONBOARDING, classId: 'mage', redo: true }))
+      .toMatchObject({ status: 409, body: { error: 'locked' } });
+    expect((await sync(a)).body.state.profile.classId).toBe('warrior');
   });
 });
 

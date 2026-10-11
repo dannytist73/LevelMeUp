@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll } from 'vitest';
+import type { OnboardingBody } from '../../functions/_shared/onboarding.ts';
 
 const env = Object.fromEntries(
   readFileSync(join(import.meta.dirname, '..', '..', '..', '.env.local'), 'utf8')
@@ -49,11 +50,10 @@ export async function call(fn: string, token: string | null, body: unknown = {})
   return { status: res.status, body: parsed };
 }
 
-export const ONBOARDING = {
-  name: 'Live Test', voice: 'system', goals: ['body'], classId: 'warrior',
-  estimates: { strength: 5, vitality: 5, wisdom: 5, focus: 5, discipline: 4 },
-  minutesPerDay: 25, difficulty: 'steady', boundaryMinutes: 240, timeZone: 'Asia/Manila', limitations: [],
-  gentleStart: false, ownProgram: false,
+export const ONBOARDING: OnboardingBody = {
+  name: 'Live Test', voice: 'system', goals: ['body'], training: 'some', reading: null, focus: null, limitations: [],
+  safety: [false, false, false, false, false, false, false], minutesPerDay: 25, difficulty: 'steady', boundaryMinutes: 240,
+  timeZone: 'Asia/Manila',
 };
 
 export const sync = (p: Player, events: unknown[] = []) => call('lmu-sync', p.token, { timeZone: 'Asia/Manila', events });
