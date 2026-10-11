@@ -1,53 +1,38 @@
-// POST /functions/v1/lmu-sync — the phone's one round trip (architecture §4.1, §6): apply its events in order, close
-// ended days and build the next one, award achievements, and return the player's state. The server's numbers win.
+// POST /functions/v1/lmu-sync — the phone's one round trip (architecture §4.1, §6): apply its events in order
+// (completions and the M6b adjustments), close ended days and build the next one, award achievements, and return the
+// player's state. The server's numbers win.
 import type postgres from 'npm:postgres@3.4.9';
 import { newAchievements } from '../../../packages/rules/src/index.ts';
 import { ACHIEVEMENTS, CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
+import { planAdjust } from '../_shared/adjust.ts';
 import { planAdvance } from '../_shared/advance.ts';
 import { asPlayer, asService, db, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
-import { checkCompletionPayload } from '../_shared/events.ts';
-import type { PhoneEvent, Rejected } from '../_shared/events.ts';
-import { parseSyncBody } from '../_shared/events.ts';
+import { adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody } from '../_shared/events.ts';
+import type { AdjustEvent, PhoneEvent, Rejected } from '../_shared/events.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { authenticate } from '../_shared/session.ts';
 import { achievementProgress, ladderMap, stateView } from '../_shared/state.ts';
 import { dayOffers } from '../_shared/today.ts';
 import type { DayRow, InstanceRow } from '../_shared/state.ts';
 
-/** Tries at closing days when another write got there first (`lmu:conflict`). */
+/** Tries at closing days or adjusting one when another write got there first (`lmu:conflict`). */
 const MAX_TRIES = 3;
 
 type Applied = { id: string; ok: true; result: unknown } | Rejected & { ok: false };
 
 const jsonParam = (tx: Tx, value: unknown) => tx.json(value as postgres.JSONValue);
 
+type PlayEvent = Exclude<PhoneEvent, AdjustEvent>;
+
 async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
   try {
-    const result = await db().begin(async (tx) => {
-      if (event.type === 'complete') {
-        await asPlayer(tx, userId);
-        const [row] = await tx<(Pick<InstanceRow, 'completion' | 'condition' | 'minutes'> & Pick<DayRow, 'starts_at' | 'ends_at'>)[]>`
-          select q.completion, q.condition, q.minutes, d.starts_at, d.ends_at
-          from levelmeup.quest_instances q join levelmeup.quest_days d on d.id = q.day_id
-          where q.id = ${event.instanceId}::bigint and q.user_id = ${userId}::uuid`;
-        await asService(tx);
-        if (row === undefined) throw new Error('lmu:not_found');
-        const checked = checkCompletionPayload(row, row, event.payload, Date.now());
-        if ('code' in checked) throw new Error(`lmu:${checked.code}`);
-        return one(await tx<{ r: unknown }[]>`select levelmeup.complete_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint,
-          ${new Date(event.completedAt)}::timestamptz, ${event.rating}::text, ${jsonParam(tx, checked.payload)}::jsonb) as r`).r;
-      }
-      if (event.type === 'undo') {
-        return one(await tx<{ r: unknown }[]>`select levelmeup.undo_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint) as r`).r;
-      }
-      if (event.type !== 'rate') throw new Error('lmu:unsupported_event'); // adjustments: Task 7
-      return one(await tx<{ r: unknown }[]>`
-        select levelmeup.rate_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint, ${event.rating}::text) as r`).r;
-    });
+    const result = isAdjust(event) ? await adjust(userId, event) : await play(userId, event);
     return { id: event.id, ok: true, result };
   } catch (error) {
     const code = lmuCode(error);
+    // Still busy after every try: the whole sync answers 503 and the phone sends the event again.
+    if (code === 'conflict') throw error;
     if (code !== null) return { id: event.id, ok: false, code };
     if (badData(error)) {
       // Logged: a server bug can look like bad data too, and the player's completion would otherwise vanish quietly.
@@ -55,6 +40,61 @@ async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
       return { id: event.id, ok: false, code: 'bad_payload' };
     }
     throw error;
+  }
+}
+
+/** A completion, undo or rating (M3). */
+function play(userId: string, event: PlayEvent): Promise<unknown> {
+  return db().begin(async (tx) => {
+    if (event.type === 'complete') {
+      await asPlayer(tx, userId);
+      const [row] = await tx<(Pick<InstanceRow, 'completion' | 'condition' | 'minutes'> & Pick<DayRow, 'starts_at' | 'ends_at'>)[]>`
+        select q.completion, q.condition, q.minutes, d.starts_at, d.ends_at
+        from levelmeup.quest_instances q join levelmeup.quest_days d on d.id = q.day_id
+        where q.id = ${event.instanceId}::bigint and q.user_id = ${userId}::uuid`;
+      await asService(tx);
+      if (row === undefined) throw new Error('lmu:not_found');
+      const checked = checkCompletionPayload(row, row, event.payload, Date.now());
+      if ('code' in checked) throw new Error(`lmu:${checked.code}`);
+      return one(await tx<{ r: unknown }[]>`select levelmeup.complete_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint,
+        ${new Date(event.completedAt)}::timestamptz, ${event.rating}::text, ${jsonParam(tx, checked.payload)}::jsonb) as r`).r;
+    }
+    if (event.type === 'undo') {
+      return one(await tx<{ r: unknown }[]>`select levelmeup.undo_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint) as r`).r;
+    }
+    return one(await tx<{ r: unknown }[]>`
+      select levelmeup.rate_quest(${userId}::uuid, ${event.id}::uuid, ${event.instanceId}::bigint, ${event.rating}::text) as r`).r;
+  });
+}
+
+/**
+ * An adjustment (M6b): planned by the rules from a fresh snapshot, then written by `levelmeup.adjust` at that snapshot's
+ * version; another write in between (`lmu:conflict`) means planning again. A repeat of an applied event skips the
+ * planning (the state has moved on since): `levelmeup.adjust` returns its stored result, or refuses the id reused.
+ */
+async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
+  const payload = adjustPayload(event);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await db().begin(async (tx) => {
+        const write = async (version: number, change: unknown): Promise<unknown> => one(await tx<{ r: unknown }[]>`
+          select levelmeup.adjust(${userId}::uuid, ${event.id}::uuid, ${version}::int, ${event.type}::text,
+            ${jsonParam(tx, payload)}::jsonb, ${jsonParam(tx, change)}::jsonb) as r`).r;
+        await asPlayer(tx, userId);
+        const seen = await tx`select 1 from levelmeup.events where user_id = ${userId}::uuid and client_event_id = ${event.id}::uuid`;
+        await asService(tx);
+        if (seen.length > 0) return write(-1, {});
+        const snapshot = await loadSnapshot(tx, userId);
+        if (snapshot === null) throw new Error('lmu:not_started');
+        // The database clock, the one levelmeup.adjust checks the day against.
+        const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
+        const plan = planAdjust(snapshot, event, { nowMs: now.getTime(), library: LIBRARY });
+        if ('code' in plan) throw new Error(`lmu:${plan.code}`);
+        return write(snapshot.character.version, plan.change);
+      });
+    } catch (error) {
+      if (lmuCode(error) !== 'conflict' || attempt >= MAX_TRIES) throw error;
+    }
   }
 }
 

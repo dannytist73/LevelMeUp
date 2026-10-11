@@ -1,5 +1,7 @@
 // The deployed functions on the live project (npm run test:live). Every player created here is deleted at the end.
 import { describe, expect, it } from 'vitest';
+import { LIBRARY } from '../../../packages/content/src/index.ts';
+import { painKey, templateById } from '../../../packages/rules/src/index.ts';
 import { ANON_KEY, ONBOARDING, call, eventId, newPlayer, signedIn, sync } from './helpers.ts';
 import type { Player } from './helpers.ts';
 
@@ -101,7 +103,7 @@ describe('a player from onboarding to a cleared quest', () => {
     const side1 = quest(state, 'side1');
     const side2 = quest(state, 'side2');
     const res = await sync(a, [
-      { id: eventId(), type: 'swap', instanceId: side1.id },
+      { id: eventId(), type: 'checkin', dayId: state.today.id },
       { id: eventId(), type: 'complete', instanceId: side1.id, completedAt: now(), payload: side1.completion === 'text' ? { text: 'Done.' } : { sets: [3] } },
       { id: eventId(), type: 'complete', instanceId: side2.id, completedAt: now(), payload: { sets: [], text: '' } },
       { id: eventId(), type: 'complete', instanceId: side2.id, completedAt: now() + 3_600_000, payload: {} },
@@ -176,5 +178,80 @@ describe('account deletion', () => {
     expect(await signedIn(f)).toBe(true);
     // Make it LevelMeUp's, so the clean-up at the end can remove it.
     expect((await call('lmu-onboarding', f.token, ONBOARDING)).status).toBe(201);
+  });
+});
+
+describe('adjusting the day (M6b)', () => {
+  let g: Player;
+  let state: any;
+  let hurt: any;
+  const openQuests = (s: any) => s.today.quests.filter((q: any) => q.completedAt === null && q.slot !== 'article');
+  const isExercise = (q: any) => templateById(LIBRARY, q.templateId).exercise !== null;
+  const total = (xp: Record<string, number>) => Object.values(xp).reduce((sum, x) => sum + x, 0);
+
+  it('day 1 comes with what the player may change', async () => {
+    g = await newPlayer();
+    const res = await call('lmu-onboarding', g.token, ONBOARDING);
+    expect(res.status).toBe(201);
+    state = res.body.state;
+    expect(state.today).toMatchObject({ swapsLeft: 1, restAllowed: true, hardDay: false, abilities: [] });
+    expect(state).toMatchObject({ paused: [], painReports: 0, profile: { classChangedAt: null } });
+    hurt = openQuests(state).find(isExercise);
+    expect(hurt).toBeDefined();
+  });
+
+  it('a swap replaces a quest in place, once a day', async () => {
+    const target = openQuests(state).find((q: any) => q.swaps.length > 0 && q.id !== hurt.id);
+    const to = target.swaps[0].templateId;
+    let res = await sync(g, [{ id: eventId(), type: 'swap', instanceId: target.id, templateId: to }]);
+    expect(res.body.results[0]).toMatchObject({ ok: true });
+    expect(quest(res.body.state, target.slot)).toMatchObject({ id: target.id, templateId: to });
+    expect(res.body.state.today.swapsLeft).toBe(0);
+    res = await sync(g, [{ id: eventId(), type: 'swap', instanceId: target.id, templateId: to }]);
+    expect(res.body.results[0]).toMatchObject({ ok: false, code: 'no_swaps_left' });
+    state = res.body.state;
+  });
+
+  it("a hard day lightens the open quests for less XP, once", async () => {
+    const before = quest(state, hurt.slot);
+    let res = await sync(g, [{ id: eventId(), type: 'hard_day', dayId: state.today.id }]);
+    expect(res.body.results[0]).toMatchObject({ ok: true });
+    const after = quest(res.body.state, hurt.slot);
+    expect(res.body.state.today.hardDay).toBe(true);
+    expect(after.hardDay).toBe(true);
+    expect(total(after.xp)).toBeLessThan(total(before.xp));
+    res = await sync(g, [{ id: eventId(), type: 'hard_day', dayId: state.today.id }]);
+    expect(res.body.results[0]).toMatchObject({ ok: false, code: 'already_hard_day' });
+    state = res.body.state;
+  });
+
+  it('"I felt pain": the exercise rests, today is protected, and the report counts', async () => {
+    const res = await sync(g, [{ id: eventId(), type: 'pain', instanceId: hurt.id, choice: 'rest' }]);
+    expect(res.body.results[0]).toMatchObject({ ok: true });
+    expect(res.body.state.today.protection).toBe('pain');
+    expect(res.body.state.paused).toEqual([painKey(templateById(LIBRARY, hurt.templateId))]);
+    expect(res.body.state.painReports).toBe(1);
+    const rest = await sync(g, [{ id: eventId(), type: 'plan_rest', dayId: state.today.id }]);
+    expect(rest.body.results[0]).toMatchObject({ ok: false, code: 'already_protected' });
+  });
+
+  it('the exercise comes back when the player says so', async () => {
+    const res = await sync(g, [{ id: eventId(), type: 'resume', ladderId: painKey(templateById(LIBRARY, hurt.templateId)) }]);
+    expect(res.body.results[0]).toMatchObject({ ok: true });
+    expect(res.body.state.paused).toEqual([]);
+  });
+
+  it('a class change keeps everything earned and then waits 14 days; a repeat changes nothing', async () => {
+    const change = { id: eventId(), type: 'class_change', classId: 'monk' };
+    const res = await sync(g, [change]);
+    expect(res.body.results[0]).toMatchObject({ ok: true });
+    expect(res.body.state.profile.classId).toBe('monk');
+    expect(res.body.state.profile.classChangedAt).not.toBeNull();
+    expect(res.body.state.character.totalXp).toBe(state.character.totalXp);
+    const again = await sync(g, [change, { id: eventId(), type: 'class_change', classId: 'mage' }]);
+    expect(again.body.results.map((r: any) => (r.ok ? 'ok' : r.code))).toEqual(['ok', 'class_locked']);
+    expect(again.body.results[0].result).toEqual(res.body.results[0].result);
+    const reused = await sync(g, [{ id: change.id, type: 'plan_rest', dayId: state.today.id }]);
+    expect(reused.body.results[0]).toMatchObject({ ok: false, code: 'event_reused' });
   });
 });

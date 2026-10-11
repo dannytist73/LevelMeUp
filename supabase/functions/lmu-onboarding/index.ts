@@ -3,7 +3,7 @@
 import type postgres from 'npm:postgres@3.4.9';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { REVEAL_MODEL, claudeConfigured, writeReveal } from '../_shared/claude.ts';
-import { db, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
+import { db, hasActed, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../_shared/onboarding.ts';
 import type { Choices, Reveal } from '../_shared/onboarding.ts';
@@ -45,6 +45,9 @@ Deno.serve(async (req) => {
   try {
     const existing = await db().begin((tx) => loadSnapshot(tx, player.userId));
     if (existing !== null && !redo) return problemResponse(problem(409, 'already_started'));
+    // Refused before any Claude call: a redo after the player has done anything would spend one of the three reveal
+    // calls on an answer restart_player refuses anyway (M5 review).
+    if (existing !== null && (await db().begin((tx) => hasActed(tx, player.userId)))) return problemResponse(problem(409, 'locked'));
     const words = await reveal(player.userId, choices);
     const snapshot = await db().begin(async (tx) => {
       const j = (value: unknown) => tx.json(value as postgres.JSONValue);

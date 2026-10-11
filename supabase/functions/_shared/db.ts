@@ -71,3 +71,16 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
     await asService(tx);
   }
 }
+
+/** The player has applied an event or earned XP, so the onboarding can't run again (restart_player's own check). */
+export async function hasActed(tx: Tx, userId: string): Promise<boolean> {
+  await asPlayer(tx, userId);
+  try {
+    const { acted } = one(await tx<{ acted: boolean }[]>`
+      select exists (select 1 from levelmeup.events where user_id = ${userId})
+        or exists (select 1 from levelmeup.xp_ledger where user_id = ${userId}) as acted`);
+    return acted;
+  } finally {
+    await asService(tx);
+  }
+}
