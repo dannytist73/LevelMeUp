@@ -12,6 +12,7 @@ describe('public API', () => {
     'draftQuest', 'questReward', 'swapOptions', 'applySwap', 'applyHardDay', 'restAllowed', 'applyStillness', 'applyDawnRitual',
     'addRecovery', 'checkProvisionalDay', 'meetsCriterion', 'newAchievements', 'campaignPacing',
     'campaignFailures',
+    'suggestedClass', 'onboardingEstimates', 'startingLadders', 'strengthClosed', 'boundaryFromSleep', 'suggestedPactLevel',
   ])('exports %s', (name) => {
     expect(typeof (rules as Record<string, unknown>)[name]).toBe('function');
   });
