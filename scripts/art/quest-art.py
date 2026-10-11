@@ -35,7 +35,7 @@ SUBJECTS = {
     "ladder-insight": "an adult woman writing in a notebook at a desk under a warm lamp",
     "ladder-focus": "an adult at a desk wearing headphones, deep in work, a small kitchen timer beside the laptop",
     "ladder-phone-free": "a smartphone left in an open drawer while its adult owner walks out of the door into the sunlight",
-    "micro-strength": "an adult doing wall push-ups in a small kitchen",
+    "micro-strength": "an adult in a t-shirt standing and leaning with both hands flat against a kitchen wall, doing wall push-ups",
     "micro-vitality": "an adult woman drinking a glass of water at a sunny window",
     "micro-wisdom": "an open book being read on a commuter train, two pages visible",
     "micro-focus": "a hand writing on a single small blank card at a tidy desk",
@@ -45,8 +45,14 @@ SUBJECTS = {
     "article": "an open book glowing softly on a wooden desk at night",
 }
 
-# Filled in after picking from the sheets: key -> the seeds to publish, in order (n = 1, 2, …).
-PICKS: dict[str, list[int]] = {}
+# Filled in after picking from the sheets: key -> the seeds to publish, in order (n = 1, 2, …). The v1 set (2026-10-11).
+PICKS: dict[str, list[int]] = {
+    "ladder-push": [33], "ladder-squat": [11], "ladder-core": [11], "ladder-own-program": [11], "ladder-walk": [33],
+    "ladder-mobility": [11], "ladder-sleep": [33], "ladder-breathing": [22], "ladder-reading": [22],
+    "ladder-insight": [33], "ladder-focus": [11], "ladder-phone-free": [11], "micro-strength": [55],
+    "micro-vitality": [33], "micro-wisdom": [33], "micro-focus": [11], "recovery": [22], "stillness": [22],
+    "dawn-ritual": [22], "article": [11],
+}
 
 
 def workflow(prompt: str, seed: int, prefix: str) -> dict:

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "art": {
+    "ladder-push": 1,
+    "ladder-squat": 1,
+    "ladder-core": 1,
+    "ladder-own-program": 1,
+    "ladder-walk": 1,
+    "ladder-mobility": 1,
+    "ladder-sleep": 1,
+    "ladder-breathing": 1,
+    "ladder-reading": 1,
+    "ladder-insight": 1,
+    "ladder-focus": 1,
+    "ladder-phone-free": 1,
+    "micro-strength": 1,
+    "micro-vitality": 1,
+    "micro-wisdom": 1,
+    "micro-focus": 1,
+    "recovery": 1,
+    "stillness": 1,
+    "dawn-ritual": 1,
+    "article": 1
+  }
+}
