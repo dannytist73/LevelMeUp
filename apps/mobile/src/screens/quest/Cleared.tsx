@@ -67,13 +67,14 @@ export function Cleared({ heading, line, numbers, rating, canUndo, waiting, onRa
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, paddingHorizontal: space.gutter, gap: 22 }}>
       <View style={{ alignItems: 'center', gap: 10, paddingTop: 18, paddingHorizontal: 44 }}>
         <SpeedLines />
-        <Label style={{ textAlign: 'center' }}>{heading}</Label>
+        {/* Inset on both sides so a long heading wraps clear of the XP stamp (emulator check, M6a). */}
+        <Label style={{ textAlign: 'center', paddingHorizontal: 40 }}>{heading}</Label>
         <Display style={{ transform: [{ rotate: '-4deg' }] }}>{C.title}</Display>
         <Small style={{ textAlign: 'center' }}>{line}</Small>
         <XpStamp xp={numbers.xp} size={86} rotate={12} style={{ position: 'absolute', top: -6, right: -4 }} />
       </View>
 
-      <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8, gap: 12 }}>
+      <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
         {numbers.statUps.map((up) => (
           <View key={up.stat} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: 2, borderColor: colors.ink }}>
             <View style={{ flex: 1, gap: 2 }}>
