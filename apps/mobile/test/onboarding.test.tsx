@@ -1,7 +1,7 @@
 import {
   CLASS_DAYS, GOAL_CHOICES, GOOGLE_ERRORS, ONBOARDING_TEXT, SAFETY_CHECK, SLIP_SUGGESTIONS, VOICE_SAMPLES, classStats, routineLine,
 } from '@levelmeup/content';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import { project } from '../src/game/project.ts';
 import { NEW_DRAFT, STEP_PATH } from '../src/onboarding/flow.ts';
@@ -13,8 +13,10 @@ import { GoalsStep } from '../src/screens/onboarding/GoalsStep.tsx';
 import { MindStep } from '../src/screens/onboarding/MindStep.tsx';
 import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
 import { RhythmStep } from '../src/screens/onboarding/RhythmStep.tsx';
+import { Save } from '../src/screens/onboarding/Save.tsx';
 import { SlipStep } from '../src/screens/onboarding/SlipStep.tsx';
 import { VoiceStep } from '../src/screens/onboarding/VoiceStep.tsx';
+import { Vow } from '../src/screens/onboarding/Vow.tsx';
 import type { GameState } from '../src/state/store.ts';
 import { READY_DRAFT, REVEAL, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -200,5 +202,50 @@ describe('Character reveal (O08)', () => {
     await show(<Reveal onAccept={onAccept} onFix={() => {}} />, READY_DRAFT, revealed());
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.accept }));
     expect(onAccept).toHaveBeenCalled();
+  });
+});
+
+describe('The vow (O09)', () => {
+  it('swears the words, after a screen reader\'s tap-then-confirm or a hold, and keeps them on the phone', async () => {
+    const onDone = jest.fn();
+    const store = await show(<Vow onDone={onDone} screenReader />, READY_DRAFT, { phase: 'ready' });
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.edit }));
+    await fireEvent.changeText(screen.getByLabelText(ONBOARDING_TEXT.vow.edit), 'I will rise.');
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.tap }));
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.confirm }));
+    expect(store.getState().saveVow).toHaveBeenCalledWith('I will rise.');
+    await fireEvent.press(await screen.findByRole('button', { name: ONBOARDING_TEXT.vow.next }));
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('can be skipped, and nothing is kept', async () => {
+    const onDone = jest.fn();
+    const store = await show(<Vow onDone={onDone} screenReader />, READY_DRAFT, { phase: 'ready' });
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.skip }));
+    expect(onDone).toHaveBeenCalled();
+    expect(store.getState().saveVow).not.toHaveBeenCalled();
+  });
+});
+
+describe('Save your character (O10)', () => {
+  it('links Google, then begins Day 1', async () => {
+    const onBegin = jest.fn();
+    const saveWithGoogle = jest.fn(async () => ({ ok: true as const }));
+    const store = await show(<Save onBegin={onBegin} />, READY_DRAFT, { phase: 'ready', saveWithGoogle });
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.save.google }));
+    expect(saveWithGoogle).toHaveBeenCalled();
+    await act(async () => store.setState({ account: { kind: 'saved', email: 'rin@example.com' } }));
+    await fireEvent.press(await screen.findByRole('button', { name: ONBOARDING_TEXT.save.begin }));
+    expect(store.getState().finishOnboarding).toHaveBeenCalled();
+    expect(onBegin).toHaveBeenCalled();
+  });
+
+  it('a failed link says so plainly and keeps everything; "Not now" begins Day 1 as a guest', async () => {
+    const onBegin = jest.fn();
+    await show(<Save onBegin={onBegin} />, READY_DRAFT, { phase: 'ready', saveWithGoogle: jest.fn(async () => ({ ok: false as const, code: 'taken' as const })) });
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.save.google }));
+    expect(screen.getByText(GOOGLE_ERRORS.taken)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.save.later }));
+    expect(onBegin).toHaveBeenCalled();
   });
 });

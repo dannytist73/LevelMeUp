@@ -1,3 +1,4 @@
+import { GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
@@ -174,6 +175,23 @@ describe('Settings', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
     expect(onBack).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Developer' })).toBeTruthy();
+  });
+
+  it('offers a guest to save with Google, and shows a saved account', async () => {
+    const saveWithGoogle = jest.fn(async () => ({ ok: false as const, code: 'cancelled' as const }));
+    const store = testStore({ account: { kind: 'guest' }, saveWithGoogle });
+    await render(withStore(store, <Settings onBack={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save with Google' }));
+    expect(saveWithGoogle).toHaveBeenCalled();
+    expect(screen.getByText(GOOGLE_ERRORS.cancelled)).toBeTruthy();
+  });
+
+  it('shows the Google account a character is saved with', async () => {
+    const store = testStore({ account: { kind: 'saved', email: 'rin@example.com' } });
+    await render(withStore(store, <Settings onBack={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
+    expect(screen.getByText('Saved with Google.')).toBeTruthy();
+    expect(screen.getByText('rin@example.com')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Save with Google' })).toBeNull();
   });
 
   it('shows a refused sync as plain text, never hides the outbox', async () => {

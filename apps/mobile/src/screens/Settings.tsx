@@ -1,5 +1,7 @@
-// Settings (spec §1.3, S1 board), M4's version: the guest account line, sync status, the not-medical-advice line and the
-// version. Game settings, notifications, the Pact, saving the character and deletion arrive in M5–M7.
+// Settings (spec §1.3, S1 board): the account (a guest, or saved with Google since M5), sync status, the
+// not-medical-advice line and the version. Game settings, notifications, the Pact and deletion arrive in M6–M7.
+import { GOOGLE_ERRORS } from '@levelmeup/content';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
@@ -14,6 +16,17 @@ import { lastSynced, syncMark } from './syncLine.ts';
 export type SettingsProps = { onBack: () => void; onDeveloper?: () => void; version: string; deviceZone: string };
 
 export function Settings({ onBack, onDeveloper, version, deviceZone }: SettingsProps) {
+  const account = useGame((s) => s.account);
+  const saveWithGoogle = useGame((s) => s.saveWithGoogle);
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const save = async () => {
+    setSaving(true);
+    setNote(null);
+    const result = await saveWithGoogle();
+    setSaving(false);
+    if (!result.ok) setNote(GOOGLE_ERRORS[result.code]);
+  };
   const insets = useSafeAreaInsets();
   const lastSyncedAt = useGame((s) => s.lastSyncedAt);
   const waiting = useGame((s) => s.pending.length);
@@ -40,8 +53,20 @@ export function Settings({ onBack, onDeveloper, version, deviceZone }: SettingsP
       <View style={{ gap: 12 }}>
         <SectionTitle title="Account" />
         <NightCard>
-          <Body weight="bold">Playing as a guest.</Body>
-          <Small>Your character lives on the server under a guest sign-in on this phone.</Small>
+          {account.kind === 'saved' ? (
+            <>
+              <Body weight="bold">Saved with Google.</Body>
+              {account.email !== null && <Small>{account.email}</Small>}
+              <Small>A new phone can sign in with Google and pick up where you left off.</Small>
+            </>
+          ) : (
+            <>
+              <Body weight="bold">Playing as a guest.</Body>
+              <Small>For now, only this phone can reach your character. Save it with Google so a new or lost phone costs you nothing.</Small>
+              <Button label="Save with Google" variant="secondary" disabled={saving || account.kind !== 'guest'} onPress={() => void save()} />
+              {note !== null && <Small>{note}</Small>}
+            </>
+          )}
         </NightCard>
       </View>
 
