@@ -82,6 +82,13 @@ describe('migrations stay inside the levelmeup schema (architecture §12)', () =
     for (const match of code.matchAll(/\bcreate\s+role\s+(\S+)/gi)) expect(['lmu_service', 'lmu_player']).toContain(match[1]);
   });
 
+  it.each(MIGRATIONS)('$name touches storage only to add a LevelMeUp bucket, never changing an existing one', ({ sql }) => {
+    for (const statement of topLevelStatements(sql).filter((s) => /\bstorage\s*\./i.test(s))) {
+      expect(statement).toMatch(/^insert\s+into\s+storage\.buckets\b[\s\S]*\bvalues\s*\(\s*'lmu-[a-z0-9-]+'/i);
+      expect(statement).toMatch(/\bon\s+conflict\s*\(\s*id\s*\)\s+do\s+nothing$/i);
+    }
+  });
+
   it.each(MIGRATIONS)('$name pins the search path of every security definer function', ({ sql }) => {
     const code = stripComments(sql);
     for (const fn of code.match(/create\s+(?:or\s+replace\s+)?function[\s\S]*?\$([A-Za-z_]*)\$[\s\S]*?\$\1\$[^;]*;/gi) ?? []) {

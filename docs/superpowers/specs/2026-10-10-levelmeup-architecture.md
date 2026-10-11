@@ -276,6 +276,7 @@ is needed. What the two apps share, and how LevelMeUp stays out of the wedding's
 | Edge Functions | All names prefixed `lmu-` (`lmu-sync`, `lmu-onboarding`, `lmu-account-delete`, `lmu-articles-tick`), deployed by name. |
 | Secrets | Prefixed `LMU_` (e.g. `LMU_ANTHROPIC_API_KEY`, `LMU_DB_URL`). |
 | Cron | One job, `lmu-articles-tick`. |
+| Storage | One public bucket, `lmu-art` (migration 0007, M6a): the quest pictures (WebP, at most 1 MB each) and their `manifest.json`. The app reads public URLs only; the owner uploads in the dashboard. No storage policy is added, so nothing else in storage changes. |
 | Auth | Shared user list and settings; three additive changes (§4.4), each confirmed when needed. A player signing in with an email that is also a wedding admin's would be the same account; harmless, because wedding admin rights come only from `admin_emails`. |
 | Compute | Shared Micro instance. Pilot traffic is tiny. On the wedding day (30 Jan 2027), `/live` and `/wall` take priority; the article job can be paused that day if needed. |
 | Backups | The Pro plan's daily backups cover both schemas. |
