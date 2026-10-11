@@ -1,7 +1,8 @@
 // O05 Rhythm and effort (spec §1.1 beats 5–6, merged on the board): wake and sleep set the day boundary; minutes and
 // difficulty set the days. An own-program player at 10 or 15 minutes is told strength quests won't fit (M2 review).
+// M6c: and a player at 10 or 15 minutes that workouts need 25.
 import { DIFFICULTY_CHOICES, LIBRARY, ONBOARDING_TEXT, boundaryLine } from '@levelmeup/content';
-import { MINUTES_OPTIONS, strengthClosed } from '@levelmeup/rules';
+import { MINUTES_OPTIONS, strengthClosed, workoutsFit } from '@levelmeup/rules';
 import type { Difficulty } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { clockLabel } from '../../lib/dates.ts';
@@ -21,6 +22,7 @@ export function RhythmStep({ onNavigate }: StepProps) {
   const draft = useGame((s) => s.draft);
   const editDraft = useGame((s) => s.editDraft);
   const noStrength = draft.training === 'own' && !gentleStart(draft) && strengthClosed(LIBRARY, draftProfile(draft));
+  const noWorkouts = draft.training !== 'own' && !gentleStart(draft) && !workoutsFit(LIBRARY, draftProfile(draft));
   return (
     <QuestionFrame step="rhythm" line={T.line} canContinue={complete(draft, 'rhythm')} onContinue={() => onNavigate(nextPath(draft, 'rhythm'))}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
@@ -41,6 +43,11 @@ export function RhythmStep({ onNavigate }: StepProps) {
         {noStrength && (
           <NightCard>
             <Small tone="chalk">{T.ownProgram}</Small>
+          </NightCard>
+        )}
+        {noWorkouts && (
+          <NightCard>
+            <Small tone="chalk">{T.workouts}</Small>
           </NightCard>
         )}
       </View>

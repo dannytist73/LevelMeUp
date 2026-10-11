@@ -4,21 +4,21 @@ import { parseOnboarding } from '../../../supabase/functions/_shared/onboarding.
 import { clockLabel } from '../src/lib/dates.ts';
 import {
   ANALYSIS_PATH, NEW_DRAFT, STEP_PATH, boundaryOf, complete, draftProfile, gentleStart, nextPath, persistable, restoreDraft,
-  stepsFor, toRequest, toggleGoal, toggleLimit,
+  stepsFor, toRequest, toggleEquipment, toggleGoal, toggleLimit,
 } from '../src/onboarding/flow.ts';
 import type { Draft } from '../src/onboarding/flow.ts';
 import { READY_DRAFT as READY } from './support/fixtures.ts';
 
 describe('the interview\'s screens', () => {
   it('asks the mind screen only for the Learn or Focus goal', () => {
-    expect(stepsFor(READY)).toEqual(['awakening', 'voice', 'goals', 'body', 'rhythm', 'slip']);
+    expect(stepsFor(READY)).toEqual(['awakening', 'voice', 'goals', 'body', 'gear', 'rhythm', 'slip']);
     expect(stepsFor({ ...READY, goals: ['body', 'learn'] })).toContain('mind');
     expect(stepsFor({ ...READY, goals: ['focus'] })).toContain('mind');
   });
 
   it('goes to the next screen this player sees, then to the analysis', () => {
-    expect(nextPath(READY, 'body')).toBe(STEP_PATH.rhythm);
-    expect(nextPath({ ...READY, goals: ['learn'] }, 'body')).toBe(STEP_PATH.mind);
+    expect(nextPath(READY, 'body')).toBe(STEP_PATH.gear);
+    expect(nextPath({ ...READY, goals: ['learn'] }, 'gear')).toBe(STEP_PATH.mind);
     expect(nextPath(READY, 'slip')).toBe(ANALYSIS_PATH);
   });
 
@@ -101,4 +101,40 @@ describe('clock labels', () => {
   it.each([[0, '12:00 AM'], [30, '12:30 AM'], [7 * 60, '7:00 AM'], [12 * 60, '12:00 PM'], [23 * 60 + 30, '11:30 PM']])(
     '%d → %s', (minutes, label) => expect(clockLabel(minutes)).toBe(label),
   );
+});
+
+describe('the Training step (M6c decision 2)', () => {
+  it('follows Body when strength work is possible; never for an own plan or a gentle start', () => {
+    expect(stepsFor(READY)).toEqual(['awakening', 'voice', 'goals', 'body', 'gear', 'rhythm', 'slip']);
+    expect(nextPath(READY, 'body')).toBe(STEP_PATH.gear);
+    expect(stepsFor({ ...READY, training: 'own' })).not.toContain('gear');
+    expect(stepsFor({ ...READY, safety: READY.safety.map((_, i) => i === 0) })).not.toContain('gear');
+  });
+
+  it('needs a program, and equipment or "Just my body"', () => {
+    expect(complete({ ...READY, programStyle: null }, 'gear')).toBe(false);
+    expect(complete({ ...READY, equipment: [], noEquipment: false }, 'gear')).toBe(false);
+    expect(complete({ ...READY, equipment: ['bands'], noEquipment: false, programStyle: 'women' }, 'gear')).toBe(true);
+    expect(complete({ ...READY, programStyle: 'men' }, 'gear')).toBe(true);
+  });
+
+  it('"Just my body" and equipment exclude each other', () => {
+    expect(toggleEquipment({ ...READY, equipment: ['bands'], noEquipment: false }, 'nothing')).toEqual({ equipment: [], noEquipment: true });
+    expect(toggleEquipment(READY, 'gym')).toEqual({ equipment: ['gym'], noEquipment: false });
+    expect(toggleEquipment({ ...READY, equipment: ['gym'], noEquipment: false }, 'gym')).toEqual({ equipment: [], noEquipment: false });
+  });
+
+  it('sends the setup, or the defaults when the step was skipped; the server accepts both', () => {
+    const asked = toRequest({ ...READY, equipment: ['dumbbells'], noEquipment: false, programStyle: 'women' }, 'Asia/Manila', false);
+    expect(asked).toMatchObject({ equipment: ['dumbbells'], programStyle: 'women' });
+    const own = toRequest({ ...READY, training: 'own', equipment: ['gym'], programStyle: 'men' }, 'Asia/Manila', false);
+    expect(own).toMatchObject({ equipment: [], programStyle: 'none' });
+    expect(isProblem(parseOnboarding(asked))).toBe(false);
+    expect(isProblem(parseOnboarding(own))).toBe(false);
+  });
+
+  it('a draft saved before M6c comes back with the Training step unanswered', () => {
+    const old = JSON.stringify({ ...READY, equipment: undefined, noEquipment: undefined, programStyle: undefined });
+    expect(restoreDraft(old)).toMatchObject({ equipment: [], noEquipment: false, programStyle: null });
+  });
 });

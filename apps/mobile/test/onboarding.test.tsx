@@ -1,5 +1,6 @@
 import {
-  CLASS_DAYS, GOAL_CHOICES, GOOGLE_ERRORS, ONBOARDING_TEXT, SAFETY_CHECK, SLIP_SUGGESTIONS, VOICE_SAMPLES, classStats, routineLine,
+  CLASS_DAYS, EQUIPMENT_NAMES, GOAL_CHOICES, GOOGLE_ERRORS, ONBOARDING_TEXT, PROGRAM_STYLE_CHOICES, SAFETY_CHECK, SLIP_SUGGESTIONS,
+  VOICE_SAMPLES, classStats, routineLine,
 } from '@levelmeup/content';
 import { CLASSES } from '@levelmeup/rules';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -10,6 +11,7 @@ import type { Draft } from '../src/onboarding/flow.ts';
 import { Analysis } from '../src/screens/onboarding/Analysis.tsx';
 import { Awakening } from '../src/screens/onboarding/Awakening.tsx';
 import { BodyStep } from '../src/screens/onboarding/BodyStep.tsx';
+import { GearStep } from '../src/screens/onboarding/GearStep.tsx';
 import { GoalsStep } from '../src/screens/onboarding/GoalsStep.tsx';
 import { MindStep } from '../src/screens/onboarding/MindStep.tsx';
 import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
@@ -140,6 +142,13 @@ describe('Mind', () => {
 });
 
 describe('Rhythm and effort (O05)', () => {
+  it('says when workouts won\'t fit: 10 or 15 minutes a day', async () => {
+    await show(<RhythmStep onNavigate={() => {}} />, { ...READY_DRAFT, minutesPerDay: 15 });
+    expect(screen.getByText(ONBOARDING_TEXT.rhythm.workouts)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: '25 minutes a day' }));
+    expect(screen.queryByText(ONBOARDING_TEXT.rhythm.workouts)).toBeNull();
+  });
+
   it('shows where the quest day turns over', async () => {
     await show(<RhythmStep onNavigate={() => {}} />, READY_DRAFT);
     expect(screen.getByText("Your quest day turns over at 4:00 AM, while you're asleep.")).toBeTruthy();
@@ -273,5 +282,19 @@ describe('Save your character (O10)', () => {
     expect(screen.getByText(GOOGLE_ERRORS.taken)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.save.later }));
     expect(onBegin).toHaveBeenCalled();
+  });
+});
+
+describe('Training (M6c)', () => {
+  it('waits for the equipment and a program, then goes on to Rhythm', async () => {
+    const onNavigate = jest.fn();
+    await show(<GearStep onNavigate={onNavigate} />, { ...READY_DRAFT, equipment: [], noEquipment: false, programStyle: null });
+    for (const name of Object.values(EQUIPMENT_NAMES)) expect(screen.getByRole('checkbox', { name })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('checkbox', { name: EQUIPMENT_NAMES.dumbbells }));
+    expect(continueButton().props.accessibilityState).toMatchObject({ disabled: true });
+    const women = PROGRAM_STYLE_CHOICES.women;
+    await fireEvent.press(screen.getByRole('radio', { name: `${women.name}. ${women.line}` }));
+    await fireEvent.press(continueButton());
+    expect(onNavigate).toHaveBeenCalledWith(STEP_PATH.rhythm);
   });
 });

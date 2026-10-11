@@ -58,6 +58,7 @@ export const rateEvent = (instanceId: number, rating: 'easy' | 'right' | 'too_ha
 /** A finished interview: Rin, mentor voice, a stronger body, trains now and then, no limits, no safety flags. */
 export const READY_DRAFT: Draft = {
   ...NEW_DRAFT, name: 'Rin', voice: 'mentor', goals: ['body'], training: 'some', noLimits: true,
+  equipment: [], noEquipment: true, programStyle: 'none',
   safety: Array<boolean>(SAFETY_QUESTIONS).fill(false), slip: 'stakes',
 };
 
