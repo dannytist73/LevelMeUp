@@ -34,7 +34,7 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: WALK_SAFETY,
     voice: {
       mentor: { title: 'A short walk', line: 'Five easy minutes. Fresh air if you can get it.' },
-      system: { title: 'Walk 5 minutes', line: 'Walk ladder, first rung. Five minutes, easy pace.' },
+      system: { title: 'Walk', line: 'Walk ladder, first rung. Five minutes, easy pace.' },
       questmaster: { title: 'The first march', line: 'Five minutes on your feet. Every long road starts with these.' },
     },
   },
@@ -57,9 +57,9 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Walk at an easy pace for 10 minutes, indoors or out.', 'Tap done when you finish.'],
     safety: WALK_SAFETY,
     voice: {
-      mentor: { title: 'Ten-minute walk', line: 'Ten minutes of easy walking. Notice how you feel afterward.' },
-      system: { title: 'Walk 10 minutes', line: 'Walk ladder. Ten minutes, easy pace.' },
-      questmaster: { title: 'March of ten', line: 'Ten minutes of steady marching. Let the road wake you.' },
+      mentor: { title: 'An easy walk', line: 'Ten minutes of easy walking. Notice how you feel afterward.' },
+      system: { title: 'Walk', line: 'Walk ladder. Ten minutes, easy pace.' },
+      questmaster: { title: 'The steady march', line: 'Ten minutes of steady marching. Let the road wake you.' },
     },
   },
   {
@@ -81,9 +81,9 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Walk at a comfortable pace for 15 minutes, indoors or out.', 'Tap done when you finish.'],
     safety: WALK_SAFETY,
     voice: {
-      mentor: { title: 'Fifteen-minute walk', line: 'A quarter of an hour on your feet. Pick a route you like.' },
-      system: { title: 'Walk 15 minutes', line: 'Walk ladder. Fifteen minutes.' },
-      questmaster: { title: 'March of fifteen', line: 'Fifteen minutes of road beneath your feet. Keep moving.' },
+      mentor: { title: 'A longer walk', line: 'A quarter of an hour on your feet. Pick a route you like.' },
+      system: { title: 'Walk', line: 'Walk ladder. Fifteen minutes.' },
+      questmaster: { title: 'The open road', line: 'Fifteen minutes of road beneath your feet. Keep moving.' },
     },
   },
   {
@@ -105,8 +105,8 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Walk at a steady pace for 20 minutes, indoors or out.', 'Tap done when you finish.'],
     safety: WALK_SAFETY,
     voice: {
-      mentor: { title: 'Twenty-minute walk', line: 'Twenty minutes. A good length to clear your head.' },
-      system: { title: 'Walk 20 minutes', line: 'Walk ladder. Twenty minutes.' },
+      mentor: { title: 'A good long walk', line: 'Twenty minutes. A good length to clear your head.' },
+      system: { title: 'Walk', line: 'Walk ladder. Twenty minutes.' },
       questmaster: { title: 'The long march', line: 'Twenty minutes on the road. Walk it with purpose.' },
     },
   },
@@ -134,7 +134,7 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: BRISK_SAFETY,
     voice: {
       mentor: { title: 'Brisk walk', line: 'Pick up the pace a little. You should feel warm but still able to chat.' },
-      system: { title: 'Brisk walk 25 minutes', line: 'Walk ladder. Twenty-five minutes, brisk pace.' },
+      system: { title: 'Brisk walk', line: 'Walk ladder. Twenty-five minutes, brisk pace.' },
       questmaster: { title: "The hunter's pace", line: "Twenty-five minutes at a hunter's pace. Warm, steady, unbroken." },
     },
   },
@@ -162,7 +162,7 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: BRISK_SAFETY,
     voice: {
       mentor: { title: 'Brisk walk', line: 'Half an hour of brisk walking. A full training session on your own two feet.' },
-      system: { title: 'Brisk walk 30 minutes', line: 'Walk ladder, top rung. Thirty minutes, brisk pace.' },
+      system: { title: 'Brisk walk', line: 'Walk ladder, top rung. Thirty minutes, brisk pace.' },
       questmaster: { title: 'The great march', line: "Thirty minutes at a hunter's pace. The road is yours." },
     },
   },
@@ -472,7 +472,7 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     voice: {
       mentor: { title: 'Box breathing', line: 'Two minutes of slow, even breaths. A reset you can do anywhere.' },
       system: { title: 'Box breathing', line: 'Breathing ladder, first rung. Two minutes, counts of four.' },
-      questmaster: { title: 'The four gates', line: 'In, hold, out, hold. Pass the four gates until the timer falls silent.' },
+      questmaster: { title: 'The gates of breath', line: 'In, hold, out, hold. Pass the four gates until the timer falls silent.' },
     },
   },
   {
@@ -500,7 +500,7 @@ export const VITALITY_TEMPLATES: readonly AuthoredTemplate[] = [
     voice: {
       mentor: { title: 'Box breathing', line: 'A little longer: three minutes of even, steady breaths.' },
       system: { title: 'Box breathing', line: 'Breathing ladder. Three minutes, counts of four.' },
-      questmaster: { title: 'The four gates', line: 'Walk the four gates for three minutes. Let your mind go quiet.' },
+      questmaster: { title: 'The gates of breath', line: 'Walk the four gates for three minutes. Let your mind go quiet.' },
     },
   },
   {

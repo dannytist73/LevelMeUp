@@ -111,7 +111,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, now =
                   timeZone={today!.timeZone}
                   waiting={view!.waiting.has(q.id)}
                   onOpen={() => onOpenQuest(q.id)}
-                  artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId)), q.id) : null}
+                  artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId), q.condition), q.id) : null}
                   onPain={q.slot === 'core' && q.completedAt === null && isExercise(q) ? () => onPain(q.id) : undefined}
                   resting={q.completedAt === null && isResting(q, view!.paused)}
                 />

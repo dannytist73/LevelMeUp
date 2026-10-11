@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { EQUIPMENT, LIMITATIONS, MOVE_PATTERNS, MOVE_SLOTS, PROGRAM_STYLES } from '../../rules/src/index.ts';
+import { EQUIPMENT, LIMITATIONS, MOVE_PATTERNS, MOVE_SLOTS, PROGRAM_STYLES, hasEquipment, planWorkout } from '../../rules/src/index.ts';
+import type { Equipment, PlayerProfile } from '../../rules/src/index.ts';
+import { LIBRARY } from '../src/library.ts';
 import { lintText } from '../src/lint.ts';
 import { MOVES, authoredMove, progressLine } from '../src/training/moves.ts';
+import { WORKOUT_TEMPLATES } from '../src/quests/workout.ts';
 import { PROGRAMS } from '../src/training/programs.ts';
 
 describe('the exercise library (M6c decision 3)', () => {
@@ -67,5 +70,55 @@ describe('the programs (decision 4)', () => {
     for (const style of PROGRAM_STYLES) {
       for (const slot of PROGRAMS[style].flat()) expect(MOVES.some((m) => m.slots.includes(slot)), slot).toBe(true);
     }
+  });
+});
+
+const player = (over: Partial<PlayerProfile> = {}): PlayerProfile => ({
+  classId: 'warrior', level: 5, goals: ['body'], minutesPerDay: 40, difficulty: 'steady', limitations: [], gentleStart: false,
+  ownProgram: false, equipment: [], programStyle: 'none', stats: { strength: 7, vitality: 5, wisdom: 5, focus: 5 }, book: null, ...over,
+});
+const SETUPS: Equipment[][] = [[], ['bands'], ['dumbbells'], ['dumbbells', 'bench'], ['pullup_bar'], ['bands', 'dumbbells', 'bench', 'pullup_bar'], ['gym']];
+
+describe('every setup gets its workouts (decision 5)', () => {
+  it('plans every rung of every program for every equipment set, in full, within the equipment and level', () => {
+    for (const equipment of SETUPS) {
+      for (const programStyle of PROGRAM_STYLES) {
+        for (const template of WORKOUT_TEMPLATES) {
+          if (template.condition.kind !== 'workout') throw new Error(template.id);
+          for (let done = 0; done < 3; done++) {
+            const label = `${equipment.join('+') || 'body'} ${programStyle} ${template.id} day ${done}`;
+            const plan = planWorkout(LIBRARY.training, template, player({ equipment, programStyle }), done);
+            expect(plan, label).not.toBeNull();
+            expect(plan!.length, label).toBe(template.condition.sets.length);
+            expect(new Set(plan!.map((m) => m.move)).size, label).toBe(plan!.length);
+            for (const m of plan!) {
+              const move = authoredMove(m.move);
+              expect(hasEquipment(move, equipment), `${label}: ${m.move}`).toBe(true);
+              expect(move.level, `${label}: ${m.move}`).toBeLessThanOrEqual(template.condition.level);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('never plans an exercise a reported limit rules out; with every limit, a plan has 2 exercises or none', () => {
+    for (const limitations of [['knee'], ['back'], ['shoulder'], ['wrist'], ['knee', 'back', 'shoulder', 'wrist']] as const) {
+      for (const equipment of SETUPS) {
+        for (const template of WORKOUT_TEMPLATES) {
+          const plan = planWorkout(LIBRARY.training, template, player({ equipment, limitations: [...limitations] }), 0);
+          if (plan === null) continue;
+          expect(plan.length).toBeGreaterThanOrEqual(2);
+          for (const m of plan) for (const tag of authoredMove(m.move).contraindications) expect(limitations).not.toContain(tag);
+        }
+      }
+    }
+  });
+
+  it('climbs: bodyweight push-ups from the wall to the floor; a gym from machines to dumbbells to barbells', () => {
+    const first = (level: number, equipment: Equipment[], style: 'none' | 'men' = 'none', done = 0) =>
+      planWorkout(LIBRARY.training, WORKOUT_TEMPLATES[level - 1]!, player({ equipment, programStyle: style }), done)![0]!.move;
+    expect([1, 2, 3].map((l) => first(l, []))).toEqual(['wall-push-up', 'incline-push-up', 'push-up']);
+    expect([1, 2, 3].map((l) => first(l, ['gym'], 'men', 1))).toEqual(['leg-press', 'db-split-squat', 'barbell-squat']);
   });
 });

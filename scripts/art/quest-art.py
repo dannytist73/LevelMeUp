@@ -43,6 +43,21 @@ SUBJECTS = {
     "stillness": "a calm lake at dusk, an adult sitting quietly at the end of a wooden jetty",
     "dawn-ritual": "an adult opening curtains onto a sunrise over city rooftops",
     "article": "an open book glowing softly on a wooden desk at night",
+    # M6c: rungs with their own exercise, and the workout exercise families.
+    "push-wall": "an adult man doing push-ups against a wall in a bright hallway, body in one straight line",
+    "push-incline": "an adult woman doing incline push-ups with her hands on a sturdy kitchen counter",
+    "push-knee": "an adult doing push-ups from the knees on a yoga mat in a living room",
+    "squat-chair": "side view, an adult lowering into a squat to lightly touch a wooden chair behind them, arms forward",
+    "squat-split": "an adult doing a split squat in a park, one foot forward, the back knee lowering toward the grass",
+    "core-dead-bug": "an adult lying on their back on a mat, knees bent above the hips, one arm and the opposite leg reaching out",
+    "core-side-plank": "an adult holding a side plank on one forearm on a mat at a beach at sunrise, body straight",
+    "move-push": "an adult pressing a pair of dumbbells up from a flat bench in a small home gym",
+    "move-press": "an adult woman pressing two dumbbells overhead, standing tall in a garage gym",
+    "move-pull": "an adult doing a one-arm dumbbell row with one knee and hand on a bench",
+    "move-squat": "an adult doing a goblet squat, holding one dumbbell against the chest, in a gym",
+    "move-hinge": "an adult doing a Romanian deadlift with dumbbells, back flat and hips pushed back",
+    "move-core": "an adult doing hanging knee raises from a pull-up bar in a doorway",
+    "move-isolation": "an adult doing dumbbell curls in front of a gym mirror",
 }
 
 # Filled in after picking from the sheets: key -> the seeds to publish, in order (n = 1, 2, …). The v2 set (2026-10-11).

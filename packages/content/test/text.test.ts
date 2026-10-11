@@ -6,6 +6,12 @@ import { VOICES } from '../src/types.ts';
 const bangs = (text: string): number => text.split('!').length - 1;
 
 describe.each(TEMPLATES.map((t) => [t.id, t] as const))('%s words', (_id, t) => {
+  it('names no number in its titles when its hard-day version differs (M6b carried item)', () => {
+    if (JSON.stringify(t.hardDay) === JSON.stringify({ minutes: t.minutes, condition: t.condition })) return;
+    const number = /\d|\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|hundred)\b/i;
+    for (const voice of VOICES) expect(t.voice[voice].title, voice).not.toMatch(number);
+  });
+
   it('has a plain name, 1–5 short steps, and safety notes on exercise', () => {
     expect(t.name.length).toBeGreaterThan(0);
     expect(t.name.length).toBeLessThanOrEqual(40);

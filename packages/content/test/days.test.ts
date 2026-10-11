@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { CLASSES, buildDay, newLadder } from '../../rules/src/index.ts';
-import type { BuiltDay, ClassId, Goal, LadderState, Limitation, PastDay, PlayerProfile } from '../../rules/src/index.ts';
+import { CLASSES, PROGRAM_STYLES, buildDay, newLadder } from '../../rules/src/index.ts';
+import type { BuiltDay, ClassId, Equipment, Goal, LadderState, Limitation, PastDay, PlayerProfile } from '../../rules/src/index.ts';
 import { authoredTemplate, LADDERS, LIBRARY } from '../src/library.ts';
 import { lintText } from '../src/lint.ts';
+import { authoredMove } from '../src/training/moves.ts';
 import { VOICES } from '../src/types.ts';
 import { renderWhy } from '../src/why.ts';
 
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
 const GOAL_SETS: Goal[][] = [['body', 'energy'], ['learn', 'focus'], ['routine'], ['focus', 'routine']];
 const LIMITS: Limitation[][] = [[], ['knee', 'back'], ['wrist', 'shoulder'], ['knee', 'back', 'shoulder', 'wrist']];
+const EQUIPMENT_SETS: Equipment[][] = [[], ['bands'], ['dumbbells', 'bench'], ['pullup_bar'], ['gym']];
 const STRENGTH_LADDERS = new Set(LADDERS.filter((l) => l.stat === 'strength').map((l) => l.id));
 
 function statsFor(classId: ClassId): PlayerProfile['stats'] {
@@ -23,7 +25,9 @@ function profiles(): PlayerProfile[] {
         for (const gentleStart of [false, true])
           for (const ownProgram of [false, true])
             for (const goals of GOAL_SETS)
-              all.push({ classId, level: 12, goals, minutesPerDay, difficulty: 'steady', limitations, gentleStart, ownProgram, equipment: [], programStyle: 'none', stats: statsFor(classId), book: 'A book' });
+              all.push({ classId, level: 12, goals, minutesPerDay, difficulty: 'steady', limitations, gentleStart, ownProgram,
+                equipment: EQUIPMENT_SETS[all.length % EQUIPMENT_SETS.length]!, programStyle: PROGRAM_STYLES[all.length % 3]!,
+                stats: statsFor(classId), book: 'A book' });
   return all;
 }
 
@@ -33,7 +37,7 @@ function play(profile: PlayerProfile, days: number, rung: number): Array<{ day: 
   const history: PastDay[] = [];
   const played: Array<{ day: BuiltDay; yesterday: BuiltDay | null }> = [];
   for (let dayNumber = 1; dayNumber <= days; dayNumber++) {
-    const day = buildDay(LIBRARY, { dayNumber, profile, ladders, history: history.slice(-7), light: false, workoutsDone: 0, articleId: 'a' });
+    const day = buildDay(LIBRARY, { dayNumber, profile, ladders, history: history.slice(-7), light: false, workoutsDone: dayNumber - 1, articleId: 'a' });
     played.push({ day, yesterday: played.at(-1)?.day ?? null });
     history.push({ dayNumber, quests: Object.fromEntries(day.quests.map((q) => [q.slot, q.templateId])) });
   }
@@ -68,6 +72,11 @@ describe('days built from the real library (spec §5 "Days and quests")', () => 
         for (const q of day.quests) {
           const t = authoredTemplate(q.templateId);
           for (const tag of t.contraindications) expect(profile.limitations).not.toContain(tag);
+          for (const m of q.moves ?? []) {
+            const move = authoredMove(m.move);
+            for (const tag of move.contraindications) expect(profile.limitations).not.toContain(tag);
+            expect(move.needs.every((n) => profile.equipment.includes(n) || profile.equipment.includes('gym'))).toBe(true);
+          }
           if (profile.gentleStart && t.exercise !== null) {
             expect(['walk', 'mobility']).toContain(t.exercise);
             expect(t.gentle).toBe(true);

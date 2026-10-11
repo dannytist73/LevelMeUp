@@ -3,10 +3,13 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ART_KEYS, artKey } from '../src/art.ts';
 import { LADDERS, TEMPLATES } from '../src/library.ts';
+import { MOVES } from '../src/training/moves.ts';
 
 describe('quest art keys (M6a, decision 10)', () => {
-  it('names each template by its ladder, by its stat for small quests, or by its role', () => {
-    expect(artKey(TEMPLATES.find((t) => t.ladder === 'push')!)).toBe('ladder-push');
+  it('names each template by its own picture, its ladder, its stat for small quests, or its role', () => {
+    expect(artKey(TEMPLATES.find((t) => t.id === 'push-0')!)).toBe('push-wall');
+    expect(artKey(TEMPLATES.find((t) => t.id === 'push-3')!)).toBe('ladder-push');
+    expect(artKey(TEMPLATES.find((t) => t.id === 'squat-0')!)).toBe('micro-strength');
     expect(artKey(TEMPLATES.find((t) => t.role === 'micro' && t.stat === 'wisdom')!)).toBe('micro-wisdom');
     expect(artKey(TEMPLATES.find((t) => t.role === 'dawn_ritual')!)).toBe('dawn-ritual');
     expect(artKey(TEMPLATES.find((t) => t.role === 'article')!)).toBe('article');
@@ -14,12 +17,21 @@ describe('quest art keys (M6a, decision 10)', () => {
     for (const t of TEMPLATES) expect(artKey(t)).toMatch(/^[a-z0-9-]{1,40}$/);
   });
 
-  it('needs one picture per ladder, per small-quest stat and per special quest: 20 in all', () => {
-    expect(ART_KEYS).toHaveLength(20);
+  it('a workout shows its first exercise\'s family (M6c decision 13)', () => {
+    const workout = TEMPLATES.find((t) => t.ladder === 'workout')!;
+    const session = { kind: 'session', moves: [{ move: 'db-rdl', unit: 'reps', min: 8, max: 12, perSide: false, sets: 2 }] } as const;
+    expect(artKey(workout, session)).toBe('move-hinge');
+  });
+
+  it('needs 34 pictures: ladders, own rung pictures, small-quest stats, special quests and exercise families', () => {
+    expect(ART_KEYS).toHaveLength(34);
     for (const ladder of LADDERS.filter((l) => l.id !== 'workout')) expect(ART_KEYS).toContain(`ladder-${ladder.id}`);
+    for (const pattern of new Set(MOVES.map((m) => m.pattern))) expect(ART_KEYS).toContain(`move-${pattern}`);
     expect(ART_KEYS).toEqual(expect.arrayContaining([
+      'push-wall', 'push-incline', 'push-knee', 'squat-chair', 'squat-split', 'core-dead-bug', 'core-side-plank',
       'micro-strength', 'micro-vitality', 'micro-wisdom', 'micro-focus', 'recovery', 'stillness', 'dawn-ritual', 'article',
     ]));
+    expect(ART_KEYS).not.toContain('ladder-workout');
   });
 
   it('has a subject in the art script for every key, so the set can be rendered', () => {

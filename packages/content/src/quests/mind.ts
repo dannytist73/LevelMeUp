@@ -36,8 +36,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Read anything that teaches or interests you: a book, a long article, your notes.', 'Start the timer and read until it ends.'],
     safety: [],
     voice: {
-      mentor: { title: 'Read for 5 minutes', line: 'Five minutes with a good book. Any page counts.' },
-      system: { title: 'Read 5 minutes', line: 'Reading ladder, first rung. Five minutes on the timer.' },
+      mentor: { title: 'A little reading', line: 'Five minutes with a good book. Any page counts.' },
+      system: { title: 'Reading', line: 'Reading ladder, first rung. Five minutes on the timer.' },
       questmaster: { title: 'The first page', line: 'Open a book and hold your mind to it for five minutes.' },
     },
   },
@@ -60,9 +60,9 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: READ_STEPS,
     safety: [],
     voice: {
-      mentor: { title: 'Read for 10 minutes', line: 'Ten minutes of reading. Find a quiet corner if you can.' },
-      system: { title: 'Read 10 minutes', line: 'Reading ladder. Ten minutes on the timer.' },
-      questmaster: { title: 'Ten minutes of lore', line: 'Ten minutes in the pages. Let nothing pull you away.' },
+      mentor: { title: 'Reading time', line: 'Ten minutes of reading. Find a quiet corner if you can.' },
+      system: { title: 'Reading', line: 'Reading ladder. Ten minutes on the timer.' },
+      questmaster: { title: 'Lore in the quiet', line: 'Ten minutes in the pages. Let nothing pull you away.' },
     },
   },
   {
@@ -84,8 +84,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: READ_STEPS,
     safety: [],
     voice: {
-      mentor: { title: 'Read for 15 minutes', line: 'Fifteen minutes. Long enough for the ideas to really sink in.' },
-      system: { title: 'Read 15 minutes', line: 'Reading ladder. Fifteen minutes on the timer.' },
+      mentor: { title: 'Reading time', line: 'Fifteen minutes. Long enough for the ideas to really sink in.' },
+      system: { title: 'Reading', line: 'Reading ladder. Fifteen minutes on the timer.' },
       questmaster: { title: "The scholar's watch", line: 'Fifteen minutes of study. Guard your attention like a gate.' },
     },
   },
@@ -108,8 +108,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: READ_STEPS,
     safety: [],
     voice: {
-      mentor: { title: 'Read for 20 minutes', line: 'Twenty minutes of reading. Put your phone face down first.' },
-      system: { title: 'Read 20 minutes', line: 'Reading ladder. Twenty minutes on the timer.' },
+      mentor: { title: 'A longer read', line: 'Twenty minutes of reading. Put your phone face down first.' },
+      system: { title: 'Reading', line: 'Reading ladder. Twenty minutes on the timer.' },
       questmaster: { title: 'Trial of the long page', line: 'Twenty minutes deep in the text. Let the world wait.' },
     },
   },
@@ -132,8 +132,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: READ_STEPS,
     safety: [],
     voice: {
-      mentor: { title: 'Read for 25 minutes', line: 'Twenty-five minutes. Real progress through a book.' },
-      system: { title: 'Read 25 minutes', line: 'Reading ladder. Twenty-five minutes on the timer.' },
+      mentor: { title: 'A longer read', line: 'Twenty-five minutes. Real progress through a book.' },
+      system: { title: 'Reading', line: 'Reading ladder. Twenty-five minutes on the timer.' },
       questmaster: { title: "The scholar's vigil", line: 'Twenty-five minutes keeping watch over the page. Read on.' },
     },
   },
@@ -156,8 +156,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: READ_STEPS,
     safety: [],
     voice: {
-      mentor: { title: 'Read for 35 minutes', line: 'A long read: thirty-five minutes. Take a short stretch halfway if you like.' },
-      system: { title: 'Read 35 minutes', line: 'Reading ladder, top rung. Thirty-five minutes on the timer.' },
+      mentor: { title: 'A long read', line: 'A long read: thirty-five minutes. Take a short stretch halfway if you like.' },
+      system: { title: 'Reading', line: 'Reading ladder, top rung. Thirty-five minutes on the timer.' },
       questmaster: { title: 'The great study', line: 'Thirty-five minutes of unbroken study. Few reach this page.' },
     },
   },
@@ -180,8 +180,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Think back over today.', 'Write one sentence about something that went well.'],
     safety: [],
     voice: {
-      mentor: { title: 'One good thing', line: 'What went well today? One sentence is enough.' },
-      system: { title: 'One good thing', line: 'Insight ladder, first rung. One sentence: something that went well.' },
+      mentor: { title: 'A good thing', line: 'What went well today? One sentence is enough.' },
+      system: { title: 'A good thing', line: 'Insight ladder, first rung. One sentence: something that went well.' },
       questmaster: { title: 'Record of a victory', line: 'Name one victory from today, however small, and write it down.' },
     },
   },
@@ -204,8 +204,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Think about something you learned or noticed today.', 'Write it down in one sentence.'],
     safety: [],
     voice: {
-      mentor: { title: 'One lesson', line: 'What did today teach you? Write it in a sentence.' },
-      system: { title: 'One lesson', line: 'Insight ladder. One sentence: something you learned today.' },
+      mentor: { title: "Today's lesson", line: 'What did today teach you? Write it in a sentence.' },
+      system: { title: "Today's lesson", line: 'Insight ladder. One sentence: something you learned today.' },
       questmaster: { title: 'The lesson of the day', line: "Every day teaches. Capture today's lesson in a single line." },
     },
   },
@@ -252,8 +252,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Spend 10 minutes writing notes about something you read or learned recently.', 'Then write your one-line summary here.'],
     safety: [],
     voice: {
-      mentor: { title: 'Ten-minute notes', line: 'Ten minutes of notes, then the one line that matters most.' },
-      system: { title: 'Ten-minute notes', line: 'Insight ladder. Ten minutes of notes, then a one-line summary.' },
+      mentor: { title: 'Quick notes', line: 'Ten minutes of notes, then the one line that matters most.' },
+      system: { title: 'Quick notes', line: 'Insight ladder. Ten minutes of notes, then a one-line summary.' },
       questmaster: { title: "The scribe's work", line: 'Ten minutes at the scroll. Then distill it to one line.' },
     },
   },
@@ -448,7 +448,7 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: [],
     voice: {
       mentor: { title: 'Phone-free block', line: 'Ten minutes without your phone. Notice how often you reach for it.' },
-      system: { title: 'Phone-free 10 minutes', line: 'Phone-free ladder, first rung. Ten minutes away from your phone.' },
+      system: { title: 'Phone-free block', line: 'Phone-free ladder, first rung. Ten minutes away from your phone.' },
       questmaster: { title: 'Break the chain', line: 'Ten minutes free of the glowing glass. Feel the chain loosen.' },
     },
   },
@@ -472,7 +472,7 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: [],
     voice: {
       mentor: { title: 'Phone-free block', line: 'Fifteen phone-free minutes. Do something with your hands or your mind instead.' },
-      system: { title: 'Phone-free 15 minutes', line: 'Phone-free ladder. Fifteen minutes away from your phone.' },
+      system: { title: 'Phone-free block', line: 'Phone-free ladder. Fifteen minutes away from your phone.' },
       questmaster: { title: 'Beyond the glass', line: 'Fifteen minutes beyond the reach of the glass. Stay free.' },
     },
   },
@@ -496,7 +496,7 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: [],
     voice: {
       mentor: { title: 'Phone-free block', line: 'Twenty minutes phone-free. Try a walk, a chore or a conversation.' },
-      system: { title: 'Phone-free 20 minutes', line: 'Phone-free ladder. Twenty minutes away from your phone.' },
+      system: { title: 'Phone-free block', line: 'Phone-free ladder. Twenty minutes away from your phone.' },
       questmaster: { title: 'Trial of the empty hand', line: 'Twenty minutes with an empty hand. Let it stay empty.' },
     },
   },
@@ -520,7 +520,7 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: [],
     voice: {
       mentor: { title: 'Phone-free block', line: 'Half an hour without your phone. The world will wait.' },
-      system: { title: 'Phone-free 30 minutes', line: 'Phone-free ladder. Thirty minutes away from your phone.' },
+      system: { title: 'Phone-free block', line: 'Phone-free ladder. Thirty minutes away from your phone.' },
       questmaster: { title: 'The long silence', line: 'Thirty minutes of silence from the glass. Hold your ground.' },
     },
   },
@@ -544,7 +544,7 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     safety: [],
     voice: {
       mentor: { title: 'Phone-free block', line: 'Thirty-five minutes phone-free. You have come a long way from ten.' },
-      system: { title: 'Phone-free 35 minutes', line: 'Phone-free ladder, top rung. Thirty-five minutes away from your phone.' },
+      system: { title: 'Phone-free block', line: 'Phone-free ladder, top rung. Thirty-five minutes away from your phone.' },
       questmaster: { title: 'Master of the glass', line: 'Thirty-five minutes, and the glass has no hold on you. Prove it.' },
     },
   },
@@ -567,8 +567,8 @@ export const MIND_TEMPLATES: readonly AuthoredTemplate[] = [
     steps: ['Open any book or long article.', 'Read two pages, then tap done.'],
     safety: [],
     voice: {
-      mentor: { title: 'Two pages', line: 'Just two pages. A little reading, often, adds up.' },
-      system: { title: 'Read two pages', line: 'Quick quest. Two pages of any book.' },
+      mentor: { title: 'A few pages', line: 'Just two pages. A little reading, often, adds up.' },
+      system: { title: 'Read a few pages', line: 'Quick quest. Two pages of any book.' },
       questmaster: { title: 'A taste of lore', line: 'Two pages. Even a sip of knowledge sharpens the mind.' },
     },
   },

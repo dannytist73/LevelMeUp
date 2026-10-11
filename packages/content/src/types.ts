@@ -17,4 +17,6 @@ export type AuthoredTemplate = QuestTemplate & {
   /** Form cues and when to stop; required on exercise quests. */
   safety: readonly string[];
   voice: Readonly<Record<Voice, VoiceText>>;
+  /** Its own picture key, when the rung's exercise isn't the one its ladder's picture shows (M6c decision 13). */
+  art?: string;
 };

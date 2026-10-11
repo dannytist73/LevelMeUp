@@ -181,7 +181,7 @@ export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: Quest
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
       <Button label={T.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
       <QuestArt
-        uri={artUrl(art, artKey(template), quest.id)}
+        uri={artUrl(art, artKey(template, quest.condition), quest.id)}
         label={fillText(T.picture, { stat: STAT_NAMES[quest.stat] })}
         fallback={STAT_NAMES[quest.stat]}
       />

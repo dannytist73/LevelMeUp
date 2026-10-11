@@ -32,6 +32,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['wrist', 'shoulder'],
     hardDay: { minutes: 2, condition: reps(1, 10) },
     name: 'Wall push-ups',
+    art: 'push-wall',
     steps: [
       'Warm up for 2 minutes: roll your shoulders and swing your arms.',
       "Stand an arm's length from a wall with your hands on it at shoulder height.",
@@ -61,6 +62,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['wrist', 'shoulder'],
     hardDay: { minutes: 3, condition: reps(1, 8) },
     name: 'Incline push-ups',
+    art: 'push-incline',
     steps: [
       'Warm up for 2 minutes with arm circles and a few wall push-ups.',
       'Put your hands on a sturdy table, counter or bench, a little wider than your shoulders.',
@@ -90,6 +92,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['wrist', 'shoulder', 'knee'],
     hardDay: { minutes: 4, condition: reps(1, 8) },
     name: 'Knee push-ups',
+    art: 'push-knee',
     steps: [
       'Warm up for 2 minutes: arm circles and a few wall push-ups.',
       'Kneel on something soft with your hands just wider than your shoulders.',
@@ -158,7 +161,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     voice: {
       mentor: { title: 'Push-ups', line: 'Eight per set now. Keep the same steady form you built.' },
       system: { title: 'Push-ups', line: 'Push ladder. Three sets of eight.' },
-      questmaster: { title: 'Trial of eight', line: 'Eight times you descend and eight times you rise. Three rounds.' },
+      questmaster: { title: 'Trial of the steady descent', line: 'Eight times you descend and eight times you rise. Three rounds.' },
     },
   },
   {
@@ -187,7 +190,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     voice: {
       mentor: { title: 'Push-ups', line: 'Forty push-ups across four sets. Rest as long as you need between them.' },
       system: { title: 'Push-ups', line: 'Push ladder, top rung. Four sets of ten.' },
-      questmaster: { title: 'Trial of forty', line: 'The top of the ladder. Four sets of ten, each one clean.' },
+      questmaster: { title: 'The push-up summit', line: 'The top of the ladder. Four sets of ten, each one clean.' },
     },
   },
   {
@@ -206,6 +209,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['knee'],
     hardDay: { minutes: 2, condition: reps(1, 8) },
     name: 'Sit-to-stands',
+    art: 'micro-strength',
     steps: [
       'Warm up for 2 minutes: march on the spot and swing your legs.',
       'Sit on a sturdy chair with your feet flat and hip-width apart.',
@@ -235,6 +239,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['knee'],
     hardDay: { minutes: 3, condition: reps(1, 10) },
     name: 'Chair squats',
+    art: 'squat-chair',
     steps: [
       'Warm up for 2 minutes: march on the spot and do a few sit-to-stands.',
       'Stand in front of a chair with your feet hip-width apart.',
@@ -322,6 +327,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['knee', 'back'],
     hardDay: { minutes: 6, condition: reps(1, 8, true) },
     name: 'Split squats',
+    art: 'squat-split',
     steps: [
       'Warm up for 2 minutes: march on the spot and do a few bodyweight squats.',
       'Step one foot forward and one back, about a stride apart. Hold a wall or chair for balance if you like.',
@@ -380,6 +386,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['back'],
     hardDay: { minutes: 2, condition: reps(1, 6, true) },
     name: 'Dead bugs',
+    art: 'core-dead-bug',
     steps: [
       'Warm up for 1 minute with gentle marching on the spot.',
       'Lie on your back with your arms pointing at the ceiling and your knees bent above your hips.',
@@ -409,6 +416,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['back'],
     hardDay: { minutes: 3, condition: reps(1, 8, true) },
     name: 'Dead bugs',
+    art: 'core-dead-bug',
     steps: [
       'Warm up for 1 minute with gentle marching on the spot.',
       'Lie on your back with your arms pointing at the ceiling and your knees bent above your hips.',
@@ -525,6 +533,7 @@ export const STRENGTH_TEMPLATES: readonly AuthoredTemplate[] = [
     contraindications: ['back', 'shoulder'],
     hardDay: { minutes: 4, condition: hold(1, 30, true) },
     name: 'Side plank',
+    art: 'core-side-plank',
     steps: [
       'Warm up for 2 minutes with a short forearm plank and a few dead bugs.',
       'Lie on your side with your forearm under your shoulder and your legs stacked.',
