@@ -1,14 +1,22 @@
 import { ABILITY_LINES, ADJUST_TEXT, PLAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
 import { DAY_MS, newLadder } from '@levelmeup/rules';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { activateKeepAwakeAsync } from 'expo-keep-awake';
+import { AppState } from 'react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { ClassChange } from '../src/screens/ClassChange.tsx';
 import { DayActions, DayBanners, PausedExercises } from '../src/screens/DayActions.tsx';
 import { Pain } from '../src/screens/Pain.tsx';
 import { Swap } from '../src/screens/Swap.tsx';
+import { Vanish } from '../src/screens/Vanish.tsx';
 import { DAY_TWO_NOW, adjustState, characterRow, ladderRows, profileRow } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+
+jest.mock('expo-keep-awake', () => ({
+  activateKeepAwakeAsync: jest.fn(async () => {}),
+  deactivateKeepAwake: jest.fn(async () => {}),
+}));
 
 const A = ADJUST_TEXT;
 const now = () => DAY_TWO_NOW;
@@ -163,5 +171,43 @@ describe('class change (spec §2.5)', () => {
     await fireEvent.press(screen.getByText('Monk'));
     expect(screen.getByRole('button', { name: ADJUST_TEXT.classChange.title }).props.accessibilityState.disabled).toBe(true);
     expect(store.getState().enqueue).not.toHaveBeenCalled();
+  });
+});
+
+describe('Vanish (Rogue level 10)', () => {
+  const rogue = () => shown(adjustState({ profile: profileRow(undefined, { class_id: 'rogue' }), character: characterRow({ xp_focus: 990 }) }));
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('only a Rogue at level 10 can vanish', async () => {
+    await render(withStore(testStore({ view: shown() }), <Vanish now={now} onBack={jest.fn()} />));
+    expect(screen.getByText(A.vanish.locked)).toBeTruthy();
+  });
+
+  it('counts while LevelMeUp stays open, pauses when it leaves, and ends when the time is up', async () => {
+    let t = DAY_TWO_NOW;
+    const listeners: ((state: string) => void)[] = [];
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
+      listeners.push(listener as (state: string) => void);
+      return { remove: jest.fn() } as unknown as ReturnType<typeof AppState.addEventListener>;
+    });
+    const store = testStore({ view: rogue() });
+    // A new element each time: re-rendering the same one would let React skip the render (and the clock check).
+    const tree = () => withStore(store, <Vanish now={() => t} onBack={jest.fn()} />);
+    const view = await render(tree());
+    await fireEvent.press(screen.getByRole('button', { name: fillText(A.vanish.minutes, { n: 30 }) }));
+    expect(screen.getByText(A.vanish.running)).toBeTruthy();
+    expect(screen.getByText(/Back at/)).toBeTruthy();
+    expect(activateKeepAwakeAsync).toHaveBeenCalledWith('lmu-vanish');
+    t += 10 * 60_000;
+    await act(async () => {
+      for (const listener of listeners) listener('background');
+    });
+    expect(screen.getByText(A.vanish.paused)).toBeTruthy();
+    t += 60 * 60_000; // away for an hour: not counted
+    await fireEvent.press(screen.getByRole('button', { name: A.vanish.resume }));
+    t += 20 * 60_000;
+    await view.rerender(tree());
+    expect(screen.getByText(fillText(A.vanish.done, { n: 30 }))).toBeTruthy();
   });
 });
