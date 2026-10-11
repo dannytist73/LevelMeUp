@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { newLadder, templateById } from '../../../packages/rules/src/index.ts';
+import { newLadder, questReward, templateById } from '../../../packages/rules/src/index.ts';
+import type { Rating } from '../../../packages/rules/src/index.ts';
+import { planAdjust } from '../../functions/_shared/adjust.ts';
+import type { AdjustEvent } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
 import { parseOnboarding, startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import { NO_OFFERS, stateView } from '../../functions/_shared/state.ts';
 import type { CharacterRow, DayRow, Snapshot } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
 import {
-  DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay, onboardingBody,
-  profileRow,
+  DAY_MS, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay,
+  onboardingBody, profileRow,
 } from './fixtures.ts';
 
 export const NOW = manilaDay(2).startsAt + HOUR;
@@ -111,5 +114,118 @@ describe('the state view carries the offers (M6b)', () => {
     expect(view.paused).toEqual(['squat']);
     expect(view.painReports).toBe(1);
     expect(view.profile.classChangedAt).toBeNull();
+  });
+});
+
+const ID = '7d3e1f2a-1b2c-4d3e-8f40-0123456789ab';
+type Draft = AdjustEvent extends infer E ? (E extends AdjustEvent ? Omit<E, 'id'> : never) : never;
+const plan = (s: Snapshot, event: Draft, nowMs = NOW) => planAdjust(s, { id: ID, ...event } as AdjustEvent, { nowMs, library: LIBRARY });
+/** Day 2 with the quest in `slot` cleared at NOW. */
+const done = (s: Snapshot, slot: string, rating: Rating | null = null): Snapshot => ({
+  ...s,
+  instances: s.instances.map((q) => (q.day_id === '2' && q.slot === slot ? { ...q, completed_at: new Date(NOW), rating } : q)),
+});
+
+describe('planning an adjustment (adjust.ts)', () => {
+  it('swap: an offered option, in place, counted', () => {
+    const option = dayOffers(at(), LIBRARY).swaps['200']![0]!;
+    expect(plan(at(), { type: 'swap', instanceId: 200, templateId: option.templateId })).toEqual({
+      change: { day: { id: 2, swaps: 1 }, quests: [{ id: 200, slot: 'core', ...option }] },
+    });
+  });
+
+  it('swap: refused when none is left, not offered, cleared, not a core or side quest, or not today', () => {
+    expect(plan(at({}, { swaps_used: 1 }), { type: 'swap', instanceId: 200, templateId: 'squat-0' })).toEqual({ code: 'no_swaps_left' });
+    expect(plan(at(), { type: 'swap', instanceId: 200, templateId: 'push-5' })).toEqual({ code: 'not_an_option' });
+    expect(plan(done(at(), 'core'), { type: 'swap', instanceId: 200, templateId: 'squat-0' })).toEqual({ code: 'already_completed' });
+    expect(plan(at(), { type: 'swap', instanceId: 203, templateId: 'squat-0' })).toEqual({ code: 'not_swappable' });
+    expect(plan(at(), { type: 'swap', instanceId: 999, templateId: 'squat-0' })).toEqual({ code: 'not_found' });
+    expect(plan(at(), { type: 'swap', instanceId: 100, templateId: 'squat-0' })).toEqual({ code: 'day_closed' }); // day 1's core
+  });
+
+  it('nothing changes on a day that has ended, even before the server closes it', () => {
+    const ended = manilaDay(2).endsAt;
+    expect(plan(at(), { type: 'hard_day', dayId: 2 }, ended)).toEqual({ code: 'day_closed' });
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest' }, ended)).toEqual({ code: 'day_closed' });
+  });
+
+  it('hard day: every open core and side quest in its hard-day version, once', () => {
+    const p = plan(done(at(), 'side2'), { type: 'hard_day', dayId: 2 });
+    if (!('change' in p)) throw new Error(p.code);
+    expect(p.change.day).toEqual({ id: 2, hardDay: true });
+    expect(p.change.quests!.map((q) => [q.id, q.hardDay])).toEqual([[200, true], [201, true]]);
+    const push = templateById(LIBRARY, 'push-1');
+    expect(p.change.quests![0]).toMatchObject({ minutes: push.hardDay.minutes, condition: push.hardDay.condition, xp: questReward(push, true) });
+    expect(plan(at({}, { hard_day: true }), { type: 'hard_day', dayId: 2 })).toEqual({ code: 'already_hard_day' });
+    expect(plan(at(), { type: 'hard_day', dayId: 1 })).toEqual({ code: 'day_closed' });
+    expect(plan(at(), { type: 'hard_day', dayId: 77 })).toEqual({ code: 'not_found' });
+  });
+
+  it('rest: protects today, at most 2 in any 7', () => {
+    expect(plan(at(), { type: 'plan_rest', dayId: 2 })).toEqual({ change: { day: { id: 2, protection: 'planned_rest' } } });
+    expect(plan(at({}, { protection: 'pain' }), { type: 'plan_rest', dayId: 2 })).toEqual({ code: 'already_protected' });
+    expect(plan(rested(), { type: 'plan_rest', dayId: 2 })).toEqual({ code: 'rest_limit' });
+  });
+
+  it('pain: the ladder rests; gentle movement takes the slot, or today is protected', () => {
+    const paused = { ...newLadder(1), paused: true };
+    const gentle = dayOffers(at(), LIBRARY).gentle['200']!;
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({
+      change: { ladders: { push: paused }, day: { id: 2 }, quests: [{ id: 200, slot: 'core', ...gentle }] },
+    });
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest' })).toEqual({
+      change: { ladders: { push: paused }, day: { id: 2, protection: 'pain' } },
+    });
+    // Already a rest day: the reason stays; the ladder still rests.
+    expect(plan(at({}, { protection: 'planned_rest' }), { type: 'pain', instanceId: 200, choice: 'rest' })).toEqual({ change: { ladders: { push: paused } } });
+    expect(plan(done(at(), 'core'), { type: 'pain', instanceId: 200, choice: 'pause' })).toEqual({ change: { ladders: { push: paused } } });
+    expect(plan(done(at(), 'core'), { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({ code: 'already_completed' });
+    expect(plan(at(), { type: 'pain', instanceId: 202, choice: 'rest' })).toEqual({ code: 'not_exercise' });
+  });
+
+  it('pain: a standalone exercise quest rests by its own id; with no gentle option, rest is the offer', () => {
+    const micro = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'micro-squats' });
+    expect(plan(micro, { type: 'pain', instanceId: 200, choice: 'pause' })).toEqual({
+      change: { ladders: { 'micro-squats': { ...newLadder(), paused: true } } },
+    });
+    const others = templateById(LIBRARY, 'walk-1').minutes + templateById(LIBRARY, 'reading-0').minutes;
+    const tight = at({}, { budget: others + 2 }); // 2 minutes left: no walk or mobility rung is that short
+    expect(plan(tight, { type: 'pain', instanceId: 200, choice: 'gentle' })).toEqual({ code: 'no_gentle_option' });
+  });
+
+  it('resume: one rung lower, only while resting', () => {
+    expect(plan(at({ ladders: ladderRows({ push: { ...newLadder(2), paused: true } }) }), { type: 'resume', ladderId: 'push' })).toEqual({
+      change: { ladders: { push: { ...newLadder(2), rung: 1 } } },
+    });
+    expect(plan(at(), { type: 'resume', ladderId: 'push' })).toEqual({ code: 'not_paused' });
+    expect(plan(at(), { type: 'resume', ladderId: 'squat' })).toEqual({ code: 'not_paused' });
+  });
+
+  it('step down: after "too hard", at the ladder\'s current rung', () => {
+    expect(plan(done(at(), 'core', 'too_hard'), { type: 'step_down', instanceId: 200 })).toEqual({
+      change: { ladders: { push: { ...newLadder(1), rung: 0 } } },
+    });
+    expect(plan(done(at(), 'core', 'right'), { type: 'step_down', instanceId: 200 })).toEqual({ code: 'not_too_hard' });
+    expect(plan(at(), { type: 'step_down', instanceId: 200 })).toEqual({ code: 'not_too_hard' });
+    const moved = done(at({ ladders: ladderRows({ push: newLadder(2) }) }), 'core', 'too_hard');
+    expect(plan(moved, { type: 'step_down', instanceId: 200 })).toEqual({ code: 'not_current' });
+  });
+
+  it('class change: open at once after onboarding, then once every 14 days', () => {
+    expect(plan(at(), { type: 'class_change', classId: 'monk' })).toEqual({ change: { classId: 'monk' } });
+    expect(plan(at(), { type: 'class_change', classId: 'warrior' })).toEqual({ code: 'same_class' });
+    const changed = (daysAgo: number) => at({ profile: profileRow(undefined, { class_changed_at: new Date(NOW - daysAgo * DAY_MS) }) });
+    expect(plan(changed(13), { type: 'class_change', classId: 'monk' })).toEqual({ code: 'class_locked' });
+    expect(plan(changed(14), { type: 'class_change', classId: 'monk' })).toEqual({ change: { classId: 'monk' } });
+  });
+
+  it('Stillness replaces the open core quest and records the quest day; an ability not ready is refused', () => {
+    const p = plan(at(monk(240)), { type: 'ability', dayId: 2, ability: 'stillness' });
+    if (!('change' in p)) throw new Error(p.code);
+    expect(p.change.quests).toEqual([expect.objectContaining({ id: 200, slot: 'core', templateId: 'stillness', why: { code: 'stillness' } })]);
+    expect(p.change.ability).toEqual({ id: 'stillness', day: 2 });
+    expect(plan(at(monk(240)), { type: 'ability', dayId: 2, ability: 'dawn_ritual' })).toEqual({ code: 'ability_not_ready' });
+    expect(plan(at(), { type: 'ability', dayId: 2, ability: 'stillness' })).toEqual({ code: 'ability_not_ready' });
+    expect(plan(done(at(monk(240)), 'core'), { type: 'ability', dayId: 2, ability: 'stillness' })).toEqual({ code: 'already_completed' });
   });
 });
