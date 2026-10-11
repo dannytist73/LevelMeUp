@@ -946,7 +946,8 @@ describe('Character and Chronicle (M6d)', () => {
 
 ## Task 7: DEPLOY (needs the owner's yes)
 
-Only after M6c's Task 9 (migration 0009 and its functions) is deployed.
+Only after M6c's Task 9 (migration 0009 and its functions) is deployed. **Gate:** the M6d app bundle reads the new
+state (`calendar`, `growth`, `abilityLastUsed`, the training setup); run it (Metro, Task 14) only after this deploy.
 
 - [ ] **Step 1:** `npm run db:deploy` → applies 0010; the wedding's history unchanged (the script checks).
 - [ ] **Step 2:** `npm run db:test` → every file ok (adjust.sql gains `test_adjust_book`); nothing left behind.
@@ -1625,6 +1626,8 @@ export const monthLabel = ({ year, month }: { year: number; month: number }): st
 
 ## Task 14: Emulator check (after Task 7)
 
+**Gate:** M6c's and M6d's deploys are live (the app crashes on a state without `calendar`).
+
 **Files:** `docs/device-verification-checklist.md` (rows and results).
 
 - [ ] **Step 1:** Start the emulator and Metro as in M6c (`apps/mobile/README.md`, "Emulator"); load the development
@@ -1697,4 +1700,33 @@ plan's "As built".
 
 ## As built
 
-(Filled in during the build.)
+Built 2026-10-12 on `m6d-character-chronicle` (from M6c's 1351aea), inline (executing-plans), test-first.
+
+- **Commits:** 41c82ae T1 rules · d5d1df4 T2 content · 947f961 T3 state · 91fe0fb T4 `book` event · f0dcda0 T5
+  migration 0010 · 53d277b T6 `loadHistory`, live tests · e52e657 T8 app data · ac7bbc0 T9 Character · 7ed596b T10
+  book screen · 1da8ada T11 Chronicle · ba5ddd2 T12 training note · dbb28e3 T13 dev preview · 1651842 docs · 8824e23
+  unused strings; review fixes adeebac, 0ff7ee8, b166593, 9519474, a7be709.
+- **Not yet run (owner's yes):** Task 7 (deploy 0010 after M6c's 0009, `db:test` with `test_adjust_book` and
+  `test_adjust_book_history`, the functions, `test:live` with 9 players) and Task 14 (emulator rows 1–11).
+- **Tests:** content 1039, rules 410, server 278 (unit), app 543; typecheck, check:functions, check:portable (185 / 69
+  exports), check:bundle (33 files, no secrets). Pacing unchanged from M6c (M6d changes no rewards): every level target
+  met; the Warrior's steady Strength rank C on day 151 (recorded in M6c).
+- **Changes from the plan:**
+  - Task 6 needed a one-line skip of `book` in `project.ts` to keep the typecheck green until Task 8 handled it.
+  - Decision 3: a day's date is the local date 24 hours before it ends (`calendarDate`), not its start: a day 1 begun
+    after about 22:00 runs to the morning after next (at least 6 hours), and dating it by its start left a blank date
+    between day 1 and day 2 (review). For every other day the two are the same date.
+  - Decision 4: dates in the shown month without a quest day (before day 1, after today) show their digit in ash
+    (about 7:1 on the night) rather than a blank cell; cells outside the month are blank.
+  - Decision 12: switching straight to another book asks first, as "Set it aside" does (its sessions are not kept); a
+    pasted tab or line break becomes a space before sending (review).
+  - Decision 13: making the character (the analysis) marks the training note seen, not leaving the onboarding, so a
+    player from before M6c who restores with Google still gets it once (review).
+  - Two quest days with one date (a time-zone change) show the strongest mark; Chronicle follows today into a new
+    month; the `ability_not_ready` notice no longer names the core quest (a refused book uses it too) (review).
+  - Dropped two unused strings (`CHARACTER_TEXT.levelLine`, `BOOK_TEXT.finishedList`).
+- **Review** (subagent, 1351aea..dbb28e3): "With fixes", no Critical. Fixed: the deploy gate (documented here, in the
+  app README and the roadmap), pgTAP for the trim to 100 books, the "since it was set" filter, another book's quests and
+  a direct switch, and the minors above. Carried forward (roadmap): a reading quest cleared offline right after a book
+  set offline may not count (the server stamps the book's start at sync); titles earned in one sync tie-break by id; a
+  player who leaves Mage keeps a book they can't change until they return.

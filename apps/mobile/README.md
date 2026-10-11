@@ -62,8 +62,9 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   `src/screens/Chronicle.tsx` draws the state's `calendar` as a month grid (`src/screens/chronicle/Calendar.tsx`,
   `src/lib/calendar.ts`; today's cell follows the phone's own day) and the `growth` since day 1. Scholar's Path:
   `app/book.tsx` (`src/screens/Book.tsx`) sends a `book` event; reading quests show "Reading: <book>". Players from
-  before M6c see a one-time training note on Today (`lmu.training-notice`; leaving the onboarding marks it seen). The
-  cache dropped older states (version 5).
+  before M6c see a one-time training note on Today (`lmu.training-notice`; making a character marks it seen). The
+  cache dropped older states (version 5). **Run this bundle only against a server with the M6c and M6d deploys**: it
+  reads the state's `calendar`, `growth`, `abilityLastUsed` and training setup, which an older server doesn't send.
 - `app/dev/` exists only in development builds: the account and "Save with Google", the outbox and notices, the
   self-check (time zones on Hermes, AES, SQLite), the component kit, the workout preview (`app/dev/workout.tsx`: a
   workout planned on the phone for any equipment, program, rung and program day; nothing is sent) and the Character

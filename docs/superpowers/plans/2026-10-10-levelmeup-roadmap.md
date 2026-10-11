@@ -130,7 +130,8 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 |---|---|
 | Owner | Deploy order: M6c (migration 0009 and its functions) before M6d (0010 and the functions again); 0010 replaces the `adjust` function 0009 defines. Run the M6d app only after the M6d deploy: it reads the state's `calendar`, `growth` and `abilityLastUsed`, which an older server doesn't send. Then the Find X9 rows of the M6d checklist (1–11) after M6c's. |
 | Later | The calendar reads the last 92 days; older months wait for the pilot to need them. The server still sends `recentDays` for app bundles from before M6d; drop it once none are in use. |
-| Later | A title picker (Character shows the latest earned title). |
+| Later | A title picker (Character shows the latest earned title; titles earned in one sync tie-break by id). |
+| Later | Scholar's Path: the book's start is the server's time at sync, so a reading quest cleared offline right after a book set offline may not count toward it; a player who leaves Mage keeps a book they can't change until they return (quests stop showing it). |
 | M7, M8 | Second Wind and Unbreakable (M7) and Insight (M8) say "Unlocked · it arrives in a later update" on the class path until their screens exist (`ABILITIES_LATER`, content). |
 | M9 | The painted class portraits, changing with the level, replace the framed emblem (`src/ui/Portrait.tsx`). |
 
