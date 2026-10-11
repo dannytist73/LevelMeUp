@@ -16,7 +16,7 @@ describe('quest art keys (M6a, decision 10)', () => {
 
   it('needs one picture per ladder, per small-quest stat and per special quest: 20 in all', () => {
     expect(ART_KEYS).toHaveLength(20);
-    for (const ladder of LADDERS) expect(ART_KEYS).toContain(`ladder-${ladder.id}`);
+    for (const ladder of LADDERS.filter((l) => l.id !== 'workout')) expect(ART_KEYS).toContain(`ladder-${ladder.id}`);
     expect(ART_KEYS).toEqual(expect.arrayContaining([
       'micro-strength', 'micro-vitality', 'micro-wisdom', 'micro-focus', 'recovery', 'stillness', 'dawn-ritual', 'article',
     ]));

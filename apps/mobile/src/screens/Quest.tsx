@@ -105,7 +105,7 @@ export function Quest({ questId, onBack, onSwap, onPain, now = Date.now }: Quest
 
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[view.profile.voice];
-  const summary = questSummary(template, quest.hardDay);
+  const summary = questSummary(quest);
   const slot = quest.slot === 'side1' || quest.slot === 'side2' ? T.slots.side : T.slots[quest.slot];
 
   if (quest.completedAt !== null) {

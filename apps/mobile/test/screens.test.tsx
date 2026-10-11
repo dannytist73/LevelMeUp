@@ -60,7 +60,7 @@ describe('Today', () => {
     await renderToday();
     const template = authoredTemplate(core.templateId);
     expect(screen.getByText(template.voice.system.title)).toBeTruthy();
-    expect(screen.getByText(questSummary(template, core.hardDay))).toBeTruthy();
+    expect(screen.getByText(questSummary(core))).toBeTruthy();
     expect(screen.getByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeTruthy();
     if (template.exercise !== null) expect(screen.getAllByText(EXERCISE_SAFETY_LINE).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(`+${xpOf(core)} XP`)).toBeTruthy();

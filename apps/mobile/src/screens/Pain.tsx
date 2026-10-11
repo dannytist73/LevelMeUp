@@ -79,7 +79,7 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
       <Body>{fillText(T.paused, { name })}</Body>
       {gentle !== null && gentleTemplate !== null && (
         <View style={{ gap: 8 }}>
-          <Small>{gentleLine(gentleTemplate.voice[view.profile.voice].title, questSummary(gentleTemplate, gentle.hardDay))}</Small>
+          <Small>{gentleLine(gentleTemplate.voice[view.profile.voice].title, questSummary(gentle))}</Small>
           <Button label={T.gentle} disabled={busy} onPress={() => void send('gentle')} />
         </View>
       )}

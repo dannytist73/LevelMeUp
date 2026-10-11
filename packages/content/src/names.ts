@@ -1,4 +1,4 @@
-import type { AbilityId, ClassId, Goal, Limitation, Stat } from '../../rules/src/index.ts';
+import type { AbilityId, ClassId, Equipment, Goal, Limitation, ProgramStyle, Stat } from '../../rules/src/index.ts';
 
 export const STAT_NAMES: Readonly<Record<Stat, string>> = {
   strength: 'Strength',
@@ -46,6 +46,7 @@ export const LADDER_NAMES: Readonly<Record<string, string>> = {
   squat: 'Squats',
   core: 'Core training',
   'own-program': 'Your own training',
+  workout: 'Workouts',
   walk: 'Walking',
   mobility: 'Mobility',
   sleep: 'Sleep routine',
@@ -54,4 +55,20 @@ export const LADDER_NAMES: Readonly<Record<string, string>> = {
   insight: 'Reflection',
   focus: 'Focus sessions',
   'phone-free': 'Phone-free time',
+};
+
+/** The training setup's equipment as the Training step lists it (M6c decision 1). */
+export const EQUIPMENT_NAMES: Readonly<Record<Equipment, string>> = {
+  bands: 'Resistance bands',
+  dumbbells: 'Dumbbells',
+  bench: 'An adjustable bench',
+  pullup_bar: 'A pull-up bar',
+  gym: 'A gym: machines, barbells and cables',
+};
+
+/** The programs (owner's names, 2026-10-11), each with what it emphasises; anyone can pick any of them. */
+export const PROGRAM_STYLE_CHOICES: Readonly<Record<ProgramStyle, { name: string; line: string }>> = {
+  men: { name: "Men's program", line: 'More upper-body work: chest, back and shoulders.' },
+  women: { name: "Women's program", line: 'More lower-body work: legs and glutes.' },
+  none: { name: 'No preference', line: 'An even mix over two alternating days.' },
 };

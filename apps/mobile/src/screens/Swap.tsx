@@ -43,7 +43,7 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   const card = (f: QuestFields) => {
     const t = authoredTemplate(f.templateId);
     const xp = Object.values(f.xp).reduce((sum, x) => sum + (x ?? 0), 0);
-    return { label: t.voice[view.profile.voice].title, detail: `${questSummary(t, f.hardDay)} · ${STAT_NAMES[f.stat]} · +${xp} XP` };
+    return { label: t.voice[view.profile.voice].title, detail: `${questSummary(f)} · ${STAT_NAMES[f.stat]} · +${xp} XP` };
   };
   const send = async (): Promise<void> => {
     if (quest === null || choice === null || busy) return;

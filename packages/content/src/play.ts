@@ -37,6 +37,18 @@ export const PLAY_TEXT = {
     units: { reps: 'reps', repsPerSide: 'reps per side', seconds: 'seconds', secondsPerSide: 'seconds per side' },
     note: 'Log what you did. Less than the target still counts.',
   },
+  workout: {
+    exercise: 'Exercise {n} of {total}',
+    rest: 'Rest about 2 minutes between sets.',
+    note: 'Each set starts at the bottom of the range. Log what you did; less still counts.',
+    set: 'Set {n}',
+    fewer: '{name}, set {n}, one less',
+    more: '{name}, set {n}, one more',
+    how: 'How to do it',
+    hide: 'Hide the steps',
+    log: 'Log workout',
+    change: 'Change equipment or program',
+  },
   sentence: {
     label: 'One sentence',
     note: 'One line is enough.',

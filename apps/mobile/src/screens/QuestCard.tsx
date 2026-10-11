@@ -45,7 +45,7 @@ function WillSync({ on }: { on: 'paper' | 'night' }) {
 export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, artUri, onPain, resting = false }: QuestCardProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
-  const summary = questSummary(template, quest.hardDay);
+  const summary = questSummary(quest);
   const why = renderWhy(quest.why, voice, { classId });
   const xp = questXp(quest);
   const stat = STAT_NAMES[quest.stat];

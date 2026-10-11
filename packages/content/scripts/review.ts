@@ -43,7 +43,7 @@ function card(t: AuthoredTemplate, rungCount: number | null): string {
     <div class="quest-name"><p class="eyebrow">${esc(position)} · <code>${esc(t.id)}</code></p><h3>${esc(t.name)}</h3></div>
     <p class="stamp">${esc(reward(t))}</p>
   </header>
-  <p class="target">${esc(questSummary(t, false))}<span class="hard">Hard day: ${esc(questSummary(t, true))}</span></p>
+  <p class="target">${esc(questSummary(t))}<span class="hard">Hard day: ${esc(questSummary(t.hardDay))}</span></p>
   <p class="chips">${chips.map((chip) => `<span>${esc(chip)}</span>`).join('')}</p>
   <div class="detail">
     <div><h4>Steps</h4>${list(t.steps)}</div>

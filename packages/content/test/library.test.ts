@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CLASSES, GOALS, MINUTES_OPTIONS, MIN_SIDE_MINUTES, TIER_MIN_MINUTES, coreAllowance, ladderRungs } from '../../rules/src/index.ts';
+import {
+  CLASSES, GOALS, MINUTES_OPTIONS, MIN_SIDE_MINUTES, TIER_MIN_MINUTES, coreAllowance, ladderRungs, workoutMinutes,
+} from '../../rules/src/index.ts';
 import type { Condition } from '../../rules/src/index.ts';
 import { LADDERS, LIBRARY, TEMPLATES } from '../src/library.ts';
 
@@ -24,6 +26,8 @@ function volume(condition: Condition): number {
       return condition.sets * condition.seconds * (condition.perSide ? 2 : 1);
     case 'minutes':
       return condition.minutes;
+    case 'workout':
+      return condition.sets.reduce((sum, n) => sum + n, 0);
     default:
       return 0;
   }
@@ -100,12 +104,37 @@ describe('ladders', () => {
 });
 
 describe('the whole library', () => {
-  it('has the 12 ladders and about 70 templates', () => {
+  it('has the 13 ladders and about 80 templates', () => {
     expect(LADDERS.map((l) => l.id)).toEqual([
-      'push', 'squat', 'core', 'own-program', 'walk', 'mobility', 'sleep', 'breathing', 'reading', 'insight', 'focus', 'phone-free',
+      'push', 'squat', 'core', 'own-program', 'workout', 'walk', 'mobility', 'sleep', 'breathing', 'reading', 'insight', 'focus',
+      'phone-free',
     ]);
     expect(TEMPLATES.length).toBeGreaterThanOrEqual(65);
-    expect(TEMPLATES.length).toBeLessThanOrEqual(80);
+    expect(TEMPLATES.length).toBeLessThanOrEqual(90);
+  });
+
+  it('every workout rung takes the minutes its sets take, and its hard day is one set of the first two exercises', () => {
+    const rungs = ladderRungs(LIBRARY, 'workout');
+    expect(rungs.map((t) => t.condition)).toEqual([
+      { kind: 'workout', sets: [2, 2, 2], level: 1 },
+      { kind: 'workout', sets: [2, 2, 2], level: 2 },
+      { kind: 'workout', sets: [2, 2, 2], level: 3 },
+      { kind: 'workout', sets: [3, 3, 3], level: 3 },
+      { kind: 'workout', sets: [3, 3, 3, 3], level: 3 },
+      { kind: 'workout', sets: [4, 3, 3, 3], level: 3 },
+    ]);
+    for (const t of rungs) {
+      if (t.condition.kind !== 'workout' || t.hardDay.condition.kind !== 'workout') throw new Error(t.id);
+      expect(t.minutes, t.id).toBe(workoutMinutes(t.condition.sets));
+      expect(t.hardDay.condition, t.id).toEqual({ kind: 'workout', sets: [1, 1], level: t.condition.level });
+      expect(t.hardDay.minutes, t.id).toBe(workoutMinutes([1, 1]));
+      expect(t.contraindications, t.id).toEqual([]);
+    }
+  });
+
+  it('only the workout ladder has a class affinity among the strength ladders, besides an own program (decision 7)', () => {
+    const strength = LADDERS.filter((l) => l.stat === 'strength' && !l.ownProgram);
+    expect(strength.filter((l) => l.affinity.length > 0).map((l) => l.id)).toEqual(['workout']);
   });
 
   it('has exactly one Stillness, Dawn Ritual and article quest, and a recovery quest for every class', () => {

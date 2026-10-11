@@ -70,7 +70,7 @@ describe('the starting ladders on the real library', () => {
 
   it('"most weeks" starts the training ladders one rung up; "now and then" starts them at 0', () => {
     const most = startingLadders(LIBRARY, profile(), answers(), SEEDS);
-    expect(Object.keys(most).sort()).toEqual(['core', 'push', 'squat', 'walk']);
+    expect(Object.keys(most).sort()).toEqual(['core', 'push', 'squat', 'walk', 'workout']);
     expect(Object.values(most).every((l) => l.rung === 1 && l.highestRung === 1)).toBe(true);
     expect(startingLadders(LIBRARY, profile(), answers({ training: 'some' }), SEEDS)).toEqual({});
   });

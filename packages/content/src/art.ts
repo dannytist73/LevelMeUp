@@ -10,5 +10,5 @@ export function artKey(template: Pick<QuestTemplate, 'role' | 'ladder' | 'stat'>
   return template.role.replace('_', '-');
 }
 
-/** Every key the quest library uses: what the art set has to cover. */
-export const ART_KEYS: readonly string[] = [...new Set(TEMPLATES.map(artKey))].sort();
+/** Every key the quest library uses: what the art set has to cover. A workout template's own key is never shown. */
+export const ART_KEYS: readonly string[] = [...new Set(TEMPLATES.filter((t) => t.condition.kind !== 'workout').map(artKey))].sort();

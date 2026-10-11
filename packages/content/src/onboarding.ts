@@ -7,7 +7,7 @@ import type { Voice } from './types.ts';
 
 /** Which answer sets each ladder's starting rung (rules: `startingLadders`). Other ladders start at rung 0. */
 export const SEEDS: Readonly<Record<string, Seed>> = {
-  push: 'training', squat: 'training', core: 'training', walk: 'training', reading: 'reading', focus: 'focus',
+  push: 'training', squat: 'training', core: 'training', walk: 'training', workout: 'training', reading: 'reading', focus: 'focus',
 };
 
 export const VOICE_NAMES: Readonly<Record<Voice, string>> = { mentor: 'Mentor', system: 'System', questmaster: 'Questmaster' };
@@ -142,6 +142,13 @@ export const ONBOARDING_TEXT = {
     gentleTitle: 'Safety check · Gentle start',
     gentle: 'Easy walks and stretches only for now. Please check with a doctor before harder training.',
   },
+  gear: {
+    line: 'Your training. I build every workout from what you have.',
+    equipment: 'What can you train with?',
+    nothing: 'Just my body',
+    style: 'Which program?',
+    note: 'Any program suits anyone. You can change both later in Settings.',
+  },
   mind: {
     line: 'Your mind. This sets where your first quests start.',
     reading: 'How much do you read now?',
@@ -156,6 +163,7 @@ export const ONBOARDING_TEXT = {
     note: 'Hard days and rest days are always one tap away.',
     ownProgram:
       "Your own training session takes 20 minutes, so at 10 or 15 minutes a day there's no room for strength quests. Pick 25 or 40 to keep them.",
+    workouts: 'Workouts need 25 minutes a day or more. At 10 or 15 minutes, your strength quests stay single exercises.',
   },
   slip: {
     line: 'Everyone slips. When you do, what gets you back?',

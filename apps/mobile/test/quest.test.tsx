@@ -213,7 +213,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     await renderQuest(SERVER, core.id);
     expect(screen.getByText(template.voice.system.title)).toBeTruthy();
     expect(screen.getByText(template.voice.system.line)).toBeTruthy();
-    expect(screen.getByText(questSummary(template, core.hardDay))).toBeTruthy();
+    expect(screen.getByText(questSummary(core))).toBeTruthy();
     expect(screen.getByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeTruthy();
     for (const [i, step] of template.steps.entries()) expect(screen.getByText(`${i + 1}. ${step}`)).toBeTruthy();
     if (template.exercise !== null) expect(screen.getByText(EXERCISE_SAFETY_LINE)).toBeTruthy();

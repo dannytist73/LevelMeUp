@@ -3806,3 +3806,40 @@ note. M6c merges after M6b (`git merge` of the base, re-run every check, finishi
   programStyle }` everywhere.
 - **Numbers:** rungs 16/16/16/23/29/32 minutes, hard day 7 (`workoutMinutes`); 53 moves; 34 art keys; programs 3/3/2
   days of 6 slots.
+
+## As built
+
+### Changes from the plan
+
+- **Search commands:** the plan's `npx rg` commands became `git grep -nE` (`npx rg` runs an unrelated npm package that
+  writes a README; the stray file was removed).
+- **Task 1 stop-gaps beyond the list:** `packages/content/src/format.ts` reads the two new conditions at once (the
+  workout case as in Task 5; a session listed by move ids until Task 5 names them), the content library test's
+  `COMPLETION_FOR` got its `workout`/`session` entries in Task 1, and `days.test.ts`'s `profiles()` literal got the
+  default setup. Rules count 378 after Task 1: the portable test checks each source file, so `workout.ts` adds 2.
+- **Task 5, tests the plan didn't list:** the art test's "one picture per ladder" skips the workout ladder and `ART_KEYS`
+  leaves out workout templates (both from Task 6, brought forward so the count stays 20 until Task 6); the app's smoke
+  test and the dev self-check (`src/dev/selfcheck.ts`) count 80 templates (was 74); the server's onboarding unit test
+  expects `workout` among the "most weeks" starting ladders; the app's quest and Today tests call `questSummary(core)`.
+
+### Pacing re-run (Task 5, 400 runs, 2026-10-12): all targets met, no tuning
+
+```
+persona                    L2     L5    L10    L15    L20  rank C
+warrior steady            1.0    5.9   17.4   39.4   72.4    134.6
+warrior typical           1.3    7.1   23.3   52.1   94.0        —
+warrior struggling        2.3   12.1   45.4  102.7      —        —
+mage steady               1.0    5.9   18.2   40.4   73.1     55.9
+mage typical              1.3    7.2   24.1   53.1   94.5     73.7
+mage struggling           2.3   12.6   47.8  108.2      —        —
+rogue steady              1.0    6.2   18.1   39.2   72.7    135.1
+rogue typical             1.3    7.5   23.7   51.9   93.5        —
+rogue struggling          2.3   12.6   46.7  105.5      —        —
+monk steady               1.0    6.3   18.4   38.6   69.8     76.5
+monk typical              1.3    7.6   24.1   51.8   92.0    104.0
+monk struggling           2.3   12.8   47.1  106.4      —        —
+```
+
+Tightest margins: Mage struggling level 10 on day 47.8 (maximum 48) and Warrior steady level 10 on day 17.4 (minimum
+16.8). The campaign test is seeded, so the margin is stable; M9's pilot data should confirm the struggling pace.
+Experienced players (one rung up on day 1) also met every target (Warrior steady L10 17.4, Mage struggling L10 45.4).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { targetText } from '../src/format.ts';
+import { moveTarget, questSummary, targetText } from '../src/format.ts';
 
 describe('quest targets in words', () => {
   it.each([
@@ -12,5 +12,27 @@ describe('quest targets in words', () => {
     [{ kind: 'habit' }, ''],
   ] as const)('%o reads "%s"', (condition, text) => {
     expect(targetText(condition)).toBe(text);
+  });
+
+  it('reads a workout template and a planned session', () => {
+    expect(targetText({ kind: 'workout', sets: [2, 2, 2], level: 1 })).toBe('3 exercises, 2 sets each');
+    expect(targetText({ kind: 'workout', sets: [4, 3, 3, 3], level: 3 })).toBe('4 exercises, 3–4 sets each');
+    const session = {
+      kind: 'session',
+      moves: [
+        { move: 'goblet-squat', unit: 'reps', min: 10, max: 15, perSide: false, sets: 2 },
+        { move: 'plank', unit: 'seconds', min: 20, max: 40, perSide: false, sets: 2 },
+      ],
+    } as const;
+    expect(targetText(session)).toBe('Goblet squat, Forearm plank');
+    expect(moveTarget(session.moves[0])).toBe('2 sets of 10–15 reps');
+    expect(moveTarget({ ...session.moves[1], perSide: true, sets: 1 })).toBe('1 hold of 20–40 seconds per side');
+    expect(questSummary({ condition: session, minutes: 16 })).toBe('Goblet squat, Forearm plank · about 16 min');
+  });
+
+  it('summarises a quest as it is stored: its condition and minutes', () => {
+    expect(questSummary({ condition: { kind: 'reps', sets: 3, reps: 8, perSide: false }, minutes: 10 })).toBe('3 sets of 8 · about 10 min');
+    expect(questSummary({ condition: { kind: 'minutes', minutes: 20 }, minutes: 20 })).toBe('20 minutes');
+    expect(questSummary({ condition: { kind: 'habit' }, minutes: 2 })).toBe('about 2 min');
   });
 });

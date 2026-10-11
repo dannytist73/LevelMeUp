@@ -2,10 +2,12 @@ import type { Ladder } from '../../../rules/src/index.ts';
 import type { AuthoredTemplate } from '../types.ts';
 import { hold, minutes, reps } from './conditions.ts';
 
+// Workouts lead a strength day (M6c decision 7): the workout ladder is the strength ladder every class prefers, so push,
+// squat and core training now serve side quests, swaps and days too short for a workout.
 export const STRENGTH_LADDERS: readonly Ladder[] = [
-  { id: 'push', stat: 'strength', goals: ['body'], affinity: ['warrior'], ownProgram: false, tracksBook: false },
-  { id: 'squat', stat: 'strength', goals: ['body'], affinity: ['warrior'], ownProgram: false, tracksBook: false },
-  { id: 'core', stat: 'strength', goals: ['body'], affinity: ['warrior'], ownProgram: false, tracksBook: false },
+  { id: 'push', stat: 'strength', goals: ['body'], affinity: [], ownProgram: false, tracksBook: false },
+  { id: 'squat', stat: 'strength', goals: ['body'], affinity: [], ownProgram: false, tracksBook: false },
+  { id: 'core', stat: 'strength', goals: ['body'], affinity: [], ownProgram: false, tracksBook: false },
   { id: 'own-program', stat: 'strength', goals: ['body'], affinity: ['warrior'], ownProgram: true, tracksBook: false },
 ];
 

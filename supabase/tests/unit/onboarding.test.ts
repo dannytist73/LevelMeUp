@@ -83,7 +83,7 @@ describe('the start of a character', () => {
 
   it('starts experienced players one rung up, never past a gentle start', () => {
     const most = startArgs(choices({ training: 'most' }), templateReveal(choices()), nightOwl, LIBRARY);
-    expect(Object.keys(most.ladders).sort()).toEqual(['core', 'push', 'squat', 'walk']);
+    expect(Object.keys(most.ladders).sort()).toEqual(['core', 'push', 'squat', 'walk', 'workout']);
     expect(Object.values(most.ladders).every((l) => l.rung === 1)).toBe(true);
     const gentle = startArgs(choices({ training: 'most', gentleStart: true }), templateReveal(choices()), nightOwl, LIBRARY);
     expect(gentle.ladders).toEqual({});
