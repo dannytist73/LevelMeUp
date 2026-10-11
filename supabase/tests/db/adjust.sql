@@ -1,0 +1,131 @@
+-- levelmeup.adjust (migration 0008, M6b): each guard, the writes, a repeat, and who may call it.
+-- Runs inside a transaction that always rolls back, after _helpers.sql.
+
+-- The player's latest day.
+create function lmu_test.day_of(p_user uuid) returns bigint language sql stable as $$
+  select id from levelmeup.quest_days where user_id = p_user order by day_number desc limit 1
+$$;
+
+-- A quest as _shared/adjust.ts sends it: the player's quest in p_slot, replaced by a 3-minute mobility quest.
+create function lmu_test.swapped(p_user uuid, p_slot text) returns jsonb language sql stable as $$
+  select jsonb_build_object('id', lmu_test.quest(p_user, p_slot), 'slot', p_slot, 'templateId', 'mobility-0',
+    'ladder', 'mobility', 'rung', 0, 'stat', 'vitality', 'tier', 'minor', 'minutes', 3, 'completion', 'timer',
+    'condition', '{"kind": "minutes", "minutes": 3}'::jsonb, 'hardDay', false, 'xp', '{"vitality": 10}'::jsonb,
+    'why', '{"code": "swap"}'::jsonb, 'book', null)
+$$;
+
+create function lmu_test.test_adjust_swap() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  core bigint := lmu_test.quest(a, 'core');
+  payload jsonb := jsonb_build_object('instanceId', core, 'templateId', 'mobility-0');
+  change jsonb := jsonb_build_object('day', jsonb_build_object('id', lmu_test.day_of(a), 'swaps', 1),
+    'quests', jsonb_build_array(lmu_test.swapped(a, 'core')));
+  first jsonb;
+begin
+  first := levelmeup.adjust(a, lmu_test.ev(1), 1, 'swap', payload, change);
+  return next is(first, '{"type": "swap", "version": 2}'::jsonb, 'the result names the change and the new version');
+  return next is((select template_id || '/' || minutes || '/' || (xp ->> 'vitality') from levelmeup.quest_instances where id = core),
+    'mobility-0/3/10', 'the quest is replaced in place, with the drafted snapshot');
+  return next is((select swaps_used from levelmeup.quest_days where id = lmu_test.day_of(a)), 1::smallint, 'the swap is counted');
+  return next is((select count(*) from levelmeup.events where user_id = a and type = 'swap'), 1::bigint, 'the event is stored');
+  return next is(levelmeup.adjust(a, lmu_test.ev(1), 99, 'swap', payload, '{}'), first, 'a repeat returns the stored result, whatever the version');
+  return next is(lmu_test.version(a), 2, 'and changes nothing');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''plan_rest'', ''{"dayId": 1}'', ''{}'')', a, lmu_test.ev(1)),
+    'P0001', 'lmu:event_reused', 'the same id for another action is refused');
+  return next throws_ok(format('select levelmeup.undo_quest(%L, %L, %s)', a, lmu_test.ev(1), core),
+    'P0001', 'lmu:event_reused', 'and the completion functions refuse it too');
+end $$;
+
+create function lmu_test.test_adjust_guards() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  b uuid := lmu_test.start(2);
+  late uuid := lmu_test.start(3, now() - interval '25 hours', now() - interval '1 minute');
+  adj text := 'select levelmeup.adjust(%L, %L, %s, %L, ''{}'', %L)';
+  day_a jsonb := jsonb_build_object('id', lmu_test.day_of(a));
+begin
+  return next throws_ok(format(adj, a, lmu_test.ev(1), 7, 'swap', jsonb_build_object('day', day_a)),
+    'P0001', 'lmu:conflict', 'a change planned on an older version is refused');
+  return next throws_ok(format(adj, a, lmu_test.ev(2), 1, 'nonsense', '{}'), 'P0001', 'lmu:bad_change', 'an unknown kind of change is refused');
+  return next throws_ok(format(adj, b, lmu_test.ev(3), 1, 'swap', jsonb_build_object('day', day_a)),
+    'P0001', 'lmu:not_found', 'another player''s day is not found');
+  return next throws_ok(format(adj, late, lmu_test.ev(4), 1, 'plan_rest',
+      jsonb_build_object('day', jsonb_build_object('id', lmu_test.day_of(late), 'protection', 'planned_rest'))),
+    'P0001', 'lmu:day_closed', 'a day that has ended takes no changes, even before it is closed');
+  return next throws_ok(format(adj, a, lmu_test.ev(5), 1, 'swap', jsonb_build_object('quests', jsonb_build_array(lmu_test.swapped(a, 'core')))),
+    'P0001', 'lmu:bad_change', 'quests change only on a day the change names');
+  return next throws_ok(format(adj, a, lmu_test.ev(6), 1, 'swap', jsonb_build_object('day', day_a, 'quests', jsonb_build_array(lmu_test.swapped(b, 'core')))),
+    'P0001', 'lmu:not_found', 'another player''s quest is not found');
+  return next throws_ok(format(adj, a, lmu_test.ev(7), 1, 'swap',
+      jsonb_build_object('day', day_a, 'quests', jsonb_build_array(lmu_test.swapped(a, 'core') || '{"slot": "side1"}'))),
+    'P0001', 'lmu:bad_change', 'a quest keeps its slot');
+  return next throws_ok(format(adj, a, lmu_test.ev(8), 1, 'plan_rest', jsonb_build_object('day', day_a || '{"protection": "outage"}')),
+    'P0001', 'lmu:bad_change', 'only rest and pain protect a day from here');
+  return next throws_ok(format(adj, a, lmu_test.ev(9), 1, 'ability', '{"ability": {"id": "vanish", "day": 1}}'),
+    'P0001', 'lmu:bad_change', 'only Stillness and Dawn Ritual are recorded from here');
+  return next throws_ok(format(adj, a, lmu_test.ev(10), 1, 'swap',
+      jsonb_build_object('day', day_a, 'quests', jsonb_build_array(lmu_test.swapped(a, 'core') || '{"xp": {"vitality": 5000}}'))),
+    '23514', null, 'an XP snapshot over 200 is refused');
+  perform levelmeup.complete_quest(a, lmu_test.ev(11), lmu_test.quest(a, 'core'), now(), null, null);
+  return next throws_ok(format(adj, a, lmu_test.ev(12), 2, 'swap', jsonb_build_object('day', day_a, 'quests', jsonb_build_array(lmu_test.swapped(a, 'core')))),
+    'P0001', 'lmu:already_completed', 'a cleared quest is never replaced');
+  return next is(lmu_test.version(a), 2, 'no refused change wrote anything');
+end $$;
+
+create function lmu_test.test_adjust_day_and_ladders() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  day bigint := lmu_test.day_of(a);
+  resting jsonb := '{"rung": 0, "highestRung": 0, "atRung": [], "misses": [], "lastStepUpAt": null, "paused": true}';
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(1), 1, 'hard_day', jsonb_build_object('dayId', day),
+    jsonb_build_object('day', jsonb_build_object('id', day, 'hardDay', true)));
+  return next is((select hard_day from levelmeup.quest_days where id = day), true, 'a hard day is marked');
+  perform levelmeup.adjust(a, lmu_test.ev(2), 2, 'pain', '{"instanceId": 1, "choice": "rest"}',
+    jsonb_build_object('day', jsonb_build_object('id', day, 'protection', 'pain'), 'ladders', jsonb_build_object('walk', resting)));
+  return next is((select protection from levelmeup.quest_days where id = day), 'pain', 'a day rested after pain is protected');
+  return next is((select state ->> 'paused' from levelmeup.ladder_states where user_id = a and ladder_id = 'walk'), 'true',
+    'and the ladder rests');
+  perform levelmeup.adjust(a, lmu_test.ev(3), 3, 'plan_rest', jsonb_build_object('dayId', day),
+    jsonb_build_object('day', jsonb_build_object('id', day, 'protection', 'planned_rest')));
+  return next is((select protection from levelmeup.quest_days where id = day), 'pain', 'a protected day keeps its first reason');
+  perform levelmeup.adjust(a, lmu_test.ev(4), 4, 'pain', '{"instanceId": 2, "choice": "pause"}',
+    jsonb_build_object('ladders', jsonb_build_object('micro-squats', resting)));
+  return next is((select count(*) from levelmeup.ladder_states where user_id = a), 2::bigint,
+    'a standalone exercise quest rests by its own id');
+end $$;
+
+create function lmu_test.test_adjust_class_and_ability() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(1), 1, 'class_change', '{"classId": "monk"}', '{"classId": "monk"}');
+  return next is((select class_id from levelmeup.profiles where user_id = a), 'monk', 'the class changes');
+  return next ok((select class_changed_at > now() - interval '1 minute' from levelmeup.profiles where user_id = a), 'and the time is kept');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''class_change'', ''{"classId": "mage"}'', ''{"classId": "mage"}'')', a, lmu_test.ev(2)),
+    'P0001', 'lmu:class_locked', 'a second change within 14 days is refused');
+  update levelmeup.profiles set class_changed_at = now() - interval '14 days' where user_id = a;
+  perform levelmeup.adjust(a, lmu_test.ev(3), 2, 'class_change', '{"classId": "mage"}', '{"classId": "mage"}');
+  return next is((select class_id from levelmeup.profiles where user_id = a), 'mage', '14 days later it opens again');
+  return next is((select start_strength || '/' || total_xp from levelmeup.character_state where user_id = a), '9/0',
+    'stats and XP stay');
+  perform levelmeup.adjust(a, lmu_test.ev(4), 3, 'ability', jsonb_build_object('dayId', lmu_test.day_of(a), 'ability', 'stillness'),
+    jsonb_build_object('day', jsonb_build_object('id', lmu_test.day_of(a)),
+      'quests', jsonb_build_array(lmu_test.swapped(a, 'core') || '{"templateId": "stillness", "why": {"code": "stillness"}}'),
+      'ability', '{"id": "stillness", "day": 1}'::jsonb));
+  return next is((select template_id from levelmeup.quest_instances where id = lmu_test.quest(a, 'core')), 'stillness',
+    'the ability''s quest takes the core slot');
+  return next is((select ability_last_used from levelmeup.character_state where user_id = a), '{"stillness": 1}'::jsonb,
+    'and its quest day is kept');
+end $$;
+
+create function lmu_test.test_adjust_rights() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  stmt text := format('select levelmeup.adjust(%L, %L, 1, ''plan_rest'', ''{}'', ''{}'')', a, lmu_test.ev(1));
+begin
+  return next ok(lmu_test.try_as(a, stmt) like '42501%', 'a player can''t call it');
+  return next ok(lmu_test.try_role('anon', stmt) like '42501%', 'nor can anyone signed out');
+  return next is(lmu_test.try_service(stmt), null, 'the Edge Functions can');
+end $$;
