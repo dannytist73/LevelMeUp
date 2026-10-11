@@ -2,7 +2,8 @@
 import type { DayInput } from '../../src/day.ts';
 import type { Exercise, Ladder, PlayerProfile, QuestLibrary, QuestTemplate, TemplateRole } from '../../src/library.ts';
 import type { Limitation, Stat, Tier } from '../../src/types.ts';
-import type { TrainingLibrary } from '../../src/workout.ts';
+import type { Move, MoveLevel, MoveSlot, TrainingLibrary } from '../../src/workout.ts';
+import { workoutMinutes } from '../../src/workout.ts';
 
 type Spec = {
   id: string;
@@ -106,3 +107,47 @@ export function dayInput(overrides: Partial<DayInput> = {}, profile: Partial<Pla
     ...overrides,
   };
 }
+
+const move = (id: string, slots: MoveSlot[], level: MoveLevel, extra: Partial<Move> = {}): Move => ({
+  id, slots, pattern: 'push', needs: [], level, unit: 'reps', min: 8, max: 12, perSide: false, contraindications: [], ...extra,
+});
+
+/** A small exercise library: bodyweight moves at each level, a few that need equipment, and two programs. */
+export const TRAINING: TrainingLibrary = {
+  moves: [
+    move('db-press', ['horizontal_push'], 1, { needs: ['dumbbells'] }),
+    move('wall-push', ['horizontal_push'], 1, { contraindications: ['wrist'] }),
+    move('incline-push', ['horizontal_push'], 2, { contraindications: ['wrist'] }),
+    move('push-up', ['horizontal_push'], 3, { contraindications: ['wrist'] }),
+    move('bb-row', ['horizontal_pull'], 3, { needs: ['gym'], pattern: 'pull' }),
+    move('y-raise', ['horizontal_pull'], 1, { pattern: 'pull' }),
+    move('chair-squat', ['squat', 'quads'], 1, { pattern: 'squat', contraindications: ['knee'] }),
+    move('split-squat', ['squat', 'quads'], 2, { pattern: 'squat', contraindications: ['knee'], perSide: true }),
+    move('bridge', ['hip_hinge'], 1, { pattern: 'hinge' }),
+    move('plank', ['abs'], 1, { pattern: 'core', unit: 'seconds', min: 20, max: 40 }),
+    move('chin-up', ['vertical_pull'], 3, { needs: ['pullup_bar'], pattern: 'pull' }),
+  ],
+  programs: {
+    men: [['horizontal_push', 'horizontal_pull', 'squat', 'abs'], ['vertical_pull', 'hip_hinge', 'quads', 'abs']],
+    women: [['hip_hinge', 'quads', 'horizontal_pull', 'abs']],
+    none: [['squat', 'horizontal_push', 'hip_hinge', 'horizontal_pull'], ['quads', 'vertical_pull', 'abs', 'horizontal_push']],
+  },
+};
+
+/** A workout template: 3 exercises of 2 sets at `level`, or the given shape. */
+export function workoutTemplate(rung: number, level: MoveLevel, sets: number[] = [2, 2, 2]): QuestTemplate {
+  return {
+    ...template({ id: `workout-${rung}`, ladder: 'workout', rung, stat: 'strength', minutes: workoutMinutes(sets), exercise: 'strength' }),
+    completion: 'reps',
+    condition: { kind: 'workout', sets, level },
+    hardDay: { minutes: workoutMinutes([1, 1]), condition: { kind: 'workout', sets: [1, 1], level } },
+  };
+}
+
+/** FIXTURE plus a workout ladder (rungs: level 1, 2, 3, then 3 × 3 sets) that every class prefers. */
+export const WORKOUT_FIXTURE: QuestLibrary = {
+  ...FIXTURE,
+  ladders: [...FIXTURE.ladders, ladder('workout', 'strength', ['body'], ['warrior', 'mage', 'rogue', 'monk'])],
+  templates: [...FIXTURE.templates, workoutTemplate(0, 1), workoutTemplate(1, 2), workoutTemplate(2, 3), workoutTemplate(3, 3, [3, 3, 3])],
+  training: TRAINING,
+};
