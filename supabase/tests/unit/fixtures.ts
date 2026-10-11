@@ -1,11 +1,12 @@
 // Rows as postgres.js returns them, built from the real library so the day builder sees real quests.
-import { DAY_MS, nextDayWindow } from '../../../packages/rules/src/index.ts';
+import { DAY_MS, draftQuest, nextDayWindow, specialTemplate, templateById } from '../../../packages/rules/src/index.ts';
 import type { LadderState, Slot } from '../../../packages/rules/src/index.ts';
 import { CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import type { Choices } from '../../functions/_shared/onboarding.ts';
 import type { AdvanceInput } from '../../functions/_shared/advance.ts';
-import type { CharacterRow, DayDraft, DayRow, InstanceRow, LadderRow, ProfileRow } from '../../functions/_shared/state.ts';
+import { toDraft } from '../../functions/_shared/drafts.ts';
+import type { CharacterRow, DayDraft, DayRow, InstanceRow, LadderRow, ProfileRow, Snapshot } from '../../functions/_shared/state.ts';
 
 /** Onboarding at 8 PM in Manila on 10 October 2026; day 1 runs to 4 AM. */
 export const ONBOARDED = Date.UTC(2026, 9, 10, 12, 0);
@@ -32,7 +33,8 @@ export function onboardingBody(over: Record<string, unknown> = {}): Record<strin
 
 export function profileRow(c: Choices = choices(), over: Partial<ProfileRow> = {}): ProfileRow {
   return {
-    user_id: '00000000-0000-4000-8000-000000000001', name: c.name, voice: c.voice, class_id: c.classId, time_zone: c.timeZone,
+    user_id: '00000000-0000-4000-8000-000000000001', name: c.name, voice: c.voice, class_id: c.classId, class_changed_at: null,
+    time_zone: c.timeZone,
     boundary_minutes: c.boundaryMinutes, minutes_per_day: c.minutesPerDay, difficulty: c.difficulty, goals: c.goals,
     limitations: c.limitations, gentle_start: c.gentleStart, own_program: c.ownProgram, book: null, reveal: {}, accountability_level: 0, ...over,
   };
@@ -52,7 +54,7 @@ export function dayRow(draft: DayDraft, id: number, over: Partial<DayRow> = {}):
   return {
     id: String(id), day_number: draft.dayNumber, starts_at: new Date(draft.startsAt), ends_at: new Date(draft.endsAt),
     time_zone: draft.timeZone, budget: draft.budget, light: draft.light, comeback: draft.comeback, hard_day: false,
-    article_id: null, protection: draft.protection, status: 'open', resolution: null, streak_applied: false, ...over,
+    article_id: null, protection: draft.protection, status: 'open', resolution: null, streak_applied: false, swaps_used: 0, ...over,
   };
 }
 
@@ -86,6 +88,42 @@ export function manilaDay(n: number): { startsAt: number; endsAt: number } {
   let w = { startsAt: new Date(DAY1.startsAt).getTime(), endsAt: new Date(DAY1.endsAt).getTime(), timeZone: 'Asia/Manila' };
   for (let i = 1; i < n; i++) w = nextDayWindow(w, 'Asia/Manila', 240);
   return w;
+}
+
+/** The quests of `dayTwoSnapshot` by default: a strength ladder, a walk and a reading quest (23 of 25 minutes). */
+export const DAY_TWO_SLOTS = { core: 'push-1', side1: 'walk-1', side2: 'reading-0' } as const;
+
+/**
+ * The player on day 2 (a full 25-minute day in Manila, after a cleared day 1) with these templates in its slots, drafted
+ * by the rules. Quest ids follow `instanceRows`: core 200, side1 201, side2 202, article 203. `day` changes day 2's row.
+ */
+export function dayTwoSnapshot(
+  slots: { core: string; side1: string; side2: string } = DAY_TWO_SLOTS,
+  over: Partial<Snapshot> = {},
+  day: Partial<DayRow> = {},
+): Snapshot {
+  const w = manilaDay(2);
+  const draft: DayDraft = {
+    dayNumber: 2, startsAt: new Date(w.startsAt).toISOString(), endsAt: new Date(w.endsAt).toISOString(), timeZone: 'Asia/Manila',
+    budget: 25, light: false, comeback: false, articleId: null, protection: null, contentVersion: CONTENT_VERSION,
+    quests: [
+      ...(['core', 'side1', 'side2'] as const).map((slot) =>
+        toDraft(LIBRARY, draftQuest(templateById(LIBRARY, slots[slot]), slot, { code: 'balance', stat: 'vitality' }))),
+      toDraft(LIBRARY, draftQuest(specialTemplate(LIBRARY, 'article'), 'article', { code: 'article' })),
+    ],
+  };
+  return {
+    profile: profileRow(),
+    character: characterRow(),
+    ladders: [],
+    days: [dayRow(draft, 2, day), dayRow(DAY1, 1, { status: 'closed', resolution: 'streak_day', streak_applied: true })],
+    instances: [...instanceRows(DAY1, 1, ['core']), ...instanceRows(draft, 2)],
+    checkins: [],
+    earned: [],
+    queued: false,
+    painReports: 0,
+    ...over,
+  };
 }
 
 export { DAY_MS };

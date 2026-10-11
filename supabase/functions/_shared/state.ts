@@ -4,7 +4,7 @@ import {
 } from '../../../packages/rules/src/index.ts';
 import type {
   AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Goal, LadderState, Limitation,
-  PastDay, PlayerProfile, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
+  PastDay, PlayerProfile, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
 } from '../../../packages/rules/src/index.ts';
 
 /** Bigint ids arrive as strings from postgres.js. */
@@ -15,6 +15,7 @@ export type ProfileRow = {
   name: string;
   voice: 'mentor' | 'system' | 'questmaster';
   class_id: ClassId;
+  class_changed_at: Date | null;
   time_zone: string;
   boundary_minutes: number;
   minutes_per_day: number;
@@ -56,10 +57,11 @@ export type DayRow = {
   comeback: boolean;
   hard_day: boolean;
   article_id: string | null;
-  protection: 'planned_rest' | 'outage' | 'no_quests' | null;
+  protection: Protection | null;
   status: 'open' | 'closed';
   resolution: 'streak_day' | 'protected' | 'awaiting_checkin' | null;
   streak_applied: boolean;
+  swaps_used: number;
 };
 
 export type InstanceRow = {
@@ -115,6 +117,23 @@ export type DayDraft = {
   contentVersion: number;
   quests: InstanceDraft[];
 };
+
+/** A quest's stored fields without its slot: what a swap, the gentle option or an ability puts in a slot. */
+export type QuestFields = Omit<InstanceDraft, 'slot'>;
+
+/** What the phone may offer today (M6b; `_shared/today.ts`). Per-quest offers are keyed by quest instance id. */
+export type DayOffers = {
+  swapsLeft: number;
+  restAllowed: boolean;
+  /** Day-shaping abilities ready now, each with the quest it puts in the core slot. */
+  abilities: { ability: 'stillness' | 'dawn_ritual'; quest: QuestFields }[];
+  swaps: Readonly<Record<string, QuestFields[]>>;
+  /** Exercise quests only: gentle movement after pain, or null when none fits. */
+  gentle: Readonly<Record<string, QuestFields | null>>;
+  stepDown: readonly string[];
+};
+
+export const NO_OFFERS: DayOffers = { swapsLeft: 0, restAllowed: false, abilities: [], swaps: {}, gentle: {}, stepDown: [] };
 
 export function startPoints(c: CharacterRow): StatMap {
   return Object.fromEntries(STATS.map((s) => [s, c[`start_${s}`]])) as StatMap;
@@ -225,19 +244,22 @@ export type Snapshot = {
   earned: string[];
   /** A closed day is waiting behind a pending check-in (`streak_applied = false`), possibly older than `days`. */
   queued: boolean;
+  /** "I felt pain" reports in the last 14 days (rules: PAIN_WINDOW_MS). */
+  painReports: number;
 };
 
 const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];
 const iso = (d: Date | null): string | null => (d === null ? null : d.toISOString());
 
-/** The phone's copy of the player's state (the `lmu-sync` and `lmu-onboarding` responses). */
-export function stateView(s: Snapshot) {
+/** The phone's copy of the player's state (the `lmu-sync` and `lmu-onboarding` responses), with today's offers (M6b). */
+export function stateView(s: Snapshot, offers: DayOffers) {
   const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
   const today = days[0] ?? null;
   const questsOf = (day: DayRow) => s.instances.filter((q) => String(q.day_id) === String(day.id));
   return {
     profile: {
-      name: s.profile.name, voice: s.profile.voice, classId: s.profile.class_id, timeZone: s.profile.time_zone,
+      name: s.profile.name, voice: s.profile.voice, classId: s.profile.class_id, classChangedAt: iso(s.profile.class_changed_at),
+      timeZone: s.profile.time_zone,
       boundaryMinutes: s.profile.boundary_minutes, minutesPerDay: s.profile.minutes_per_day, difficulty: s.profile.difficulty,
       goals: s.profile.goals, limitations: s.profile.limitations, gentleStart: s.profile.gentle_start, ownProgram: s.profile.own_program,
       book: s.profile.book, reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
@@ -247,12 +269,15 @@ export function stateView(s: Snapshot) {
       id: Number(today.id), dayNumber: today.day_number, startsAt: iso(today.starts_at), endsAt: iso(today.ends_at),
       timeZone: today.time_zone, budget: today.budget, light: today.light, hardDay: today.hard_day, protection: today.protection,
       status: today.status,
+      swapsLeft: offers.swapsLeft, restAllowed: offers.restAllowed, abilities: offers.abilities,
       quests: questsOf(today)
         .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))
         .map((q) => ({
           id: Number(q.id), slot: q.slot, templateId: q.template_id, ladder: q.ladder_id, rung: q.rung, stat: q.stat, tier: q.tier,
           minutes: q.minutes, completion: q.completion, condition: q.condition, hardDay: q.hard_day, xp: q.xp, why: q.why,
           book: q.book, completedAt: iso(q.completed_at), rating: q.rating,
+          swaps: offers.swaps[String(q.id)] ?? [], gentle: offers.gentle[String(q.id)] ?? null,
+          canStepDown: offers.stepDown.includes(String(q.id)),
         })),
     },
     checkinsDue: s.checkins
@@ -263,5 +288,8 @@ export function stateView(s: Snapshot) {
       cleared: questsOf(d).filter((q) => q.completed_at !== null).length,
     })),
     achievements: [...s.earned].sort(),
+    /** Ladders, or standalone exercise quests, resting after pain. */
+    paused: s.ladders.filter((l) => l.state.paused).map((l) => l.ladder_id).sort(),
+    painReports: s.painReports,
   };
 }

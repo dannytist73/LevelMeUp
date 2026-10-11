@@ -12,6 +12,7 @@ import { parseSyncBody } from '../_shared/events.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { authenticate } from '../_shared/session.ts';
 import { achievementProgress, ladderMap, stateView } from '../_shared/state.ts';
+import { dayOffers } from '../_shared/today.ts';
 import type { DayRow, InstanceRow } from '../_shared/state.ts';
 
 /** Tries at closing days when another write got there first (`lmu:conflict`). */
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
       results,
       rejected: request.rejected,
       newAchievements: newAchievementIds,
-      state: stateView(snapshot!),
+      state: stateView(snapshot!, dayOffers(snapshot!, LIBRARY)),
     });
   } catch (error) {
     if (lmuCode(error) === 'conflict') return problemResponse(problem(503, 'busy', 'try again'));

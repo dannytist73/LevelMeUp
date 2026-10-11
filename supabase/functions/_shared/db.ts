@@ -2,6 +2,7 @@
 // (role lmu_player with their claims) so row level security decides; writes call the levelmeup functions. lmu_player
 // can read LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (migration 0004).
 import postgres from 'npm:postgres@3.4.9';
+import { PAIN_WINDOW_MS } from '../../../packages/rules/src/index.ts';
 import type { CharacterRow, CheckinRow, DayRow, InstanceRow, LadderRow, ProfileRow, Snapshot } from './state.ts';
 
 export type Sql = postgres.Sql;
@@ -59,9 +60,12 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       select achievement_id from levelmeup.achievements_earned where user_id = ${userId}`;
     const { queued } = one(await tx<{ queued: boolean }[]>`
       select exists (select 1 from levelmeup.quest_days where user_id = ${userId} and status = 'closed' and not streak_applied) as queued`);
+    const { pain } = one(await tx<{ pain: number }[]>`
+      select count(*)::int as pain from levelmeup.events
+      where user_id = ${userId} and type = 'pain' and applied_at > now() - make_interval(secs => ${PAIN_WINDOW_MS / 1000})`);
     return {
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances], checkins: [...checkins],
-      earned: earned.map((r) => r.achievement_id), queued,
+      earned: earned.map((r) => r.achievement_id), queued, painReports: pain,
     };
   } finally {
     await asService(tx);

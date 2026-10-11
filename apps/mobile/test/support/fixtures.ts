@@ -1,14 +1,18 @@
 // Phone-side fixtures built with the server's own fixtures and `stateView`, so tests see exactly what `lmu-sync` sends.
-import { SAFETY_QUESTIONS, STATS } from '@levelmeup/rules';
+import { LIBRARY } from '@levelmeup/content';
+import { SAFETY_QUESTIONS, STATS, newLadder } from '@levelmeup/rules';
 import type { Rating, Slot } from '@levelmeup/rules';
 import { stateView } from '../../../../supabase/functions/_shared/state.ts';
-import type { CharacterRow } from '../../../../supabase/functions/_shared/state.ts';
-import { DAY1, characterRow, dayRow, instanceRows, profileRow } from '../../../../supabase/tests/unit/fixtures.ts';
+import type { CharacterRow, DayRow, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
+import { dayOffers } from '../../../../supabase/functions/_shared/today.ts';
+import {
+  DAY1, DAY_TWO_SLOTS, HOUR, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay, profileRow,
+} from '../../../../supabase/tests/unit/fixtures.ts';
 import type { PhoneEvent, Reveal, ServerState } from '../../src/game/types.ts';
 import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
 import type { Draft } from '../../src/onboarding/flow.ts';
 
-export { DAY1, characterRow };
+export { DAY1, DAY_TWO_SLOTS, characterRow, profileRow };
 
 /** Day 1 of the server fixtures' player, with the given slots already cleared and their XP counted. */
 export function serverState(done: readonly Slot[] = [], character: Partial<CharacterRow> = {}): ServerState {
@@ -16,7 +20,7 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
   for (const q of DAY1.quests.filter((q) => done.includes(q.slot))) {
     for (const s of STATS) earned[`xp_${s}`] = (earned[`xp_${s}`] ?? 0) + (q.xp[s] ?? 0);
   }
-  return stateView({
+  const snapshot: Snapshot = {
     profile: profileRow(),
     character: characterRow({ ...earned, ...character }),
     ladders: [],
@@ -25,7 +29,21 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     checkins: [],
     earned: [],
     queued: false,
-  });
+    painReports: 0,
+  };
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY));
+}
+
+/** A time inside day 2 of `adjustState`. */
+export const DAY_TWO_NOW = manilaDay(2).startsAt + HOUR;
+
+/**
+ * Day 2 with push-1 (core, at its ladder's rung), walk-1 and reading-0: every adjustment has something to offer. Quest
+ * ids: core 200, side1 201, side2 202, article 203; the day's id is 2.
+ */
+export function adjustState(over: Partial<Snapshot> = {}, day: Partial<DayRow> = {}): ServerState {
+  const snapshot = dayTwoSnapshot(DAY_TWO_SLOTS, { ladders: ladderRows({ push: newLadder(1) }), ...over }, day);
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY));
 }
 
 let next = 1;

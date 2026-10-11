@@ -4,7 +4,7 @@ import { ACHIEVEMENTS, LIBRARY } from '../../../packages/content/src/index.ts';
 import { playerFromAuthHeader } from '../../functions/_shared/auth.ts';
 import { readJson } from '../../functions/_shared/http.ts';
 import { startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
-import { achievementProgress, characterView, pastDays, stateView, toProfile } from '../../functions/_shared/state.ts';
+import { NO_OFFERS, achievementProgress, characterView, pastDays, stateView, toProfile } from '../../functions/_shared/state.ts';
 import { DAY1, characterRow, choices, dayRow, instanceRows, manilaDay, profileRow } from './fixtures.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 12);
@@ -96,7 +96,8 @@ describe('the state the phone receives', () => {
       checkins: [{ id: '7', day_id: null, gap_from: 3, gap_to: 4, answer: null }],
       earned: ['level-5', 'first-trial'],
       queued: false,
-    });
+      painReports: 0,
+    }, NO_OFFERS);
     expect(view.today).toMatchObject({ id: 2, dayNumber: 2, status: 'open' });
     expect(view.today!.quests.map((q) => q.slot)).toEqual(DAY1.quests.map((q) => q.slot));
     expect(view.today!.quests[0]).toMatchObject({ id: 200, completedAt: null });

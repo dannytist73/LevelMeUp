@@ -9,6 +9,7 @@ import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } 
 import type { Choices, Reveal } from '../_shared/onboarding.ts';
 import { authenticate } from '../_shared/session.ts';
 import { stateView } from '../_shared/state.ts';
+import { dayOffers } from '../_shared/today.ts';
 
 /** Claude calls per player for the reveal, lifetime (architecture §8). */
 const AI_CAP = 3;
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
       }
       return loadSnapshot(tx, player.userId);
     });
-    return json(201, { reveal: words, state: stateView(snapshot!) });
+    return json(201, { reveal: words, state: stateView(snapshot!, dayOffers(snapshot!, LIBRARY)) });
   } catch (error) {
     const code = lmuCode(error);
     if (code === 'already_started' || code === 'locked') return problemResponse(problem(409, code));
