@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, ABILITY_IDS, abilityReady, abilityUnlocked, swapLimit } from '../src/abilities.ts';
+import { ABILITIES, ABILITY_IDS, abilityReady, abilityUnlocked, classChangeOpensAt, swapLimit } from '../src/abilities.ts';
 import type { AbilityId } from '../src/abilities.ts';
+import { DAY_MS } from '../src/constants.ts';
 
 describe('class abilities (spec §2.5)', () => {
   it('has two abilities per class, at levels 5 and 10', () => {
@@ -40,5 +41,14 @@ describe('class abilities (spec §2.5)', () => {
 
   it('rejects an unknown ability', () => {
     expect(() => abilityUnlocked('fireball' as AbilityId, 'mage', 50)).toThrow(RangeError);
+  });
+});
+
+describe('class change (spec §2.5)', () => {
+  it('is open at once after onboarding, then once every 14 days', () => {
+    const t = Date.UTC(2026, 9, 11);
+    expect(classChangeOpensAt(null, t)).toBeNull();
+    expect(classChangeOpensAt(t, t + 13 * DAY_MS)).toBe(t + 14 * DAY_MS);
+    expect(classChangeOpensAt(t, t + 14 * DAY_MS)).toBeNull();
   });
 });

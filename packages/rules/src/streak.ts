@@ -34,8 +34,11 @@ export function isStreakDay(day: { coreDone: boolean; questsDone: number }): boo
   return day.coreDone || day.questsDone >= 2;
 }
 
-/** Why a day was protected without asking: planned rest, a server outage, or no quests were generated. */
-export type Protection = 'planned_rest' | 'outage' | 'no_quests';
+/**
+ * Why a day was protected without asking: planned rest or a rest after "I felt pain" (both chosen by the player), a
+ * server outage, or no quests were generated.
+ */
+export type Protection = 'planned_rest' | 'pain' | 'outage' | 'no_quests';
 
 export type ClosedDay = { coreDone: boolean; questsDone: number; protection: Protection | null };
 

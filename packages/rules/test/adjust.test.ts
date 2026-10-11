@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addRecovery, applyDawnRitual, applyHardDay, applyStillness, applySwap, checkProvisionalDay, restAllowed, swapOptions,
+  addRecovery, applyDawnRitual, applyHardDay, applyStillness, applySwap, checkProvisionalDay, painKey, painOption, restAllowed,
+  seeProfessional, swapOptions,
 } from '../src/adjust.ts';
 import { buildDay, draftQuest } from '../src/day.ts';
 import type { BuiltDay, DayInput } from '../src/day.ts';
@@ -186,5 +187,52 @@ describe('checking a day built offline (architecture §6)', () => {
     expect(has(checkProvisionalDay(FIXTURE, dayInput(), withRecovery), 'slots')).toBe(true);
     expect(has(checkProvisionalDay(FIXTURE, dayInput(), applyHardDay(FIXTURE, DAY_TWO, [])), 'normal day')).toBe(true);
     expect(has(checkProvisionalDay(FIXTURE, dayInput({ dayNumber: 3 }), DAY_TWO), 'day number')).toBe(true);
+  });
+});
+
+describe('"I felt pain" (spec §3.3, §3.4)', () => {
+  it('offers gentle movement: the first rung of another kind of movement that fits the slot', () => {
+    // DAY_TWO is walk-0, push-0, focus-0. Push hurt, and walking is already in the day: mobility.
+    expect(painOption(FIXTURE, dayInput(), DAY_TWO, 'side1')).toMatchObject({
+      slot: 'side1', templateId: 'mobility-0', why: { code: 'pain' }, hardDay: false,
+    });
+    // The walk hurt: another kind of movement first.
+    expect(painOption(FIXTURE, dayInput(), DAY_TWO, 'core')?.templateId).toBe('mobility-0');
+  });
+
+  it('never offers a paused ladder, and offers nothing when nothing fits (rest is then the offer)', () => {
+    const pausedMobility = dayInput({ ladders: { mobility: { ...newLadder(), paused: true } } });
+    expect(painOption(FIXTURE, pausedMobility, DAY_TWO, 'side1')).toBeNull();
+    // The other two quests take 10 minutes; 2 are left and mobility-0 takes 3.
+    expect(painOption(FIXTURE, dayInput(), { ...DAY_TWO, budget: 12 }, 'side1')).toBeNull();
+    expect(painOption(FIXTURE, dayInput(), DAY_TWO, 'article')).toBeNull();
+  });
+
+  it('on a hard day the gentle quest is its hard-day version', () => {
+    const hard = applyHardDay(FIXTURE, DAY_TWO, []);
+    expect(painOption(FIXTURE, dayInput(), hard, 'side1')).toMatchObject({ templateId: 'mobility-0', hardDay: true });
+  });
+
+  it('is only for exercise quests', () => {
+    expect(() => painOption(FIXTURE, dayInput(), DAY_TWO, 'side2')).toThrow(RangeError); // focus-0
+  });
+
+  it('pauses the ladder, or a standalone exercise quest by its own id', () => {
+    expect(painKey(templateById(FIXTURE, 'push-1'))).toBe('push');
+    expect(painKey(templateById(FIXTURE, 'micro-squats'))).toBe('micro-squats');
+    expect(() => painKey(templateById(FIXTURE, 'reading-0'))).toThrow(RangeError);
+  });
+
+  it('a standalone exercise quest resting after pain is never built or offered', () => {
+    const input = dayInput({ ladders: { 'micro-squats': { ...newLadder(), paused: true } } });
+    expect(swapOptions(FIXTURE, input, DAY_TWO, 'side1').map((q) => q.templateId)).toEqual(['squat-0', 'reading-0']);
+    expect(checkProvisionalDay(FIXTURE, input, withQuest(DAY_TWO, 'side1', 'micro-squats'))).toContain(
+      'micro-squats is resting after pain',
+    );
+  });
+
+  it('leads with "see a doctor or physiotherapist" from the second report in 14 days', () => {
+    expect(seeProfessional(1)).toBe(false);
+    expect(seeProfessional(2)).toBe(true);
   });
 });

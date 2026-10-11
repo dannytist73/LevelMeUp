@@ -1,13 +1,13 @@
 import { abilityReady, abilityUnlocked } from './abilities.ts';
-import { DISCIPLINE_PER_RECOVERY, REST_DAYS_PER_WEEK, SWAP_SAME_STAT_CHOICES, WEEK_QUEST_DAYS } from './constants.ts';
+import { DISCIPLINE_PER_RECOVERY, PAIN_PERSISTS_REPORTS, REST_DAYS_PER_WEEK, SWAP_SAME_STAT_CHOICES, WEEK_QUEST_DAYS } from './constants.ts';
 import { balanceChoice, bookFor, dayBudget, dayContext, draftQuest, ladderCandidates, microCandidates, useKey } from './day.ts';
 import type { BuiltDay, DayInput, QuestDraft } from './day.ts';
 import { newLadder } from './ladder.ts';
 import {
-  allowedTopRung, findTemplate, ladderAllowed, ladderById, ladderRungs, specialTemplate, templateAllowed, templateById,
-  validateProfile,
+  allowedTopRung, findTemplate, ladderAllowed, ladderById, ladderExercise, ladderRungs, specialTemplate, templateAllowed,
+  templateById, validateProfile,
 } from './library.ts';
-import type { QuestLibrary } from './library.ts';
+import type { Exercise, QuestLibrary, QuestTemplate } from './library.ts';
 import type { Slot } from './types.ts';
 
 const QUEST_SLOTS: readonly Slot[] = ['core', 'side1', 'side2'];
@@ -97,6 +97,44 @@ export function restAllowed(restDays: readonly number[], dayNumber: number): boo
     if (count > REST_DAYS_PER_WEEK) return false;
   }
   return true;
+}
+
+/** What "I felt pain" pauses (spec §3.3): the quest's ladder, or a standalone exercise quest by its own id. */
+export function painKey(template: QuestTemplate): string {
+  if (template.exercise === null) throw new RangeError(`${template.id} is not an exercise quest`);
+  return useKey(template);
+}
+
+/**
+ * "I felt pain" (spec §3.3, §3.4): gentle movement instead of an open core or side exercise quest. The first rung of a
+ * walking or mobility ladder (another kind of movement first) that fits the slot, isn't in the day and isn't resting.
+ * Its rung is at or below the player's, so it never moves a ladder. Null when none fits: rest is always the other offer.
+ */
+export function painOption(library: QuestLibrary, input: DayInput, day: BuiltDay, slot: Slot): QuestDraft | null {
+  if (!QUEST_SLOTS.includes(slot)) return null;
+  validateProfile(input.profile);
+  const current = templateById(library, questIn(day, slot).templateId);
+  if (current.exercise === null) throw new RangeError(`${current.id} is not an exercise quest`);
+  const others = QUEST_SLOTS.filter((s) => s !== slot).map((s) => templateById(library, questIn(day, s).templateId));
+  const allowance = day.budget - others.reduce((sum, t) => sum + t.minutes, 0);
+  const recovery = day.quests.find((q) => q.slot === 'recovery');
+  const used = new Set([current, ...others, ...(recovery ? [templateById(library, recovery.templateId)] : [])].map(useKey));
+  const kinds: Exercise[] = current.exercise === 'walk' ? ['mobility', 'walk'] : ['walk', 'mobility'];
+  for (const kind of kinds) {
+    for (const ladder of library.ladders) {
+      if (ladderExercise(library, ladder.id) !== kind || used.has(ladder.id) || input.ladders[ladder.id]?.paused) continue;
+      if (!ladderAllowed(ladder, input.profile)) continue;
+      const first = ladderRungs(library, ladder.id)[0];
+      if (first === undefined || first.minutes > allowance || !templateAllowed(first, input.profile)) continue;
+      return draftQuest(first, slot, { code: 'pain' }, { hardDay: day.hardDay });
+    }
+  }
+  return null;
+}
+
+/** Pain this often in 14 days (this report included): the app leads with "see a doctor or physiotherapist". */
+export function seeProfessional(reportsInWindow: number): boolean {
+  return reportsInWindow >= PAIN_PERSISTS_REPORTS;
 }
 
 /** Stillness (Monk level 5, every 7 quest days): a gentle restoration quest replaces the core; the day still counts. */
@@ -195,6 +233,8 @@ export function checkProvisionalDay(library: QuestLibrary, input: DayInput, day:
         problems.push(`${template.id} is above the player's rung`);
       }
       if (ctx.strengthYesterday.has(ladder.id)) problems.push(`${ladder.id} was trained yesterday`);
+    } else if (input.ladders[template.id]?.paused) {
+      problems.push(`${template.id} is resting after pain`);
     }
     if (quest.slot === 'core' && ctx.afterStrength && template.exercise === 'strength') {
       problems.push('the core quest after a strength day must not be strength work');

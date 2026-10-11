@@ -1,4 +1,4 @@
-import { MONTH_QUEST_DAYS, WEEK_QUEST_DAYS } from './constants.ts';
+import { CLASS_CHANGE_MS, MONTH_QUEST_DAYS, WEEK_QUEST_DAYS } from './constants.ts';
 import type { ClassId } from './types.ts';
 
 export type AbilityId =
@@ -41,4 +41,14 @@ export function abilityReady(id: AbilityId, classId: ClassId, level: number, las
 /** Swaps a day allows: 1, or 2 with Shadowstep (spec §3.5). */
 export function swapLimit(classId: ClassId, level: number): number {
   return abilityUnlocked('shadowstep', classId, level) ? 2 : 1;
+}
+
+/**
+ * When the next class change opens (spec §2.5: at most one every 14 days), or null when it is open now. The first change
+ * after onboarding is open at once.
+ */
+export function classChangeOpensAt(changedAt: number | null, now: number): number | null {
+  if (changedAt === null) return null;
+  const opens = changedAt + CLASS_CHANGE_MS;
+  return now >= opens ? null : opens;
 }

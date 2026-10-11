@@ -102,3 +102,11 @@ export const TIER_MIN_MINUTES: Readonly<Record<Tier, number>> = { minor: 0, stan
 
 /** The slots that count towards a streak day's "any 2 quests" (spec §2.4); the recovery quest has its own rule. */
 export const STREAK_SLOTS: readonly Slot[] = ['core', 'side1', 'side2', 'article'];
+
+// Adjusting the day (spec §2.5, §3.3)
+/** At most one class change every 14 days, measured in time from the last change. */
+export const CLASS_CHANGE_MS = 14 * DAY_MS;
+/** "I felt pain" reports are counted over 14 days (the server's `painReports`). */
+export const PAIN_WINDOW_MS = 14 * DAY_MS;
+/** From this many reports in the window, this one included, the app leads with "see a doctor or physiotherapist". */
+export const PAIN_PERSISTS_REPORTS = 2;

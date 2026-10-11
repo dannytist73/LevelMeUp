@@ -22,6 +22,7 @@ export const WHY_PLACEHOLDERS: Readonly<Record<WhyCode, readonly string[]>> = {
   dawn_ritual: [],
   recovery: [],
   second_wind: [],
+  pain: [],
   article: [],
 };
 
@@ -110,6 +111,11 @@ export const WHY_TEXT: Readonly<Record<WhyCode, Readonly<Record<Voice, string>>>
     mentor: "Second Wind: redo yesterday's core quest for full credit.",
     system: "Second Wind: yesterday's core quest, full reward.",
     questmaster: "Second Wind. Yesterday's trial returns. Finish it.",
+  },
+  pain: {
+    mentor: 'Gentle movement while the sore spot rests. No penalty.',
+    system: 'Pain reported: gentle movement instead.',
+    questmaster: 'A wounded blade rests. Move gently today.',
   },
   article: {
     mentor: 'Read it, then write the one idea you want to keep.',

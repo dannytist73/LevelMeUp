@@ -21,14 +21,14 @@ export type WhyReason =
   | {
       code:
         | 'after_strength' | 'stepped_down' | 'gentle_start' | 'limits' | 'light_day' | 'own_program'
-        | 'swap' | 'stillness' | 'dawn_ritual' | 'recovery' | 'second_wind' | 'article';
+        | 'swap' | 'stillness' | 'dawn_ritual' | 'recovery' | 'second_wind' | 'pain' | 'article';
     };
 
 export type WhyCode = WhyReason['code'];
 
 export const WHY_CODES: readonly WhyCode[] = [
   'class_main', 'class_second', 'balance', 'goal', 'unlocked', 'after_strength', 'stepped_down', 'gentle_start', 'limits',
-  'short_on_time', 'light_day', 'own_program', 'swap', 'stillness', 'dawn_ritual', 'recovery', 'second_wind', 'article',
+  'short_on_time', 'light_day', 'own_program', 'swap', 'stillness', 'dawn_ritual', 'recovery', 'second_wind', 'pain', 'article',
 ];
 
 /** One quest of a day, ready to store. The reward is a snapshot from the rules tables (architecture §3). */
@@ -66,7 +66,10 @@ export type DayInput = {
   /** 1 for the day onboarding ends, counting every quest day since (away days included). */
   dayNumber: number;
   profile: PlayerProfile;
-  /** Ladder states by ladder id; a ladder not listed starts at rung 0. */
+  /**
+   * Ladder states by ladder id; a ladder not listed starts at rung 0. A standalone exercise quest resting after pain is
+   * listed by its template id (only `paused` matters for it).
+   */
   ladders: Readonly<Record<string, LadderState>>;
   /** The last 7 days or so; older days and unknown templates are ignored. */
   history: readonly PastDay[];
@@ -178,10 +181,11 @@ export function ladderCandidates(ctx: DayContext, ladders: readonly Ladder[], al
   return leastRecent(ctx, candidates);
 }
 
-/** Tiny standalone quests of `stat` that fit. */
+/** Tiny standalone quests of `stat` that fit (never one resting after pain). */
 export function microCandidates(ctx: DayContext, stat: Stat, allowance: number, used: ReadonlySet<string>): Candidate[] {
   const candidates = ctx.library.templates
-    .filter((t) => t.role === 'micro' && t.stat === stat && t.minutes <= allowance && !used.has(t.id) && templateAllowed(t, ctx.input.profile))
+    .filter((t) => t.role === 'micro' && t.stat === stat && t.minutes <= allowance && !used.has(t.id) && !ctx.input.ladders[t.id]?.paused)
+    .filter((t) => templateAllowed(t, ctx.input.profile))
     .map((template): Candidate => ({ template, state: null, capped: null }));
   return leastRecent(ctx, candidates);
 }
