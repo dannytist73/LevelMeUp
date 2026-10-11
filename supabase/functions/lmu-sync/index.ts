@@ -6,7 +6,7 @@ import { newAchievements } from '../../../packages/rules/src/index.ts';
 import { ACHIEVEMENTS, CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { planAdjust } from '../_shared/adjust.ts';
 import { planAdvance } from '../_shared/advance.ts';
-import { asPlayer, asService, db, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
+import { asPlayer, asService, db, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
 import { adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody } from '../_shared/events.ts';
 import type { AdjustEvent, PhoneEvent, Rejected } from '../_shared/events.ts';
@@ -154,12 +154,15 @@ Deno.serve(async (req) => {
     for (const event of request.events) results.push(await applyEvent(player.userId, event));
     await advance(player.userId, request.timeZone);
     const newAchievementIds = await awardAchievements(player.userId);
-    const snapshot = await db().begin((tx) => loadSnapshot(tx, player.userId));
+    const { snapshot, history } = await db().begin(async (tx) => {
+      const snapshot = (await loadSnapshot(tx, player.userId))!;
+      return { snapshot, history: await loadHistory(tx, player.userId, snapshot.profile.book) };
+    });
     return json(200, {
       results,
       rejected: request.rejected,
       newAchievements: newAchievementIds,
-      state: stateView(snapshot!, dayOffers(snapshot!, LIBRARY)),
+      state: stateView(snapshot, dayOffers(snapshot, LIBRARY), history),
     });
   } catch (error) {
     if (lmuCode(error) === 'conflict') return problemResponse(problem(503, 'busy', 'try again'));

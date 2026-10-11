@@ -276,3 +276,28 @@ describe('the training setup (M6c)', () => {
     expect(again.body.results[0].result).toEqual(res.body.results[0].result);
   });
 });
+
+describe('Character and Chronicle (M6d)', () => {
+  let c: Player;
+
+  it('onboarding returns day 1 on the calendar and growth from day 1', async () => {
+    c = await newPlayer();
+    const res = await call('lmu-onboarding', c.token, ONBOARDING);
+    expect(res.status).toBe(201);
+    const state = res.body.state;
+    expect(state.calendar).toEqual([{ dayNumber: 1, date: expect.stringMatching(/^\d{4}-\d\d-\d\d$/), mark: 'open' }]);
+    expect(state.growth).toMatchObject({ since: state.calendar[0].date, levels: 0, questsCleared: 0, newRungs: 0 });
+    expect(state.character.abilityLastUsed).toEqual({});
+    expect(state.reading).toBeNull();
+  });
+
+  it("the book needs Scholar's Path; a bad one is refused", async () => {
+    const res = await sync(c, [
+      { id: eventId(), type: 'book', title: 'Dune', finished: false },
+      { id: eventId(), type: 'book', title: '', finished: false },
+    ]);
+    expect(res.body.results[0]).toMatchObject({ ok: false, code: 'ability_not_ready' });
+    expect(res.body.rejected).toEqual([expect.objectContaining({ code: 'bad_event' })]);
+    expect(res.body.state.profile.book).toBeNull();
+  });
+});

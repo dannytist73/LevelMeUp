@@ -57,6 +57,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       for (const q of quests) if (q.completedAt === null && q.condition.kind === 'session') waiting.add(q.id);
       continue;
     }
+    if (event.type === 'book') continue; // M6d: shown once the phone handles it (T8)
     if (today === null) continue;
     if (event.type === 'hard_day' || event.type === 'plan_rest' || event.type === 'ability') {
       if (event.dayId !== today.id) continue;

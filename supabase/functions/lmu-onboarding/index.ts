@@ -3,7 +3,7 @@
 import type postgres from 'npm:postgres@3.4.9';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { REVEAL_MODEL, claudeConfigured, writeReveal } from '../_shared/claude.ts';
-import { db, hasActed, lmuCode, loadSnapshot, one } from '../_shared/db.ts';
+import { db, hasActed, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../_shared/onboarding.ts';
 import type { Choices, Reveal } from '../_shared/onboarding.ts';
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     // calls on an answer restart_player refuses anyway (M5 review).
     if (existing !== null && (await db().begin((tx) => hasActed(tx, player.userId)))) return problemResponse(problem(409, 'locked'));
     const words = await reveal(player.userId, choices);
-    const snapshot = await db().begin(async (tx) => {
+    const { snapshot, history } = await db().begin(async (tx) => {
       const j = (value: unknown) => tx.json(value as postgres.JSONValue);
       // Day 1 starts on the database clock, the one every later check uses.
       const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
@@ -61,9 +61,10 @@ Deno.serve(async (req) => {
         await tx`select levelmeup.restart_player(${player.userId}::uuid, ${j(args.profile)}::jsonb, ${j(args.character)}::jsonb,
           ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
       }
-      return loadSnapshot(tx, player.userId);
+      const snapshot = (await loadSnapshot(tx, player.userId))!;
+      return { snapshot, history: await loadHistory(tx, player.userId, snapshot.profile.book) };
     });
-    return json(201, { reveal: words, state: stateView(snapshot!, dayOffers(snapshot!, LIBRARY)) });
+    return json(201, { reveal: words, state: stateView(snapshot, dayOffers(snapshot, LIBRARY), history) });
   } catch (error) {
     const code = lmuCode(error);
     if (code === 'already_started' || code === 'locked') return problemResponse(problem(409, code));

@@ -3,7 +3,8 @@
 // can read LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (migration 0004).
 import postgres from 'npm:postgres@3.4.9';
 import { PAIN_WINDOW_MS } from '../../../packages/rules/src/index.ts';
-import type { CharacterRow, CheckinRow, DayRow, InstanceRow, LadderRow, ProfileRow, Snapshot } from './state.ts';
+import { CALENDAR_DAYS } from './state.ts';
+import type { CalendarRow, CharacterRow, CheckinRow, DayRow, History, InstanceRow, LadderRow, ProfileRow, Snapshot } from './state.ts';
 
 export type Sql = postgres.Sql;
 export type Tx = postgres.TransactionSql;
@@ -57,7 +58,7 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
     const checkins = await tx<CheckinRow[]>`
       select id, day_id, gap_from, gap_to, answer from levelmeup.checkins where user_id = ${userId} and answer is null order by id`;
     const earned = await tx<{ achievement_id: string }[]>`
-      select achievement_id from levelmeup.achievements_earned where user_id = ${userId}`;
+      select achievement_id from levelmeup.achievements_earned where user_id = ${userId} order by earned_at, achievement_id`;
     const { queued } = one(await tx<{ queued: boolean }[]>`
       select exists (select 1 from levelmeup.quest_days where user_id = ${userId} and status = 'closed' and not streak_applied) as queued`);
     const { pain } = one(await tx<{ pain: number }[]>`
@@ -70,6 +71,30 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances], checkins: [...checkins],
       earned: earned.map((r) => r.achievement_id), queued, painReports: pain, workoutsDone: workouts,
     };
+  } finally {
+    await asService(tx);
+  }
+}
+
+/** What only Character and Chronicle need (M6d decision 2), read as the player once per response. */
+export async function loadHistory(tx: Tx, userId: string, book: string | null): Promise<History> {
+  await asPlayer(tx, userId);
+  try {
+    const days = await tx<CalendarRow[]>`
+      select day_number, starts_at, time_zone, status, resolution, protection, hard_day from levelmeup.quest_days
+      where user_id = ${userId} order by day_number desc limit ${CALENDAR_DAYS}`;
+    const [dayOne] = await tx<Pick<DayRow, 'starts_at' | 'time_zone'>[]>`
+      select starts_at, time_zone from levelmeup.quest_days where user_id = ${userId} and day_number = 1`;
+    const { rungs } = one(await tx<{ rungs: number }[]>`
+      select count(*)::int as rungs from levelmeup.xp_ledger where user_id = ${userId} and source_type = 'rung'`);
+    const reading = book === null
+      ? { sessions: 0, minutes: 0 }
+      : one(await tx<{ sessions: number; minutes: number }[]>`
+          select count(*)::int as sessions, coalesce(sum(q.minutes), 0)::int as minutes
+          from levelmeup.quest_instances q join levelmeup.profiles p on p.user_id = q.user_id
+          where q.user_id = ${userId} and q.book = ${book} and q.completed_at is not null
+            and q.completed_at >= coalesce(p.book_started_at, '-infinity'::timestamptz)`);
+    return { days: [...days], dayOne: dayOne ?? null, newRungs: rungs, reading };
   } finally {
     await asService(tx);
   }
