@@ -1,10 +1,10 @@
 // The quest art online (M6a decision 10): the public `lmu-art` bucket's manifest says how many pictures each art key
 // has. A key without pictures, or a phone that never got the manifest, draws the ink fallback (src/ui/QuestArt.tsx).
-// Replacing pictures means a new folder (v1 → v2 when the small strength quest's picture was redrawn, M6a), so a phone
-// never shows a stale cached copy.
+// Replacing pictures means a new folder (v1 → v2 when the small strength quest's picture was redrawn, M6a; v2 → v3
+// when the exercises got their own pictures, M6c), so a phone never shows a stale cached copy.
 import { SUPABASE_URL } from '../config.ts';
 
-export const ART_BASE = `${SUPABASE_URL}/storage/v1/object/public/lmu-art/v2`;
+export const ART_BASE = `${SUPABASE_URL}/storage/v1/object/public/lmu-art/v3`;
 export const ART_MANIFEST_URL = `${ART_BASE}/manifest.json`;
 
 const KEY = /^[a-z0-9-]{1,40}$/;
