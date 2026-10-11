@@ -1,14 +1,16 @@
 // A quest on Today (D1 board): the core quest in a paper panel with its XP stamp, the others as night cards. Words come
-// from the content package in the player's voice; numbers from the quest's stored snapshot. M4 shows; M6 adds actions.
+// from the content package in the player's voice; numbers from the quest's stored snapshot. M4 showed; M6a makes every
+// card open its quest and puts the picture on the core quest.
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import type { ClassId } from '@levelmeup/rules';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import type { QuestView } from '../game/types.ts';
 import { clockTime } from '../lib/dates.ts';
 import { colors } from '../theme/tokens.ts';
 import { Chip } from '../ui/Chip.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
+import { QuestArt } from '../ui/QuestArt.tsx';
 import { SlamIn } from '../ui/SlamIn.tsx';
 import { SlantPanel } from '../ui/SlantPanel.tsx';
 import { MarkStamp, XpStamp } from '../ui/Stamp.tsx';
@@ -23,6 +25,10 @@ export type QuestCardProps = {
   timeZone: string;
   /** The server hasn't confirmed a change to this quest yet. */
   waiting: boolean;
+  /** Opens the quest screen (M6a). */
+  onOpen: () => void;
+  /** The core quest's picture, or null for the ink fallback (M6a decision 10). */
+  artUri: string | null;
 };
 
 export const questXp = (quest: QuestView): number => Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0);
@@ -31,7 +37,7 @@ function WillSync({ on }: { on: 'paper' | 'night' }) {
   return <Caption tone={on === 'paper' ? 'inkMuted' : 'ash'}>Will sync</Caption>;
 }
 
-export function QuestCard({ quest, voice, classId, timeZone, waiting }: QuestCardProps) {
+export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, artUri }: QuestCardProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
   const summary = questSummary(template, quest.hardDay);
@@ -42,60 +48,67 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting }: QuestCar
 
   if (quest.slot === 'core') {
     return (
-      <SlamIn>
-        <View style={{ marginRight: 6 }}>
-          <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 56 }}>
-              <Chip label={stat} on="paper" />
-              <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
-            </View>
-            <View style={{ gap: 4 }}>
-              <Title tone="ink">{words.title}</Title>
-              <Body tone="inkSoft" weight="medium">{summary}</Body>
-            </View>
-            <View style={{ gap: 3, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink }}>
-              <Label tone="sealText">Why this quest</Label>
-              <Small tone="inkSoft">{why}</Small>
-            </View>
-            {template.exercise !== null && <Small tone="inkMuted">{EXERCISE_SAFETY_LINE}</Small>}
-            {cleared && <MarkStamp text={`Cleared +${xp}`} style={{ borderColor: colors.sealText }} />}
-            {waiting && <WillSync on="paper" />}
-          </SlantPanel>
-          {!cleared && <XpStamp xp={xp} style={{ position: 'absolute', top: -20, right: -8 }} />}
-        </View>
-      </SlamIn>
+      <Pressable accessibilityRole="button" accessibilityHint="Opens the quest" onPress={onOpen}>
+        <SlamIn>
+          <View style={{ marginRight: 6 }}>
+            <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
+              <QuestArt uri={artUri} label={`${stat} quest picture`} fallback={stat} />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 56 }}>
+                <Chip label={stat} on="paper" />
+                <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
+              </View>
+              <View style={{ gap: 4 }}>
+                <Title tone="ink">{words.title}</Title>
+                <Body tone="inkSoft" weight="medium">{summary}</Body>
+              </View>
+              <View style={{ gap: 3, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink }}>
+                <Label tone="sealText">Why this quest</Label>
+                <Small tone="inkSoft">{why}</Small>
+              </View>
+              {template.exercise !== null && <Small tone="inkMuted">{EXERCISE_SAFETY_LINE}</Small>}
+              {cleared && <MarkStamp text={`Cleared +${xp}`} style={{ borderColor: colors.sealText }} />}
+              {waiting && <WillSync on="paper" />}
+            </SlantPanel>
+            {!cleared && <XpStamp xp={xp} style={{ position: 'absolute', top: -20, right: -8 }} />}
+          </View>
+        </SlamIn>
+      </Pressable>
     );
   }
 
   if (cleared) {
     return (
-      <NightCard quiet>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1, gap: 3 }}>
-            <Body weight="bold" tone="ashLight">{words.title}</Body>
-            <Meta>{`${stat} · cleared ${clockTime(quest.completedAt!, timeZone)}`}</Meta>
-            {waiting && <WillSync on="night" />}
+      <Pressable accessibilityRole="button" accessibilityHint="Opens the quest" onPress={onOpen}>
+        <NightCard quiet>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Body weight="bold" tone="ashLight">{words.title}</Body>
+              <Meta>{`${stat} · cleared ${clockTime(quest.completedAt!, timeZone)}`}</Meta>
+              {waiting && <WillSync on="night" />}
+            </View>
+            <MarkStamp text={`Cleared +${xp}`} />
           </View>
-          <MarkStamp text={`Cleared +${xp}`} />
-        </View>
-      </NightCard>
+        </NightCard>
+      </Pressable>
     );
   }
 
   return (
-    <NightCard>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flexShrink: 1 }}>
-          <Chip label={stat} />
-          <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
+    <Pressable accessibilityRole="button" accessibilityHint="Opens the quest" onPress={onOpen}>
+      <NightCard>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flexShrink: 1 }}>
+            <Chip label={stat} />
+            <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
+          </View>
+          <Heading tone="ember">{`+${xp} XP`}</Heading>
         </View>
-        <Heading tone="ember">{`+${xp} XP`}</Heading>
-      </View>
-      <Heading>{words.title}</Heading>
-      <Meta>{summary}</Meta>
-      <Small>{why}</Small>
-      {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
-      {waiting && <WillSync on="night" />}
-    </NightCard>
+        <Heading>{words.title}</Heading>
+        <Meta>{summary}</Meta>
+        <Small>{why}</Small>
+        {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
+        {waiting && <WillSync on="night" />}
+      </NightCard>
+    </Pressable>
   );
 }

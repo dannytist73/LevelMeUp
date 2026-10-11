@@ -1,12 +1,19 @@
+import { EXERCISE_SAFETY_LINE, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { project } from '../src/game/project.ts';
+import type { PhoneEvent, QuestView, ServerState } from '../src/game/types.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { NEW_TIMER, startTimer } from '../src/quest/timer.ts';
+import type { TimerState } from '../src/quest/timer.ts';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import type { ClearedProps } from '../src/screens/quest/Cleared.tsx';
+import { Quest } from '../src/screens/Quest.tsx';
 import { RepLog } from '../src/screens/quest/RepLog.tsx';
 import { SentenceLog } from '../src/screens/quest/SentenceLog.tsx';
 import { TapClaim } from '../src/screens/quest/TapClaim.tsx';
 import { TimerPanel, clock } from '../src/screens/quest/TimerPanel.tsx';
+import { serverState } from './support/fixtures.ts';
+import { testStore, withStore } from './support/store.ts';
 
 const T0 = Date.UTC(2026, 9, 10, 13);
 const MIN = 60_000;
@@ -158,5 +165,122 @@ describe('"Quest cleared" (board D2)', () => {
   it('says when the change hasn\'t reached the server yet', async () => {
     await renderCleared({ waiting: true });
     expect(screen.getByText('Will sync')).toBeTruthy();
+  });
+});
+
+const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs to 20:00 UTC
+const SERVER = serverState();
+
+/** The server state with today's core quest changed (a completion type the fixtures' day may not have). */
+function withCore(over: Partial<QuestView>): ServerState {
+  const today = SERVER.today!;
+  return { ...SERVER, today: { ...today, quests: today.quests.map((q) => (q.slot === 'core' ? { ...q, ...over } : q)) } };
+}
+const coreOf = (s: ServerState) => s.today!.quests.find((q) => q.slot === 'core')!;
+
+/** A store whose enqueue applies the event like the real one, so the screen moves on to "Quest cleared". */
+async function renderQuest(server: ServerState, questId: number, over: Parameters<typeof testStore>[0] = {}) {
+  const pending: PhoneEvent[] = [];
+  const store = testStore({ view: project(server, []), ...over });
+  const enqueue = jest.fn(async (event: Omit<PhoneEvent, 'id'>) => {
+    pending.push({ ...event, id: `00000000-0000-4000-8000-${String(pending.length + 1).padStart(12, '0')}` } as PhoneEvent);
+    store.setState({ view: project(server, pending) });
+  });
+  store.setState({ enqueue: enqueue as never });
+  const onBack = jest.fn();
+  await render(withStore(store, <Quest questId={questId} onBack={onBack} now={() => NOW} />));
+  return { store, enqueue, onBack };
+}
+
+describe('the quest screen (M6a decisions 1, 9, 10)', () => {
+  it('shows the quest in the player\'s voice: target, why, how, safety, and its picture or the ink fallback', async () => {
+    const core = coreOf(SERVER);
+    const template = authoredTemplate(core.templateId);
+    await renderQuest(SERVER, core.id);
+    expect(screen.getByText(template.voice.system.title)).toBeTruthy();
+    expect(screen.getByText(template.voice.system.line)).toBeTruthy();
+    expect(screen.getByText(questSummary(template, core.hardDay))).toBeTruthy();
+    expect(screen.getByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeTruthy();
+    for (const [i, step] of template.steps.entries()) expect(screen.getByText(`${i + 1}. ${step}`)).toBeTruthy();
+    if (template.exercise !== null) expect(screen.getByText(EXERCISE_SAFETY_LINE)).toBeTruthy();
+    expect(screen.getByTestId('quest-art-fallback')).toBeTruthy();
+  });
+
+  it('shows the picture once the manifest lists the quest\'s key', async () => {
+    const core = coreOf(SERVER);
+    const key = artKey(authoredTemplate(core.templateId));
+    await renderQuest(SERVER, core.id, { art: { version: 1, art: { [key]: 1 } } });
+    expect(screen.getByTestId('quest-art').props.source.uri).toContain(`/lmu-art/v1/${key}-1.webp`);
+  });
+
+  it('a check-off sends the completion, then shows "Quest cleared" with Discipline for the core quest', async () => {
+    const server = withCore({ completion: 'tap', condition: { kind: 'habit' } });
+    const core = coreOf(server);
+    const { enqueue } = await renderQuest(server, core.id);
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared' }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: core.id, completedAt: NOW, rating: null, payload: {} });
+    expect(screen.getByText('CLEARED')).toBeTruthy();
+    expect(screen.getByText('Discipline · today counts')).toBeTruthy();
+  });
+
+  it('a rep log sends its sets', async () => {
+    const server = withCore({ completion: 'reps', condition: { kind: 'reps', sets: 2, reps: 5, perSide: false } });
+    const core = coreOf(server);
+    const { enqueue } = await renderQuest(server, core.id);
+    await fireEvent.press(screen.getByRole('button', { name: 'Log it' }));
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { sets: [5, 5] } }));
+  });
+
+  it('a timer picks up where it was, and forgets itself once claimed', async () => {
+    const server = withCore({ completion: 'timer', condition: { kind: 'minutes', minutes: 10 }, minutes: 10 });
+    const core = coreOf(server);
+    const stored = { segments: [{ start: NOW - 9 * 60_000, end: NOW }], runningSince: null };
+    const timer = jest.fn(async () => stored);
+    const { enqueue, store } = await renderQuest(server, core.id, { timer });
+    expect(timer).toHaveBeenCalledWith(core.id);
+    expect(await screen.findByText('09:00 / 10:00')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { segments: stored.segments } }));
+    expect(store.getState().saveTimer).toHaveBeenCalledWith(core.id, null);
+  });
+
+  it('after an undo, a timer quest starts again from zero', async () => {
+    const server = withCore({ completion: 'timer', condition: { kind: 'minutes', minutes: 10 }, minutes: 10 });
+    const core = coreOf(server);
+    // Kept like the store keeps it: the claim forgets it.
+    let kept: TimerState | null = { segments: [{ start: NOW - 9 * 60_000, end: NOW }], runningSince: null };
+    const timer = jest.fn(async () => kept);
+    const saveTimer = jest.fn(async (_id: number, state: TimerState | null) => void (kept = state));
+    await renderQuest(server, core.id, { timer, saveTimer });
+    await screen.findByText('09:00 / 10:00');
+    await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
+    expect(await screen.findByText('00:00 / 10:00')).toBeTruthy();
+  });
+
+  it('a cleared quest rates and undoes through the outbox', async () => {
+    const server = withCore({ completion: 'tap', condition: { kind: 'habit' } });
+    const core = coreOf(server);
+    const { enqueue } = await renderQuest(server, core.id);
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Easy' }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'rate', instanceId: core.id, rating: 'easy' });
+    await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'undo', instanceId: core.id });
+    expect(screen.getByRole('button', { name: 'Mark cleared' })).toBeTruthy(); // open again
+  });
+
+  it('today\'s reading waits for the articles: no claim', async () => {
+    const article = SERVER.today!.quests.find((q) => q.slot === 'article')!;
+    await renderQuest(SERVER, article.id);
+    expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Log it' })).toBeNull();
+  });
+
+  it('a quest that is no longer today\'s says so and goes back', async () => {
+    const { onBack } = await renderQuest(SERVER, 999999);
+    expect(screen.getByText(/This quest's day has closed/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+    expect(onBack).toHaveBeenCalled();
   });
 });

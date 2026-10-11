@@ -1,9 +1,11 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
-// the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Quest actions, swap, hard day and the article reader arrive in M6–M8.
-import { CLASS_NAMES } from '@levelmeup/content';
+// the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
+// quest screen (M6a); swap, hard day and the article reader arrive in M6b–M8.
+import { CLASS_NAMES, artKey, authoredTemplate } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { artUrl } from '../art/manifest.ts';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
@@ -22,6 +24,7 @@ import { syncMark } from './syncLine.ts';
 
 export type TodayProps = {
   onSettings: () => void;
+  onOpenQuest: (questId: number) => void;
   now?: () => number;
 };
 
@@ -29,10 +32,11 @@ const SECTION: Record<QuestView['slot'], string> = {
   core: 'Core quest', side1: 'Side quests', side2: 'Side quests', article: "Today's reading", recovery: 'Recovery',
 };
 
-export function Today({ onSettings, now = Date.now }: TodayProps) {
+export function Today({ onSettings, onOpenQuest, now = Date.now }: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
+  const art = useGame((s) => s.art);
   const status = useGame((s) => s.status);
   const notices = useGame((s) => s.notices);
   const syncNow = useGame((s) => s.syncNow);
@@ -99,6 +103,8 @@ export function Today({ onSettings, now = Date.now }: TodayProps) {
                   classId={view!.profile.classId}
                   timeZone={today!.timeZone}
                   waiting={view!.waiting.has(q.id)}
+                  onOpen={() => onOpenQuest(q.id)}
+                  artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId)), q.id) : null}
                 />
               ))}
             </View>

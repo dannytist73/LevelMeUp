@@ -22,11 +22,25 @@ const xpOf = (q: (typeof quests)[number]) => Object.values(q.xp).reduce((s, x) =
 async function renderToday(over: Parameters<typeof testStore>[0] = {}, server: ServerState = SERVER) {
   const store = testStore({ view: project(server, []), ...over });
   const onSettings = jest.fn();
-  await render(withStore(store, <Today onSettings={onSettings} now={now} />));
-  return { store, onSettings };
+  const onOpenQuest = jest.fn();
+  await render(withStore(store, <Today onSettings={onSettings} onOpenQuest={onOpenQuest} now={now} />));
+  return { store, onSettings, onOpenQuest };
 }
 
 describe('Today', () => {
+  it('opens a quest when its card is tapped (M6a)', async () => {
+    const { onOpenQuest } = await renderToday();
+    await fireEvent.press(screen.getByText(authoredTemplate(core.templateId).voice.system.title));
+    expect(onOpenQuest).toHaveBeenCalledWith(core.id);
+    await fireEvent.press(screen.getByText(authoredTemplate(side2.templateId).voice.system.title));
+    expect(onOpenQuest).toHaveBeenCalledWith(side2.id);
+  });
+
+  it('shows the core quest\'s picture, or its ink fallback (M6a)', async () => {
+    await renderToday();
+    expect(screen.getByTestId('quest-art-fallback')).toBeTruthy();
+  });
+
   it('shows the day, the player, the XP bar, the streak and shields', async () => {
     await renderToday();
     expect(screen.getByText('SAT · 10 OCT')).toBeTruthy();
