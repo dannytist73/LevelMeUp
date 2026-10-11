@@ -1,11 +1,12 @@
-// Character (spec §1.3, D4 board), M4's version: level, XP and the five stats with their ranks. Portraits, class path,
-// achievements and class change arrive in M6.
-import { CLASS_NAMES, STAT_NAMES } from '@levelmeup/content';
+// Character (spec §1.3, D4 board), M4's version: level, XP and the five stats with their ranks. Portraits, class path
+// and achievements arrive in M6d; M6b adds the class change.
+import { ADJUST_TEXT, CLASS_NAMES, STAT_NAMES } from '@levelmeup/content';
 import { STATS } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
+import { Button } from '../ui/Button.tsx';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
@@ -13,9 +14,12 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { MarkStamp } from '../ui/Stamp.tsx';
 import { Caption, Heading, Label, Meta, Title } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
+import { classLock, lockLine } from './ClassChange.tsx';
 import { lastSynced } from './syncLine.ts';
 
-export function Character() {
+export type CharacterProps = { onChangeClass: () => void; now?: () => number };
+
+export function Character({ onChangeClass, now = Date.now }: CharacterProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const status = useGame((s) => s.status);
@@ -36,6 +40,19 @@ export function Character() {
         )}
       </HalftoneHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 12 }}>
+        {view !== null && (
+          <NightCard>
+            <View style={{ gap: 8 }}>
+              <Label tone="chalk">{ADJUST_TEXT.classChange.label}</Label>
+              <Heading>{CLASS_NAMES[view.profile.classId]}</Heading>
+              {(() => {
+                const lock = classLock(view, now());
+                return lock === null ? null : <Caption>{lockLine(lock, view.profile.timeZone)}</Caption>;
+              })()}
+              <Button label={ADJUST_TEXT.classChange.open} variant="secondary" onPress={onChangeClass} />
+            </View>
+          </NightCard>
+        )}
         {view === null ? (
           <NarrationBox>The System is preparing your trials.</NarrationBox>
         ) : (

@@ -1,8 +1,9 @@
-import { ADJUST_TEXT, PLAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
-import { newLadder } from '@levelmeup/rules';
+import { ABILITY_LINES, ADJUST_TEXT, PLAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
+import { DAY_MS, newLadder } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
+import { ClassChange } from '../src/screens/ClassChange.tsx';
 import { DayActions, DayBanners, PausedExercises } from '../src/screens/DayActions.tsx';
 import { Pain } from '../src/screens/Pain.tsx';
 import { Swap } from '../src/screens/Swap.tsx';
@@ -138,5 +139,29 @@ describe('"I felt pain" (spec §3.3, §3.4)', () => {
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'pain', instanceId: 200, choice: 'pause' });
     await view.rerender(withStore(testStore({ view: shown() }), <Pain questId={202} now={now} onDone={jest.fn()} onBack={jest.fn()} />));
     expect(screen.getByText(PLAY_TEXT.quest.gone)).toBeTruthy();
+  });
+});
+
+describe('class change (spec §2.5)', () => {
+  it('lists the four classes, marks the current one, and sends the chosen class', async () => {
+    const store = testStore({ view: shown() });
+    const onDone = jest.fn();
+    await render(withStore(store, <ClassChange now={now} onDone={onDone} onBack={jest.fn()} />));
+    expect(screen.getByText('Warrior · current')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Monk'));
+    expect(screen.getByText(`Stillness: ${ABILITY_LINES.stillness}`)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Become a Monk' }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'class_change', classId: 'monk' });
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('within 14 days of the last change, says when it opens and sends nothing', async () => {
+    const changed = adjustState({ profile: profileRow(undefined, { class_changed_at: new Date(DAY_TWO_NOW - 3 * DAY_MS) }) });
+    const store = testStore({ view: shown(changed) });
+    await render(withStore(store, <ClassChange now={now} onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(/Your next class change opens on/)).toBeTruthy();
+    await fireEvent.press(screen.getByText('Monk'));
+    expect(screen.getByRole('button', { name: ADJUST_TEXT.classChange.title }).props.accessibilityState.disabled).toBe(true);
+    expect(store.getState().enqueue).not.toHaveBeenCalled();
   });
 });

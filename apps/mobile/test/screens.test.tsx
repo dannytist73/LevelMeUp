@@ -1,5 +1,6 @@
 import { ACHIEVEMENTS, ADJUST_TEXT, GOOGLE_ERRORS } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
+import { DAY_MS } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
@@ -8,7 +9,7 @@ import { Character } from '../src/screens/Character.tsx';
 import { Chronicle, dayOutcome } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { DAY_TWO_NOW, adjustState, completeEvent, serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, adjustState, completeEvent, profileRow, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
@@ -136,7 +137,7 @@ describe('Today', () => {
 describe('Character', () => {
   it('shows the level and the five stats with points, rank and XP to the next point', async () => {
     const view = project(SERVER, []);
-    await render(withStore(testStore({ view }), <Character />));
+    await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} />));
     expect(screen.getByText(`Level ${view.character.level} · Warrior`)).toBeTruthy();
     for (const stat of ['strength', 'vitality', 'wisdom', 'focus', 'discipline'] as const) {
       expect(screen.getByText(STAT_NAMES[stat])).toBeTruthy();
@@ -146,7 +147,7 @@ describe('Character', () => {
   });
 
   it('offline: shows when it last synced', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), status: 'offline', lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30) }), <Character />));
+    await render(withStore(testStore({ view: project(SERVER, []), status: 'offline', lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30) }), <Character onChangeClass={jest.fn()} />));
     expect(screen.getByText('Last synced 20:30')).toBeTruthy();
   });
 });
@@ -267,4 +268,13 @@ it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core
   expect(screen.getByRole('button', { name: 'Swap · 1 left' })).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
   expect(onPain).toHaveBeenCalledWith(200);
+});
+
+it('Character offers a class change, and says when the next one opens (M6b)', async () => {
+  const onChangeClass = jest.fn();
+  const changed = adjustState({ profile: profileRow(undefined, { class_changed_at: new Date(DAY_TWO_NOW - 3 * DAY_MS) }) });
+  await render(withStore(testStore({ view: project(changed, []) }), <Character onChangeClass={onChangeClass} now={() => DAY_TWO_NOW} />));
+  expect(screen.getByText(/Your next class change opens on/)).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.classChange.open }));
+  expect(onChangeClass).toHaveBeenCalled();
 });
