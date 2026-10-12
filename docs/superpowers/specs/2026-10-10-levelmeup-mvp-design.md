@@ -76,7 +76,10 @@ gained, levels, quests cleared, new rungs). Past readings arrive with articles (
 start-again card when a guest sign-in is gone for good), Game ("Voice, rhythm and minutes": the voice, the time the
 quest day ends in half-hour steps, minutes a day and difficulty, one change; and Training), sync and the version.
 Deleting says what goes and, for a Google-saved character, that the Google sign-in stays; it needs a second tap.
-Notifications arrive with M7d, the Pact with M7c.
+Notifications arrive with M7d.
+
+*Built in M7c (2026-10-12):* Settings → Game → "Accountability Pact" shows the level and opens the Pact (§4.3); until a
+new pact is in force it says "It starts with your next quest day."
 
 ### 1.4 Screen states
 
@@ -350,6 +353,8 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
   reset (the best is kept); Today shows how it ended once. "Answer later" hides the question until the app is next
   opened. Away days get one check-in for the whole run; it rests or eases nothing. The lighter plan (minutes one step
   down) is offered at most once every 14 days, whichever way the player answers, and also over the weekly rest limit.
+- Built in M7c (2026-10-12): under a pact, "I just didn't" also carries what the pact sets off (§4.3); the answer
+  screen looks the same with or without one. While its recovery quest is open, Today lists it first, for every player.
 
 ### 3.8 Time zones and the day boundary
 
@@ -428,6 +433,17 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
   worth, never threatening anything real.
 - After the MVP: level 3 (Android app sealing, after the Find X9 spike), level 4 (iOS Screen Time, after Apple's
   entitlement). A whole-phone lock: never.
+- Built in M7c (2026-10-12): the Pact screen from Settings and from the reveal's "Read the pact" (signed there, it is
+  sent when the onboarding ends and starts with day 2). Signing or raising is a hold and counts from when the server
+  receives it: only missed days that start after that count. Lowering or turning it off is one tap, at once, and eases
+  a consequence already running (off lifts it; level 1 breaks the seal). The server decides the consequence when the
+  answer arrives and keeps it on the check-in; the phone learns it at the sync. The Shadow's scene opens once on
+  Today (the claim, the missed day's stamp, the private note of up to 500 characters, "Take back the day"); the mark
+  stays on Today's header and the portrait until the recovery quest is cleared; at level 2 the side quests are sealed
+  on the phone until a 10-minute focus session (LevelMeUp in front, the screen awake; leaving pauses it; the minutes
+  are kept). The server never refuses a completion because of the seal. After 3 consequences in a rolling 7 days the
+  Shadow steps back (its retreat line names the lighter plan only when the System offers one). Level 2's evening
+  reminder arrives with notifications (M7d); the painted Shadow with the class art (M9).
 
 ### 4.4 Notifications (local only in the MVP)
 

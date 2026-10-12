@@ -94,5 +94,12 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   (`at`). The sign-in guard (`storageWorks` in `src/auth/sessionStorage.ts`) checks the sealed storage before a new
   guest signs in; if it fails, the analysis says so (code `storage`) and nothing is made. **Run this bundle only
   against a server with the M7b deploy**: an older server refuses `settings` and would take "Rest tomorrow" as today.
+- **The Accountability Pact** (M7c): Settings → Game → "Accountability Pact" and the reveal's "Read the pact" open
+  `app/pact.tsx` / `app/onboarding/pact.tsx` (`src/screens/Pact.tsx`; from the reveal the level waits in the draft and
+  is sent when the onboarding ends). `src/game/pact.ts` reads what the Shadow holds today (`shadowHold`): Today opens the
+  Shadow's scene once (`app/shadow.tsx`, the store's `shadowSeen`), shows the mark and the Shadow's box, lists the
+  recovery quest first, and at level 2 seals the side quests until the focus session (`app/trial.tsx`, minutes kept by
+  the store's `trialMs`/`saveTrialMs`). The Shadow preview (`app/dev/shadow.tsx`) shows all of it over the cached day;
+  nothing is sent. **Run this bundle only against a server with the M7c deploy**: an older server refuses the pact.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

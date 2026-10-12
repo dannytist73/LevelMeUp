@@ -330,3 +330,22 @@ emulator), deleted with row 8 after that row (which tests the delete screen itse
 2. Not a bug: "configured linking in multiple places" after a display-size change (a development warning, as in M6a
    and M6b); the emulator's launcher stopped responding once after the density reset.
 
+
+## M7c — Accountability
+
+Emulator unless marked. A real "I just didn't" needs a missed day: the Find X9, or a test character kept across a day
+boundary. The Shadow preview (Developer → Shadow preview) shows the screens without one.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Settings → Game shows "Accountability Pact · Off"; the Pact shows the three levels, "Preview the Shadow" and the five rules. | |
+| 2 | Hold to sign level 1: Settings then shows "The Shadow · level 1" and "It starts with your next quest day."; Off is one tap and takes effect at once. | |
+| 3 | The reveal after "real stakes" shows "Read the pact"; signed there, the reveal says it starts on day 2, and Settings shows it after the onboarding. | |
+| 4 | Preview, level 1: Today shows the Shadow mark, the Shadow's line and "Yesterday belongs to the Shadow…", the recovery quest first; the scene shows the claim, the stamp, the note field and "Take back the day". | |
+| 5 | Preview, level 2: the Trial panel above the side quests, both sealed; a sealed card opens the focus session. | |
+| 6 | The focus session: the clock counts with the app in front and the screen stays on; Home pauses it; back, it goes on; "End session" keeps the minutes. | |
+| 7 | Preview, paused: the Shadow's retreat line only. | |
+| 8 | At the largest font, the Pact, the scene, Today after a miss and the focus session wrap with nothing cut off. | |
+| 9 | A real missed day under a level 1 pact, answered "I just didn't": the scene opens once by itself, the note is kept, the mark goes when the recovery quest is cleared (Find X9 or a kept test character). | |
+| 10 | Level 2 on a real missed day: the side quests stay sealed until 10 minutes; a call during the session pauses it; they open after (Find X9). | |
+| 11 | Unit and database tests only: only "I just didn't" sets it off; never for a day that began before the signing; one a day; paused after 3 in 7; off lifts it; the server never refuses a completion for the seal. | |

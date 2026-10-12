@@ -138,6 +138,13 @@ inside the card's pressable) and on the quest screen; the swap sheet and the cla
 "Resting after pain" as night cards with Resume; the step-down offer on Quest cleared; Vanish as a dark, quiet timer
 screen.
 
+Built in M7c (2026-10-12): the Shadow box (`ShadowBox`: void, ember border, the "THE SHADOW" tab) and the "Shadow
+mark" tag (dashed ember); board F2 as a screen with a dark art panel and two ember eyes until M9 paints the Shadow;
+board F3's recovery quest first, the Shadow's line and a "Trial of Stillness" panel (ember border) above sealed side
+quests (quiet night cards with a "Sealed" chip that open the trial); board F4 as a dark timer screen (the clock, a
+progress bar, "End session"); board F5 with option cards, the inline preview, the rules on a paper slant panel and the
+hold-to-sign button (tap, then confirm, with a screen reader). The portrait's mark is a dark corner edged in ember.
+
 ## 5. React Native notes
 
 The boards are HTML/CSS. These effects need a native equivalent:

@@ -62,6 +62,11 @@ model keys never leave Supabase.
   `at`, so a rest tapped while its day ran still protects it when it syncs after the day ended (within 48 hours, before
   the day is closed; only its protection changes). A late rest is refused as `rest_late`; a pain report applied without
   its day is `ok` with `notice: 'pain_late'`.
+- The Accountability Pact (M7c, `0013`: `checkins.consequence` and `trial_done_at`; `adjust` takes
+  `accountability_set`, `trial` and `checkin_note`, and a check-in answer's consequence): `_shared/pact.ts` decides what
+  "I just didn't" sets off under the pact (`consequenceFor`, the rules' `decideConsequence`) and plans the three events.
+  A raise is signed at the server's now (`profiles.accountability_enabled_at`); a lowering eases the running day's
+  consequence. The seal on the side quests is the phone's own: no completion is ever refused for it.
 - The state each response returns (`_shared/state.ts`, `stateView`) adds what only Character and Chronicle show (M6d):
   the last 92 days' dates and marks, growth since day 1 and the book's progress, read once per response by
   `loadHistory` (`db.ts`) as the player.

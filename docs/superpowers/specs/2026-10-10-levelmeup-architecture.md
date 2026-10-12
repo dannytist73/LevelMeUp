@@ -87,7 +87,7 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 | `xp_ledger` | every XP change: source type (quest, rung, discipline, milestone, undo), source id, stat, amount, client_event_id. `unique (source_type, source_id, stat)`, `unique (client_event_id)` | read own; server-only |
 | `events` | every applied phone event: client_event_id (unique), type, payload, result, applied_at | read own; server-only |
 | `checkins` | per closed day: answer, private note | read own; server-only |
-| `consequences` | per confirmed miss with accountability on: level, status (active, cleared, paused), timestamps | read own; server-only |
+| `consequences` | per confirmed miss with accountability on: level, status (active, cleared, paused), timestamps *(M7c: not built; kept on `checkins` instead, see below.)* | read own; server-only |
 | `achievements_earned` | (user, achievement id) primary key, earned_at | read own; server-only |
 | `articles` | cluster, title, summary, sections, takeaways, reflection question, minutes, status, evergreen flag | read where status = published; server-only |
 | `article_sources` | article id, index, url, title | read for published articles; server-only |
@@ -112,6 +112,9 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 - M7b (2026-10-12, migration 0012): `character_state` gains `rest_day` (the day number planned as a rest day the day
   before; the next day built with that number is protected as `planned_rest`, and when that day passes unopened as an
   away day, `planAdvance` rests it in the streak and only the away days after it share a gap check-in).
+- M7c (2026-10-12, migration 0013): `checkins` gains `consequence` (`shadow`, `trial` or `paused`; only with "I just
+  didn't") and `trial_done_at`; the private note uses `note` (0002). `profiles.accountability_enabled_at` is when the
+  current level was signed (a raise); a missed day counts only if it started after it.
 - Character totals are cached in `character_state` and updated in the same transaction as the ledger, so the
   ledger is the audit trail and the cache is what screens read.
 
@@ -164,6 +167,14 @@ tap was inside it and the event arrives within 48 hours of its end, and then cha
 runs, the tap time isn't read, so a phone clock behind the server's never makes a tap look late). A rest
 refused because its day had closed is `rest_late`; a pain report applied without its day is `ok` with
 `notice: 'pain_late'` (an `lmu-sync` result can carry a notice). Account deletion is unchanged (`lmu-account-delete`).
+
+M7c (2026-10-12): `accountability_set` (the level; a raise is signed at the server's now, a lowering keeps the time and
+eases the running day's consequence, off forgets it), `trial` (the focus session done: `trial_done_at`, while the
+recovery day runs) and `checkin_note` (≤ 500 characters, line breaks kept; a check-in answered in the last 14 days)
+join the adjustments (`_shared/pact.ts`, `levelmeup.adjust` in 0013). A `checkin` answer of "I just didn't" carries the
+pact's consequence, decided by the rules' `decideConsequence` (`consequenceFor`) and checked again by `adjust` (only
+with that answer and its recovery day, under a pact of that level). New refusals: `same_level`, `no_trial`,
+`trial_done`, `checkin_gone`.
 
 ### 4.2 How a write happens
 
@@ -291,7 +302,8 @@ template narrative is used; the player never sees an error.
 
 ## 7. Notifications
 
-*Moved to M7d (M7b decision 1).*
+*Moved to M7d (M7b decision 1).* M7d also schedules level 2's sterner evening reminder on the day the state's
+`checkin.consequence` is `trial` (M7c decision 1).
 
 Local only. A pure `plan()` function (rules package) decides which reminders should exist from settings, today's
 state and the clock; one file talks to `expo-notifications`. Re-planned on every app open and after every
