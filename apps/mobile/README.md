@@ -77,5 +77,14 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   `ref: { dayNumber, slot, templateId }` (`src/game/offline.ts`, `withRef`); the quest and pain screens find a quest by
   its slot once the server's day replaces the offline one, and a timer started on an offline quest moves to the
   server's quest in its slot. Swaps, a hard day, rest and abilities wait for the sync.
+- **The check-in** (M7a): Today shows "The day closed. What happened?" while the state's `checkin` waits for an answer
+  (`src/screens/CheckinNotes.tsx`), the streak as "paused" or "held today" (`src/game/checkin.ts`), how a settled
+  "I just didn't" ended once (`lmu.checkin-result`) and the lighter-plan offer. `app/checkin.tsx`
+  (`src/screens/Checkin.tsx`) asks the five answers ("sick or injured" then asks which; "I just didn't" offers Second
+  Wind when the state does) and sends a `checkin` event; "Answer later" hides it until the app comes back to the
+  foreground. Over the rest limit, the rest panel offers the lighter plan. The cache dropped older states (version 6).
+  **Run this bundle only against a server with the M7a deploy**: it reads the state's `checkin`, `checkinResult` and
+  `lighterPlan`. The check-in preview (`app/dev/checkin.tsx`) shows Today with a made-up check-in for yesterday and the
+  check-in screen; nothing is sent.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

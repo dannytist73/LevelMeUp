@@ -105,6 +105,10 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
   of the next one) are counted from completed `session` quests, so no new column is needed.
 - M6d (2026-10-12, migration 0010): `profiles` gains `book_started_at` and `books_finished` (a JSON list of at most
   100 finished books, oldest first, each with its title, start and finish as ISO strings, sessions and minutes).
+- M7a (2026-10-12, migration 0011): `checkins` gains `recovery_day_id` (the day that holds the recovery quest of "I
+  just didn't", on the player's own days), `resolved_at` and `outcome` (protected, recovered, unbreakable, shield or
+  reset; set together). `character_state` gains `next_day_light` (a "sick" or "injured" answer; used up by the next
+  day built) and `profiles` gains `lighter_plan_at` (when the player last answered the lighter-plan offer).
 - Character totals are cached in `character_state` and updated in the same transaction as the ledger, so the
   ledger is the audit trail and the cache is what screens read.
 
@@ -143,6 +147,13 @@ M6e (2026-10-12): `complete`, `undo`, `rate` and `pain` can name a quest by `ref
 instead of `instanceId` (a quest of a day the phone built offline); `provisional_day` carries that day. No database
 change.
 
+M7a (2026-10-12): `checkin` (`checkinId`, the answer, `secondWind` only with "I just didn't") and `lighter_plan`
+(`accept`) join the adjustments. `lmu-sync` closes ended days before a `checkin` event, so the answer lands on the day
+that is running. The planner (`_shared/checkin.ts`) refuses an answer for any check-in but the pending one, a second
+answer (`already_answered`) and an unready Second Wind; `lighter_plan` accepted at 10 minutes is `no_lighter_plan`.
+`levelmeup.adjust` (migration 0011) answers only this player's unanswered check-in and adds the recovery quest only to
+the day the change names.
+
 ### 4.2 How a write happens
 
 1. The function reads the player's id **from the verified JWT** (confirmed with Supabase Auth), never from the body.
@@ -170,6 +181,12 @@ last line of defence.
   a day protected with `no_quests`), or "check-in due". While a check-in is pending, later days wait for it: a streak
   or protected day is queued (`streak_applied = false`), and once one is queued every later day is too, so answering
   late changes nothing; a missed day right after the pending one widens it (one answer covers the gap).
+- M7a: once no check-in is pending, `planAdvance` replays the queued days in day order with the rules' `applyDay`, as
+  if the answer had come at once: a missed day among them opens its own check-in, a jump in day numbers (away days)
+  opens one gap check-in, and the days after it keep waiting. "I just didn't" is settled when its recovery day ends,
+  before that day itself is applied: recovered, else Unbreakable when ready (no shield needed), else a shield, else a
+  reset. `levelmeup.advance` (migration 0011) writes the applied days, the opened check-ins, the settled one,
+  Unbreakable's use and the used-up light day.
 - The phone always sends its queued events **before** asking for check-ins, so an offline completion is never
   mistaken for a miss. Offline completions are accepted until `ends_at + 48 h`.
 - Days the player never opened the app on are "away" days, covered by one gap check-in (spec §2.4).

@@ -272,3 +272,23 @@ Run after the M6e deploy (functions v8, then v9) with test characters Tess (UTC)
 4. A brand-new player's quest art was fetched only at the next launch (an M6a gap): it is fetched after onboarding too
    (8557820).
 
+## M7a — The check-in
+
+No new build: M7a adds no native module. All rows after the M7a deploy (migration 0011 and the functions). Rows 1–6
+need a missed day on a real day boundary: on the emulator when a test day ends during the session, otherwise on the
+Find X9. Rows 7 and 9 need a Warrior at level 5 or a used-up week of rest days.
+
+| # | Check | Emulator | Find X9 | Automated coverage |
+|---|---|---|---|---|
+| 1 | After a day with the core quest undone, Today opens with "The day closed. What happened?", the lead names the day, and the streak reads "day streak · paused". | | | `screens.test.tsx`, `checkin.test.ts` |
+| 2 | "Later" hides the card; leaving the app and coming back shows it again. | | | `store.test.ts`, `screens.test.tsx` |
+| 3 | Each answer shows its line; "sick or injured" asks which; Answer returns to Today; after the sync the card is gone and the streak no longer paused. | | | `checkin-screen.test.tsx`, `project.test.ts`, server `checkin.test.ts` |
+| 4 | "I just didn't": Today says "Clear the recovery quest today…" (and "appears once the System has your answer" before the sync); after it, the recovery quest is under "Recovery", 5 minutes, Discipline +5; clearing it shows "You took the day back. Your streak holds when today ends." | | | `screens.test.tsx`, `quest.test.tsx`, pgTAP `test_adjust_checkin` |
+| 5 | The next day: the result shows once (recovered, or the shield or reset line); *Rise Again* celebrates. | | | `advance.test.ts`, pgTAP `test_advance_replays_and_settles` |
+| 6 | "I need a lighter load": the next day has the fewer minutes. | | | server `checkin.test.ts`, live test |
+| 7 | Second Wind (a Warrior at level 5 whose missed core quest was yesterday's): the choice names the quest; the recovery slot then holds it at full XP. | | | `checkin-screen.test.tsx`, server `checkin.test.ts` |
+| 8 | The lighter-plan offer shows once; "Keep my plan" hides it, and it doesn't come back on the next open. | | | `state.test.ts`, `screens.test.tsx` |
+| 9 | Over the rest limit, the rest panel offers "Lighten the plan: 25 → 15 minutes a day". | | | `adjust.test.tsx` |
+| 10 | Character: Second Wind and Unbreakable read "Ready" or "Ready again in N days". | | | `character.test.ts` |
+| 11 | At the largest font, the check-in screen and Today's card keep every word. | | | |
+| 12 | Developer → Check-in preview shows the card and the screen; nothing is sent. | | | |

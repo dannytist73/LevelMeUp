@@ -164,7 +164,7 @@ the base (30) or the content, not the step.
 
 | Class | Main / second | Typical day | Level 5 ability | Level 10 ability |
 |---|---|---|---|---|
-| Warrior | Strength / Vitality | strength ladders, walks, a 5-minute read | Second Wind: once a week, make up a missed core quest the next day for full credit | Unbreakable: once a month, a plain miss doesn't cost a shield |
+| Warrior | Strength / Vitality | strength ladders, walks, a 5-minute read | Second Wind: once a week, make up a missed core quest the next day for full credit | Unbreakable: once a month, a plain miss doesn't cost a shield or the streak |
 | Mage | Wisdom / Focus | reading, notes, reflection, plus walks and mobility | Insight: choose tomorrow's article topic from 3 | Scholar's Path: set a book; reading quests track it to the end |
 | Rogue | Focus / Vitality | focus sessions, phone-free blocks, hardest task first, plus movement | Shadowstep: 2 swaps a day instead of 1 | Vanish: a planned phone-free block guarded by a timer |
 | Monk | Vitality / Wisdom | sleep routine, mobility, breathing, gentle walks | Stillness: once a week, a gentle restoration quest replaces the core quest and the day grows the streak (unlike a planned rest day, which only pauses it) | Dawn Ritual: a morning routine bundle counts as the core quest |
@@ -177,7 +177,8 @@ the base (30) or the content, not the step.
   equipment and cosmetics.
 - Limits count quest days, so DST and travel can't shift them (M2): "once a week" means every 7 quest days, "once a
   month" every 30. Second Wind puts the missed core quest in the recovery slot for its full XP plus the recovery's
-  Discipline +5. Insight (M8), Vanish (M6) and Unbreakable (M7) get their screens later; their rules exist now.
+  Discipline +5. Insight (M8) gets its screen later; its rules exist now (Vanish came in M6b, Second Wind and
+  Unbreakable in M7a).
 - Built in M6b (2026-10-11): class change from Character; the 14 days are measured in time from the last change (the
   first change after onboarding is open at once); today's quests stay, tomorrow is built for the new class. Stillness
   and Dawn Ritual replace today's open core quest from Today. Vanish runs on the phone only (the rules give it no
@@ -186,6 +187,9 @@ the base (30) or the content, not the step.
   then show it ("Reading: Dune"), and the card counts the sessions and minutes read since it was set. "Finished it"
   keeps the book with its sessions (the newest 100 books); "Set it aside" clears it. Changing the book re-drafts
   today's open reading quests.
+- Built in M7a (2026-10-12): Second Wind is offered with "I just didn't" on the check-in (§3.7) when yesterday's core
+  quest can be redone today. Unbreakable works on its own: when a plain miss isn't recovered and Unbreakable is ready,
+  the streak holds even with no shield left, and its 30 quest days start.
 
 ### 2.6 Achievements and titles
 
@@ -324,9 +328,17 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
   Discipline.
 - 3+ recovery quests or 3+ days protected by a check-in answer in 14 → the System offers a lighter plan.
 - A dismissed check-in comes back on the next open; the streak stays paused until it is answered, and later days
-  are applied to the streak only after it (in quest-day order), so delaying the answer changes nothing.
+  are applied to the streak only after it (in quest-day order), so delaying the answer changes nothing, except that
+  two missed days in a row share one check-in while the first is unanswered (owner, M3).
 - The recovery quest is available until the end of the quest day on which the check-in is answered. A Warrior with
   *Second Wind* available may instead redo the full missed core quest that day for its full XP.
+- Built in M7a (2026-10-12): Today asks the question and opens the check-in screen with the five answers; "Sick or
+  injured" then asks which (an injury rests that day's core exercise until the player brings it back). The protected
+  answers resolve at once. "I just didn't" adds the recovery quest to the day that is running and is settled when that
+  day ends: cleared → the streak holds and *Rise Again* counts; else Unbreakable when ready; else a shield; else a
+  reset (the best is kept); Today shows how it ended once. "Answer later" hides the question until the app is next
+  opened. Away days get one check-in for the whole run; it rests or eases nothing. The lighter plan (minutes one step
+  down) is offered at most once every 14 days, whichever way the player answers, and also over the weekly rest limit.
 
 ### 3.8 Time zones and the day boundary
 

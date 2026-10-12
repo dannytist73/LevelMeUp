@@ -14,7 +14,7 @@ functions and its settings; LevelMeUp never touches them (architecture §12). Th
 | `npm run db:test [-- <name>]` | Runs `tests/db/*.sql` on the live project, each inside a transaction that always rolls back (pgTAP is created inside it), then checks nothing was left behind |
 | `npm run check:functions` | `deno check` on the three functions |
 | `npm run deploy:functions` | Deploys `lmu-onboarding`, `lmu-sync` and `lmu-account-delete` by name |
-| `npm run test:live` | Calls the deployed functions with up to 6 temporary anonymous players and deletes them all at the end |
+| `npm run test:live` | Calls the deployed functions with up to 11 temporary anonymous players and deletes them all at the end |
 | `npm run lmu:password` | Gives `lmu_service` a new random password and stores `LMU_DB_URL`; prints nothing secret (also for rotation) |
 
 `.env.local` (git-ignored) holds the project URL and the public anon key for the live tests. Service-role and
@@ -52,7 +52,10 @@ model keys never leave Supabase.
   the player has any event or XP ledger row; the Claude-call log is kept, so the 3-call cap holds across redos.
 - Adjustments (M6b–M6d: swap, hard day, rest, pain, resume, step down, class change, abilities, `training`, `book`) are
   planned in `_shared/adjust.ts` and written by `levelmeup.adjust`, replaced whole by each migration that adds a kind
-  (latest: `0010`, Scholar's Path, which also adds `profiles.book_started_at` and `books_finished`).
+  (latest: `0011`, the check-in, M7a: kinds `checkin` and `lighter_plan`; it also replaces `levelmeup.advance`, which
+  now applies the days queued behind a check-in, opens the check-ins that replay finds, settles "I just didn't" and
+  records Unbreakable; and adds the check-in's resolution, `next_day_light` and `profiles.lighter_plan_at`). `lmu-sync`
+  closes ended days before it applies a `checkin` answer (`_shared/checkin.ts` plans it).
 - The state each response returns (`_shared/state.ts`, `stateView`) adds what only Character and Chronicle show (M6d):
   the last 92 days' dates and marks, growth since day 1 and the book's progress, read once per response by
   `loadHistory` (`db.ts`) as the player.

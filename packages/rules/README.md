@@ -108,4 +108,9 @@ After M2 (content and day building, plan `docs/superpowers/plans/2026-10-10-m2-c
     A hard day changes only open core and side quests; the article and recovery quest keep their reward.
 22. **Offline-built days** are accepted when every quest is one the builder could have chosen
     (`checkProvisionalDay`); the server always re-drafts rewards from its own tables.
+23. **The check-in (M7a):** `secondWindRedo` is the quest Second Wind would redo, or null exactly when `addRecovery`
+    would refuse it, so the app offers only what the server accepts. The lighter plan drops the minutes one step
+    (`lighterMinutes`: 40 → 25 → 15 → 10, none below 10); it is offered when `shouldOfferLighterPlan` holds over the
+    answered check-ins (`checkinEvents`: "I just didn't" is a recovery quest, any other answer protects each day it
+    covers) and not again for 14 days after the player answers it (`lighterPlanOffered`).
 
