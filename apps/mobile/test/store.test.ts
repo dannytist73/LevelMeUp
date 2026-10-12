@@ -251,6 +251,16 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('more than 3 past readings asked for at once go over the following runs, each once (M8b re-review)', async () => {
+    const { store, api } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    for (const id of ['article-1', 'article-2', 'article-3', 'article-4']) store.getState().fetchArticle(id);
+    await store.getState().syncNow(); // each request made during a run makes the scheduler run once more
+    const asked = api.sync.mock.calls.flatMap((c) => (c[0] as { want: string[] }).want);
+    expect(asked.sort()).toEqual(['article-1', 'article-2', 'article-3', 'article-4']);
+    store.getState().stop();
+  });
+
   it('a queued action projects onto the view while offline', async () => {
     const { store } = await setup([ok(SERVER), { ok: false, status: 0, code: 'network' }]);
     await store.getState().boot();

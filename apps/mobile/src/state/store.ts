@@ -398,6 +398,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           // A new guest is only made on an empty phone, so this is the same sign-in: its character is gone on the
           // server, and anything cached is stale.
           await deps.local.wipe();
+          wanted.clear(); // the old character's readings (re-review)
           confirmedLevel = null;
           await refresh({ phase: 'not_started', status: 'idle', error: null });
           return;
