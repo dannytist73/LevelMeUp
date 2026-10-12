@@ -290,5 +290,5 @@ Find X9. Rows 7 and 9 need a Warrior at level 5 or a used-up week of rest days.
 | 8 | The lighter-plan offer shows once; "Keep my plan" hides it, and it doesn't come back on the next open. | | | `state.test.ts`, `screens.test.tsx` |
 | 9 | Over the rest limit, the rest panel offers "Lighten the plan: 25 → 15 minutes a day". | | | `adjust.test.tsx` |
 | 10 | Character: Second Wind and Unbreakable read "Ready" or "Ready again in N days". | | | `character.test.ts` |
-| 11 | At the largest font, the check-in screen and Today's card keep every word. | | | |
-| 12 | Developer → Check-in preview shows the card and the screen; nothing is sent. | | | |
+| 11 | At the largest font, the check-in screen and Today's card keep every word. | Pass (the check-in preview at font scale 2.0): the card, both buttons, the offer, the five answers and the notes keep every word | | |
+| 12 | Developer → Check-in preview shows the card and the screen; nothing is sent. | Pass: Today with "day streak · paused", "The day closed. What happened?" and the offer; Answer opens the five answers; "Which was it?" after "sick or injured"; Answer waits for a full answer and returns to Today; 0 waiting afterwards | | |
