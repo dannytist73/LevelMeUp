@@ -3,11 +3,11 @@ import { LIBRARY } from '@levelmeup/content';
 import { SAFETY_QUESTIONS, STATS, newLadder, plannedMoves } from '@levelmeup/rules';
 import type { Rating, Slot } from '@levelmeup/rules';
 import { stateView } from '../../../../supabase/functions/_shared/state.ts';
-import type { CharacterRow, DayRow, PendingCheckin, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
+import type { CharacterRow, Consequence, DayRow, PendingCheckin, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
 import { dayOffers } from '../../../../supabase/functions/_shared/today.ts';
 import {
-  DAY1, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows, manilaDay,
-  pendingCheckin, profileRow,
+  DAY1, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, claimedSnapshot, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows,
+  manilaDay, pendingCheckin, profileRow,
 } from '../../../../supabase/tests/unit/fixtures.ts';
 import type { PhoneEvent, Reveal, ServerState } from '../../src/game/types.ts';
 import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
@@ -107,3 +107,9 @@ export function checkinState(
 
 /** A day 2 without push-1, so Second Wind can redo day 1's push-0. */
 export const SECOND_WIND_SLOTS = { core: 'walk-1', side1: 'mobility-0', side2: 'reading-0' } as const;
+
+/** M7c: day 2 after "I just didn't" for day 1 under a pact, as `lmu-sync` sends it (server fixtures: `claimedSnapshot`). */
+export function claimedState(consequence: Consequence | null = 'shadow', over: Partial<PendingCheckin> = {}, done: readonly Slot[] = []): ServerState {
+  const snapshot = claimedSnapshot(consequence, over, done);
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
+}

@@ -38,7 +38,7 @@ export default function CheckinPreview() {
     }, []);
     return createStore(() => ({
       phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, trainingNoticeSeen: true, lastSyncedAt: null,
-      checkinLater: null, checkinResultSeen: null,
+      checkinLater: null, checkinResultSeen: null, shadowSeen: null,
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,
     })) as unknown as StoreApi<GameState>;

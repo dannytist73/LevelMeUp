@@ -10,7 +10,7 @@ import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts
 import type { Api, Call } from '../src/net/api.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, VOW_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { nodeSql } from './support/nodeSql.ts';
@@ -818,5 +818,39 @@ describe('Settings (M7b)', () => {
     expect(await store.getState().startCharacter()).toEqual({ ok: false, code: 'storage' });
     expect(api.onboarding).not.toHaveBeenCalled();
     expect(store.getState().draft).toEqual(READY_DRAFT);
+  });
+});
+
+describe('the pact on the phone (M7c)', () => {
+  it("the Shadow's scene stays shown and the focus minutes stay after a restart, and both go with the character", async () => {
+    const { store, kv, local } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(SHADOW_KEY, '7');
+    await store.getState().boot();
+    expect(store.getState().shadowSeen).toBe(7);
+    await store.getState().seeShadow(8);
+    expect(kv.get(SHADOW_KEY)).toBe('8');
+    await store.getState().saveTrialMs(8, 61_500.4);
+    expect(await store.getState().trialMs(8)).toBe(61_500);
+    expect(await store.getState().trialMs(9)).toBe(0); // another check-in's minutes never count
+    kv.set(TRIAL_KEY, 'not json');
+    expect(await store.getState().trialMs(8)).toBe(0);
+    await store.getState().startOver();
+    expect(kv.has(SHADOW_KEY)).toBe(false);
+    expect(kv.has(TRIAL_KEY)).toBe(false);
+    expect(store.getState().shadowSeen).toBeNull();
+  });
+
+  it('a pact signed on the reveal is sent when the onboarding ends (decision 10)', async () => {
+    const { store, local, api } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    await store.getState().boot();
+    store.getState().editDraft({ pact: 1 });
+    await store.getState().finishOnboarding();
+    expect(store.getState().draft.pact).toBeNull();
+    const sentPact = () => api.sync.mock.calls.some((c) => (c[0] as { events: PhoneEvent[] }).events.some((e) => e.type === 'accountability_set'));
+    for (let i = 0; i < 100 && !sentPact(); i++) await settle();
+    expect(sentPact()).toBe(true);
+    store.getState().stop();
   });
 });

@@ -5,7 +5,7 @@ import { characterView } from '../../../supabase/functions/_shared/state.ts';
 import { addStatXp, project } from '../src/game/project.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import {
-  adjustState, characterRow, checkinState, completeEvent, ladderRows, offlineEvent, profileRow, rateEvent, serverState, undoEvent,
+  adjustState, characterRow, checkinState, claimedState, completeEvent, ladderRows, offlineEvent, profileRow, rateEvent, serverState, undoEvent,
   workoutState,
 } from './support/fixtures.ts';
 
@@ -51,6 +51,7 @@ describe('what the screens show: the server state plus the unsent events', () =>
     const shown = project(server, []);
     const flags = {
       waiting: undefined, changingClass: undefined, changingBook: undefined, offline: undefined, ladderChanges: undefined, answering: undefined,
+      changingPact: undefined,
     };
     expect({ ...shown, ...flags }).toEqual({ ...server, ...flags });
     expect(shown.ladderChanges).toEqual([]);
@@ -317,5 +318,35 @@ describe('Settings and rest days (M7b)', () => {
     const shown = project({ ...server, character, today } as unknown as ServerState, []);
     expect(shown.character.restDay).toBeNull();
     expect(shown.today!.restTomorrow).toBe(false);
+  });
+});
+
+describe('the pact (M7c)', () => {
+  it('a raise shows at once and waits for the server to sign it; a lowering keeps the time; off forgets it', () => {
+    const raised = project(adjustState(), [ev({ type: 'accountability_set', level: 1 })]);
+    expect(raised.profile).toMatchObject({ accountabilityLevel: 1, accountabilityFrom: null });
+    expect(raised.changingPact).toBe(true);
+    const signed = claimedState('trial');
+    const lowered = project(signed, [ev({ type: 'accountability_set', level: 1 })]);
+    expect(lowered.profile.accountabilityFrom).toBe(signed.profile.accountabilityFrom);
+    expect(lowered.checkin!.consequence).toBe('shadow'); // the seal breaks at once (decision 3)
+    const off = project(signed, [ev({ type: 'accountability_set', level: 0 })]);
+    expect(off.profile).toMatchObject({ accountabilityLevel: 0, accountabilityFrom: null });
+    expect(off.checkin!.consequence).toBeNull();
+  });
+
+  it('the focus session breaks the seal at once; the note shows at once', () => {
+    const shown = project(claimedState('trial'), [ev({ type: 'trial', checkinId: 7 }), ev({ type: 'checkin_note', checkinId: 7, note: 'Rain.' })]);
+    expect(shown.checkin).toMatchObject({ trialDone: true, note: 'Rain.' });
+    expect(project(claimedState('shadow'), [ev({ type: 'trial', checkinId: 7 })]).checkin!.trialDone).toBe(false);
+  });
+
+  it('a state from before M7c has no pact time and no consequence (decision 12)', () => {
+    const old = claimedState('shadow');
+    const { accountabilityFrom: _from, ...profile } = old.profile;
+    const { consequence: _c, trialDone: _t, note: _n, recoveryDayId: _r, ...checkin } = old.checkin!;
+    const shown = project({ ...old, profile, checkin } as unknown as ServerState, []);
+    expect(shown.profile.accountabilityFrom).toBeNull();
+    expect(shown.checkin).toMatchObject({ consequence: null, trialDone: false, note: null, recoveryDayId: null });
   });
 });

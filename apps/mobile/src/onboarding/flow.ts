@@ -31,12 +31,14 @@ export type Draft = {
   slip: Slip | null;
   /** The class the player picked on the reveal; null takes the rules' suggestion. */
   classId: ClassId | null;
+  /** M7c: the pact signed on the reveal (decision 10), sent when the onboarding ends; null when none. */
+  pact: 1 | 2 | null;
 };
 
 export const NEW_DRAFT: Draft = {
   name: '', voice: null, goals: [], training: null, limitations: [], noLimits: false, equipment: [], noEquipment: false, programStyle: null,
   safety: Array<boolean | null>(SAFETY_QUESTIONS).fill(null), reading: null, focus: null,
-  sleep: 23 * 60, wake: 7 * 60, minutesPerDay: 25, difficulty: 'steady', slip: null, classId: null,
+  sleep: 23 * 60, wake: 7 * 60, minutesPerDay: 25, difficulty: 'steady', slip: null, classId: null, pact: null,
 };
 
 export type Step = 'awakening' | 'voice' | 'goals' | 'body' | 'gear' | 'mind' | 'rhythm' | 'slip';
@@ -167,7 +169,9 @@ export function restoreDraft(json: string | null): Draft {
   try {
     const saved: unknown = JSON.parse(json);
     if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) return NEW_DRAFT;
-    return { ...NEW_DRAFT, ...(saved as Partial<Draft>), safety: NEW_DRAFT.safety };
+    const draft: Draft = { ...NEW_DRAFT, ...(saved as Partial<Draft>), safety: NEW_DRAFT.safety };
+    // M7c: only a level the Pact screen can sign.
+    return { ...draft, pact: draft.pact === 1 || draft.pact === 2 ? draft.pact : null };
   } catch {
     return NEW_DRAFT;
   }

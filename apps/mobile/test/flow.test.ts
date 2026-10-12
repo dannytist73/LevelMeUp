@@ -139,3 +139,9 @@ describe('the Training step (M6c decision 2)', () => {
     expect(restoreDraft(old)).toMatchObject({ equipment: [], noEquipment: false, programStyle: null });
   });
 });
+
+it('keeps a pact signed on the reveal, and only a level the Pact screen can sign (M7c)', () => {
+  expect(restoreDraft(JSON.stringify({ ...NEW_DRAFT, pact: 2 })).pact).toBe(2);
+  expect(restoreDraft(JSON.stringify({ ...NEW_DRAFT, pact: 3 })).pact).toBeNull();
+  expect(restoreDraft(JSON.stringify({ name: 'Rin' })).pact).toBeNull();
+});

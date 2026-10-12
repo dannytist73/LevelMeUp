@@ -4,7 +4,8 @@
 // this at the next sync. M6e: a `provisional_day` in the outbox is today until the server's state has that day; events
 // name its quests by day and slot. M7a: a check-in answer shows at once (the card goes, or the streak is held for the
 // recovery quest the server adds); the lighter plan drops the minutes one step. M7b: the game settings show at once; a
-// rest day planned for tomorrow, and the offline day it falls on.
+// rest day planned for tomorrow, and the offline day it falls on. M7c: the pact's level (a lowering eases today's
+// consequence at once), the Trial's session and the note show at once.
 import { LIBRARY } from '@levelmeup/content';
 import {
   STATS, STREAK_SLOTS, checkinOutcome, closedDayResolution, findTemplate, levelProgress, lighterMinutes, painKey, rankFor, statPoints,
@@ -13,6 +14,7 @@ import {
 import type { XpByStat } from '@levelmeup/rules';
 import { hardFields, withFields } from './adjust.ts';
 import { offlineToday } from './offline.ts';
+import { asLevel } from './pact.ts';
 import type { CharacterView, PhoneEvent, QuestView, ServerState, SlotRef, TodayView } from './types.ts';
 
 /** The character after adding (sign 1) or removing (sign -1) a quest's stored XP, computed like `characterView`. */
@@ -44,6 +46,8 @@ export type Shown = ServerState & {
   ladderChanges: readonly PendingLadder[];
   /** A check-in answer is on its way (M7a): the recovery quest of "I just didn't" arrives with the sync. */
   answering: boolean;
+  /** An Accountability Pact change is on its way (M7c). */
+  changingPact: boolean;
 };
 
 /** "I felt pain" rests a ladder or exercise, Resume brings it back, a step-down lowers a ladder. */
@@ -67,7 +71,8 @@ function stepped(minutes: number): ServerState['lighterPlan'] {
 export function project(server: ServerState, pending: readonly PhoneEvent[]): Shown {
   // A state from a server before M7b has no planned rest day and no rest-tomorrow offer (decision 9).
   let character = { ...server.character, restDay: server.character.restDay ?? null };
-  let profile = server.profile;
+  // A state from a server before M7c has no pact time (decision 12).
+  let profile = server.profile.accountabilityFrom === undefined ? { ...server.profile, accountabilityFrom: null } : server.profile;
   let paused = server.paused;
   let changingClass = false;
   let reading = server.reading;
@@ -78,7 +83,14 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   let quests = today?.quests ?? [];
   let offline = false;
   // A state from a server before M7a has none of these (review): nothing shows rather than Today failing.
-  let checkin = server.checkin ?? null;
+  // M7c: nor what the pact did with a check-in (decision 12).
+  let checkin = server.checkin === null || server.checkin === undefined
+    ? null
+    : {
+      ...server.checkin, recoveryDayId: server.checkin.recoveryDayId ?? null, consequence: server.checkin.consequence ?? null,
+      trialDone: server.checkin.trialDone ?? false, note: server.checkin.note ?? null,
+    };
+  let changingPact = false;
   let lighterPlan = server.lighterPlan ?? null;
   let answering = false;
   const ladderChanges: PendingLadder[] = [];
@@ -156,6 +168,29 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         lighterPlan = stepped(lighterPlan.to);
       }
       if (outcome.lighterTomorrow) character = { ...character, nextDayLight: true };
+      continue;
+    }
+    if (event.type === 'accountability_set') {
+      const before = asLevel(profile.accountabilityLevel);
+      // A raise is signed when the server has it; a lowering keeps the time; off forgets it (decision 3).
+      profile = {
+        ...profile, accountabilityLevel: event.level,
+        accountabilityFrom: event.level === 0 || event.level > before ? null : profile.accountabilityFrom,
+      };
+      changingPact = true;
+      // A lowering eases today's consequence at once, as the server will.
+      if (event.level < before && checkin !== null && checkin.answer === 'just_didnt') {
+        if (checkin.consequence === 'trial') checkin = { ...checkin, consequence: event.level === 1 ? 'shadow' : null };
+        else if (checkin.consequence === 'shadow' && event.level === 0) checkin = { ...checkin, consequence: null };
+      }
+      continue;
+    }
+    if (event.type === 'trial') {
+      if (checkin !== null && checkin.id === event.checkinId && checkin.consequence === 'trial') checkin = { ...checkin, trialDone: true };
+      continue;
+    }
+    if (event.type === 'checkin_note') {
+      if (checkin !== null && checkin.id === event.checkinId) checkin = { ...checkin, note: event.note };
       continue;
     }
     if (event.type === 'lighter_plan') {
@@ -256,6 +291,6 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   }
   return {
     ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline, ladderChanges, checkin, lighterPlan,
-    checkinResult: server.checkinResult ?? null, answering,
+    checkinResult: server.checkinResult ?? null, answering, changingPact,
   };
 }

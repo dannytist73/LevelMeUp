@@ -6,6 +6,8 @@
 // timer.
 // M6e: when today has ended and the server can't be reached, the store builds the next day (`offlineDay`) and queues it;
 // events on its quests name them by day and slot; their timers move to the server's quests.
+// M7c: the Shadow's scene shown once and the Trial's minutes are kept on the phone; a pact signed on the reveal goes when
+// the onboarding ends.
 import { createContext, createElement, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
@@ -68,6 +70,10 @@ export const ART_KEY = 'lmu.art-manifest';
 export const TRAINING_NOTICE_KEY = 'lmu.training-notice';
 /** M7a: the last check-in result the player dismissed (decision 10). */
 export const CHECKIN_RESULT_KEY = 'lmu.checkin-result';
+/** M7c: the last check-in whose Shadow scene was shown (decision 5). */
+export const SHADOW_KEY = 'lmu.shadow-seen';
+/** M7c: the Trial's focus minutes so far, for one check-in (decision 7). */
+export const TRIAL_KEY = 'lmu.trial';
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
 export type Celebration = { kind: 'level'; level: number } | { kind: 'achievement'; id: string };
@@ -105,6 +111,8 @@ export type GameState = {
   checkinLater: number | null;
   /** M7a: the last check-in result the player dismissed (kept on the phone). */
   checkinResultSeen: number | null;
+  /** M7c: the last check-in whose Shadow scene was shown (kept on the phone, decision 5). */
+  shadowSeen: number | null;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -120,6 +128,10 @@ export type GameState = {
   /** The app came back to the foreground: a check-in put off with "Later" shows again. */
   reopen: () => void;
   dismissCheckinResult: (checkinId: number) => Promise<void>;
+  seeShadow: (checkinId: number) => Promise<void>;
+  /** M7c: the Trial's focus minutes so far for this check-in, in ms (0 for any other; decision 7). */
+  trialMs: (checkinId: number) => Promise<number>;
+  saveTrialMs: (checkinId: number, ms: number) => Promise<void>;
   saveWithGoogle: () => Promise<GoogleResult>;
   /** "Saved a character before?": only on a phone that holds none. */
   signInWithGoogle: () => Promise<RestoreResult>;
@@ -145,6 +157,19 @@ const readSeen = (text: string | null): number | null => {
   const n = Number(text);
   return text !== null && Number.isSafeInteger(n) ? n : null;
 };
+
+/** M7c: the focus minutes kept for this check-in; another check-in's, or anything unreadable, count as none. */
+function readTrial(text: string | null, checkinId: number): number {
+  if (text === null) return 0;
+  try {
+    const kept: unknown = JSON.parse(text);
+    if (typeof kept !== 'object' || kept === null) return 0;
+    const { checkinId: id, ms } = kept as { checkinId?: unknown; ms?: unknown };
+    return id === checkinId && Number.isSafeInteger(ms) && (ms as number) >= 0 ? (ms as number) : 0;
+  } catch {
+    return 0;
+  }
+}
 
 function readKeptArt(text: string | null): ArtManifest | null {
   if (text === null) return null;
@@ -272,10 +297,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(TIMERS_KEY);
       await deps.kv.removeItem(TRAINING_NOTICE_KEY);
       await deps.kv.removeItem(CHECKIN_RESULT_KEY);
+      await deps.kv.removeItem(SHADOW_KEY);
+      await deps.kv.removeItem(TRIAL_KEY);
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        account: await deps.account(),
+        shadowSeen: null, account: await deps.account(),
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -354,15 +381,17 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       trainingNoticeSeen: true, // nothing flashes before boot reads the phone
       checkinLater: null,
       checkinResultSeen: null,
+      shadowSeen: null,
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
           deps.kv.getItem(VOW_KEY).catch(() => null),
           deps.kv.getItem(TRAINING_NOTICE_KEY).catch(() => null),
           deps.kv.getItem(CHECKIN_RESULT_KEY).catch(() => null),
+          deps.kv.getItem(SHADOW_KEY).catch(() => null),
         ]);
         await refresh();
         confirmedLevel = get().cached?.state.character.level ?? null;
@@ -372,6 +401,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         set({
           draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
+          shadowSeen: readSeen(shadow),
         });
         await scheduler.request();
       },
@@ -437,8 +467,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       finishOnboarding: async () => {
+        const { pact } = get().draft;
         await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
         set({ draft: NEW_DRAFT, reveal: null });
+        // M7c decision 10: a pact signed on the reveal goes now, with the character; the server starts it with day 2.
+        if (pact !== null && get().cached !== null) await get().enqueue({ type: 'accountability_set', level: pact });
       },
 
       saveVow: async (text) => {
@@ -459,6 +492,17 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       dismissCheckinResult: async (checkinId) => {
         set({ checkinResultSeen: checkinId });
         await deps.kv.setItem(CHECKIN_RESULT_KEY, String(checkinId)).catch(() => {});
+      },
+
+      seeShadow: async (checkinId) => {
+        set({ shadowSeen: checkinId });
+        await deps.kv.setItem(SHADOW_KEY, String(checkinId)).catch(() => {});
+      },
+
+      trialMs: async (checkinId) => readTrial(await deps.kv.getItem(TRIAL_KEY).catch(() => null), checkinId),
+
+      saveTrialMs: async (checkinId, ms) => {
+        await deps.kv.setItem(TRIAL_KEY, JSON.stringify({ checkinId, ms: Math.max(0, Math.round(ms)) })).catch(() => {});
       },
 
       saveWithGoogle: async () => {
