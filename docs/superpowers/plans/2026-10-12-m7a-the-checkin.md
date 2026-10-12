@@ -2764,6 +2764,73 @@ then. Next in the loop: M7b (Settings and notifications).
 
 ## As built
 
-(Filled in during the build.)
+Built 2026-10-12 on `m7a-checkin` (from `m6e-offline-days` 55931c5), with the owner's "Yes to all, proceed" of
+2026-10-12 for the build and its deploy.
+
+| Task | Commit |
+|---|---|
+| T1 rules: the lighter plan and `secondWindRedo` | f7868c7 |
+| T2 content: the check-in's words | 3daeda3 |
+| T3 migration 0011 and its pgTAP tests | dda6e42 |
+| T4 the check-in in the snapshot and the state | c99afaa |
+| T5 the `checkin` and `lighter_plan` events, `planCheckin` | 4fe0b43 |
+| T6 `planAdvance`: the replay and the settled miss | fa40265 |
+| T7 `lmu-sync` and the live tests | 4ab7e29 |
+| T9 the projection, notices, cache 6, the light offline day | c337326 |
+| T10 the store | 35a780f |
+| T11 the check-in screen | 739de01 |
+| T12 Today, the rest limit, Quest cleared | c84297a |
+| T13 the developer preview | 5f54aae |
+| T14 docs | 2cbb016 |
+
+### Changes from the plan
+
+- The events unit test and the live batch test used `type: 'checkin'` as their "unsupported event" example; they now
+  use `accountability_set` (M7c), since `checkin` is supported.
+- Two tests that spread a snapshot into `planAdvance` (server `advance.test.ts`, app `offlineDay.test.ts`) pass
+  `pending: snapshot.checkin`, as `lmu-sync` does.
+- The live M7a block creates its player in its first test (the file's style) instead of `beforeAll`; the helper's
+  comment now says 11 players.
+- The recovery line on Quest cleared uses the ink tone: the panel is paper (the plan said chalk).
+- The class-path test (Task 13 step 1) landed with Task 9: Task 2 had already made Second Wind and Unbreakable ready.
+  The Today tests use a local `renderToday(store, at)`; the store tests use the file's `setup` helper; a cache test
+  covers a version-5 install; a Quest cleared test checks the recovery line.
+- Task 8 (the deploy) ran after the server's code review and its fixes, so only reviewed code went live (as in M6e).
+- Decision 2 is refined: `lmu-sync` applies a batch's check-in answers after its other events (`applyOrder`), so a
+  completion sent after an answer still lands before its day closes; the phone builds an offline day without the
+  answers still on their way (`offlineView`), as the server will store it.
+
+### Code review (2026-10-12): fixes
+
+Two reviews (server Tasks 1–7, phone Tasks 9–14), both "With fixes"; the re-reviews confirmed the fixes (server
+8a2b882, phone a6f7ac7 and 72304a4):
+- **Critical:** an answer closed the ended days before the completions sent after it in the same sync, so they were
+  refused (`day_closed`) and the day became a miss. Answers now apply last.
+- The replay gave each of two missed days in a row its own check-in when they waited behind an earlier one; they now
+  share it, as they would have if the first answer had come at once.
+- A pgTAP test called `lmu_test.start(2)` inside a scan (once per row); it is called once.
+- The offline day applied a queued answer's light day, rest or fewer minutes, which the server applies only after
+  that day: it leaves them out now.
+- Today tolerates a state from an older server (no check-in, result or lighter plan); one tap answers the
+  lighter-plan offer (a double tap stepped the minutes twice); no stale or offline Second Wind; the streak caption
+  wraps; a resolved check-in answered again is `already_answered`; `levelmeup.adjust` refuses the check-in's keys on
+  other kinds, Second Wind outside an answer, and an answer resolved as anything but protected.
+- Carried forward (roadmap "Carried forward from M7a"): the lighter-plan count for shared check-ins, an injury and
+  today's quest of that exercise, an offline answer taking effect a day later, the notice words for two refusals,
+  and boards F1/F3's header and recovery-first order.
+
+### Deploy and device check (2026-10-12)
+
+With the owner's "Yes to all, proceed" (2026-10-12), after the server review: `db:deploy` applied 0011 (the wedding's
+history unchanged); `db:test` passed (adjust 74 assertions in 10 tests, functions 191 in 18, isolation 97, storage 6,
+tables 206; nothing left behind); `deploy:functions` (v10, ACTIVE, 04:26 UTC); `test:live` 36 of 36; no test player
+left. Emulator (test character Uma, after the deploy): rows 11 and 12 pass (the check-in preview: the card, "day
+streak · paused", the five answers, "Which was it?", the Answer button waiting for a full answer; every word at font
+scale 2.0; nothing sent). Rows 1–6 wait for Uma's real day boundary (08:00 UTC); rows 7, 9 and 10 need a Warrior at
+level 5 or a used-up rest week (Find X9). Found: Metro's fast refresh of the cache migration file broke the running
+app's database ("could not open its records") until it was restarted; development only (an update restarts the app).
+
+Checks: content 1049, rules 447, server 328, app 604 tests; `typecheck`, `check:functions`, `check:portable` (198/72
+exports), `check:bundle` (33 files, no secrets) pass; `npm run pacing` unchanged from M6c.
 
 
