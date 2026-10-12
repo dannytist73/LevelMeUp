@@ -35,7 +35,9 @@ export default function OfflinePreview() {
     const view = project(cached.state, [{ ...event, id: '00000000-0000-4000-8000-0000000000ff' }]);
     const store = createStore(() => ({
       phase: 'ready', view, art, status: 'offline', notices: [], signInLost: false, trainingNoticeSeen: true, lastSyncedAt: null,
+      checkinLater: null, checkinResultSeen: null,
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,
+      answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,
     })) as unknown as StoreApi<GameState>;
     return { store, at };
   }, [cached, art]);
@@ -48,7 +50,10 @@ export default function OfflinePreview() {
       </View>
       {preview !== null && (
         <GameProvider store={preview.store}>
-          <Today onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}} now={() => preview.at} />
+          <Today
+            onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}}
+            onCheckin={() => {}} now={() => preview.at}
+          />
         </GameProvider>
       )}
     </View>

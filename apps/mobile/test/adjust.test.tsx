@@ -1,4 +1,6 @@
-import { ABILITY_LINES, ADJUST_TEXT, EQUIPMENT_NAMES, ONBOARDING_TEXT, PLAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
+import {
+  ABILITY_LINES, ADJUST_TEXT, EQUIPMENT_NAMES, LIGHTER_TEXT, ONBOARDING_TEXT, PLAY_TEXT, authoredTemplate, fillText,
+} from '@levelmeup/content';
 import { DAY_MS, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { activateKeepAwakeAsync } from 'expo-keep-awake';
@@ -52,6 +54,20 @@ describe("Today's adjustments (M6b)", () => {
     await fireEvent.press(screen.getByRole('button', { name: A.day.notNow }));
     expect(screen.getByRole('button', { name: A.day.hardDay })).toBeTruthy();
     expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it('over the rest limit the confirm offers the lighter plan, when there is one (M7a decision 9)', async () => {
+    const enqueue = jest.fn(async () => {});
+    const view = shown();
+    const limited = { ...view, today: { ...view.today!, restAllowed: false } };
+    await render(actions({ ...limited, lighterPlan: { from: 25, to: 15, offered: false } }, enqueue));
+    await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
+    expect(screen.getByText(A.rest.limit)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: fillText(LIGHTER_TEXT.restLimit, { from: 25, to: 15 }) }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'lighter_plan', accept: true });
+    await render(actions({ ...limited, lighterPlan: null }, enqueue));
+    await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
+    expect(screen.queryByRole('button', { name: /^Lighten the plan/ })).toBeNull();
   });
 
   it('hides what the day no longer allows: no swap left, already a hard day, already protected', async () => {

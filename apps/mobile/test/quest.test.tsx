@@ -116,6 +116,7 @@ const NUMBERS: ClearedNumbers = {
   discipline: true,
   streak: { from: 9, to: 10 },
   level: { level: 6, xpIntoLevel: 87, xpForLevel: 130 },
+  recovered: false,
 };
 
 async function renderCleared(over: Partial<ClearedProps> = {}) {
@@ -495,4 +496,9 @@ it("an offline quest's screen follows its slot once the server's day replaced th
   await renderQuest(server, -1, {}, () => DAY_TWO_NOW);
   expect(screen.queryByText(PLAY_TEXT.quest.gone)).toBeNull();
   expect(screen.getByText(questSummary(server.today!.quests[0]!))).toBeTruthy(); // push-1, the core quest (id 200)
+});
+
+it('"Quest cleared" for the recovery quest says the day is taken back when today ends (M7a)', async () => {
+  await renderCleared({ numbers: { ...NUMBERS, discipline: false, streak: null, recovered: true } });
+  expect(screen.getByText(PLAY_TEXT.cleared.recovered)).toBeTruthy();
 });

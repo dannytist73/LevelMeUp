@@ -1,4 +1,6 @@
-import { ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, OFFLINE_TEXT } from '@levelmeup/content';
+import {
+  ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, fillText,
+} from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -11,7 +13,9 @@ import { Character } from '../src/screens/Character.tsx';
 import { Chronicle } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { DAY_TWO_NOW, adjustState, characterRow, completeEvent, ladderRows, offlineEvent, profileRow, serverState } from './support/fixtures.ts';
+import {
+  DAY_TWO_NOW, adjustState, characterRow, checkinState, completeEvent, ladderRows, offlineEvent, profileRow, serverState,
+} from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
@@ -29,7 +33,10 @@ async function renderToday(over: Parameters<typeof testStore>[0] = {}, server: S
   const onOpenQuest = jest.fn();
   const onTraining = jest.fn();
   await render(withStore(store,
-    <Today onSettings={onSettings} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={onTraining} now={now} />));
+    <Today
+      onSettings={onSettings} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={onTraining}
+      onCheckin={jest.fn()} now={now}
+    />));
   return { store, onSettings, onOpenQuest, onTraining };
 }
 
@@ -393,7 +400,8 @@ describe('Celebration (M6a decision 8)', () => {
 it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core quest (M6b)', async () => {
   const onPain = jest.fn();
   await render(withStore(testStore({ view: project(adjustState(), []) }),
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={onPain} onVanish={jest.fn()} onTraining={jest.fn()} now={() => DAY_TWO_NOW} />));
+    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={onPain} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
+      now={() => DAY_TWO_NOW} />));
   expect(screen.getByRole('button', { name: 'Swap · 1 left' })).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
   expect(onPain).toHaveBeenCalledWith(200);
@@ -402,7 +410,8 @@ it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core
 it("Today tags a quest whose exercise is resting after pain (M6b review)", async () => {
   const resting = adjustState({ ladders: ladderRows({ push: { ...newLadder(1), paused: true } }) });
   await render(withStore(testStore({ view: project(resting, []) }),
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} now={() => DAY_TWO_NOW} />));
+    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
+      now={() => DAY_TWO_NOW} />));
   expect(screen.getAllByText(ADJUST_TEXT.paused.tag)).toHaveLength(1); // the core quest, push-1
 });
 
@@ -497,7 +506,8 @@ describe("Scholar's Path: the book screen (M6d decision 12)", () => {
     const server = adjustState();
     const quests = server.today!.quests.map((q) => (q.slot === 'core' || q.slot === 'side2' ? { ...q, book: 'Dune' } : q));
     await render(withStore(testStore({ view: project({ ...server, today: { ...server.today!, quests } }, []) }),
-      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} now={() => DAY_TWO_NOW} />));
+      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
+      now={() => DAY_TWO_NOW} />));
     expect(screen.getAllByText('Reading: Dune')).toHaveLength(2); // the core card and an open side card
   });
 });
@@ -555,5 +565,61 @@ describe('a day this phone built offline (M6e decision 8)', () => {
     await renderToday();
     expect(screen.queryByText(OFFLINE_TEXT.built)).toBeNull();
     expect(screen.queryByText(OFFLINE_TEXT.later)).toBeNull();
+  });
+});
+
+describe('Today after a missed day (M7a)', () => {
+  const T = CHECKIN_TEXT;
+  /** Today on day 2 with this store; `onCheckin` opens the check-in screen. */
+  async function renderToday(store: ReturnType<typeof testStore>, at: number) {
+    const onCheckin = jest.fn();
+    await render(withStore(store,
+      <Today
+        onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
+        onCheckin={onCheckin} now={() => at}
+      />));
+    return { store, onCheckin };
+  }
+
+  it('asks the check-in, shows the streak paused, and opens the check-in screen', async () => {
+    const { store, onCheckin } = await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
+    expect(screen.getByText(T.title)).toBeTruthy();
+    expect(screen.getByText(T.leadYesterday)).toBeTruthy();
+    expect(screen.getByText(`day streak · ${T.streakPaused}`)).toBeTruthy();
+    await fireEvent.press(screen.getByText(T.open));
+    expect(onCheckin).toHaveBeenCalled();
+    await fireEvent.press(screen.getByText(T.openLater));
+    expect(store.getState().answerLater).toHaveBeenCalledWith(7);
+  });
+
+  it('hides a check-in put off with "Later"', async () => {
+    await renderToday(testStore({ view: project(checkinState(), []), checkinLater: 7 }), DAY_TWO_NOW);
+    expect(screen.queryByText(T.title)).toBeNull();
+  });
+
+  it('holds the streak after "I just didn\'t" and says the recovery quest is on its way', async () => {
+    const answer = { id: '00000000-0000-4000-8000-0000000000c1', type: 'checkin' as const, checkinId: 7, answer: 'just_didnt' as const, secondWind: false };
+    await renderToday(testStore({ view: project(checkinState(), [answer]) }), DAY_TWO_NOW);
+    expect(screen.getByText(T.held)).toBeTruthy();
+    expect(screen.getByText(T.waiting)).toBeTruthy();
+    expect(screen.getByText(`day streak · ${T.streakHeld}`)).toBeTruthy();
+  });
+
+  it('shows a settled miss once', async () => {
+    const state = { ...checkinState(), checkin: null, checkinResult: { id: 9, outcome: 'shield' as const } };
+    const { store } = await renderToday(testStore({ view: project(state, []) }), DAY_TWO_NOW);
+    expect(screen.getByText(T.result.shield)).toBeTruthy();
+    await fireEvent.press(screen.getByText(T.done));
+    expect(store.getState().dismissCheckinResult).toHaveBeenCalledWith(9);
+    await renderToday(testStore({ view: project(state, []), checkinResultSeen: 9 }), DAY_TWO_NOW);
+    expect(screen.queryByText(T.result.shield)).toBeNull();
+  });
+
+  it('offers the lighter plan when the state does, both ways', async () => {
+    const state = { ...checkinState(), checkin: null, lighterPlan: { from: 25, to: 15, offered: true } };
+    const { store } = await renderToday(testStore({ view: project(state, []) }), DAY_TWO_NOW);
+    expect(screen.getByText(fillText(LIGHTER_TEXT.offer, { from: 25, to: 15 }))).toBeTruthy();
+    await fireEvent.press(screen.getByText(LIGHTER_TEXT.decline));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'lighter_plan', accept: false });
   });
 });

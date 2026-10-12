@@ -62,3 +62,12 @@ describe('"Quest cleared" (board D2, M6a decision 5)', () => {
     expect(c.xp).toBe(xpOf(core));
   });
 });
+
+describe('the recovery quest cleared (M7a)', () => {
+  it('says the day is taken back when today ends; no other quest does', () => {
+    const recovery = { ...side1, id: 999, slot: 'recovery' as const, completedAt: '2026-10-10T13:00:00.000Z' };
+    const after = { character: SERVER.character, quests: [...quests, recovery] };
+    expect(clearedSummary(null, after, 999).recovered).toBe(true);
+    expect(clearedSummary(null, shown(core.id), core.id).recovered).toBe(false);
+  });
+});

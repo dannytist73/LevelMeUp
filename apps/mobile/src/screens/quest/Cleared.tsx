@@ -109,6 +109,7 @@ export function Cleared({
         ))}
         {numbers.discipline && <Row label={C.discipline} value={`+${DISCIPLINE_PER_CORE_DAY}`} />}
         {numbers.streak !== null && <Row label={C.streak} value={fillText(C.streakDays, numbers.streak)} />}
+        {numbers.recovered && <Body tone="ink">{C.recovered}</Body>}
         <View style={{ gap: 6 }}>
           <XpBar on="paper" value={xpIntoLevel} max={xpForLevel} label={`Level ${level} progress`} />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 }}>

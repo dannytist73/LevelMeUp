@@ -2,7 +2,7 @@
 // of day it is; swap, hard day, a rest day, the Monk's Stillness and Dawn Ritual and the Rogue's Vanish, each behind a
 // plain confirm; and the exercises resting after pain, with Resume. The server decides what is offered (the state view),
 // so nothing here asks for a change it would refuse.
-import { ABILITY_NAMES, ADJUST_TEXT, OFFLINE_TEXT, fillText, pausedName } from '@levelmeup/content';
+import { ABILITY_NAMES, ADJUST_TEXT, LIGHTER_TEXT, OFFLINE_TEXT, fillText, pausedName } from '@levelmeup/content';
 import { abilityUnlocked } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -29,15 +29,20 @@ export function DayBanners({ today }: { today: TodayView }) {
   return <View style={{ gap: 18 }}>{lines.map((line) => <NarrationBox key={line}>{line}</NarrationBox>)}</View>;
 }
 
-/** The confirm's words and what it sends; over the rest limit it only explains. */
-function panelFor(kind: Confirm, today: TodayView): Panel {
+/** The confirm's words and what it sends; over the rest limit it explains, and offers the lighter plan when there is one. */
+function panelFor(kind: Confirm, today: TodayView, lighter: Shown['lighterPlan']): Panel {
   switch (kind) {
     case 'hard_day':
       return { text: T.hardDay.explain, send: { label: T.hardDay.confirm, event: { type: 'hard_day', dayId: today.id } } };
     case 'plan_rest':
-      return today.restAllowed
-        ? { text: T.rest.explain, send: { label: T.rest.confirm, event: { type: 'plan_rest', dayId: today.id } } }
-        : { text: T.rest.limit, send: null };
+      if (today.restAllowed) return { text: T.rest.explain, send: { label: T.rest.confirm, event: { type: 'plan_rest', dayId: today.id } } };
+      // M7a decision 9: over the rest limit, a lighter plan is the other way.
+      return {
+        text: T.rest.limit,
+        send: lighter === null
+          ? null
+          : { label: fillText(LIGHTER_TEXT.restLimit, { from: lighter.from, to: lighter.to }), event: { type: 'lighter_plan', accept: true } },
+      };
     case 'stillness':
       return {
         text: T.abilities.stillness,
@@ -70,7 +75,7 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
   const canVanish = abilityUnlocked('vanish', view.profile.classId, view.character.level);
 
   if (confirm !== null) {
-    const panel = panelFor(confirm, today);
+    const panel = panelFor(confirm, today, view.lighterPlan);
     const send = panel.send;
     return (
       <View style={{ gap: 12 }}>

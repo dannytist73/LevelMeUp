@@ -18,6 +18,8 @@ export type ClearedNumbers = {
    */
   streak: { from: number; to: number } | null;
   level: { level: number; xpIntoLevel: number; xpForLevel: number };
+  /** The recovery quest: the day is taken back when today ends (M7a). */
+  recovered: boolean;
 };
 
 function streakDay(quests: readonly QuestView[]): boolean {
@@ -42,5 +44,6 @@ export function clearedSummary(before: Shot | null, after: Shot, questId: number
     discipline: quest.slot === 'core',
     streak: grew ? { from: current, to: current + 1 } : null,
     level: { level, xpIntoLevel, xpForLevel },
+    recovered: quest.slot === 'recovery',
   };
 }

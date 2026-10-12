@@ -10,6 +10,7 @@ export default function TodayRoute() {
       onPain={(id) => router.push(`/pain/${id}`)}
       onVanish={() => router.push('/vanish')}
       onTraining={() => router.push('/training')}
+      onCheckin={() => router.push('/checkin')}
     />
   );
 }

@@ -1,6 +1,7 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
-// quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx). The article reader arrives in M8.
+// quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx); M7a the check-in (CheckinNotes.tsx). The article
+// reader arrives in M8.
 import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, artKey, authoredTemplate } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -9,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
 import { isExercise, isResting } from '../game/adjust.ts';
 import { trainingUnset } from '../game/character.ts';
+import { streakNote } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
@@ -22,6 +24,7 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Caption, Display, Heading, Label, Small } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
+import { CheckinNotes } from './CheckinNotes.tsx';
 import { DayActions, DayBanners, PausedExercises } from './DayActions.tsx';
 import { QuestCard } from './QuestCard.tsx';
 import { syncMark } from './syncLine.ts';
@@ -34,6 +37,8 @@ export type TodayProps = {
   onVanish: () => void;
   /** Settings → Training, from the one-time training notice (M6d). */
   onTraining: () => void;
+  /** The check-in screen (M7a). */
+  onCheckin: () => void;
   now?: () => number;
 };
 
@@ -41,7 +46,7 @@ const SECTION: Record<QuestView['slot'], string> = {
   core: 'Core quest', side1: 'Side quests', side2: 'Side quests', article: "Today's reading", recovery: 'Recovery',
 };
 
-export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTraining, now = Date.now }: TodayProps) {
+export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTraining, onCheckin, now = Date.now }: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
@@ -62,6 +67,8 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
   // Spec §1.4: the empty state always offers a retry, except while a sync is already running.
   const canRetry = status !== 'syncing';
   const mark = syncMark(status);
+  // M7a: "paused" while a check-in waits, "held today" after "I just didn't".
+  const note = view === null ? null : streakNote(view);
 
   const noticeBoxes = notices.map((n) => (
     <View key={n.eventId} style={{ gap: 8 }}>
@@ -170,7 +177,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Icon name="flame" size={18} color={colors.ember} />
                 <Heading tone="ember">{String(view.character.streak.current)}</Heading>
-                <Small tone="chalk">day streak</Small>
+                <Small tone="chalk">{note === null ? 'day streak' : `day streak · ${note}`}</Small>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Icon name="shield" size={18} />
@@ -191,6 +198,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
             <Button label={ADJUST_TEXT.day.notNow} variant="secondary" onPress={() => void dismissTrainingNotice()} />
           </View>
         )}
+        {view !== null && <CheckinNotes view={view} onCheckin={onCheckin} />}
         {noticeBoxes}
         {body}
       </View>
