@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import type { ReactNode } from 'react';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
+import { DEFAULT_NOTIFY } from '../../src/notify/settings.ts';
 import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
 import type { Draft } from '../../src/onboarding/flow.ts';
 import { GameProvider } from '../../src/state/store.ts';
@@ -29,6 +30,9 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     checkinLater: null,
     checkinResultSeen: null,
     shadowSeen: null,
+    notify: DEFAULT_NOTIFY,
+    permission: 'granted',
+    planned: [],
     boot: jest.fn(async () => {}),
     enqueue: jest.fn(async () => {}),
     syncNow: jest.fn(async () => {}),
@@ -51,6 +55,9 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     dismissCelebration: jest.fn(),
     timer: jest.fn(async () => null),
     saveTimer: jest.fn(async () => {}),
+    setNotify: jest.fn(async () => {}),
+    allowNotify: jest.fn(async () => 'granted' as const),
+    checkNotify: jest.fn(async () => {}),
     stop: jest.fn(),
     ...over,
   }));

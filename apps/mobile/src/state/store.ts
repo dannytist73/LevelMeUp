@@ -8,6 +8,7 @@
 // events on its quests name them by day and slot; their timers move to the server's quests.
 // M7c: the Shadow's scene shown once and the Trial's minutes are kept on the phone; a pact signed on the reveal goes when
 // the onboarding ends.
+// M7d: the notifications: their settings kept on the phone, the permission, and a plan made again after every change.
 import { createContext, createElement, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
@@ -25,6 +26,10 @@ import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
 import type { PhoneEvent, Reveal } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
+import { makeApplier } from '../notify/apply.ts';
+import { planInput, planNotes } from '../notify/plan.ts';
+import { DEFAULT_NOTIFY, NOTIFY_KEY, readNotify } from '../notify/settings.ts';
+import type { NoteOs, NotifySettings, Permission, PlannedNote } from '../notify/types.ts';
 import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
 import type { Draft } from '../onboarding/flow.ts';
 import { parseTimers } from '../quest/timer.ts';
@@ -53,6 +58,8 @@ export type GameDeps = {
   google: { link: () => Promise<GoogleResult>; signIn: () => Promise<GoogleResult> };
   /** The quest-art manifest from the art bucket (M6a); whatever arrives is checked, null when it can't be fetched. */
   artManifest: () => Promise<unknown>;
+  /** M7d: the phone's notifications (`src/notify/os.ts`); the store's only way to them. */
+  notes: NoteOs;
 };
 
 /** `loading`: nothing cached yet; `not_started`: signed in, but no character. */
@@ -113,6 +120,12 @@ export type GameState = {
   checkinResultSeen: number | null;
   /** M7c: the last check-in whose Shadow scene was shown (kept on the phone, decision 5). */
   shadowSeen: number | null;
+  /** M7d: Settings → Notifications, kept on this phone (decision 2). */
+  notify: NotifySettings;
+  /** M7d: whether the phone lets LevelMeUp notify; `unknown` until it is read. */
+  permission: Permission;
+  /** M7d: the notifications planned now, as the phone last got them (the developer screen lists them). */
+  planned: readonly PlannedNote[];
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -145,6 +158,12 @@ export type GameState = {
   timer: (questId: number) => Promise<TimerState | null>;
   /** Stores a quest's timer (null forgets it); timers of quests no longer today's are dropped. */
   saveTimer: (questId: number, state: TimerState | null) => Promise<void>;
+  /** M7d: keeps the settings on the phone and plans again. */
+  setNotify: (next: NotifySettings) => Promise<void>;
+  /** M7d: the phone's own prompt; only Settings → Notifications calls it, after the player turns one on (decision 5). */
+  allowNotify: () => Promise<Permission>;
+  /** M7d: reads the permission again and plans again (the app came back to the foreground). */
+  checkNotify: () => Promise<void>;
   stop: () => void;
 };
 
@@ -211,8 +230,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       const view = cached === null ? null : project(cached.state, pending);
       set({ ...patch, cached, pending, notices, view, lastSyncedAt: cached?.syncedAt ?? null });
       watchDayEnd(view);
-      // M6e: the server's state has the offline day now, whatever refreshed first (review): its timers move along.
-      if (before?.offline === true && view?.offline !== true) void moveTimers(before);
+      void replan();
+      // M6e: the server's state has the offline day now, whatever refreshed first (review): its timers move along, and
+      // their alerts with them (M7d).
+      if (before?.offline === true && view?.offline !== true) void moveTimers(before).then(replan, replan);
     };
 
     /**
@@ -268,6 +289,32 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       return done;
     };
 
+    /** M7d: nothing is planned before the settings and the permission are read, so a launch never clears the phone. */
+    let notifyLoaded = false;
+    const applier = makeApplier(deps.notes);
+    let planning: Promise<void> = Promise.resolve();
+
+    /**
+     * M7d (decisions 3–4): plans from the view, the stored timers, the settings and the clock; the phone hears only of a
+     * change. Plans run one after another; a failed one leaves the next to try again.
+     */
+    const replan = (): Promise<void> => {
+      const run = async (): Promise<void> => {
+        if (!notifyLoaded || stopped) return;
+        await timerWrites;
+        const timers = parseTimers(await deps.kv.getItem(TIMERS_KEY).catch(() => null));
+        const { view, notify, permission } = get();
+        if (permission === 'unknown') return;
+        const input = view === null || permission !== 'granted' ? null : planInput(view, timers, notify, deps.now());
+        const planned = input === null ? [] : planNotes(input);
+        set({ planned });
+        await applier.apply(planned);
+      };
+      const done = planning.then(run);
+      planning = done.catch(() => {});
+      return planning;
+    };
+
     const run = async (): Promise<SyncOutcome> => {
       const mine = ++generation;
       set({ status: 'syncing' });
@@ -299,10 +346,14 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(CHECKIN_RESULT_KEY);
       await deps.kv.removeItem(SHADOW_KEY);
       await deps.kv.removeItem(TRIAL_KEY);
+      // M7d decision 9: the next player on this phone gets nothing the last one planned.
+      await deps.notes.cancelAll().catch(() => {});
+      applier.forget();
+      await deps.kv.removeItem(NOTIFY_KEY);
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        shadowSeen: null, account: await deps.account(),
+        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], account: await deps.account(),
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -382,9 +433,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       checkinLater: null,
       checkinResultSeen: null,
       shadowSeen: null,
+      notify: DEFAULT_NOTIFY,
+      permission: 'unknown',
+      planned: [],
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -392,7 +446,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(TRAINING_NOTICE_KEY).catch(() => null),
           deps.kv.getItem(CHECKIN_RESULT_KEY).catch(() => null),
           deps.kv.getItem(SHADOW_KEY).catch(() => null),
+          deps.kv.getItem(NOTIFY_KEY).catch(() => null),
+          deps.notes.permission().catch((): Permission => 'unknown'),
         ]);
+        set({ notify: readNotify(notifyText), permission });
+        notifyLoaded = true;
         await refresh();
         confirmedLevel = get().cached?.state.character.level ?? null;
         const holding = get().cached !== null;
@@ -487,7 +545,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       answerLater: (checkinId) => set({ checkinLater: checkinId }),
 
-      reopen: () => set({ checkinLater: null }),
+      reopen: () => {
+        set({ checkinLater: null });
+        void get().checkNotify(); // M7d: the permission may have changed in the phone's settings
+      },
 
       dismissCheckinResult: async (checkinId) => {
         set({ checkinResultSeen: checkinId });
@@ -564,7 +625,27 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         };
         const next = timerWrites.then(write);
         timerWrites = next.catch(() => {}); // a failed save doesn't hold up the next one
+        void next.then(replan, () => {}); // M7d: a running timer's alert, or its end
         return next;
+      },
+
+      setNotify: async (next) => {
+        set({ notify: next });
+        await deps.kv.setItem(NOTIFY_KEY, JSON.stringify(next)).catch(() => {});
+        await replan();
+      },
+
+      allowNotify: async () => {
+        const permission = await deps.notes.ask().catch(() => get().permission);
+        set({ permission });
+        await replan();
+        return permission;
+      },
+
+      checkNotify: async () => {
+        const permission = await deps.notes.permission().catch(() => get().permission);
+        if (permission !== get().permission) set({ permission });
+        await replan();
       },
 
       stop: () => {

@@ -13,6 +13,7 @@ import { openExpoSql } from '../data/expoSql.ts';
 import { makeLocal, migrate } from '../data/local.ts';
 import { makeApi } from '../net/api.ts';
 import { timedFetch } from '../net/timedFetch.ts';
+import { expoNotes } from '../notify/os.ts';
 import { createGameStore } from './store.ts';
 
 /** The phone's zone (M4 plan decision 8): the platform's, else Intl's, else UTC. The server canonicalises it. */
@@ -48,5 +49,6 @@ export async function createAppStore() {
       signIn: () => signInWithGoogle(supabase, WebBrowser.openAuthSessionAsync),
     },
     artManifest: () => artFetch(ART_MANIFEST_URL).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    notes: expoNotes,
   });
 }

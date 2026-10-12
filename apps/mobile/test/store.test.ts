@@ -8,6 +8,8 @@ import type { SessionState } from '../src/auth/session.ts';
 import { makeLocal, migrate } from '../src/data/local.ts';
 import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
+import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
+import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
   ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
@@ -32,6 +34,17 @@ const made: { getState: () => { stop: () => void } }[] = [];
 afterEach(() => {
   for (const store of made.splice(0)) store.getState().stop();
 });
+
+/** The phone's notifications as the store sees them (M7d): granted unless a test says otherwise. */
+function fakeNotes(permission: Permission = 'granted') {
+  return {
+    permission: jest.fn(async (): Promise<Permission> => permission),
+    ask: jest.fn(async (): Promise<Permission> => 'granted'),
+    replace: jest.fn(async (_notes: readonly PlannedNote[]) => {}),
+    cancelAll: jest.fn(async () => {}),
+    openSettings: jest.fn(async () => {}),
+  } satisfies NoteOs;
+}
 
 async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
   const sql = nodeSql();
@@ -71,6 +84,7 @@ async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
     account: jest.fn(async (): Promise<Account> => ({ kind: 'guest' })),
     google: { link: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })), signIn: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })) },
     artManifest: jest.fn(async (): Promise<unknown> => ({ version: 1, art: { 'ladder-push': 2 } })),
+    notes: fakeNotes(),
     ...over,
   };
   const store = createGameStore(deps);
@@ -852,5 +866,97 @@ describe('the pact on the phone (M7c)', () => {
     for (let i = 0; i < 100 && !sentPact(); i++) await settle();
     expect(sentPact()).toBe(true);
     store.getState().stop();
+  });
+});
+
+describe('notifications (M7d)', () => {
+  const BRIEFING_ON = JSON.stringify({ ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 7 * 60 + 30 } });
+  const ready = async (notes = fakeNotes(), kept: string | null = BRIEFING_ON, replies: SyncReply[] = [ok(SERVER)]) => {
+    const made = await setup(replies, { notes });
+    if (kept !== null) made.kv.set(NOTIFY_KEY, kept);
+    await made.local.acknowledge([], [], SERVER, 42);
+    await made.store.getState().boot();
+    await made.store.getState().checkNotify(); // waits for the plans already on their way
+    return { ...made, notes };
+  };
+
+  it('plans from the kept settings once the phone allows it, and tells the phone only of changes', async () => {
+    const { store, notes } = await ready();
+    expect(store.getState().notify.briefing.on).toBe(true);
+    expect(store.getState().planned[0]!.id).toBe('briefing:2'); // day 1 (20:00 to 04:00) has no 07:30: day 2's is first
+    expect(notes.replace).toHaveBeenLastCalledWith(store.getState().planned);
+    const told = notes.replace.mock.calls.length;
+    await store.getState().checkNotify();
+    expect(notes.replace).toHaveBeenCalledTimes(told);
+  });
+
+  it('plans nothing, and clears the phone, while notifications are not allowed', async () => {
+    const { store, notes } = await ready(fakeNotes('ask'));
+    expect(store.getState()).toMatchObject({ permission: 'ask', planned: [] });
+    expect(notes.replace).toHaveBeenLastCalledWith([]);
+  });
+
+  it("leaves the phone alone while it can't say whether they are allowed", async () => {
+    const notes = fakeNotes();
+    notes.permission.mockRejectedValue(new Error('no module'));
+    const { store } = await ready(notes);
+    expect(store.getState().permission).toBe('unknown');
+    expect(notes.replace).not.toHaveBeenCalled();
+  });
+
+  it('adds a running timer, and drops it when the timer is paused', async () => {
+    const { store } = await ready(fakeNotes(), null); // the defaults: timer alerts on
+    const side = SERVER.today!.quests.find((q) => q.slot === 'side1')!;
+    await store.getState().saveTimer(side.id, { segments: [], runningSince: NOW });
+    await store.getState().checkNotify();
+    expect(store.getState().planned.map((n) => n.id)).toEqual([`timer:${side.id}`]);
+    await store.getState().saveTimer(side.id, { segments: [{ start: NOW, end: NOW + 1_000 }], runningSince: null });
+    await store.getState().checkNotify();
+    expect(store.getState().planned).toEqual([]);
+  });
+
+  it("drops today's evening reminder once the core quest is cleared", async () => {
+    // Day 1 runs from 20:00 to 04:00 in Manila and NOW is 21:00: a 22:00 reminder is still ahead.
+    const evening = JSON.stringify({ ...DEFAULT_NOTIFY, evening: { on: true, minutes: 22 * 60 } });
+    const { store } = await ready(fakeNotes(), evening, [ok(SERVER), ok(serverState(['core']))]);
+    expect(store.getState().planned.map((n) => n.id)).toEqual(['evening:1', 'evening:2']);
+    await store.getState().enqueue(completeCore);
+    await store.getState().checkNotify();
+    expect(store.getState().planned.map((n) => n.id)).toEqual(['evening:2']);
+  });
+
+  it('keeps a change on the phone and plans with it', async () => {
+    const { store, kv, notes } = await ready(fakeNotes(), null);
+    await store.getState().setNotify({ ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 8 * 60 } });
+    expect(JSON.parse(kv.get(NOTIFY_KEY)!)).toMatchObject({ briefing: { on: true, minutes: 480 } });
+    expect(notes.replace).toHaveBeenLastCalledWith(store.getState().planned);
+    expect(store.getState().planned[0]!.id).toBe('briefing:2');
+  });
+
+  it("asks the phone only when told to, and plans with the answer", async () => {
+    const notes = fakeNotes('ask');
+    const { store } = await ready(notes);
+    expect(notes.ask).not.toHaveBeenCalled();
+    expect(await store.getState().allowNotify()).toBe('granted');
+    expect(store.getState().permission).toBe('granted');
+    expect(store.getState().planned.length).toBeGreaterThan(0);
+  });
+
+  it('coming back to the app reads the permission again (it may have changed in the phone settings)', async () => {
+    const notes = fakeNotes('ask');
+    const { store } = await ready(notes);
+    notes.permission.mockResolvedValue('granted');
+    store.getState().reopen();
+    await store.getState().checkNotify();
+    expect(store.getState().permission).toBe('granted');
+    expect(store.getState().planned.length).toBeGreaterThan(0);
+  });
+
+  it('starting over cancels every notification and forgets the settings', async () => {
+    const { store, kv, notes } = await ready();
+    await store.getState().startOver();
+    expect(notes.cancelAll).toHaveBeenCalled();
+    expect(kv.has(NOTIFY_KEY)).toBe(false);
+    expect(store.getState()).toMatchObject({ notify: DEFAULT_NOTIFY, planned: [] });
   });
 });
