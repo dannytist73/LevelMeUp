@@ -1732,3 +1732,11 @@ Built 2026-10-12 on `m6d-character-chronicle` (from M6c's 1351aea), inline (exec
   a direct switch, and the minors above. Carried forward (roadmap): a reading quest cleared offline right after a book
   set offline may not count (the server stamps the book's start at sync); titles earned in one sync tie-break by id; a
   player who leaves Mage keeps a book they can't change until they return.
+
+### Deploy and device check (2026-10-12)
+
+With the owner's yes ("Yes to all", 2026-10-12), run together with M6c's from the M6e branch before any M6e code:
+`db:deploy` applied 0009 and 0010 (the wedding's history unchanged); `db:test` passed (adjust 59 assertions in 8 tests,
+including `test_adjust_book`); `deploy:functions` (v7, ACTIVE); `test:live` 29 of 29; no test player left. M6e's
+functions followed (v8, then v9). Emulator rows 1–8, 10 and 11 pass and row 9 partly (the checklist); two fixes from
+the check: the class emblem's position on Android and the preview's background (02cb2c3).
