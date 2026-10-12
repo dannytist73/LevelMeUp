@@ -3447,4 +3447,28 @@ Expected: all pass; `pacing` unchanged (no rules or content numbers changed).
 
 ## As built
 
-(Filled in as the build goes.)
+Built 2026-10-12 on `m7c-accountability` (d684657..9251d44). Tests: content 1063, rules 449, server unit 376, app 688
+(41 suites); typecheck, `check:functions`, `check:portable` and `check:bundle` pass; `pacing` unchanged (Warrior steady
+rank C on day 151, known since M6c).
+
+- **Commit order.** Tasks 5 and 6 were committed together as planned, but the phone imports the server's event union, so
+  the app's type check stayed red from that commit until Task 9 taught the projection the three events (the plan missed
+  it). Every commit from Task 9 on is green.
+- **The projection** keeps the server's profile object when it already has `accountabilityFrom` (an M4 test checks that
+  nothing pending leaves the profile untouched), and copies it only for a state from before M7c.
+- **The portrait's mark** sits inside an SVG hidden from screen readers, so its test queries it with
+  `includeHiddenElements` (the plan's fallback was not needed); the portrait's label carries the mark for screen readers.
+- **The review** (837c565..7f40044): ready with fixes, no Critical. Fixed in 9251d44:
+  - the focus session now stops, and lets the screen sleep, when the seal goes while it is open (the day ends, the pact
+    is lowered); reopened after the Trial it says the seal is broken;
+  - the note's words are no longer copied into `levelmeup.events.payload` (only its length), so an empty note really
+    clears it;
+  - Today decides the Shadow's scene at the moment it comes into focus and never opens it twice for one check-in (a
+    route test); the System's "Yesterday belongs to the Shadow" line shows only on the day the Shadow holds;
+  - a pasted tab or other control character in the note becomes a space before it is sent, and "Kept" shows only once
+    the note is queued;
+  - 0013 also refuses a consequence under a pact with no signing time; new database tests for another player's
+    check-in, a Trial without its day, a harsher easing and a settled check-in;
+  - `changingPact` was dropped (nothing read it); the scene's button says "Change or turn off the Pact" (it opens the
+    Pact, not Settings); checklist row 12 (the focus session across the day's end).
+- **Deploy and emulator:** see below once done.
