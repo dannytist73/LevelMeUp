@@ -400,3 +400,43 @@ describe('the check-in and the lighter plan (M7a)', () => {
     expect(body.state.lighterPlan).toBeNull();
   });
 });
+
+describe('Settings and rest days (M7b)', () => {
+  let p: Player;
+
+  it('the settings change the profile; a malformed one is rejected', async () => {
+    p = await newPlayer();
+    expect((await call('lmu-onboarding', p.token, ONBOARDING)).status).toBe(201);
+    const id = eventId();
+    const bad = eventId();
+    const { body } = await sync(p, [
+      { id, type: 'settings', voice: 'questmaster', boundaryMinutes: 300, minutesPerDay: 40, difficulty: 'hard' },
+      { id: bad, type: 'settings', voice: 'questmaster', boundaryMinutes: 45, minutesPerDay: 40, difficulty: 'hard' },
+    ]);
+    expect(body.results).toEqual([{ id, ok: true, result: expect.anything() }]);
+    expect(body.rejected).toEqual([{ id: bad, code: 'bad_event' }]);
+    expect(body.state.profile).toMatchObject({ voice: 'questmaster', boundaryMinutes: 300, minutesPerDay: 40, difficulty: 'hard' });
+  });
+
+  it('a rest tapped before its day began is late; tomorrow can be planned once', async () => {
+    const today = (await sync(p)).body.state.today;
+    expect(today.restTomorrow).toBe(true);
+    const early = eventId();
+    const late = await sync(p, [{ id: early, type: 'plan_rest', dayId: today.id, at: Date.parse(today.startsAt) - 60_000 }]);
+    expect(late.body.results).toEqual([{ id: early, ok: false, code: 'rest_late' }]);
+    const planned = await sync(p, [{ id: eventId(), type: 'plan_rest', dayId: today.id, tomorrow: true }]);
+    expect(planned.body.results[0].ok).toBe(true);
+    expect(planned.body.state.character.restDay).toBe(today.dayNumber + 1);
+    expect(planned.body.state.today.restTomorrow).toBe(false);
+    const again = eventId();
+    const twice = await sync(p, [{ id: again, type: 'plan_rest', dayId: today.id, tomorrow: true }]);
+    expect(twice.body.results).toEqual([{ id: again, ok: false, code: 'already_protected' }]);
+  });
+
+  it('a rest tapped today protects today, the planned tomorrow counted in the limit', async () => {
+    const today = (await sync(p)).body.state.today;
+    const { body } = await sync(p, [{ id: eventId(), type: 'plan_rest', dayId: today.id, at: Date.parse(today.startsAt) + 1_000 }]);
+    expect(body.results[0].ok).toBe(true);
+    expect(body.state.today.protection).toBe('planned_rest');
+  });
+});

@@ -22,7 +22,8 @@ import type { DayRow, InstanceRow, Snapshot } from '../_shared/state.ts';
 /** Tries at closing days or adjusting one when another write got there first (`lmu:conflict`). */
 const MAX_TRIES = 3;
 
-type Applied = { id: string; ok: true; result: unknown } | Rejected & { ok: false };
+/** `notice` (M7b decision 7): applied, with a word for the player, shown like a refusal's. */
+type Applied = { id: string; ok: true; result: unknown; notice?: string } | Rejected & { ok: false };
 
 const jsonParam = (tx: Tx, value: unknown) => tx.json(value as postgres.JSONValue);
 
@@ -59,8 +60,9 @@ async function applyEvent(userId: string, event: PhoneEvent, timeZone: string): 
     }
     // M7a decision 2: ended days close first, so a check-in's answer always lands on the day that runs now.
     if (event.type === 'checkin') await advance(userId, timeZone);
-    const result = isAdjust(event) ? await adjust(userId, event) : await play(userId, event);
-    return { id: event.id, ok: true, result };
+    if (!isAdjust(event)) return { id: event.id, ok: true, result: await play(userId, event) };
+    const { result, notice } = await adjust(userId, event);
+    return notice === null ? { id: event.id, ok: true, result } : { id: event.id, ok: true, result, notice };
   } catch (error) {
     const code = lmuCode(error);
     // Still busy after every try: the whole sync answers 503 and the phone sends the event again.
@@ -123,7 +125,7 @@ function checkDone(templateId: string, row: QuestRow, payload: unknown): ReturnT
  * version; another write in between (`lmu:conflict`) means planning again. A repeat of an applied event skips the
  * planning (the state has moved on since): `levelmeup.adjust` returns its stored result, or refuses the id reused.
  */
-async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
+async function adjust(userId: string, event: AdjustEvent): Promise<{ result: unknown; notice: string | null }> {
   const payload = adjustPayload(event);
   for (let attempt = 1; ; attempt++) {
     try {
@@ -134,7 +136,7 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
         await asPlayer(tx, userId);
         const seen = await tx`select 1 from levelmeup.events where user_id = ${userId}::uuid and client_event_id = ${event.id}::uuid`;
         await asService(tx);
-        if (seen.length > 0) return write(-1, {});
+        if (seen.length > 0) return { result: await write(-1, {}), notice: null };
         const snapshot = await loadSnapshot(tx, userId);
         if (snapshot === null) throw new Error('lmu:not_started');
         // The database clock, the one levelmeup.adjust checks the day against.
@@ -143,7 +145,7 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
           ? await slotPain(tx, userId, snapshot, event, now.getTime())
           : planAdjust(snapshot, event, { nowMs: now.getTime(), library: LIBRARY });
         if ('code' in plan) throw new Error(`lmu:${plan.code}`);
-        return write(snapshot.character.version, plan.change);
+        return { result: await write(snapshot.character.version, plan.change), notice: plan.notice ?? null };
       });
     } catch (error) {
       if (lmuCode(error) !== 'conflict' || attempt >= MAX_TRIES) throw error;
@@ -159,9 +161,9 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
 async function slotPain(tx: Tx, userId: string, s: Snapshot, event: PainEvent & { ref: SlotRef }, nowMs: number): Promise<Plan> {
   const row = await questRow(tx, userId, event);
   if (row === null || row.template_id !== event.ref.templateId) {
-    return planOfflinePain(s, { dayNumber: event.ref.dayNumber, templateId: event.ref.templateId, choice: event.choice }, { nowMs, library: LIBRARY });
+    return planOfflinePain(s, { dayNumber: event.ref.dayNumber, templateId: event.ref.templateId, choice: event.choice, at: event.at }, { nowMs, library: LIBRARY });
   }
-  return planAdjust(s, { id: event.id, type: 'pain', instanceId: Number(row.id), choice: event.choice }, { nowMs, library: LIBRARY });
+  return planAdjust(s, { id: event.id, type: 'pain', instanceId: Number(row.id), choice: event.choice, ...(event.at === undefined ? {} : { at: event.at }) }, { nowMs, library: LIBRARY });
 }
 
 type Kept = { dayNumber: number; kept: 'phone' | 'existing' | 'server' };
