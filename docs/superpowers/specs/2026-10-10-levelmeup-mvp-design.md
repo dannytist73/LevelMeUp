@@ -70,7 +70,7 @@ its next point and "rank D at 10" when one point away, the class path (both abil
 hidden (board D4 keeps them on Character), the vow from onboarding, and the class change. Chronicle shows the streak,
 best streak and shields as tiles, a month calendar with real dates for the last 92 days (cleared, hard day, rest,
 paused, today; a closed day is never drawn as a miss; earlier months by button), and growth since day 1 (stat points
-gained, levels, quests cleared, new rungs). Past readings arrive with articles (M8).
+gained, levels, quests cleared, new rungs), and the past readings (M8b).
 
 *Built in M7b (2026-10-12):* Settings has the account (a guest's or Google's, "Delete my character", and the
 start-again card when a guest sign-in is gone for good), Game ("Voice, rhythm and minutes": the voice, the time the
@@ -404,6 +404,17 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
 - Mage *Insight* (level 5): choose tomorrow's topic from 3.
 - The article quest: "read it and write one takeaway" = Wisdom, minor tier (10 XP). It counts as a quest for the
   2-quest streak rule.
+- *Built in M8b (2026-10-13):* the server picks the article when it builds a day (day 1 too), from the unread
+  published library.
+  - Three days in five come from the player's areas (each goal's topic and the class's), two from the others.
+  - Insight's choice comes first; the oldest unread comes first within a group; two days in a row don't share a topic
+    when another waits.
+  - Nothing unread: the evergreen article read longest ago. No published article: the reading quest waits.
+
+  The reader is the quest's own screen (board D3), and a one-sentence takeaway claims it. A claim needs the day's
+  article and counts as an article read. The Chronicle lists the last 30 readings. Each sync carries today's and
+  tomorrow's articles unless the phone holds them; the phone's offline day takes tomorrow's. Insight (Mage, level 5)
+  chooses tomorrow's topic from up to 3 on Today.
 
 **Cost control**
 - Every AI call logs model, tokens and cost.

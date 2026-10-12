@@ -56,6 +56,18 @@ model keys never leave Supabase.
 - `setup`, `tick`, `evergreen`, `publish`, `reject` and `cron on|off` change the live project or spend money: the
   owner's yes first.
 
+## Reading (M8b)
+
+- The server picks each new day's article when it builds the day (`_shared/reading.ts`, `chooseArticle`), from the
+  published library read as the player; `insert_day` keeps only a published id (`0015`). The reading quest is claimed
+  only on a day with an article (`lmu:no_article`), and a claim counts in `articles_read`.
+- The state names today's article, the next day's pick (`nextArticle`, for the phone's offline day), the last 30
+  readings and Insight's options. The whole articles go beside it in the response's `articles`: today's and the next
+  day's, and up to 3 named in the sync body's `want`, less those in `have` (at most 64 ids).
+- Insight is the `insight` event: `lmu-sync` checks it against a fresh snapshot (`planInsight`), then
+  `levelmeup.set_insight` (`0015`, `lmu_service` only) stores `{cluster, day}` on `character_state.insight`. It applies
+  to the next day built and then lapses.
+
 ## How it fits together
 
 - **Reads** run as the player: `lmu_service` sets the player's claims and `set local role lmu_player`, so row level

@@ -28,7 +28,7 @@ guesses). Only milestone 1's plan exists today.
 | 7c | **Accountability** | The Accountability Pact (levels 0–2, from Settings and the reveal's "Read the pact"; `accountability_set`); "I just didn't" under a pact: the Shadow's scene once, the mark on Today and the portrait until the recovery quest is cleared, the private note (`checkin_note`); level 2's side quests sealed on the phone until a 10-minute focus session (`trial`); at most one a day, paused after 3 in a rolling 7 days; the recovery quest listed first (migration 0013). The sterner evening reminder moved to M7d. **Built 2026-10-12**; merges after M7b. | `2026-10-12-m7c-accountability.md` |
 | 7d | **Notifications** | Local notifications (morning briefing, evening reminder with the Trial's sterner one, timer alerts; a new EAS build for `expo-notifications`), Settings → Notifications, the permission asked when the player turns one on; the briefing says when the day is a planned rest day. Moved from M7b (M7b decision 1). **Built 2026-10-13**; merges after M7c. | `2026-10-13-m7d-notifications.md` |
 | 8a | **The article library** | The Batch API pipeline (`lmu-articles-tick`, research with web search → a brief from the citations → writing → code checks), the $25 monthly budget on every Claude call (the reveal's cost logged), migration 0014, the owner's `npm run articles` commands, the evergreen articles and their review, the cron (pg_cron + pg_net, with the owner's yes); spike 3. M8 split in two (M8a decision 1). **Built and deployed 2026-10-12/13** (0014, functions v15/v3; the cron, the spike and the evergreen articles wait for the owner's yes); merges after M7d. | `2026-10-13-m8a-article-library.md` |
-| 8b | **Reading** | Each new day gets one unread published article (60 % from the player's goals and class; the evergreen library when nothing else), the phone caches a few for offline days, the reader and the takeaway quest, past readings in the Chronicle, the Mage's Insight (choose tomorrow's topic from 3). | later |
+| 8b | **Reading** | Each new day gets one unread published article (60 % from the player's goals and class; the evergreen library when nothing else), the phone caches a few for offline days, the reader and the takeaway quest, past readings in the Chronicle, the Mage's Insight (choose tomorrow's topic from 3). | **Built 2026-10-13** (0015, functions; branch `m8b-reading`). The deploy waits for the owner's yes; players read only after the owner publishes articles. |
 | 9 | **Pilot release** | Class art, the EAS preview APK, the device checklist on the Find X9. The backend is already live since M3. | later |
 
 ## Carried forward from the M1 code review
@@ -136,7 +136,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The calendar reads the last 92 days; older months wait for the pilot to need them. The server still sends `recentDays` for app bundles from before M6d; drop it once none are in use. |
 | Later | A title picker (Character shows the latest earned title; titles earned in one sync tie-break by id). |
 | Later | Scholar's Path: the book's start is the server's time at sync, so a reading quest cleared offline right after a book set offline may not count toward it; a player who leaves Mage keeps a book they can't change until they return (quests stop showing it). |
-| M8b | *(Second Wind and Unbreakable: done in M7a.)* Insight (M8) says "Unlocked · it arrives in a later update" on the class path until its screen exists (`ABILITIES_LATER`, content). |
+| M8b | *(Second Wind and Unbreakable: done in M7a.)* Insight (M8) says "Unlocked · it arrives in a later update" on the class path until its screen exists (`ABILITIES_LATER`, content). *(Done in M8b: Insight works on Today.)* |
 | M9 | The painted class portraits, changing with the level, replace the framed emblem (`src/ui/Portrait.tsx`). |
 
 ## Carried forward from M6e
@@ -204,7 +204,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | Milestone | Item |
 |---|---|
-| M8b | Remove `reserve_ai_call` (0003), unused since M8a, in the next migration that touches the AI log. |
+| M8b | Remove `reserve_ai_call` (0003), unused since M8a, in the next migration that touches the AI log. *(Done in M8b: 0015.)* |
 | Later | Topic seeds run out after 80 articles (about 40 nights at full demand): add seeds, or let a used cluster repeat with a new angle. |
 | Later | Dynamic filtering (`web_search_20260209`) as a cost lever, once the spike has measured the basic tool. |
 | Owner | The wedding day (30 Jan 2027): `npm run articles -- cron off` the day before, `cron on` after (architecture §12). |

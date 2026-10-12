@@ -126,13 +126,13 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 | Function | What it does |
 |---|---|
 | `onboarding` | Takes the interview answers; the rules compute the character; asks Claude (Opus 5.5, low effort, structured output, 12 s server timeout) for the narrative; falls back to template text; writes profile + character + ladder states; returns the reveal. Max 3 calls per player. |
-| `sync` | Applies a batch of phone events in order, then returns the player's current state: profile, character, today (creating it if needed), check-ins due, recent days, a few cached articles. The phone's single round trip. |
+| `sync` | Applies a batch of phone events in order, then returns the player's current state: profile, character, today (creating it if needed), check-ins due, recent days, the readings, and the articles the phone lacks (today's and tomorrow's, and up to 3 it asks for; M8b). The phone's single round trip. |
 | `account-delete` | Deletes the auth user (cascade removes everything). |
 | `articles-tick` | Called by Supabase Cron every 30 minutes; advances the article pipeline one step (§5.2). Not callable by players. |
 
 Events the phone can send (each with a `client_event_id`): `complete`, `undo`, `rate`, `swap`, `hard_day`,
 `plan_rest`, `checkin`, `pain`, `resume`, `step_down`, `class_change`, `ability`, `accountability_set`,
-`provisional_day`. Unknown or invalid events are rejected and reported back; they never partially apply.
+`provisional_day`, `insight` (M8b). Unknown or invalid events are rejected and reported back; they never partially apply.
 
 M6b (2026-10-11): the adjustments (`swap`, `hard_day`, `plan_rest`, `pain`, `resume`, `step_down`, `class_change`,
 `ability`) go through one path: `_shared/adjust.ts` plans the change with the rules from a fresh snapshot (or names
@@ -280,8 +280,8 @@ template narrative is used; the player never sees an error.
 
 ## 6. Offline and sync
 
-- The phone keeps a SQLite cache: profile, character, today, the last 30 days, ladder states, 3 cached unread
-  articles, and an **outbox** of events.
+- The phone keeps a SQLite cache: profile, character, today, the last 30 days, ladder states, today's and tomorrow's
+  articles and the last 30 readings' (M8b), and an **outbox** of events.
 - Every action is written to the outbox and applied to the cache immediately (optimistic), using the rules package to
   show the reward. On app foreground or reconnect: flush the outbox through `sync`, then replace the cache with the
   server's state. The server's numbers win.
