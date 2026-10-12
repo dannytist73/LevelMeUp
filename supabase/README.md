@@ -17,7 +17,7 @@ functions and its settings; LevelMeUp never touches them (architecture §12). Th
 | `npm run test:live` | Calls the deployed functions with up to 12 temporary anonymous players and deletes them all at the end |
 | `npm run lmu:password` | Gives `lmu_service` a new random password and stores `LMU_DB_URL`; prints nothing secret (also for rotation) |
 | `npm run articles -- setup` | Makes the tick secret: `LMU_TICK_SECRET` for the function and its Vault copy `lmu_tick_secret` for the cron; prints nothing secret |
-| `npm run articles -- tick` | Runs one pipeline step now, as the cron does |
+| `npm run articles -- tick [--night]` | Runs one pipeline step now: it moves the jobs along but never queues a night's articles, so it spends only on jobs already queued; `--night` does what the cron does (and may queue the night's two) |
 | `npm run articles -- evergreen <n>` | Queues n evergreen articles (they wait for review) |
 | `npm run articles -- jobs` | The latest jobs |
 | `npm run articles -- review` | Writes `.reviews/articles.html` (git-ignored) with every article waiting for review |

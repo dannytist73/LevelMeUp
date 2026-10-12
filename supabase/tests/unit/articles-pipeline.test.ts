@@ -148,6 +148,15 @@ describe('tick (architecture §5.2)', () => {
     expect(store.leased).toBe(false);
   });
 
+  it('queues no night from the owner\'s manual tick, which still moves the jobs along (M8a deploy)', async () => {
+    const { store, batches } = setup();
+    await store.queue([{ cluster: 'sleep', topic: 'How sleep cycles work', evergreen: true }]);
+    store.jobs.push({ ...store.jobs[0]!, id: 2, status: 'retry' });
+    expect(await tick(store, batches, NIGHT, { nights: false })).toMatchObject({ ran: true, queued: 0, submitted: 1 });
+    expect(store.night).toBeNull();
+    expect(store.jobs.map((j) => j.status)).toEqual(['researching', 'retry']);
+  });
+
   it('queues nothing before the night, or while every player has enough to read', async () => {
     const day = setup();
     expect((await day.run(DAY)).queued).toBe(0);

@@ -1,7 +1,8 @@
 // The owner's article commands (M8a). Each one that changes the project or spends money needs the owner's yes in chat
 // first (CLAUDE.md: remote changes, monthly costs).
 //   npm run articles -- setup             make the tick secret: LMU_TICK_SECRET and its Vault copy (nothing printed)
-//   npm run articles -- tick              run one pipeline step now, as the cron does
+//   npm run articles -- tick [--night]    run one pipeline step now: it moves the jobs along but queues no night's
+//                                         articles (spends only on jobs already queued); --night does as the cron does
 //   npm run articles -- evergreen <n>     queue n evergreen articles (they wait for review)
 //   npm run articles -- jobs              the latest jobs
 //   npm run articles -- review            write .reviews/articles.html with every article waiting for review
@@ -63,7 +64,7 @@ function setup(): void {
   console.log('The tick secret is set: LMU_TICK_SECRET for the function and its Vault copy for the cron. Nothing secret was printed.');
 }
 
-async function tickNow(): Promise<void> {
+async function tickNow(night: boolean): Promise<void> {
   let rows: { secret: string }[];
   try {
     rows = query<{ secret: string }>([`select decrypted_secret as secret from vault.decrypted_secrets where name = '${VAULT_SECRET}'`]);
@@ -76,7 +77,7 @@ async function tickNow(): Promise<void> {
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json', apikey: env.LMU_SUPABASE_PUBLISHABLE_KEY!, 'x-lmu-tick': row.secret },
-    body: '{}',
+    body: night ? '{}' : '{"nights":false}',
   });
   console.log(res.status, await res.text());
 }
@@ -148,7 +149,7 @@ const [command, ...rest] = process.argv.slice(2);
 try {
   switch (command) {
     case 'setup': setup(); break;
-    case 'tick': await tickNow(); break;
+    case 'tick': await tickNow(rest.includes('--night')); break;
     case 'evergreen': evergreen(Number(rest[0])); break;
     case 'jobs': jobs(); break;
     case 'review': review(); break;
@@ -156,7 +157,7 @@ try {
     case 'reject': decide(rest, 'rejected'); break;
     case 'spend': spend(); break;
     case 'cron': cron(rest[0]); break;
-    default: throw new Error('commands: setup, tick, evergreen <n>, jobs, review, publish <id…>, reject <id…>, spend, cron on|off|status');
+    default: throw new Error('commands: setup, tick [--night], evergreen <n>, jobs, review, publish <id…>, reject <id…>, spend, cron on|off|status');
   }
 } catch (error) {
   console.error((error as Error).message);

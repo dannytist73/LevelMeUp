@@ -98,12 +98,16 @@ export function nightOf(nowMs: number): string | null {
   return at.getUTCHours() >= NIGHT_HOUR_UTC ? at.toISOString().slice(0, 10) : null;
 }
 
-export async function tick(store: Store, batches: Batches, nowMs: number): Promise<TickReport> {
+/**
+ * One step of the pipeline. `nights: false` (the owner's manual tick) only moves the jobs along: it never queues the
+ * night's articles or requeues retries, so a manual tick spends nothing the owner didn't queue (M8a deploy).
+ */
+export async function tick(store: Store, batches: Batches, nowMs: number, options: { nights: boolean } = { nights: true }): Promise<TickReport> {
   const report: TickReport = { ran: false, queued: 0, submitted: 0, collected: 0, published: [], review: [], retry: 0, failed: 0, budget: false, errors: 0 };
   if (!(await store.begin(LEASE_SECONDS))) return report;
   report.ran = true;
   try {
-    report.queued = await queueNight(store, nowMs);
+    report.queued = options.nights ? await queueNight(store, nowMs) : 0;
     await collect(store, batches, nowMs, report);
     // Writing first: near the cap, a brief already paid for gets the budget before new research does (M8a review).
     await submit(store, batches, nowMs, report, 'researched');
