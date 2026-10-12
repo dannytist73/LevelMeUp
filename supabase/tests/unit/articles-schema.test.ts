@@ -16,3 +16,11 @@ describe('migration 0014 (M8a)', () => {
     expect(SQL).not.toMatch(/grant (select|insert|update|delete)[^;]*to lmu_service/i);
   });
 });
+
+describe('migration 0015 (M8b)', () => {
+  it("set_insight's eight topics are the content package's (0015)", () => {
+    const sql = readFileSync(join(import.meta.dirname, '..', '..', 'migrations', '0015_reading.sql'), 'utf8');
+    const list = /p_cluster not in \(([^)]+)\)/.exec(sql)![1]!.split(',').map((s) => s.trim().replace(/'/g, ''));
+    expect(list).toEqual([...ARTICLE_CLUSTERS]);
+  });
+});

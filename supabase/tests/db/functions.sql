@@ -211,12 +211,12 @@ declare
 begin
   return next is(levelmeup.award_achievements(a, array['first-quest', 'first-quest', 'level-5']), 2, 'achievements are stored once');
   return next is(levelmeup.award_achievements(a, array['first-quest']), 0, 'earning one again changes nothing');
-  call_id := levelmeup.reserve_ai_call(a, 'onboarding', 'claude-opus-5-5', 3);
+  call_id := levelmeup.reserve_ai_spend(a, 'onboarding', 'claude-opus-5-5', 0, 25, 3, null);
   perform levelmeup.finish_ai_call(call_id, 'ok', 900, 400, 0.0123, null);
   return next is((select status || '/' || output_tokens from levelmeup.ai_generations where id = call_id), 'ok/400', 'a finished call records its usage');
-  perform levelmeup.reserve_ai_call(a, 'onboarding', 'claude-opus-5-5', 3);
-  perform levelmeup.reserve_ai_call(a, 'onboarding', 'claude-opus-5-5', 3);
-  return next throws_ok(format('select levelmeup.reserve_ai_call(%L, %L, %L, 3)', a, 'onboarding', 'claude-opus-5-5'), 'P0001', 'lmu:ai_cap', 'the fourth onboarding call is refused');
+  perform levelmeup.reserve_ai_spend(a, 'onboarding', 'claude-opus-5-5', 0, 25, 3, null);
+  perform levelmeup.reserve_ai_spend(a, 'onboarding', 'claude-opus-5-5', 0, 25, 3, null);
+  return next throws_ok(format('select levelmeup.reserve_ai_spend(%L, %L, %L, 0, 25, 3, null)', a, 'onboarding', 'claude-opus-5-5'), 'P0001', 'lmu:ai_cap', 'the fourth onboarding call is refused');
 end $$;
 
 create function lmu_test.test_delete_player() returns setof text language plpgsql as $$
@@ -229,7 +229,7 @@ declare
 begin
   perform levelmeup.complete_quest(a, lmu_test.ev(1), lmu_test.quest(a, 'core'), now(), null, null);
   perform levelmeup.award_achievements(a, array['first-quest']);
-  perform levelmeup.reserve_ai_call(a, 'onboarding', 'claude-opus-5-5', 3);
+  perform levelmeup.reserve_ai_spend(a, 'onboarding', 'claude-opus-5-5', 0, 25, 3, null);
   counts := levelmeup.delete_player(a);
   return next is(counts ->> 'days', '1', 'the days are deleted');
   return next is(counts ->> 'quests', '3', 'the quests are deleted');
@@ -294,7 +294,7 @@ declare
   points jsonb := '{"strength": 5, "vitality": 7, "wisdom": 5, "focus": 5, "discipline": 4}';
   redo text := 'select levelmeup.restart_player(%L, %L, %L, ''{}'', lmu_test.day(1, now(), now() + interval ''8 hours''))';
 begin
-  perform levelmeup.reserve_ai_call(a, 'onboarding', 'test-model', 3);
+  perform levelmeup.reserve_ai_spend(a, 'onboarding', 'test-model', 0, 25, 3, null);
   perform levelmeup.restart_player(a, again, points, '{}', lmu_test.day(1, now(), now() + interval '8 hours'));
   return next is((select class_id || '/' || voice || '/' || minutes_per_day from levelmeup.profiles where user_id = a),
     'monk/mentor/15', 'the corrected profile replaces the first one');
