@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { newLadder } from '../../../packages/rules/src/index.ts';
+import { cumulativeXpForLevel, newLadder } from '../../../packages/rules/src/index.ts';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { CALENDAR_DAYS, calendarDate, calendarMark, stateView } from '../../functions/_shared/state.ts';
-import type { CalendarRow } from '../../functions/_shared/state.ts';
+import type { CalendarRow, Snapshot } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
-import { DAY_TWO_SLOTS, characterRow, dayTwoSnapshot, historyOf, ladderRows, profileRow } from './fixtures.ts';
+import { DAY1, DAY_TWO_SLOTS, characterRow, dayTwoSnapshot, historyOf, ladderRows, pendingCheckin, profileRow } from './fixtures.ts';
 
 const row = (over: Partial<CalendarRow>): CalendarRow => ({
   day_number: 3, starts_at: new Date(Date.UTC(2026, 9, 11, 22)), ends_at: new Date(Date.UTC(2026, 9, 12, 22)), time_zone: 'Asia/Manila', status: 'closed',
@@ -87,5 +87,49 @@ describe('what the phone needs to build a day offline (M6e decision 3)', () => {
     expect(view.history.map((d) => d.dayNumber)).toEqual([1, 2]);
     expect(view.history[1]!.quests).toMatchObject({ core: 'push-1', side1: 'walk-1', side2: 'reading-0', article: 'article' });
     expect(view.workoutsDone).toBe(3);
+  });
+});
+
+describe('the check-in in the state (M7a)', () => {
+  const view = (s: Snapshot) => stateView(s, dayOffers(s, LIBRARY), historyOf(s));
+
+  it('a pending check-in: the missed day and its date, the core quest and its ladder, no answer yet', () => {
+    const date = calendarDate({ starts_at: new Date(DAY1.startsAt), ends_at: new Date(DAY1.endsAt), time_zone: 'Asia/Manila' });
+    expect(view(dayTwoSnapshot(DAY_TWO_SLOTS, { checkin: pendingCheckin() })).checkin).toEqual({
+      id: 7, from: 1, to: 1, gap: false, date, core: 'push-0', ladder: 'push', answer: null, secondWind: null,
+    });
+  });
+
+  it('away days: the first and the last, without a date or a quest', () => {
+    const gap = pendingCheckin({
+      day_id: null, gap_from: 3, gap_to: 5, missed_day: null, missed_starts_at: null, missed_ends_at: null, missed_time_zone: null,
+      missed_core: null, missed_ladder: null,
+    });
+    expect(view(dayTwoSnapshot(DAY_TWO_SLOTS, { checkin: gap })).checkin).toMatchObject({ from: 3, to: 5, gap: true, date: null, core: null });
+  });
+
+  it("offers Second Wind to a Warrior at level 5 whose missed core quest was yesterday's (decision 7)", () => {
+    const slots = { core: 'walk-1', side1: 'mobility-0', side2: 'reading-0' };
+    const warrior = characterRow({ awaiting_checkin: true, xp_strength: cumulativeXpForLevel(5) });
+    const s = dayTwoSnapshot(slots, { checkin: pendingCheckin(), character: warrior });
+    expect(view(s).checkin!.secondWind).toMatchObject({ templateId: 'push-0', why: { code: 'second_wind' } });
+    expect(view({ ...s, character: { ...warrior, ability_last_used: { second_wind: 1 } } }).checkin!.secondWind).toBeNull();
+    expect(view({ ...s, checkin: pendingCheckin({ answer: 'just_didnt' }) }).checkin!.secondWind).toBeNull();
+  });
+
+  it('the lighter plan: one step down, offered after 3 paused days in 14, quiet for 14 days after an answer', () => {
+    const s = dayTwoSnapshot();
+    const at = new Date(s.readAt.getTime() - 3_600_000);
+    const paused = { answered: [{ answer: 'emergency' as const, answered_at: at, gap_from: 3, gap_to: 5 }] };
+    expect(view(s).lighterPlan).toEqual({ from: 25, to: 15, offered: false });
+    expect(view({ ...s, ...paused }).lighterPlan).toEqual({ from: 25, to: 15, offered: true });
+    expect(view({ ...s, ...paused, profile: profileRow(undefined, { lighter_plan_at: at }) }).lighterPlan!.offered).toBe(false);
+    expect(view({ ...s, profile: profileRow(undefined, { minutes_per_day: 10 }) }).lighterPlan).toBeNull();
+  });
+
+  it('the latest settled miss travels once; the character says when tomorrow is light', () => {
+    const s = dayTwoSnapshot(DAY_TWO_SLOTS, { result: { id: '9', outcome: 'shield' }, character: characterRow({ next_day_light: true }) });
+    expect(view(s).checkinResult).toEqual({ id: 9, outcome: 'shield' });
+    expect(view(s).character.nextDayLight).toBe(true);
   });
 });

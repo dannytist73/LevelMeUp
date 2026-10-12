@@ -3,7 +3,7 @@
 // what the server will accept.
 import {
   abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, newLadder, painOption, plannedMoves, restAllowed,
-  swapLimit, swapOptions,
+  secondWindRedo, swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type { BuiltDay, DayInput, QuestDraft, QuestLibrary, Slot } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
@@ -88,6 +88,14 @@ function abilityOffers(s: Snapshot, library: QuestLibrary, input: DayInput, buil
   return offers;
 }
 
+/** M7a: the quest Second Wind would redo with "I just didn't" on the pending check-in (decision 7), or null. */
+function secondWindOffer(s: Snapshot, library: QuestLibrary, input: DayInput, built: BuiltDay): QuestFields | null {
+  const c = s.checkin;
+  if (c === null || c.answer !== null || c.missed_core === null) return null;
+  const redo = secondWindRedo(library, input, built, c.missed_core, s.character.ability_last_used.second_wind ?? null);
+  return redo === null ? null : fieldsOf(library, redo);
+}
+
 /** What the phone may offer on the open day (decision 2); nothing once it has closed. */
 export function dayOffers(s: Snapshot, library: QuestLibrary): DayOffers {
   const day = openDay(s);
@@ -118,5 +126,6 @@ export function dayOffers(s: Snapshot, library: QuestLibrary): DayOffers {
     swaps,
     gentle,
     stepDown: quests.filter((q) => canStepDown(s, q)).map((q) => String(q.id)),
+    secondWind: secondWindOffer(s, library, input, built),
   };
 }

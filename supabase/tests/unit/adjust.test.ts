@@ -94,7 +94,8 @@ describe('what the phone may offer today (today.ts)', () => {
     const start = Object.fromEntries(Object.entries(args.character).map(([stat, points]) => [`start_${stat}`, points]));
     const s: Snapshot = {
       profile: profileRow(choices), character: characterRow(start as Partial<CharacterRow>), ladders: ladderRows(args.ladders), days: [dayRow(args.day, 1)],
-      instances: instanceRows(args.day, 1), checkins: [], earned: [], queued: false, painReports: 0, workoutsDone: 0,
+      instances: instanceRows(args.day, 1), earned: [], checkin: null, queue: [], answered: [], result: null,
+      readAt: new Date(ONBOARDED), painReports: 0, workoutsDone: 0,
     };
     const open = stateView(s, dayOffers(s, LIBRARY), historyOf(s)).today!.quests.filter((q) => q.slot !== 'article');
     const hurt = open.find((q) => templateById(LIBRARY, q.templateId).exercise !== null);

@@ -7,7 +7,9 @@ import type { Choices } from '../../functions/_shared/onboarding.ts';
 import type { AdvanceInput } from '../../functions/_shared/advance.ts';
 import { toDraft } from '../../functions/_shared/drafts.ts';
 import { startPoints, statXp, toProfile } from '../../functions/_shared/state.ts';
-import type { CharacterRow, DayDraft, DayRow, History, InstanceDraft, InstanceRow, LadderRow, ProfileRow, Snapshot } from '../../functions/_shared/state.ts';
+import type {
+  CharacterRow, DayDraft, DayRow, History, InstanceDraft, InstanceRow, LadderRow, PendingCheckin, ProfileRow, Snapshot,
+} from '../../functions/_shared/state.ts';
 
 /** Onboarding at 8 PM in Manila on 10 October 2026; day 1 runs to 4 AM. */
 export const ONBOARDED = Date.UTC(2026, 9, 10, 12, 0);
@@ -38,7 +40,8 @@ export function profileRow(c: Choices = choices(), over: Partial<ProfileRow> = {
     time_zone: c.timeZone,
     boundary_minutes: c.boundaryMinutes, minutes_per_day: c.minutesPerDay, difficulty: c.difficulty, goals: c.goals,
     limitations: c.limitations, gentle_start: c.gentleStart, own_program: c.ownProgram, equipment: c.equipment,
-    program_style: c.programStyle, book: null, book_started_at: null, books_finished: [], reveal: {}, accountability_level: 0, ...over,
+    program_style: c.programStyle, book: null, book_started_at: null, books_finished: [], reveal: {}, accountability_level: 0,
+    lighter_plan_at: null, ...over,
   };
 }
 
@@ -48,7 +51,7 @@ export function characterRow(over: Partial<CharacterRow> = {}): CharacterRow {
     xp_strength: 0, xp_vitality: 0, xp_wisdom: 0, xp_focus: 0, xp_discipline: 0, total_xp: 0,
     streak_current: 0, streak_best: 0, shields: 0, awaiting_checkin: false,
     quests_cleared: 0, hard_days_cleared: 0, comebacks: 0, recoveries_cleared: 0, articles_read: 0,
-    ability_last_used: {}, version: 1, ...over,
+    ability_last_used: {}, next_day_light: false, version: 1, ...over,
   };
 }
 
@@ -77,7 +80,7 @@ export const DAY1: DayDraft = startArgs(choices(), templateReveal(choices()), ON
 export function afterDay1(done: readonly Slot[], nowMs: number, over: Partial<AdvanceInput> = {}): AdvanceInput {
   return {
     profile: profileRow(), character: characterRow(), ladders: [], days: [dayRow(DAY1, 1)], instances: instanceRows(DAY1, 1, done),
-    queued: false, workoutsDone: 0, timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION, ...over,
+    queue: [], pending: null, workoutsDone: 0, timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION, ...over,
   };
 }
 
@@ -127,9 +130,12 @@ export function dayTwoSnapshot(
     ladders: [],
     days: [dayRow(draft, 2, day), dayRow(DAY1, 1, { status: 'closed', resolution: 'streak_day', streak_applied: true })],
     instances: [...instanceRows(DAY1, 1, ['core']), ...instanceRows(draft, 2)],
-    checkins: [],
     earned: [],
-    queued: false,
+    checkin: null,
+    queue: [],
+    answered: [],
+    result: null,
+    readAt: new Date(w.startsAt + HOUR),
     painReports: 0,
     workoutsDone: 0,
     ...over,
@@ -144,3 +150,13 @@ export function historyOf(s: Snapshot): History {
 }
 
 export { DAY_MS };
+
+/** M7a: a check-in waiting for day 1 (its core quest, push-0, missed), as `loadSnapshot` reads it. Its id is 7. */
+export function pendingCheckin(over: Partial<PendingCheckin> = {}): PendingCheckin {
+  const core = DAY1.quests.find((q) => q.slot === 'core')!;
+  return {
+    id: '7', day_id: '1', gap_from: null, gap_to: null, answer: null, recovery_day_id: null,
+    missed_day: 1, missed_starts_at: new Date(DAY1.startsAt), missed_ends_at: new Date(DAY1.endsAt), missed_time_zone: 'Asia/Manila',
+    missed_core: core.templateId, missed_ladder: core.ladder, recovered: false, ...over,
+  };
+}

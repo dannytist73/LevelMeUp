@@ -1,10 +1,11 @@
 // Database rows and what the rules make of them. Pure: no database access here.
 import {
-  STATS, TRAINABLE_STATS, levelForXp, levelProgress, newLadder, questDayDate, rankFor, statPoints, xpToNextPoint,
+  STATS, TRAINABLE_STATS, checkinEvents, levelForXp, levelProgress, lighterMinutes, lighterPlanOffered, newLadder, questDayDate, rankFor,
+  statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  AbilityId, AchievementProgress, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState, Limitation,
-  PastDay, PlayerProfile, ProgramStyle, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
+  AbilityId, AchievementProgress, CheckinAnswer, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState,
+  Limitation, PastDay, PlayerProfile, ProgramStyle, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
 } from '../../../packages/rules/src/index.ts';
 
 /** Bigint ids arrive as strings from postgres.js. */
@@ -33,6 +34,8 @@ export type ProfileRow = {
   books_finished: FinishedBook[];
   reveal: unknown;
   accountability_level: number;
+  /** M7a: when the player last answered the lighter-plan offer (decision 9). */
+  lighter_plan_at: Date | null;
 };
 
 export type CharacterRow = Record<`start_${Stat}` | `xp_${Stat}`, number> & {
@@ -47,6 +50,8 @@ export type CharacterRow = Record<`start_${Stat}` | `xp_${Stat}`, number> & {
   recoveries_cleared: number;
   articles_read: number;
   ability_last_used: Partial<Record<AbilityId, number>>;
+  /** M7a: the next day is light (a "sick" or "injured" check-in answer, decision 6). */
+  next_day_light: boolean;
   version: number;
 };
 
@@ -91,7 +96,37 @@ export type InstanceRow = {
   payload: unknown;
 };
 
-export type CheckinRow = { id: Id; day_id: Id | null; gap_from: number | null; gap_to: number | null; answer: string | null };
+/**
+ * M7a: the check-in not yet resolved (one at a time, decision 3), with the missed day's window and core quest, and whether
+ * the recovery quest on its recovery day was cleared.
+ */
+export type PendingCheckin = {
+  id: Id;
+  day_id: Id | null;
+  gap_from: number | null;
+  gap_to: number | null;
+  answer: CheckinAnswer | null;
+  recovery_day_id: Id | null;
+  missed_day: number | null;
+  missed_starts_at: Date | null;
+  missed_ends_at: Date | null;
+  missed_time_zone: string | null;
+  missed_core: string | null;
+  missed_ladder: string | null;
+  recovered: boolean;
+};
+
+/** M7a: a closed day waiting behind a check-in (`streak_applied = false`). */
+export type QueuedDay = { id: Id; day_number: number; resolution: 'streak_day' | 'protected' | 'awaiting_checkin' };
+
+/** M7a: a check-in answered in the last 14 days (the lighter-plan offer). */
+export type AnsweredRow = { answer: CheckinAnswer; answered_at: Date; gap_from: number | null; gap_to: number | null };
+
+/** How a settled "I just didn't" ended (decision 4). */
+export type MissOutcome = 'recovered' | 'unbreakable' | 'shield' | 'reset';
+
+/** M7a: the latest settled "I just didn't" of the last 2 days, shown once by the phone. */
+export type ResultRow = { id: Id; outcome: MissOutcome };
 
 /** A Scholar's Path book the player finished (profiles.books_finished; times as ISO strings). */
 export type FinishedBook = { title: string; startedAt: string | null; finishedAt: string; sessions: number; minutes: number };
@@ -175,9 +210,13 @@ export type DayOffers = {
   /** Exercise quests only: gentle movement after pain, or null when none fits. */
   gentle: Readonly<Record<string, QuestFields | null>>;
   stepDown: readonly string[];
+  /** M7a: the quest Second Wind would redo with "I just didn't" on the pending check-in, or null (decision 7). */
+  secondWind: QuestFields | null;
 };
 
-export const NO_OFFERS: DayOffers = { swapsLeft: 0, restAllowed: false, abilities: [], swaps: {}, gentle: {}, stepDown: [] };
+export const NO_OFFERS: DayOffers = {
+  swapsLeft: 0, restAllowed: false, abilities: [], swaps: {}, gentle: {}, stepDown: [], secondWind: null,
+};
 
 export function startPoints(c: CharacterRow): StatMap {
   return Object.fromEntries(STATS.map((s) => [s, c[`start_${s}`]])) as StatMap;
@@ -250,6 +289,7 @@ export function characterView(c: CharacterRow) {
     stats,
     streak: streakState(c),
     abilityLastUsed: c.ability_last_used,
+    nextDayLight: c.next_day_light,
     version: c.version,
   };
 }
@@ -286,11 +326,17 @@ export type Snapshot = {
   /** The latest days, in any order. */
   days: DayRow[];
   instances: InstanceRow[];
-  /** Unanswered check-ins. */
-  checkins: CheckinRow[];
   earned: string[];
-  /** A closed day is waiting behind a pending check-in (`streak_applied = false`), possibly older than `days`. */
-  queued: boolean;
+  /** M7a: the check-in not yet resolved, or null. */
+  checkin: PendingCheckin | null;
+  /** M7a: closed days waiting behind a check-in, in day order (possibly older than `days`). */
+  queue: QueuedDay[];
+  /** M7a: check-ins answered in the last 14 days. */
+  answered: AnsweredRow[];
+  /** M7a: the latest settled "I just didn't" of the last 2 days, or null. */
+  result: ResultRow | null;
+  /** M7a: the database clock when the snapshot was read. */
+  readAt: Date;
   /** "I felt pain" reports in the last 14 days (rules: PAIN_WINDOW_MS). */
   painReports: number;
   /** Workouts completed so far (M6c): the program day of the next workout (rules: planWorkout). */
@@ -310,6 +356,40 @@ function growthOf(c: CharacterRow, view: ReturnType<typeof characterView>, histo
     questsCleared: c.quests_cleared,
     newRungs: history.newRungs,
   };
+}
+
+/** M7a: the pending check-in as the phone shows it (decisions 3, 7). */
+function checkinView(c: PendingCheckin, offers: DayOffers) {
+  const gap = c.day_id === null;
+  return {
+    id: Number(c.id),
+    /** The missed day, or the first and last away days. */
+    from: gap ? c.gap_from! : c.missed_day!,
+    to: gap ? c.gap_to! : c.missed_day!,
+    gap,
+    /** The missed day's date (`YYYY-MM-DD`), or null for away days. */
+    date: gap || c.missed_starts_at === null
+      ? null
+      : calendarDate({ starts_at: c.missed_starts_at, ends_at: c.missed_ends_at!, time_zone: c.missed_time_zone! }),
+    /** The missed day's core quest and its ladder: what "injured" rests and "too hard" eases. */
+    core: c.missed_core,
+    ladder: c.missed_ladder,
+    /** "just_didnt" while its recovery day runs; null until answered. */
+    answer: c.answer,
+    /** The quest Second Wind would redo with "I just didn't", or null. */
+    secondWind: c.answer === null ? offers.secondWind : null,
+  };
+}
+
+/** M7a: the lighter plan one step down and whether it is offered now; null at the fewest minutes (decision 9). */
+export function lighterPlanView(s: Snapshot): { from: number; to: number; offered: boolean } | null {
+  const to = lighterMinutes(s.profile.minutes_per_day);
+  if (to === null) return null;
+  const events = checkinEvents(s.answered.map((a) => ({
+    answer: a.answer, at: a.answered_at.getTime(), days: a.gap_from === null || a.gap_to === null ? 1 : a.gap_to - a.gap_from + 1,
+  })));
+  const answeredAt = s.profile.lighter_plan_at?.getTime() ?? null;
+  return { from: s.profile.minutes_per_day, to, offered: lighterPlanOffered(events, s.readAt.getTime(), answeredAt) };
 }
 
 /**
@@ -347,9 +427,12 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
           canStepDown: offers.stepDown.includes(String(q.id)),
         })),
     },
-    checkinsDue: s.checkins
-      .filter((c) => c.answer === null)
-      .map((c) => ({ id: Number(c.id), dayId: c.day_id === null ? null : Number(c.day_id), gapFrom: c.gap_from, gapTo: c.gap_to })),
+    /** M7a: the check-in waiting for an answer, or held after "I just didn't" until its day ends (decisions 3–4). */
+    checkin: s.checkin === null ? null : checkinView(s.checkin, offers),
+    /** M7a: the latest settled "I just didn't", shown once by the phone. */
+    checkinResult: s.result === null ? null : { id: Number(s.result.id), outcome: s.result.outcome },
+    /** M7a: the lighter plan (decision 9). */
+    lighterPlan: lighterPlanView(s),
     recentDays: days.slice(1).map((d) => ({
       dayNumber: d.day_number, startsAt: iso(d.starts_at), status: d.status, resolution: d.resolution,
       cleared: questsOf(d).filter((q) => q.completed_at !== null).length,

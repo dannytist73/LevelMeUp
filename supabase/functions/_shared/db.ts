@@ -2,9 +2,11 @@
 // (role lmu_player with their claims) so row level security decides; writes call the levelmeup functions. lmu_player
 // can read LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (migration 0004).
 import postgres from 'npm:postgres@3.4.9';
-import { PAIN_WINDOW_MS } from '../../../packages/rules/src/index.ts';
+import { LIGHTER_PLAN_WINDOW_MS, PAIN_WINDOW_MS } from '../../../packages/rules/src/index.ts';
 import { CALENDAR_DAYS } from './state.ts';
-import type { CalendarRow, CharacterRow, CheckinRow, DayRow, History, InstanceRow, LadderRow, ProfileRow, Snapshot } from './state.ts';
+import type {
+  AnsweredRow, CalendarRow, CharacterRow, DayRow, History, InstanceRow, LadderRow, PendingCheckin, ProfileRow, QueuedDay, ResultRow, Snapshot,
+} from './state.ts';
 
 export type Sql = postgres.Sql;
 export type Tx = postgres.TransactionSql;
@@ -55,12 +57,30 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
     const instances = days.length === 0
       ? []
       : await tx<InstanceRow[]>`select * from levelmeup.quest_instances where user_id = ${userId} and day_id in ${tx(days.map((d) => d.id))}`;
-    const checkins = await tx<CheckinRow[]>`
-      select id, day_id, gap_from, gap_to, answer from levelmeup.checkins where user_id = ${userId} and answer is null order by id`;
     const earned = await tx<{ achievement_id: string }[]>`
       select achievement_id from levelmeup.achievements_earned where user_id = ${userId} order by earned_at, achievement_id`;
-    const { queued } = one(await tx<{ queued: boolean }[]>`
-      select exists (select 1 from levelmeup.quest_days where user_id = ${userId} and status = 'closed' and not streak_applied) as queued`);
+    const [checkin] = await tx<PendingCheckin[]>`
+      select c.id, c.day_id, c.gap_from, c.gap_to, c.answer, c.recovery_day_id,
+        d.day_number as missed_day, d.starts_at as missed_starts_at, d.ends_at as missed_ends_at, d.time_zone as missed_time_zone,
+        q.template_id as missed_core, q.ladder_id as missed_ladder,
+        exists (select 1 from levelmeup.quest_instances r
+          where r.day_id = c.recovery_day_id and r.slot = 'recovery' and r.completed_at is not null) as recovered
+      from levelmeup.checkins c
+      left join levelmeup.quest_days d on d.id = c.day_id
+      left join levelmeup.quest_instances q on q.day_id = c.day_id and q.slot = 'core'
+      where c.user_id = ${userId} and c.resolved_at is null
+      order by c.id limit 1`;
+    const queue = await tx<QueuedDay[]>`
+      select id, day_number, resolution from levelmeup.quest_days
+      where user_id = ${userId} and status = 'closed' and not streak_applied order by day_number`;
+    const answered = await tx<AnsweredRow[]>`
+      select answer, answered_at, gap_from, gap_to from levelmeup.checkins
+      where user_id = ${userId} and answered_at > now() - make_interval(secs => ${LIGHTER_PLAN_WINDOW_MS / 1000})`;
+    const [result] = await tx<ResultRow[]>`
+      select id, outcome from levelmeup.checkins
+      where user_id = ${userId} and outcome in ('recovered', 'unbreakable', 'shield', 'reset') and resolved_at > now() - interval '2 days'
+      order by resolved_at desc, id desc limit 1`;
+    const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
     const { pain } = one(await tx<{ pain: number }[]>`
       select count(*)::int as pain from levelmeup.events
       where user_id = ${userId} and type = 'pain' and applied_at > now() - make_interval(secs => ${PAIN_WINDOW_MS / 1000})`);
@@ -69,8 +89,9 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       where user_id = ${userId} and completed_at is not null and condition ->> 'kind' = 'session'
         and payload ->> 'offlineQuest' is null`);
     return {
-      profile, character, ladders: [...ladders], days: [...days], instances: [...instances], checkins: [...checkins],
-      earned: earned.map((r) => r.achievement_id), queued, painReports: pain, workoutsDone: workouts,
+      profile, character, ladders: [...ladders], days: [...days], instances: [...instances],
+      earned: earned.map((r) => r.achievement_id), checkin: checkin ?? null, queue: [...queue], answered: [...answered],
+      result: result ?? null, readAt: now, painReports: pain, workoutsDone: workouts,
     };
   } finally {
     await asService(tx);

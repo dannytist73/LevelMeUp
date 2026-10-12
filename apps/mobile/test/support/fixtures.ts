@@ -6,7 +6,8 @@ import { stateView } from '../../../../supabase/functions/_shared/state.ts';
 import type { CharacterRow, DayRow, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
 import { dayOffers } from '../../../../supabase/functions/_shared/today.ts';
 import {
-  DAY1, DAY_TWO_SLOTS, HOUR, characterRow, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows, manilaDay, profileRow,
+  DAY1, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows, manilaDay,
+  profileRow,
 } from '../../../../supabase/tests/unit/fixtures.ts';
 import type { PhoneEvent, Reveal, ServerState } from '../../src/game/types.ts';
 import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
@@ -26,9 +27,12 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     ladders: [],
     days: [dayRow(DAY1, 1)],
     instances: instanceRows(DAY1, 1, done),
-    checkins: [],
     earned: [],
-    queued: false,
+    checkin: null,
+    queue: [],
+    answered: [],
+    result: null,
+    readAt: new Date(ONBOARDED + HOUR),
     painReports: 0,
     workoutsDone: 0,
   };
