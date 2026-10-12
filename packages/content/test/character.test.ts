@@ -22,8 +22,8 @@ describe('the words of Character, Chronicle and Scholar\'s Path (M6d)', () => {
     expect(fillText(BOOK_TEXT.questLine, { title: 'Dune' })).toBe('Reading: Dune');
   });
 
-  it('only abilities whose screens are still to come are "later": Second Wind and Unbreakable (M7), Insight (M8)', () => {
-    expect([...ABILITIES_LATER].sort()).toEqual(['insight', 'second_wind', 'unbreakable']);
+  it('Insight arrives with the articles (M8); Second Wind and Unbreakable work since M7a', () => {
+    expect(ABILITIES_LATER).toEqual(['insight']);
     for (const id of ABILITIES_LATER) expect(ABILITY_IDS).toContain(id);
   });
 

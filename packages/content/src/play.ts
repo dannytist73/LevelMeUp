@@ -60,6 +60,7 @@ export const PLAY_TEXT = {
     discipline: 'Discipline · today counts',
     streak: 'Streak',
     streakDays: '{from} → {to} DAYS',
+    recovered: 'You took the day back. Your streak holds when today ends.',
     levelLine: 'LV {level} · {into} / {for} XP',
     toNext: '{xp} to Lv {next}',
     rateLabel: 'How did it feel? Optional, it tunes your next step.',
