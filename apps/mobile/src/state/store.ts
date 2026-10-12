@@ -66,6 +66,8 @@ export const VOW_KEY = 'lmu.vow';
 export const TIMERS_KEY = 'lmu.timers';
 export const ART_KEY = 'lmu.art-manifest';
 export const TRAINING_NOTICE_KEY = 'lmu.training-notice';
+/** M7a: the last check-in result the player dismissed (decision 10). */
+export const CHECKIN_RESULT_KEY = 'lmu.checkin-result';
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
 export type Celebration = { kind: 'level'; level: number } | { kind: 'achievement'; id: string };
@@ -99,6 +101,10 @@ export type GameState = {
   vow: string | null;
   /** The one-time "set up your training" note has been shown and dismissed (M6d decision 13). */
   trainingNoticeSeen: boolean;
+  /** M7a: the check-in put off with "Later": hidden until the app is next opened (decision 10). */
+  checkinLater: number | null;
+  /** M7a: the last check-in result the player dismissed (kept on the phone). */
+  checkinResultSeen: number | null;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -110,6 +116,10 @@ export type GameState = {
   /** The vow stays on the phone (owner decision 3, 2026-10-11); Character shows it (M6d). */
   saveVow: (text: string) => Promise<void>;
   dismissTrainingNotice: () => Promise<void>;
+  answerLater: (checkinId: number) => void;
+  /** The app came back to the foreground: a check-in put off with "Later" shows again. */
+  reopen: () => void;
+  dismissCheckinResult: (checkinId: number) => Promise<void>;
   saveWithGoogle: () => Promise<GoogleResult>;
   /** "Saved a character before?": only on a phone that holds none. */
   signInWithGoogle: () => Promise<RestoreResult>;
@@ -130,6 +140,10 @@ const DAY_END_GRACE_MS = 2_000;
 const MAX_TIMER_MS = 2_147_483_647;
 
 const readVow = (text: string | null): string | null => (text === null || text.trim() === '' ? null : text);
+const readSeen = (text: string | null): number | null => {
+  const n = Number(text);
+  return text !== null && Number.isSafeInteger(n) ? n : null;
+};
 
 function readKeptArt(text: string | null): ArtManifest | null {
   if (text === null) return null;
@@ -255,8 +269,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(VOW_KEY); // the next player on this phone never sees it (M5 review)
       await deps.kv.removeItem(TIMERS_KEY);
       await deps.kv.removeItem(TRAINING_NOTICE_KEY);
+      await deps.kv.removeItem(CHECKIN_RESULT_KEY);
       confirmedLevel = null;
-      set({ draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, account: await deps.account() });
+      set({
+        draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
+        account: await deps.account(),
+      });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
 
@@ -332,14 +350,17 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       art: null,
       vow: null,
       trainingNoticeSeen: true, // nothing flashes before boot reads the phone
+      checkinLater: null,
+      checkinResultSeen: null,
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
           deps.kv.getItem(VOW_KEY).catch(() => null),
           deps.kv.getItem(TRAINING_NOTICE_KEY).catch(() => null),
+          deps.kv.getItem(CHECKIN_RESULT_KEY).catch(() => null),
         ]);
         await refresh();
         confirmedLevel = get().cached?.state.character.level ?? null;
@@ -348,7 +369,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         if (holding && saved !== null) await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
         set({
           draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
-          vow: readVow(vowText), trainingNoticeSeen: notice !== null,
+          vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
         });
         await scheduler.request();
       },
@@ -423,6 +444,15 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       dismissTrainingNotice: async () => {
         set({ trainingNoticeSeen: true });
         await deps.kv.setItem(TRAINING_NOTICE_KEY, 'seen').catch(() => {});
+      },
+
+      answerLater: (checkinId) => set({ checkinLater: checkinId }),
+
+      reopen: () => set({ checkinLater: null }),
+
+      dismissCheckinResult: async (checkinId) => {
+        set({ checkinResultSeen: checkinId });
+        await deps.kv.setItem(CHECKIN_RESULT_KEY, String(checkinId)).catch(() => {});
       },
 
       saveWithGoogle: async () => {

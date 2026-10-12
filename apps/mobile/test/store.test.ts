@@ -9,7 +9,9 @@ import { makeLocal, migrate } from '../src/data/local.ts';
 import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
-import { ART_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, VOW_KEY, createGameStore } from '../src/state/store.ts';
+import {
+  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, VOW_KEY, createGameStore,
+} from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { nodeSql } from './support/nodeSql.ts';
 import { DAY_TWO_NOW, READY_DRAFT, REVEAL, adjustState, serverState } from './support/fixtures.ts';
@@ -762,5 +764,36 @@ describe('a day built offline (M6e)', () => {
     await settle();
     expect(store.getState().view!.offline).toBe(false);
     expect(JSON.parse(kv.get(TIMERS_KEY)!)).toEqual({ 200: timer });
+  });
+});
+
+describe('the check-in on this phone (M7a decision 10)', () => {
+  it('"Later" hides a check-in until the app is opened again', async () => {
+    const { store } = await setup([ok(SERVER)]);
+    expect(store.getState().checkinLater).toBeNull();
+    store.getState().answerLater(7);
+    expect(store.getState().checkinLater).toBe(7);
+    store.getState().reopen();
+    expect(store.getState().checkinLater).toBeNull();
+  });
+
+  it('a result the player has seen stays seen after a restart, and goes with the character', async () => {
+    const first = await setup([ok(SERVER)]);
+    await first.local.acknowledge([], [], SERVER, 1);
+    await first.store.getState().boot();
+    expect(first.store.getState().checkinResultSeen).toBeNull();
+    await first.store.getState().dismissCheckinResult(9);
+    expect(first.store.getState().checkinResultSeen).toBe(9);
+    expect(first.kv.get(CHECKIN_RESULT_KEY)).toBe('9');
+    const replies: SessionState[] = ['signed_in', 'no_session', 'signed_in'];
+    const ensureSession = jest.fn(async (): Promise<SessionState> => replies.shift() ?? 'signed_in');
+    const second = await setup([ok(SERVER), { ok: false, status: 404, code: 'not_started' }], { ensureSession });
+    await second.local.acknowledge([], [], SERVER, 1);
+    second.kv.set(CHECKIN_RESULT_KEY, '9');
+    await second.store.getState().boot();
+    expect(second.store.getState().checkinResultSeen).toBe(9);
+    await second.store.getState().startOver();
+    expect(second.kv.has(CHECKIN_RESULT_KEY)).toBe(false);
+    expect(second.store.getState().checkinResultSeen).toBeNull();
   });
 });

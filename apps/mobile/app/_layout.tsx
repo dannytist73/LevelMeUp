@@ -45,7 +45,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (store === null) return;
     const foreground = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void store.getState().syncNow();
+      if (state === 'active') {
+        // M7a: a check-in put off with "Later" shows again when the app is opened.
+        store.getState().reopen();
+        void store.getState().syncNow();
+      }
     });
     const network = Network.addNetworkStateListener((state) => {
       if (state.isInternetReachable === true) void store.getState().syncNow();
