@@ -26,7 +26,7 @@ guesses). Only milestone 1's plan exists today.
 | 7a | **The check-in** | "The day closed. What happened?" after a missed day: the five answers with their outcomes (a paused streak, a light tomorrow, a rested or eased exercise, fewer minutes, or the 5-minute recovery quest), Second Wind and Unbreakable, *Rise Again*; the `checkin` and `lighter_plan` events (migration 0011); the days queued behind a check-in (`streak_applied = false`) applied in order once it is answered; the lighter-plan offer at most once every 14 days, and over the rest limit. M7 split in three (M7a decision 1). **Built 2026-10-12**; deployed 2026-10-12 (0011, the functions v10); merges after M6e. | `2026-10-12-m7a-the-checkin.md` |
 | 7b | **Settings** | Settings → Your game (voice, the day's end, minutes a day, difficulty; the `settings` event), Delete my character (a Google-linked account keeps its shared sign-in, and the screen says so), the sign-in-lost card, the sign-in guard; "Rest tomorrow" (`character_state.rest_day`); a tap time on `plan_rest` and `pain` so a rest synced late still protects its day, and the late notices (migration 0012). M7 split in four (M7b decision 1). **Built 2026-10-12**; deployed 2026-10-12 (0012, the functions v11); merges after M7a. | `2026-10-12-m7b-settings.md` |
 | 7c | **Accountability** | The Accountability Pact (levels 0–2, from Settings and the reveal's "Read the pact"; `accountability_set`); "I just didn't" under a pact: the Shadow's scene once, the mark on Today and the portrait until the recovery quest is cleared, the private note (`checkin_note`); level 2's side quests sealed on the phone until a 10-minute focus session (`trial`); at most one a day, paused after 3 in a rolling 7 days; the recovery quest listed first (migration 0013). The sterner evening reminder moved to M7d. **Built 2026-10-12**; merges after M7b. | `2026-10-12-m7c-accountability.md` |
-| 7d | **Notifications** | Local notifications (morning briefing, evening reminder with the Trial's sterner one, timer alerts; a new EAS build for `expo-notifications`), Settings → Notifications, the permission asked when the player sets the briefing; the briefing says when the day is a planned rest day. Moved from M7b (M7b decision 1). | later |
+| 7d | **Notifications** | Local notifications (morning briefing, evening reminder with the Trial's sterner one, timer alerts; a new EAS build for `expo-notifications`), Settings → Notifications, the permission asked when the player sets the briefing; the briefing says when the day is a planned rest day. Moved from M7b (M7b decision 1). **Built 2026-10-13**; merges after M7c. | `2026-10-13-m7d-notifications.md` |
 | 8 | **Articles** | The Batch API pipeline (`lmu-articles-tick` on Supabase Cron), the checks, the $25 cap, about 20 owner-reviewed evergreen articles, the reader and the takeaway quest; spike: the real cost of one article. | later |
 | 9 | **Pilot release** | Class art, the EAS preview APK, the device checklist on the Find X9. The backend is already live since M3. | later |
 
@@ -166,7 +166,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | Milestone | Item |
 |---|---|
-| M7d | Notifications (moved from M7b, decision 1); the briefing names a planned rest day. |
+| M7d | Notifications (moved from M7b, decision 1); the briefing names a planned rest day. *(Done in M7d.)* |
 | Later | A weekly rest pattern ("every Sunday"); changing the name, goals or limitations in Settings. |
 | Later | A repeat of an applied event returns its stored result without its notice (`pain_late`): the phone dropped the event at the first answer, so only a lost response loses the notice. |
 | Later | Defense in depth in `levelmeup.adjust` (M7b review): the late-day branch doesn't check that the kind is `plan_rest` or `pain`, and a `settings` change could carry other keys. Only the planner calls it, so it waits with the other SQL hardening. |
@@ -178,13 +178,22 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | Milestone | Item |
 |---|---|
-| M7d | Level 2's second, sterner evening reminder (`checkin.consequence === 'trial'`, the Shadow's `evening` lines); the Pact's level 2 text then names it. |
+| M7d | Level 2's second, sterner evening reminder (`checkin.consequence === 'trial'`, the Shadow's `evening` lines); the Pact's level 2 text then names it. *(Done in M7d.)* |
 | M9 | The Shadow's painted art on its scene (board F2), and the mark on the painted portraits. |
 | M9 | `lmu-sync` takes 11-15 s per call in the live tests while the gateway answers in about 150 ms (the live run's time per test has grown since M6c): profile it (queries per request, connection set-up) before the pilot. |
 | Later | A pact signed on the reveal is lost if the app closes before the onboarding ends (Settings has it). A raise from 1 to 2 gives the day in progress no consequence at all (decision 3). |
 | Later | A title with one long word breaks inside it at the largest display size ("The Accountability Pact" on a 320 dp screen); nothing is cut off. Hyphenation or a smaller title there. |
 | Emulator | M7c row 3 (the reveal's "Read the pact", signed there, sent at the end of the onboarding) with the next new test character, after Uma's checks. |
 | Owner | Find X9: "I just didn't" under a pact on a real missed day (the scene once, the mark, the note, level 2's seal and focus session with the screen off and on, a call during the session), and turning the pact off on that day; the screen sleeps again after the focus session ends or its seal goes (a release build: development builds keep the screen on). |
+
+## Carried forward from M7d
+
+| Milestone | Item |
+|---|---|
+| M9 | The release build for the pilot carries `expo-notifications`; the Find X9 rows below are checked on it. |
+| Later | Notifications from the server (push), action buttons on a notification ("Snooze", "Open the quest"), and a per-minute time. |
+| Later | The days ahead are planned blind: a boundary change that is still arriving (M7b) can move a day's start, so a briefing planned for it may come a little early or late until the app is opened. |
+| Owner | Find X9: the briefing and the evening reminder at their real times, the rest-day briefing, a timer alert with the screen off, the Shadow's reminder on a real Trial day, reminders after a reboot without opening the app (ColorOS), and the channels in the phone's settings. |
 
 ## Spikes and where they run
 

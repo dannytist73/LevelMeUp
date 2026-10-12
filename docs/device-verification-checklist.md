@@ -365,3 +365,23 @@ boundary. The Shadow preview (Developer → Shadow preview) shows the screens wi
    pact's six-call test passed its 60 s limit; it now has 120 s (9370b76). The time per call has grown slowly since M6
    (408 s for 29 tests in M6c, 605 s for 36 in M6e, 764 s for 40 now); worth profiling before the pilot.
 
+## M7d — Notifications
+
+Emulator unless marked. The development build with `expo-notifications` (Task 11). Developer → Notifications lists the
+plan and shows a copy of the first one in 10 seconds; `adb shell dumpsys alarm | grep -A3 com.dannytist.levelmeup` shows
+the times the phone holds.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Settings shows Notifications: "Morning briefing · Off", "Evening reminder · Off", "Only if the core quest isn't done", and "Change notifications". | |
+| 2 | Turning on the briefing shows "Allow notifications?"; "Not now" leaves it off; "Allow notifications" brings Android's prompt; Allow turns it on with "7:30 AM" and the time stepper. | |
+| 3 | Deny twice (or `pm revoke`): the screen says notifications are off in the phone's settings; "Open phone settings" opens LevelMeUp's page; no prompt anywhere else, ever. | |
+| 4 | A briefing at its time (a time a few minutes ahead, or the developer screen's copy): the title "Day N · Morning briefing", the voice's line; on a planned rest day "Day N · Rest day". | |
+| 5 | The evening reminder is planned while the core quest is open and gone once it is cleared (the developer list and `dumpsys alarm`). | |
+| 6 | A running quest timer: with the app in the background, the alert comes at its time; pausing removes it; tapping it opens the quest. | |
+| 7 | A notification due while the app is open shows as a banner. | |
+| 8 | The phone's settings list the channels "Reminders" and "Quest timers"; the status-bar icon is the silhouette, not a white square. | |
+| 9 | Deleting the character (or starting over) leaves nothing planned (`dumpsys alarm`, the developer list). | |
+| 10 | The largest font: the Notifications screen and Settings' section wrap with nothing cut off. | |
+| 11 | Unit tests, the typecheck and the bundle scan pass. | |
+| 12 | Find X9: the briefing and the evening reminder at their real times over two days; the rest-day briefing; a timer alert with the screen off; the Shadow's reminder on a real Trial day; reminders after a reboot without opening the app (ColorOS). | Pending — owner |

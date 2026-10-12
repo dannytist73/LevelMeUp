@@ -79,7 +79,7 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 
 | Table | Purpose | Player access |
 |---|---|---|
-| `profiles` | name, voice, class, class_changed_at, time zone, day boundary, minutes/day, difficulty, goals, limitation tags, gentle_start flag, own_program flag, reveal text, accountability level and enabled_at, onboarding_completed_at | read own; update only preference columns (column grants): name, voice, minutes/day, difficulty, day boundary, notification prefs |
+| `profiles` | name, voice, class, class_changed_at, time zone, day boundary, minutes/day, difficulty, goals, limitation tags, gentle_start flag, own_program flag, reveal text, accountability level and enabled_at, onboarding_completed_at | read own; update only preference columns (column grants): name, voice, minutes/day, difficulty, day boundary |
 | `character_state` | one row per player: total XP, level, XP per stat, start points per stat, streak current/best, streak status, shields, ability usage counters, consequence counters | read own; server-only writes |
 | `ladder_states` | per player per ladder: rung, completions at rung, recent ratings, last step-up date, paused | read own; server-only |
 | `quest_days` | per player per quest day: date, starts_at, ends_at, time zone, day type, status, article_id, provisional flag. `unique (user_id, quest_day)` | read own; server-only |
@@ -302,12 +302,14 @@ template narrative is used; the player never sees an error.
 
 ## 7. Notifications
 
-*Moved to M7d (M7b decision 1).* M7d also schedules level 2's sterner evening reminder on the day the state's
-`checkin.consequence` is `trial` (M7c decision 1).
-
-Local only. A pure `plan()` function (rules package) decides which reminders should exist from settings, today's
-state and the clock; one file talks to `expo-notifications`. Re-planned on every app open and after every
-completion. No exact alarms.
+Local only (M7d, 2026-10-13). A pure planner (`apps/mobile/src/notify/plan.ts`; in the app, not the rules package: it
+reads the phone's view and the content's words, and only the phone uses it) decides which notifications should be
+pending from the view, the stored quest timers, the settings and the clock: the briefing for the running quest day and
+the next six, the evening reminder for the running day and the next, level 2's Shadow reminder on a day the Shadow holds
+at the Trial (`checkin.consequence === 'trial'`), and timer alerts. One file (`src/notify/os.ts`) talks to
+`expo-notifications`. The store re-plans after every view change, timer save, settings change and return to the
+foreground, and the phone hears only of a plan that differs from the last (`src/notify/apply.ts`). The settings live on
+the phone (`lmu.notify`). No exact alarms: the library falls back to inexact ones without `SCHEDULE_EXACT_ALARM`.
 
 ## 8. Security checklist
 

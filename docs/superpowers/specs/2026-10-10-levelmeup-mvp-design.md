@@ -76,7 +76,7 @@ gained, levels, quests cleared, new rungs). Past readings arrive with articles (
 start-again card when a guest sign-in is gone for good), Game ("Voice, rhythm and minutes": the voice, the time the
 quest day ends in half-hour steps, minutes a day and difficulty, one change; and Training), sync and the version.
 Deleting says what goes and, for a Google-saved character, that the Google sign-in stays; it needs a second tap.
-Notifications arrive with M7d.
+Notifications: M7d (§4.4).
 
 *Built in M7c (2026-10-12):* Settings → Game → "Accountability Pact" shows the level and opens the Pact (§4.3); until a
 new pact is in force it says "It starts with your next quest day."
@@ -443,7 +443,7 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
   on the phone until a 10-minute focus session (LevelMeUp in front, the screen awake; leaving pauses it; the minutes
   are kept). The server never refuses a completion because of the seal. After 3 consequences in a rolling 7 days the
   Shadow steps back (its retreat line names the lighter plan only when the System offers one). Level 2's evening
-  reminder arrives with notifications (M7d); the painted Shadow with the class art (M9).
+  reminder came with notifications (M7d, §4.4); the painted Shadow with the class art (M9).
 
 ### 4.4 Notifications (local only in the MVP)
 
@@ -452,6 +452,17 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
 - MAINARC's pattern: a pure "plan" function decides which reminders should be pending; one file talks to the OS.
 - No exact alarms (a few minutes late is fine), so no `SCHEDULE_EXACT_ALARM`.
 - Permission denied: the app works fully; Settings explains what's missing; no nagging.
+- Built in M7d (2026-10-13): Settings → Notifications with three switches (the morning briefing and the evening reminder,
+  each with a half-hour time; timer alerts), all off until the player turns one on; the phone's permission is asked then
+  (the System's card first, then Android's prompt), never at launch, and a refusal for good is named once with "Open
+  phone settings". The briefing comes for the running quest day and the next six, in the player's voice, and says when
+  the day is a planned rest day; today's is dropped once the core quest is cleared. The evening reminder comes for the
+  running day and the next only, never on a rest day, and clearing the core quest cancels it. A day rested for pain gets
+  neither. With the Pact at level 2
+  the Shadow's reminder comes an hour after the evening time on a day it holds, until the recovery quest is cleared (no
+  switch: lowering the Pact stops it). A running quest timer alerts at its full time; a tap opens its quest. The plan is
+  made again after every change and on every return to the app; the settings stay on the phone; deleting the character
+  cancels everything.
 
 ### 4.5 Privacy
 

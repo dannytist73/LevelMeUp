@@ -145,6 +145,10 @@ quests (quiet night cards with a "Sealed" chip that open the trial); board F4 as
 progress bar, "End session"); board F5 with option cards, the inline preview, the rules on a paper slant panel and the
 hold-to-sign button (tap, then confirm, with a screen reader). The portrait's mark is a dark corner edged in ember.
 
+Built in M7d (2026-10-13): Settings' Notifications section (board S1's rows) and its screen (three switches, the
+half-hour `TimeStepper`, the Shadow's reminder at level 2), the permission ask (a card before the phone's prompt) and the
+refused-for-good card.
+
 ## 5. React Native notes
 
 The boards are HTML/CSS. These effects need a native equivalent:

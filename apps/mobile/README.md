@@ -101,5 +101,11 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   recovery quest first, and at level 2 seals the side quests until the focus session (`app/trial.tsx`, minutes kept by
   the store's `trialMs`/`saveTrialMs`). The Shadow preview (`app/dev/shadow.tsx`) shows all of it over the cached day;
   nothing is sent. **Run this bundle only against a server with the M7c deploy**: an older server refuses the pact.
+- **Notifications** (M7d): `src/notify/`. Only `os.ts` imports `expo-notifications` (a native module: it needs a
+  development build from M7d on); which notifications should be pending is `plan.ts` (pure), their words are the
+  content's `notify.ts`, and the store plans again after every change (`apply.ts` tells the phone only of a different
+  plan). Settings → Notifications is `app/notifications.tsx` (`src/screens/Notifications.tsx`); the settings stay on the
+  phone (`lmu.notify`). The developer screen's Notifications (`app/dev/notify.tsx`) lists the plan and shows a copy of
+  the first one in 10 seconds.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).
