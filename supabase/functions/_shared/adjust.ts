@@ -1,14 +1,17 @@
 // Adjusting the day (spec §2.5, §3.3–3.5; M6b decisions 1–10): one phone event becomes the change `levelmeup.adjust`
 // writes (migration 0008), or the reason it is refused. Pure: the rules decide, from the same snapshot the offers come
-// from (today.ts), and every reward in a replaced quest is drafted here, never taken from the phone.
+// from (today.ts), and every reward in a replaced quest is drafted here, never taken from the phone. M7b: the game
+// settings, a rest day ahead, and a rest or pain report tapped while its day ran, accepted after the day ended (decisions
+// 2, 5, 6).
 import {
-  abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout, ladderById,
-  lighterMinutes, newLadder, painKey, painOption, planWorkout, plannedMoves, recordPain, restAllowed, resumeAfterPain, stepDown, swapLimit,
-  swapOptions,
+  LATE_SYNC_MS, abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout,
+  ladderById, lighterMinutes, newLadder, painKey, painOption, planWorkout, plannedMoves, recordPain, restAllowed, resumeAfterPain, stepDown,
+  swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  BuiltDay, CheckinAnswer, ClassId, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary, StreakState,
+  BuiltDay, CheckinAnswer, ClassId, Difficulty, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary, StreakState,
 } from '../../../packages/rules/src/index.ts';
+import type { Voice } from '../../../packages/content/src/index.ts';
 import { planCheckin } from './checkin.ts';
 import { toDraft } from './drafts.ts';
 import type { AdjustEvent, DayAbility, PainChoice } from './events.ts';
@@ -21,7 +24,7 @@ export const ADJUST_CODES = [
   'not_found', 'day_closed', 'already_completed', 'not_swappable', 'no_swaps_left', 'not_an_option', 'already_hard_day',
   'already_protected', 'rest_limit', 'not_exercise', 'not_paused', 'not_too_hard', 'not_current',
   'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change', 'no_book', 'same_book', 'already_answered',
-  'no_lighter_plan',
+  'no_lighter_plan', 'rest_late',
 ] as const;
 export type AdjustCode = (typeof ADJUST_CODES)[number];
 
@@ -30,7 +33,7 @@ export type QuestChange = InstanceDraft & { id: number };
 
 /** What `levelmeup.adjust` writes. */
 export type Change = {
-  day?: { id: number; hardDay?: true; protection?: 'planned_rest' | 'pain'; swaps?: 1 };
+  day?: { id: number; hardDay?: true; protection?: 'planned_rest' | 'pain'; swaps?: 1; tappedAt?: string };
   quests?: QuestChange[];
   ladders?: Record<string, LadderState>;
   classId?: ClassId;
@@ -50,9 +53,14 @@ export type Change = {
   lightNext?: true;
   /** M7a: the lighter-plan offer is answered (decision 9). */
   lighterPlanAt?: true;
+  /** M7b: the game settings (decision 2). */
+  settings?: { voice: Voice; boundaryMinutes: number; minutesPerDay: number; difficulty: Difficulty };
+  /** M7b: the day number a rest day is planned for (decision 5): always tomorrow. */
+  restDay?: number;
 };
 
-export type Plan = { change: Change } | { code: AdjustCode };
+/** `notice` (M7b decision 7): applied, with a word for the player (a pain report whose day couldn't change any more). */
+export type Plan = { change: Change; notice?: 'pain_late' } | { code: AdjustCode };
 type Found<T> = T | { code: AdjustCode };
 
 const refuse = (code: AdjustCode): Plan => ({ code });
@@ -74,6 +82,23 @@ function questOf(s: Snapshot, instanceId: number, nowMs: number): Found<{ day: D
   const day = dayOf(s, Number(quest.day_id), nowMs);
   if ('code' in day) return day;
   return { day, quest, quests: questsOf(s, day) };
+}
+
+/**
+ * M7b decision 6: the open day with this id, running when the player tapped (`at`, never later than now; now without
+ * one) and reached within 48 hours of its end, as a completion is. A day that has ended is returned with the tap time,
+ * which levelmeup.adjust checks too.
+ */
+function tappedDay(s: Snapshot, dayId: number, at: number | undefined, nowMs: number): Found<{ day: DayRow; tappedAt: string | null }> {
+  const day = s.days.find((d) => Number(d.id) === dayId);
+  if (day === undefined) return { code: 'not_found' };
+  const open = openDay(s);
+  const when = Math.min(at ?? nowMs, nowMs);
+  const ends = day.ends_at.getTime();
+  if (open === null || String(open.id) !== String(day.id) || when < day.starts_at.getTime() || when >= ends || nowMs >= ends + LATE_SYNC_MS) {
+    return { code: 'day_closed' };
+  }
+  return { day, tappedAt: nowMs >= ends ? new Date(when).toISOString() : null };
 }
 
 export function planAdjust(s: Snapshot, event: AdjustEvent, ctx: { nowMs: number; library: QuestLibrary }): Plan {
@@ -115,25 +140,40 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
       };
     }
     case 'plan_rest': {
-      const day = dayOf(s, event.dayId, nowMs);
-      if ('code' in day) return day;
+      const found = tappedDay(s, event.dayId, event.at, nowMs);
+      // Its day had closed (decision 7): the player hears why the rest didn't count.
+      if ('code' in found) return refuse(found.code === 'day_closed' && event.tomorrow !== true ? 'rest_late' : found.code);
+      const { day, tappedAt } = found;
+      if (event.tomorrow === true) {
+        const next = day.day_number + 1;
+        if (s.character.rest_day === next) return refuse('already_protected');
+        if (!restAllowed(restDays(s), next)) return refuse('rest_limit');
+        return { change: { restDay: next } };
+      }
       if (day.protection !== null) return refuse('already_protected');
       if (!restAllowed(restDays(s), day.day_number)) return refuse('rest_limit');
-      return { change: { day: { id: Number(day.id), protection: 'planned_rest' } } };
+      return { change: { day: { id: Number(day.id), protection: 'planned_rest', ...(tappedAt === null ? {} : { tappedAt }) } } };
     }
     case 'pain': {
       // A valid report always rests the exercise (M6b review): even when it syncs after its day ended, or after the quest
-      // was cleared. Only the day itself can no longer change then.
+      // was cleared. Only the day itself can no longer change then, and the phone says so (M7b decision 7).
       const quest = s.instances.find((q) => Number(q.id) === event.instanceId);
       if (quest === undefined) return refuse('not_found');
       const template = findTemplate(library, quest.template_id);
       if (template === undefined || template.exercise === null) return refuse('not_exercise');
       const key = painKey(template);
       const ladders = { [key]: recordPain(ladderMap(s.ladders)[key] ?? newLadder()).state };
-      const day = dayOf(s, Number(quest.day_id), nowMs);
-      if ('code' in day || event.choice === 'pause') return { change: { ladders } };
-      const rest: Plan = { change: day.protection === null ? { ladders, day: { id: Number(day.id), protection: 'pain' } } : { ladders } };
-      if (event.choice === 'rest') return rest;
+      if (event.choice === 'pause') return { change: { ladders } };
+      const found = tappedDay(s, Number(quest.day_id), event.at, nowMs);
+      if ('code' in found) return { change: { ladders }, notice: 'pain_late' };
+      const { day, tappedAt } = found;
+      const rest: Plan = {
+        change: day.protection === null
+          ? { ladders, day: { id: Number(day.id), protection: 'pain', ...(tappedAt === null ? {} : { tappedAt }) } }
+          : { ladders },
+      };
+      // After the day ended only its protection can change (decision 6): gentle movement rests the day instead.
+      if (event.choice === 'rest' || tappedAt !== null) return rest;
       if (quest.completed_at !== null) return { change: { ladders } };
       let option: QuestDraft | null;
       try {
@@ -233,7 +273,12 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
     case 'checkin':
       return planCheckin(s, event, { nowMs, library });
     case 'settings':
-      return refuse('bad_change'); // Task 5
+      // The whole set, every time (decision 2); the voice shows at once, the rest shapes the next day built.
+      return {
+        change: {
+          settings: { voice: event.voice, boundaryMinutes: event.boundaryMinutes, minutesPerDay: event.minutesPerDay, difficulty: event.difficulty },
+        },
+      };
     case 'lighter_plan': {
       // Either answer quiets the offer for 14 days; accepting drops the daily minutes one step (decision 9).
       if (!event.accept) return { change: { lighterPlanAt: true } };
@@ -251,7 +296,7 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
  */
 export function planOfflinePain(
   s: Snapshot,
-  pain: { dayNumber: number; templateId: string; choice: PainChoice },
+  pain: { dayNumber: number; templateId: string; choice: PainChoice; at?: number },
   ctx: { nowMs: number; library: QuestLibrary },
 ): Plan {
   const template = findTemplate(ctx.library, pain.templateId);
@@ -259,7 +304,11 @@ export function planOfflinePain(
   const key = painKey(template);
   const ladders = { [key]: recordPain(ladderMap(s.ladders)[key] ?? newLadder()).state };
   const stored = s.days.find((d) => d.day_number === pain.dayNumber);
-  const day = stored === undefined ? null : dayOf(s, Number(stored.id), ctx.nowMs);
-  if (pain.choice === 'pause' || day === null || 'code' in day || day.protection !== null) return { change: { ladders } };
-  return { change: { ladders, day: { id: Number(day.id), protection: 'pain' } } };
+  // A day the server never stored (a phone clock ahead) has its own notice (clock_ahead); the exercise rests anyway.
+  if (pain.choice === 'pause' || stored === undefined) return { change: { ladders } };
+  const found = tappedDay(s, Number(stored.id), pain.at, ctx.nowMs);
+  if ('code' in found) return { change: { ladders }, notice: 'pain_late' };
+  if (found.day.protection !== null) return { change: { ladders } };
+  const tappedAt = found.tappedAt === null ? {} : { tappedAt: found.tappedAt };
+  return { change: { ladders, day: { id: Number(found.day.id), protection: 'pain', ...tappedAt } } };
 }

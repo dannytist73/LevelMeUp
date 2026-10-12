@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import {
-  levelForXp, newLadder, planWorkout, plannedMoves, questReward, recordPain, sessionCondition, templateById,
+  LATE_SYNC_MS, levelForXp, newLadder, planWorkout, plannedMoves, questReward, recordPain, sessionCondition, templateById,
 } from '../../../packages/rules/src/index.ts';
 import type { PlayerProfile, Rating } from '../../../packages/rules/src/index.ts';
 import { planAdjust, planOfflinePain } from '../../functions/_shared/adjust.ts';
@@ -171,9 +171,10 @@ describe('planning an adjustment (adjust.ts)', () => {
     const ended = manilaDay(2).endsAt;
     const paused = { push: { ...newLadder(1), paused: true } };
     expect(plan(at(), { type: 'hard_day', dayId: 2 }, ended)).toEqual({ code: 'day_closed' });
-    // A report that syncs late (M6b review): the day can't change any more, but the exercise rests.
-    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest' }, ended)).toEqual({ change: { ladders: paused } });
-    expect(plan(at(), { type: 'pain', instanceId: 100, choice: 'gentle' })).toEqual({ change: { ladders: paused } }); // day 1's core
+    // A report that syncs late (M6b review): the day can't change any more, but the exercise rests, and the phone says so (M7b).
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest' }, ended)).toEqual({ change: { ladders: paused }, notice: 'pain_late' });
+    expect(plan(at(), { type: 'pain', instanceId: 100, choice: 'gentle' })).toEqual({ change: { ladders: paused }, notice: 'pain_late' }); // day 1's core
+    expect(plan(at(), { type: 'pain', instanceId: 100, choice: 'pause' })).toEqual({ change: { ladders: paused } });
   });
 
   it('hard day: every open core and side quest in its hard-day version, once', () => {
@@ -263,6 +264,44 @@ describe('planning an adjustment (adjust.ts)', () => {
     expect(plan(at(monk(240)), { type: 'ability', dayId: 2, ability: 'dawn_ritual' })).toEqual({ code: 'ability_not_ready' });
     expect(plan(at(), { type: 'ability', dayId: 2, ability: 'stillness' })).toEqual({ code: 'ability_not_ready' });
     expect(plan(done(at(monk(240)), 'core'), { type: 'ability', dayId: 2, ability: 'stillness' })).toEqual({ code: 'already_completed' });
+  });
+
+  it('settings: all four values, always (M7b decision 2)', () => {
+    const settings = { voice: 'questmaster', boundaryMinutes: 300, minutesPerDay: 40, difficulty: 'hard' } as const;
+    expect(plan(at(), { type: 'settings', ...settings })).toEqual({ change: { settings } });
+  });
+
+  it('rest tomorrow: the next day number, within the limit, once (M7b decision 5)', () => {
+    expect(plan(at(), { type: 'plan_rest', dayId: 2, tomorrow: true })).toEqual({ change: { restDay: 3 } });
+    expect(plan(at({ character: characterRow({ rest_day: 3 }) }), { type: 'plan_rest', dayId: 2, tomorrow: true })).toEqual({ code: 'already_protected' });
+    expect(plan(rested(), { type: 'plan_rest', dayId: 2, tomorrow: true })).toEqual({ code: 'rest_limit' });
+    // A protected today can still plan tomorrow.
+    expect(plan(at({}, { protection: 'pain' }), { type: 'plan_rest', dayId: 2, tomorrow: true })).toEqual({ change: { restDay: 3 } });
+  });
+
+  it('a rest tapped while the day ran protects it after it ended, within 48 hours (M7b decision 6)', () => {
+    const { startsAt, endsAt } = manilaDay(2);
+    const tapped = endsAt - HOUR;
+    expect(plan(at(), { type: 'plan_rest', dayId: 2, at: tapped }, endsAt + HOUR)).toEqual({
+      change: { day: { id: 2, protection: 'planned_rest', tappedAt: new Date(tapped).toISOString() } },
+    });
+    // While the day runs the tap time changes nothing.
+    expect(plan(at(), { type: 'plan_rest', dayId: 2, at: startsAt + HOUR })).toEqual({ change: { day: { id: 2, protection: 'planned_rest' } } });
+    // Too late: tapped after the day ended, before it began, more than 48 hours ago, or without a tap time.
+    for (const [tap, now] of [[endsAt + 1, endsAt + HOUR], [startsAt - 1, endsAt + HOUR], [tapped, endsAt + LATE_SYNC_MS], [undefined, endsAt + HOUR]] as const) {
+      expect(plan(at(), { type: 'plan_rest', dayId: 2, ...(tap === undefined ? {} : { at: tap }) }, now)).toEqual({ code: 'rest_late' });
+    }
+    // A phone clock ahead of the server's counts as now.
+    expect(plan(at(), { type: 'plan_rest', dayId: 2, at: NOW + 5 * HOUR })).toEqual({ change: { day: { id: 2, protection: 'planned_rest' } } });
+  });
+
+  it('pain tapped while the day ran: rest protects it after it ended; gentle movement rests the day instead', () => {
+    const { endsAt } = manilaDay(2);
+    const tapped = new Date(endsAt - HOUR).toISOString();
+    const paused = { push: { ...newLadder(1), paused: true } };
+    const protectedDay = { change: { ladders: paused, day: { id: 2, protection: 'pain', tappedAt: tapped } } };
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest', at: endsAt - HOUR }, endsAt + HOUR)).toEqual(protectedDay);
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'gentle', at: endsAt - HOUR }, endsAt + HOUR)).toEqual(protectedDay);
   });
 });
 
@@ -376,9 +415,17 @@ describe('"I felt pain" about a quest the server rebuilt (M6e review)', () => {
     expect(planOfflinePain(s, pain('push-1', 'gentle'), ctx)).toEqual({ change: { ladders: rested, day: { id: dayTwoId(s), protection: 'pain' } } });
   });
 
-  it('after the day ended, or on a day already protected, only the exercise rests', () => {
-    expect(planOfflinePain(at(), pain('push-1', 'rest'), { ...ctx, nowMs: NOW + 2 * DAY_MS })).toEqual({ change: { ladders: rested } });
+  it('after the day ended, or on a day already protected, only the exercise rests (and an ended day says so, M7b)', () => {
+    expect(planOfflinePain(at(), pain('push-1', 'rest'), { ...ctx, nowMs: NOW + 2 * DAY_MS })).toEqual({ change: { ladders: rested }, notice: 'pain_late' });
     expect(planOfflinePain(at({}, { protection: 'planned_rest' }), pain('push-1', 'rest'), ctx)).toEqual({ change: { ladders: rested } });
+  });
+
+  it('a report tapped while the day ran protects it after it ended (M7b decision 6)', () => {
+    const s = at();
+    const { endsAt } = manilaDay(2);
+    expect(planOfflinePain(s, { ...pain('push-1', 'rest'), at: endsAt - HOUR }, { ...ctx, nowMs: endsAt + HOUR })).toEqual({
+      change: { ladders: rested, day: { id: dayTwoId(s), protection: 'pain', tappedAt: new Date(endsAt - HOUR).toISOString() } },
+    });
   });
 
   it('refuses a quest that is no exercise, or one this content lacks', () => {
