@@ -409,6 +409,16 @@ describe('a planned rest day the app never opened (M7b review)', () => {
     expect(out.streak).toEqual({ current: 1, best: 1, shields: 0, awaitingCheckin: true });
   });
 
+  it('a plan already used up changes nothing: later away days ask as before', () => {
+    const out = planAdvance(afterDay1([], manilaDay(4).startsAt + HOUR, {
+      character: characterRow({ rest_day: 2 }),
+      days: [{ ...dayRow(dayN(2), 2), protection: 'planned_rest' }],
+      instances: instanceRows(dayN(2), 2),
+    }))!;
+    expect(out.gap).toEqual({ from: 3, to: 3 });
+    expect(out.streak.awaitingCheckin).toBe(true);
+  });
+
   it('between days replayed after a check-in, too', () => {
     const out = planAdvance(afterDay1([], manilaDay(5).startsAt + HOUR, {
       character: characterRow({ rest_day: 3 }),

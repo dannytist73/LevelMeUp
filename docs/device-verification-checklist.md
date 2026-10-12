@@ -319,3 +319,4 @@ Emulator unless marked. A fresh test character, deleted at the end with row 8 (w
 | 9 | Delete for a Google-saved character shows the Google line (Find X9, a throwaway saved character, never the owner's). | |
 | 10 | At the largest font, Your game and Delete wrap with nothing cut off. | |
 | 11 | Unit tests only: the sign-in guard (no guest when the storage fails) and the sign-in-lost card in Settings. | |
+| 12 | "Rest tomorrow", then the app stays closed all of that day: the next open shows no check-in and the streak held (Find X9: two real day boundaries). | |

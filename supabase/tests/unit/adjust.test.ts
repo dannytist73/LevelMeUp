@@ -112,6 +112,14 @@ describe('what the phone may offer today (today.ts)', () => {
     expect(dayOffers(yesterday, LIBRARY).restAllowed).toBe(false); // days 1, 2 and 3 would be three in 7
   });
 
+  it('a planned rest day that passed with the app closed still counts in the limit (M7b re-review)', () => {
+    const s = at({ character: characterRow({ rest_day: 2 }) });
+    const [today, day1] = s.days as [DayRow, DayRow];
+    // Day 2 was never stored (rested away); day 1 was a rest day too; today is day 3.
+    const rested = { ...s, days: [{ ...today, day_number: 3 }, { ...day1, protection: 'planned_rest' as const }] };
+    expect(dayOffers(rested, LIBRARY).restAllowed).toBe(false);
+  });
+
   it('a plan for a day already built is spent: it no longer counts ahead', () => {
     const s = at({ character: characterRow({ rest_day: 2 }) }); // day 2 is today: it was built with its own protection
     expect(dayOffers(s, LIBRARY).restTomorrow).toBe(true);

@@ -2477,5 +2477,9 @@ Expected: all pass; `pacing` unchanged (no rules or content numbers changed: War
     the day's end arrives over a few days.
   - Carried forward (roadmap): SQL defense in depth in `adjust`, an outbox over one batch, the calendar mark for an
     unopened rest day, a rest today over the limit behind a pending tomorrow, an old app's generic `rest_late` notice.
+- **Re-review** (c3de457..4ea41cc): ready to deploy, nothing critical or important. Its minor point fixed: a planned rest
+  day that passed with the app closed still counts in the 2-in-7 limit (`restDays` counts a planned day the last 8
+  loaded days don't hold), with a test, and a test that a used-up plan never rests a later away day. Checklist row 12
+  added (a planned rest day with the app closed all day).
 - **Deploy:** pending (the owner's yes given 2026-10-12, after the review fixes).
 - **Emulator:** pending.

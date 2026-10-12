@@ -59,13 +59,15 @@ export function fieldsOf(library: QuestLibrary, draft: QuestDraft): QuestFields 
   return fields;
 }
 
-/** Planned rest days: the stored days rested as planned and (M7b decision 5) tomorrow, when it is planned. */
+/**
+ * Planned rest days: the stored days rested as planned and (M7b decision 5) the day planned ahead: tomorrow, or a planned
+ * day that passed with the app closed (rested, never stored; re-review). A plan for a day that was built is spent: that
+ * day has its own protection. The snapshot holds the last 8 days, so an older plan falls outside every window checked.
+ */
 export function restDays(s: Pick<Snapshot, 'days' | 'character'>): number[] {
   const rested = s.days.filter((d) => d.protection === 'planned_rest').map((d) => d.day_number);
-  const latest = Math.max(0, ...s.days.map((d) => d.day_number));
   const planned = s.character.rest_day;
-  // A plan for a day already built (or passed as an away day) is spent: that day has its own protection.
-  return planned !== null && planned > latest ? [...rested, planned] : rested;
+  return planned !== null && !s.days.some((d) => d.day_number === planned) ? [...rested, planned] : rested;
 }
 
 /** "Too hard" can step this quest's ladder down: it is at the ladder's current rung, above the first, not resting. */
