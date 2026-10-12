@@ -1,5 +1,5 @@
 import {
-  ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, fillText,
+  ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, PLAY_TEXT, fillText,
 } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
@@ -603,6 +603,16 @@ describe('Today after a missed day (M7a)', () => {
     expect(screen.getByText(T.held)).toBeTruthy();
     expect(screen.getByText(T.waiting)).toBeTruthy();
     expect(screen.getByText(`day streak · ${T.streakHeld}`)).toBeTruthy();
+  });
+
+  it('once the recovery quest is cleared, says the day is taken back (emulator finding, M7b)', async () => {
+    const answer = { id: '00000000-0000-4000-8000-0000000000c1', type: 'checkin' as const, checkinId: 7, answer: 'just_didnt' as const, secondWind: false };
+    const view = project(checkinState(), [answer]);
+    const today = view.today!;
+    const recovery = { ...today.quests[0]!, id: 299, slot: 'recovery' as const, completedAt: new Date(DAY_TWO_NOW).toISOString() };
+    await renderToday(testStore({ view: { ...view, answering: false, today: { ...today, quests: [...today.quests, recovery] } } }), DAY_TWO_NOW);
+    expect(screen.getByText(PLAY_TEXT.cleared.recovered)).toBeTruthy();
+    expect(screen.queryByText(T.held)).toBeNull();
   });
 
   it('shows a settled miss once', async () => {

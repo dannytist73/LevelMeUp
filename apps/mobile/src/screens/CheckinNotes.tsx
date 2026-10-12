@@ -1,6 +1,6 @@
 // Today's part of the check-in (M7a, board F3 without the Pact's parts): a settled "I just didn't" once, the question while
 // a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer.
-import { CHECKIN_TEXT, LIGHTER_TEXT, fillText } from '@levelmeup/content';
+import { CHECKIN_TEXT, LIGHTER_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { checkinLead, resultText } from '../game/checkin.ts';
@@ -29,6 +29,8 @@ export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
   const { checkin, checkinResult: result, lighterPlan } = view;
   // Once the answer is in the view the offer is quiet anyway; a later offer (after its 14 days) shows again.
   const offered = lighterPlan?.offered === true;
+  // Once the recovery quest is cleared the streak is safe, and the note says so (emulator finding, M7b).
+  const recovered = view.today?.quests.some((q) => q.slot === 'recovery' && q.completedAt !== null) ?? false;
   useEffect(() => {
     if (!offered) setAnsweredOffer(false);
   }, [offered]);
@@ -52,7 +54,7 @@ export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
       )}
       {checkin !== null && checkin.answer === 'just_didnt' && (
         <View style={{ gap: 8 }}>
-          <NarrationBox>{T.held}</NarrationBox>
+          <NarrationBox>{recovered ? PLAY_TEXT.cleared.recovered : T.held}</NarrationBox>
           {view.answering && <Small tone="chalk">{T.waiting}</Small>}
         </View>
       )}
