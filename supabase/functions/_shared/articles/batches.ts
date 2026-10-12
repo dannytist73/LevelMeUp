@@ -20,10 +20,14 @@ export function claudeBatches(): Batches {
         );
         return batch.id;
       } catch (error) {
-        // An answer with an error status made no batch; without an answer (a timeout, a lost connection) it may have.
-        if (error instanceof Anthropic.APIError && typeof error.status === 'number') {
-          throw new SubmitError(error.status === 429 || error.status >= 500 ? 'busy' : 'refused', clip(`${error.status} ${error.message}`, 200));
+        // Busy (rate limited, overloaded or unavailable) and key problems (401, 403: the owner fixes the key) made no
+        // batch and keep the jobs waiting; another 4xx refuses the request itself. Any other answer (a 500, a gateway's
+        // 502 or 504) or none at all (a timeout, a lost connection) doesn't prove no batch was made (M8a re-review).
+        const status = error instanceof Anthropic.APIError ? error.status : undefined;
+        if (status === 401 || status === 403 || status === 429 || status === 503 || status === 529) {
+          throw new SubmitError('busy', clip(`${status} ${(error as Error).message}`, 200));
         }
+        if (typeof status === 'number' && status >= 400 && status < 500) throw new SubmitError('refused', clip(`${status} ${(error as Error).message}`, 200));
         throw error;
       }
     },

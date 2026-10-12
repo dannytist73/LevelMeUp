@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ARTICLE_TOPICS } from '../../../packages/content/src/index.ts';
 import type { ArticleCluster } from '../../../packages/content/src/index.ts';
-import { BATCH_GIVE_UP_MS, SubmitError, nightOf, tick } from '../../functions/_shared/articles/pipeline.ts';
+import { BATCH_GIVE_UP_MS, BATCH_LOST_MS, SubmitError, nightOf, tick } from '../../functions/_shared/articles/pipeline.ts';
 import type { BatchResult, Batches, Finish, Job, JobSet, JobStatus, Store, StoredArticle, StoredSource } from '../../functions/_shared/articles/pipeline.ts';
 import type { BatchRequest } from '../../functions/_shared/prompts/articles.ts';
 import { BRIEF, articleJson } from './articles-fixtures.ts';
@@ -84,7 +84,11 @@ class FakeBatches implements Batches {
     this.submitted.push({ id, requests, createdAtMs: this.clock });
     return id;
   }
-  async state(id: string) { return { ended: this.ended.has(id), createdAtMs: this.submitted.find((b) => b.id === id)!.createdAtMs }; }
+  unreadable = false;
+  async state(id: string) {
+    if (this.unreadable) throw new Error('404 not_found_error');
+    return { ended: this.ended.has(id), createdAtMs: this.submitted.find((b) => b.id === id)!.createdAtMs };
+  }
   async results(id: string) { return this.ended.get(id) ?? []; }
   async cancel(id: string) { this.cancelled.push(id); }
   /** Ends the last batch with one result per request. */
@@ -313,6 +317,18 @@ describe('tick (architecture §5.2)', () => {
     batches.finishLast(() => ({ type: 'canceled', message: null, error: 'canceled' }));
     await run(NIGHT + BATCH_GIVE_UP_MS + 2 * HOUR);
     expect(store.jobs.map((j) => j.status)).toEqual(['retry', 'retry']);
+  });
+
+  it('gives up a batch the API can no longer show, keeping the estimates (M8a re-review)', async () => {
+    const { store, batches, run } = setup();
+    await run();
+    store.short = 0;
+    batches.unreadable = true;
+    expect(await run(NIGHT + HOUR)).toMatchObject({ errors: 1, retry: 0 });
+    expect(store.job(1).status).toBe('researching');
+    expect(await run(NIGHT + BATCH_LOST_MS + HOUR)).toMatchObject({ errors: 1, retry: 2 });
+    expect(store.job(1)).toMatchObject({ status: 'retry', error: 'the batch can no longer be read' });
+    expect(store.calls.map((c) => c.finish!.costUsd)).toEqual([0.4, 0.4]);
   });
 
   it('treats a paused or cut-off answer as a failure', async () => {

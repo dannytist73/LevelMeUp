@@ -3100,6 +3100,10 @@ stops it." Wait for a clear yes.
   - Writing is submitted before new research, so near the cap a paid-for brief gets the budget first.
   - A brief's sources are only pages a kept fact cites; `article_short_players` counts published articles less the
     ones a player's days hold (cheaper, same answer).
+- **Re-review fixes:** only 429, 503 and 529 (and 401/403, a key problem the owner fixes) count as busy; another 5xx is
+  treated like no answer (it doesn't prove no batch was made). A batch the API still can't show after 48 hours is given
+  up (estimates kept, attempts used). Upper-case domains, single-quoted quotations that start with a number, and feet and
+  inches (6'2", a 6" step: not quotation marks) are handled.
 - **Left as found** (minor): an orphaned `pending` reservation (a tick killed between reserving and moving) holds its
   estimate until the month ends; a tick that dies between claiming a night and queueing it loses that night's new
   jobs; `article_tick_end` doesn't check which tick holds the lease (every move is still guarded by status); research

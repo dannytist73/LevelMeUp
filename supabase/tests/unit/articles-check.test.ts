@@ -106,12 +106,15 @@ describe('checkArticle (spec §4.1 step 3)', () => {
       'no quotations: "don\'t break the chain, ever"');
     expect(checkArticle(withParagraph(`${paragraph(0, 80)} He said “rest is where you grow and never stopped.`), BRIEF)
       .some((p) => p.startsWith('an unclosed quotation mark'))).toBe(true);
-    // Apostrophes are not quotes.
+    expect(checkArticle(withParagraph(`${paragraph(0, 80)} He said '80 percent of success is showing up' once.`), BRIEF)).toContain(
+      'no quotations: "80 percent of success is showing up"');
+    // Apostrophes, decades and feet and inches are not quotes.
     expect(checkArticle(withParagraph(`${paragraph(0, 80)} The athletes' coaches didn't rest in the '90s, and it's fine.`), BRIEF)).toEqual([]);
+    expect(checkArticle(withParagraph(`${paragraph(0, 80)} A 6" step is enough for someone 6'2" tall.`), BRIEF)).toEqual([]);
   });
 
   it('refuses bare domains, emails, reference ranges, emphasis, link syntax, HTML and list markers (M8a review)', () => {
-    for (const bad of ['Visit buy-pills.biz today.', 'Write to coach@example.org now.', 'Studies agree [1, 2].', 'Studies agree [3-4].',
+    for (const bad of ['Visit buy-pills.biz today.', 'Read more at SLEEPFOUNDATION.ORG today.', 'Write to coach@example.org now.', 'Studies agree [1, 2].', 'Studies agree [3-4].',
       'This is *really* key.', 'Read [this](site) first.', 'This is <b>bold</b> here.', 'Some snake_case words here.']) {
       expect(checkArticle(withParagraph(`${paragraph(0, 85)} ${bad}`), BRIEF).some((p) => p.startsWith('no links')), bad).toBe(true);
     }

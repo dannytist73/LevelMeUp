@@ -63,15 +63,17 @@ export function readingMinutes(words: number): number {
 const between = (text: string, min: number, max: number): boolean => text.length >= min && text.length <= max;
 /**
  * Double quotes of any kind, curly single quotes, and straight single quotes that aren't apostrophes: one opens after
- * no letter (not "'90s"), may hold apostrophes ("don't") and closes before no letter.
+ * no letter (not a decade, "'90s"), may hold apostrophes ("don't") and closes before no letter.
  */
-const QUOTED = /["“”„«»]([^"“”„«»]*)["“”„«»]|‘([^‘’]*)’|(?<![\p{L}\p{N}])'(?!\d)((?:[^']|'(?=\p{L}))*)'(?![\p{L}\p{N}])/gu;
+const QUOTED = /["“”„«»]([^"“”„«»]*)["“”„«»]|‘([^‘’]*)’|(?<![\p{L}\p{N}])'(?!\d+s(?![\p{L}\p{N}]))((?:[^']|'(?=\p{L}))*)'(?![\p{L}\p{N}])/gu;
+/** Feet and inches after a number (6'2", a 6" step) are not quotation marks. */
+const MEASURE = /(?<=\d)["'′″]/gu;
 /** A quotation mark left over once the pairs are gone: an unclosed quotation. */
 const OPEN_QUOTE = /["“”„«»‘]/u;
 /** Links, markdown, HTML, reference numbers and list markers (M8a review: the first version let several through). */
 const MARKUP = /https?:\/\/|www\.|[*_`]|##|^#|\]\(|\[\s*\d[\d,\s–-]*\]|<\/?[a-z]|^[-•]\s/imu;
-/** A bare domain or an email address: a name, a dot and a lowercase ending of 2 or more letters (not "e.g."). */
-const DOMAIN = /(?<![\p{L}\p{N}.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9-]+)*\.[a-z]{2,24}(?![\p{L}\p{N}])/u;
+/** A bare domain or an email address: a name, a dot and an ending of 2 or more letters (not "e.g." or "U.S."). */
+const DOMAIN = /(?<![\p{L}\p{N}.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,24}(?![\p{L}\p{N}])/u;
 
 /** Why an article can't be published, or nothing. */
 export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
@@ -102,11 +104,12 @@ export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
   const texts = articleTexts(a);
   for (const t of texts) {
     if (hasBrokenCharacters(t)) problems.push('control characters or half an emoji');
-    for (const m of t.matchAll(QUOTED)) {
+    const prose = t.replace(MEASURE, '');
+    for (const m of prose.matchAll(QUOTED)) {
       const quoted = m[1] ?? m[2] ?? m[3] ?? '';
       if (wordCount(quoted) >= QUOTE_WORDS) problems.push(`no quotations: "${clip(quoted, 40)}"`);
     }
-    if (OPEN_QUOTE.test(t.replace(QUOTED, ''))) problems.push(`an unclosed quotation mark: "${clip(t, 40)}"`);
+    if (OPEN_QUOTE.test(prose.replace(QUOTED, ''))) problems.push(`an unclosed quotation mark: "${clip(t, 40)}"`);
     if (MARKUP.test(t) || DOMAIN.test(t)) problems.push(`no links, markdown or reference numbers: "${clip(t, 40)}"`);
     problems.push(...lintArticle(t));
   }

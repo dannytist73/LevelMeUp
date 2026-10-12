@@ -27,6 +27,8 @@ export const MIN_UNREAD = 14;
 export const BATCH_GIVE_UP_MS = 25 * 60 * 60 * 1000;
 /** A job marked submitted, still without a batch id after this: its submission died midway. */
 export const SUBMIT_STALE_MS = 60 * 60 * 1000;
+/** A batch the API still can't show after this is given up: its jobs keep their estimates and use their attempts. */
+export const BATCH_LOST_MS = 48 * 60 * 60 * 1000;
 
 export type JobStatus = 'queued' | 'researching' | 'researched' | 'writing' | 'retry' | 'done' | 'failed';
 export type Job = {
@@ -153,9 +155,14 @@ async function collect(store: Store, batches: Batches, nowMs: number, report: Ti
       }
       results = new Map((await batches.results(batchId)).map((r) => [r.customId, r]));
     } catch (error) {
-      // The API is unreachable for now: the next tick asks again.
+      // The API can't show the batch now: the next tick asks again, until the batch is given up (M8a re-review).
       report.errors++;
       console.error(`article batch ${batchId}`, error);
+      for (const job of jobs.filter((j) => j.batchId === batchId && inFlight(j) && j.submittedAtMs !== null && nowMs - j.submittedAtMs > BATCH_LOST_MS)) {
+        const lost = 'the batch can no longer be read';
+        if (job.aiCallId !== null) await store.finish(job.aiCallId, { status: 'failed', usage: null, costUsd: ESTIMATE_USD[stepOf(job)], error: lost });
+        await failAttempt(store, job, lost, report);
+      }
       continue;
     }
     for (const job of jobs.filter((j) => j.batchId === batchId && inFlight(j))) {
