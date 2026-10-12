@@ -1,6 +1,8 @@
-import { DIFFICULTY_CHOICES, ONBOARDING_TEXT, PLAY_TEXT, SETTINGS_TEXT, VOICE_NAMES } from '@levelmeup/content';
+import { DIFFICULTY_CHOICES, NOTIFY_TEXT, ONBOARDING_TEXT, PLAY_TEXT, SETTINGS_TEXT, VOICE_NAMES } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
+import { DEFAULT_NOTIFY } from '../src/notify/settings.ts';
+import type { Permission } from '../src/notify/types.ts';
 import { DeleteCharacter } from '../src/screens/DeleteCharacter.tsx';
 import { GameSettings } from '../src/screens/GameSettings.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
@@ -112,5 +114,33 @@ describe('Settings → Account and Game (M7b)', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Yes, start again' }));
     expect(store.getState().startOver).toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: SETTINGS_TEXT.account.delete })).toBeNull();
+  });
+});
+
+describe('Settings → Notifications section (M7d, S1 board)', () => {
+  const show = async (permission: Permission, onNotifications = jest.fn()) => {
+    const store = testStore({ view: project(adjustState(), []), permission, notify: { ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 450 } } });
+    await render(withStore(store,
+      <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} onNotifications={onNotifications} version="0.1.0" deviceZone="Asia/Manila" />));
+    return onNotifications;
+  };
+
+  it('shows the briefing and the evening reminder, and opens the notifications', async () => {
+    const onNotifications = await show('granted');
+    expect(screen.getByText(`${NOTIFY_TEXT.briefing} · 7:30 AM`)).toBeTruthy();
+    expect(screen.getByText(`${NOTIFY_TEXT.evening} · ${NOTIFY_TEXT.off}`)).toBeTruthy();
+    expect(screen.getByText(NOTIFY_TEXT.eveningNote)).toBeTruthy();
+    await fireEvent.press(screen.getByText(NOTIFY_TEXT.open));
+    expect(onNotifications).toHaveBeenCalled();
+  });
+
+  it('says Off until the phone allows them', async () => {
+    await show('ask');
+    expect(screen.getByText(`${NOTIFY_TEXT.briefing} · ${NOTIFY_TEXT.off}`)).toBeTruthy();
+  });
+
+  it("names the phone's settings once they turned notifications off", async () => {
+    await show('denied');
+    expect(screen.getByText(`${NOTIFY_TEXT.briefing} · ${NOTIFY_TEXT.blocked}`)).toBeTruthy();
   });
 });
