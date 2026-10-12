@@ -188,7 +188,9 @@ last line of defence.
   reset. `levelmeup.advance` (migration 0011) writes the applied days, the opened check-ins, the settled one,
   Unbreakable's use and the used-up light day.
 - The phone always sends its queued events **before** asking for check-ins, so an offline completion is never
-  mistaken for a miss. Offline completions are accepted until `ends_at + 48 h`.
+  mistaken for a miss. Offline completions are accepted until `ends_at + 48 h`. M7a: `lmu-sync` applies a batch's
+  check-in answers after its other events (`applyOrder`), since an answer closes the days that have ended first; the
+  phone builds an offline day without the answers still on their way (`offlineView`), as the server will.
 - Days the player never opened the app on are "away" days, covered by one gap check-in (spec §2.4).
 
 ### 4.4 Authentication

@@ -51,6 +51,18 @@ describe('the check-in screen (board F1)', () => {
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin', checkinId: 7, answer: 'just_didnt', secondWind: true });
   });
 
+  it('switching answers starts the follow-up again; no Second Wind unless the server offers it', async () => {
+    const { store } = await open();
+    await fireEvent.press(screen.getByText(T.answers.sick_or_injured.label));
+    await fireEvent.press(screen.getByText(T.injured));
+    await fireEvent.press(screen.getByText(T.answers.just_didnt.label));
+    expect(screen.queryByText(T.which)).toBeNull();
+    expect(screen.queryByText(T.how)).toBeNull();
+    await fireEvent.press(screen.getByText(T.answers.sick_or_injured.label));
+    await fireEvent.press(screen.getByText(T.answer));
+    expect(store.getState().enqueue).not.toHaveBeenCalled(); // "which" was asked again
+  });
+
   it('"Answer later" puts it off and goes back', async () => {
     const { store, onDone } = await open();
     await fireEvent.press(screen.getByText(T.later));

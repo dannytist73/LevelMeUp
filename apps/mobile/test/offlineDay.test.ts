@@ -7,10 +7,10 @@ import {
   DAY1, DAY_TWO_SLOTS, afterDay1, characterRow, dayTwoSnapshot, historyOf, ladderRows,
 } from '../../../supabase/tests/unit/fixtures.ts';
 import type { CharacterRow } from '../../../supabase/functions/_shared/state.ts';
-import { offlineDay } from '../src/game/offlineDay.ts';
+import { offlineDay, offlineView } from '../src/game/offlineDay.ts';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
-import { completeEvent, serverState } from './support/fixtures.ts';
+import { checkinState, completeEvent, serverState } from './support/fixtures.ts';
 
 const END = Date.parse(DAY1.endsAt);
 const HOUR = 3_600_000;
@@ -88,5 +88,17 @@ describe('a light day after a check-in answer (M7a decision 6)', () => {
     expect(quests(event)).toEqual(quests(server));
     const plain = serverState();
     expect(offlineDay(plain, project(plain, []), END + HOUR, 'Asia/Manila')!.light).toBe(false);
+  });
+});
+
+describe('a check-in answer still on its way (M7a review)', () => {
+  it('leaves the offline day as the server will store it: the server applies the answer after the day closes', () => {
+    const s = checkinState();
+    const end = Date.parse(s.today!.endsAt!);
+    const sick: PhoneEvent = { id: '00000000-0000-4000-8000-0000000000c1', type: 'checkin', checkinId: 7, answer: 'sick', secondWind: false };
+    expect(offlineDay(s, project(s, [sick]), end + HOUR, 'Asia/Manila')!.light).toBe(true); // what the screen shows
+    const event = offlineDay(s, offlineView(s, [sick]), end + HOUR, 'Asia/Manila')!;
+    expect(event.light).toBe(false);
+    expect(event).toEqual(offlineDay(s, project(s, []), end + HOUR, 'Asia/Manila'));
   });
 });

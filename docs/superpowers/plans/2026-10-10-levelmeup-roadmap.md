@@ -157,6 +157,8 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M7c | Consequences on an unrecovered "I just didn't" (`decideConsequence`, the opted-in levels), the "what got in the way?" note and the Shadow. |
 | M9 | The check-in in the pilot: which answers players choose, how often the recovery quest is cleared, and how often the lighter plan is offered and taken. |
 | Later | The lighter-plan offer counts a day check-in as one protected day, even when missed days right after it shared it (M7a review). |
+| Later | A check-in answered offline whose day ends before the sync takes effect a day later: the server applies it after closing that day (an injury's rest, a light day and fewer minutes then start with the day after). |
+| Later | Notices name a quest for `not_found` and an ability for `already_applied`; for a check-in answer (a check-in answered on another phone more than 14 days ago, or a recovery quest already added) the words don't fit. Board F3 lists the recovery quest first and board F1 heads the check-in with "DAY · date / STREAK n · PAUSED"; Today keeps slot order and the check-in screen starts with the question (M7a review). |
 | Later | "Injured" rests the missed day's exercise from the next day built; a quest of that exercise already on today's list stays, with its "I felt pain" button (rest or gentle movement) (M7a review). |
 
 ## Spikes and where they run

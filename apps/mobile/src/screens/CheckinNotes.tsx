@@ -1,6 +1,7 @@
 // Today's part of the check-in (M7a, board F3 without the Pact's parts): a settled "I just didn't" once, the question while
 // a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer.
 import { CHECKIN_TEXT, LIGHTER_TEXT, fillText } from '@levelmeup/content';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { checkinLead, resultText } from '../game/checkin.ts';
 import type { Shown } from '../game/project.ts';
@@ -19,6 +20,12 @@ export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
   const answerLater = useGame((s) => s.answerLater);
   const seen = useGame((s) => s.checkinResultSeen);
   const dismissResult = useGame((s) => s.dismissCheckinResult);
+  // The offer goes at the first tap: a second accept would drop the minutes another step (review).
+  const [answeredOffer, setAnsweredOffer] = useState(false);
+  const answerOffer = (accept: boolean) => {
+    setAnsweredOffer(true);
+    void enqueue({ type: 'lighter_plan', accept });
+  };
   const { checkin, checkinResult: result, lighterPlan } = view;
   return (
     <>
@@ -44,11 +51,11 @@ export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
           {view.answering && <Small tone="chalk">{T.waiting}</Small>}
         </View>
       )}
-      {lighterPlan !== null && lighterPlan.offered && (
+      {lighterPlan !== null && lighterPlan.offered && !answeredOffer && (
         <View style={{ gap: 8 }}>
           <NarrationBox>{fillText(LIGHTER_TEXT.offer, { from: lighterPlan.from, to: lighterPlan.to })}</NarrationBox>
-          <Button label={LIGHTER_TEXT.accept} onPress={() => void enqueue({ type: 'lighter_plan', accept: true })} />
-          <Button label={LIGHTER_TEXT.decline} variant="secondary" onPress={() => void enqueue({ type: 'lighter_plan', accept: false })} />
+          <Button label={LIGHTER_TEXT.accept} onPress={() => answerOffer(true)} />
+          <Button label={LIGHTER_TEXT.decline} variant="secondary" onPress={() => answerOffer(false)} />
         </View>
       )}
     </>

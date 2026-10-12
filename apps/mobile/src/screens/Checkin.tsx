@@ -50,7 +50,8 @@ export function Checkin({ onDone }: CheckinProps) {
 
   const missed = checkin.core === null ? undefined : findTemplate(LIBRARY, checkin.core);
   const restsExercise = missed !== undefined && missed.exercise !== null;
-  const redo = checkin.secondWind;
+  // Second Wind redoes yesterday's core quest on the server's day; a day built offline isn't that day yet (review).
+  const redo = view.offline ? null : checkin.secondWind;
   const answer: CheckinAnswer | null =
     choice === null ? null
       : choice === 'sick_or_injured' ? (injured === null ? null : injured ? 'injured' : 'sick')
@@ -65,7 +66,7 @@ export function Checkin({ onDone }: CheckinProps) {
     setBusy(true);
     leave();
     try {
-      await enqueue({ type: 'checkin', checkinId: checkin.id, answer, secondWind: answer === 'just_didnt' && secondWind });
+      await enqueue({ type: 'checkin', checkinId: checkin.id, answer, secondWind: answer === 'just_didnt' && secondWind && redo !== null });
     } catch {
       stay();
       setBusy(false);

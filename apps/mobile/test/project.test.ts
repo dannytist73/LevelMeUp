@@ -270,3 +270,11 @@ describe('the check-in on its way (M7a decision 10)', () => {
     expect(project(checkinState(), [checkin('sick', 8)]).checkin).toMatchObject({ id: 7, answer: null });
   });
 });
+
+describe('a state from a server before M7a (review)', () => {
+  it('shows no check-in, result or lighter plan rather than failing', () => {
+    const { checkin: _c, checkinResult: _r, lighterPlan: _l, ...older } = serverState();
+    const shown = project(older as ServerState, []);
+    expect([shown.checkin, shown.checkinResult, shown.lighterPlan]).toEqual([null, null, null]);
+  });
+});

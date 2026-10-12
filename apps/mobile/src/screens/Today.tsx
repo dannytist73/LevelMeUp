@@ -174,10 +174,10 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
               </View>
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
                 <Icon name="flame" size={18} color={colors.ember} />
                 <Heading tone="ember">{String(view.character.streak.current)}</Heading>
-                <Small tone="chalk">{note === null ? 'day streak' : `day streak · ${note}`}</Small>
+                <Small tone="chalk" style={{ flexShrink: 1 }}>{note === null ? 'day streak' : `day streak · ${note}`}</Small>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Icon name="shield" size={18} />

@@ -621,5 +621,6 @@ describe('Today after a missed day (M7a)', () => {
     expect(screen.getByText(fillText(LIGHTER_TEXT.offer, { from: 25, to: 15 }))).toBeTruthy();
     await fireEvent.press(screen.getByText(LIGHTER_TEXT.decline));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'lighter_plan', accept: false });
+    expect(screen.queryByText(LIGHTER_TEXT.accept)).toBeNull(); // gone at the first tap: no second step down (review)
   });
 });

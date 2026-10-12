@@ -18,7 +18,7 @@ import type { SessionState } from '../auth/session.ts';
 import type { Blobs } from '../auth/sessionStorage.ts';
 import type { Cached, Local } from '../data/local.ts';
 import { carriedTimers, withRef } from '../game/offline.ts';
-import { offlineDay } from '../game/offlineDay.ts';
+import { offlineDay, offlineView } from '../game/offlineDay.ts';
 import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
 import type { PhoneEvent, Reveal } from '../game/types.ts';
@@ -194,9 +194,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
      * is asked for; the scheduler's back-off keeps trying (decision 10).
      */
     const buildOffline = async (): Promise<void> => {
-      const { cached, view } = get();
-      if (cached === null || view === null) return;
-      const event = offlineDay(cached.state, view, deps.now(), deps.timeZone());
+      const { cached, pending } = get();
+      if (cached === null) return;
+      const event = offlineDay(cached.state, offlineView(cached.state, pending), deps.now(), deps.timeZone());
       if (event === null) return;
       await deps.local.enqueue({ ...event, id: deps.newId() }, deps.now());
       await refresh();

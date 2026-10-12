@@ -72,8 +72,9 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   let today: TodayView | null = server.today === null ? null : { ...server.today, quests: server.today.quests.map((q) => ({ ...q })) };
   let quests = today?.quests ?? [];
   let offline = false;
-  let checkin = server.checkin;
-  let lighterPlan = server.lighterPlan;
+  // A state from a server before M7a has none of these (review): nothing shows rather than Today failing.
+  let checkin = server.checkin ?? null;
+  let lighterPlan = server.lighterPlan ?? null;
   let answering = false;
   const ladderChanges: PendingLadder[] = [];
   const waiting = new Set<number>();
@@ -223,6 +224,6 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   }
   return {
     ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline, ladderChanges, checkin, lighterPlan,
-    answering,
+    checkinResult: server.checkinResult ?? null, answering,
   };
 }

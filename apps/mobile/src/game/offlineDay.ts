@@ -7,9 +7,9 @@ import {
   reenterLadders, resumeAfterPain, stepDown,
 } from '@levelmeup/rules';
 import type { LadderState, PastDay, PlayerProfile, TrainableStat, XpByStat } from '@levelmeup/rules';
-import { addStatXp } from './project.ts';
+import { addStatXp, project } from './project.ts';
 import type { Shown } from './project.ts';
-import type { CharacterView, ProvisionalDayEvent, ServerState, TodayView } from './types.ts';
+import type { CharacterView, PhoneEvent, ProvisionalDayEvent, ServerState, TodayView } from './types.ts';
 
 /** The rules' view of the player, from what the phone shows. */
 export function rulesProfile(profile: ServerState['profile'], character: CharacterView): PlayerProfile {
@@ -31,6 +31,15 @@ export function rulesProfile(profile: ServerState['profile'], character: Charact
 
 const sessionsDone = (today: TodayView | null): number =>
   (today?.quests ?? []).filter((q) => q.condition.kind === 'session' && q.completedAt !== null).length;
+
+/**
+ * What the offline day is built from: the cached state with the unsent events, except check-in answers. The server
+ * applies those after the batch's other events, so after the ended day closes and the offline day is stored (M7a
+ * review): a light day, a rested exercise or fewer minutes from an answer still on its way come the day after.
+ */
+export function offlineView(server: ServerState, pending: readonly PhoneEvent[]): Shown {
+  return project(server, pending.filter((e) => e.type !== 'checkin'));
+}
 
 /**
  * The `provisional_day` for the day after the one on screen, or null: it hasn't ended, an offline day is already shown
