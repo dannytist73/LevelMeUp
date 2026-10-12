@@ -3,6 +3,7 @@
 import type postgres from 'npm:postgres@3.4.9';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { REVEAL_MODEL, claudeConfigured, writeReveal } from '../_shared/claude.ts';
+import { ESTIMATE_USD, MONTHLY_CAP_USD, costUsd } from '../_shared/costs.ts';
 import { db, hasActed, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../_shared/onboarding.ts';
@@ -19,16 +20,20 @@ async function reveal(userId: string, choices: Choices): Promise<Reveal> {
   if (!claudeConfigured()) return fallback;
   let callId: string;
   try {
-    callId = one(await db()<{ id: string }[]>`select levelmeup.reserve_ai_call(${userId}::uuid, 'onboarding', ${REVEAL_MODEL}, ${AI_CAP}) as id`).id;
+    callId = one(await db()<{ id: string }[]>`select levelmeup.reserve_ai_spend(${userId}::uuid, 'onboarding', ${REVEAL_MODEL},
+      ${ESTIMATE_USD.reveal}::numeric, ${MONTHLY_CAP_USD}::numeric, ${AI_CAP}::int, null::bigint) as id`).id;
   } catch (error) {
-    if (lmuCode(error) === 'ai_cap') return fallback;
+    // Over the player's three calls or the month's budget (M8a decision 7): the template reveal, as when Claude is off.
+    const code = lmuCode(error);
+    if (code === 'ai_cap' || code === 'ai_budget') return fallback;
     throw error;
   }
   const call = await writeReveal(revealFacts(choices));
   const parsed = 'value' in call ? parseReveal(call.value) : null;
   const status = parsed !== null ? 'ok' : 'error' in call ? 'failed' : 'fallback';
+  const cost = 'value' in call ? costUsd(REVEAL_MODEL, { input_tokens: call.inputTokens, output_tokens: call.outputTokens }, false) : 0;
   await db()`select levelmeup.finish_ai_call(${callId}::bigint, ${status}, ${'value' in call ? call.inputTokens : null}::int,
-    ${'value' in call ? call.outputTokens : null}::int, null, ${'error' in call ? call.error : parsed === null ? 'invalid reveal' : null})`;
+    ${'value' in call ? call.outputTokens : null}::int, ${cost}::numeric, ${'error' in call ? call.error : parsed === null ? 'invalid reveal' : null})`;
   return parsed ?? fallback;
 }
 
