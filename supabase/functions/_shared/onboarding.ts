@@ -2,8 +2,8 @@
 // number from the answers, here on the server (M5: the phone no longer sends a class or estimates, only its own pick on
 // the reveal); Claude (when configured) only writes the reveal's words, validated like any untrusted input.
 import {
-  CLASSES, EQUIPMENT, GOALS, HABITS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, PROGRAM_STYLES, SAFETY_QUESTIONS, STATS, TRAINABLE_STATS,
-  TRAININGS,
+  CLASSES, DIFFICULTIES, EQUIPMENT, GOALS, HABITS, LIMITATIONS, MAX_GOALS, MINUTES_OPTIONS, PROGRAM_STYLES, SAFETY_QUESTIONS, STATS,
+  TRAINABLE_STATS, TRAININGS,
   buildDay, canonicalTimeZone, firstDayWindow, isValidTimeZone, onboardingEstimates, startingLadders, startingStats,
   suggestedClass,
 } from '../../../packages/rules/src/index.ts';
@@ -69,7 +69,6 @@ export type Choices = {
 
 export type Reveal = { narrative: string; strengths: string[]; growth: string[]; source: 'claude' | 'template' };
 
-export const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
 const CONTROL = /[\p{Cc}\p{Cf}]/u;
 
 /** The onboarding body, validated field by field against the rules' own constants; the numbers are computed here. */

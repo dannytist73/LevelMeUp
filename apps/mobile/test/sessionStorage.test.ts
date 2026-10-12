@@ -110,4 +110,14 @@ describe('the sign-in guard (M7b decision 8)', () => {
     expect(await storageWorks(broken, 'x')).toBe(false);
     expect(await storageWorks(makeSessionStorage(f.vault, f.store, f.cipher), 'x')).toBe(true);
   });
+
+  it('a key the vault does not keep fails the check when read back through a fresh storage (review)', async () => {
+    const f = fakes();
+    const forgetful: Vault = { get: async () => null, set: async () => {} };
+    const write = makeSessionStorage(forgetful, f.store, f.cipher);
+    // The writing storage holds the key in memory, so reading back through it alone can't tell.
+    expect(await storageWorks(write, 'x')).toBe(true);
+    expect(await storageWorks(write, 'x', makeSessionStorage(forgetful, f.store, f.cipher))).toBe(false);
+    expect(await storageWorks(makeSessionStorage(f.vault, f.store, f.cipher), 'x', makeSessionStorage(f.vault, f.store, f.cipher))).toBe(true);
+  });
 });

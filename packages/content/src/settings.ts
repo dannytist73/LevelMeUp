@@ -11,7 +11,9 @@ export const SETTINGS_TEXT = {
     dayEndNote: 'Pick a time you are usually asleep, so a day never ends in the middle of your evening.',
     minutes: 'Minutes a day',
     difficulty: 'Difficulty',
-    when: 'The voice changes at once. The rest applies from your next quest day.',
+    when:
+      'The voice changes at once. The rest applies from your next quest day; a big change to when your day ends arrives ' +
+      'over a few days.',
     save: 'Save',
   },
   account: {

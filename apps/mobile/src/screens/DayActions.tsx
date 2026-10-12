@@ -1,7 +1,8 @@
 // Today's adjustments (spec §2.5, §3.3–3.5; board D1's "Swap · 1 left" and "Hard day"; M6b decisions 3–11): what kind
 // of day it is; swap, hard day, a rest day, the Monk's Stillness and Dawn Ritual and the Rogue's Vanish, each behind a
 // plain confirm; and the exercises resting after pain, with Resume. The server decides what is offered (the state view),
-// so nothing here asks for a change it would refuse. M7b: Rest tomorrow, and its banner.
+// so nothing here asks for a change it would refuse, except a rest today after a rest tomorrow still waiting to sync,
+// which the server may refuse over the limit (its notice says so). M7b: Rest tomorrow, and its banner.
 import { ABILITY_NAMES, ADJUST_TEXT, LIGHTER_TEXT, OFFLINE_TEXT, fillText, pausedName } from '@levelmeup/content';
 import { abilityUnlocked } from '@levelmeup/rules';
 import { useState } from 'react';

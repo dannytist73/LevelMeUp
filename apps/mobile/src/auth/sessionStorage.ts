@@ -55,12 +55,13 @@ const PROBE = 'lmu.storage-probe';
 /**
  * M7b decision 8, the sign-in guard (roadmap, "Carried forward from M4"): before a new guest signs in, a value goes
  * through the sealed storage and must come back. If it doesn't, the guest would be lost at the next launch (the M4
- * device check saw a guest made every launch), so none is made.
+ * device check saw a guest made every launch), so none is made. `readBack` is a fresh storage over the same vault (code
+ * review): it reads the key from the vault, as the next launch will, so a key the vault didn't keep fails too.
  */
-export async function storageWorks(store: Blobs, value: string): Promise<boolean> {
+export async function storageWorks(store: Blobs, value: string, readBack: Blobs = store): Promise<boolean> {
   try {
     await store.setItem(PROBE, value);
-    const back = await store.getItem(PROBE);
+    const back = await readBack.getItem(PROBE);
     await store.removeItem(PROBE);
     return back === value;
   } catch {

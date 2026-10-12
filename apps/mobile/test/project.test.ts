@@ -294,6 +294,11 @@ describe('Settings and rest days (M7b)', () => {
     expect(shown.today).toMatchObject({ restTomorrow: false, protection: null });
   });
 
+  it("a rest today waiting to sync hides tomorrow's until the server answers: both count in the limit (review)", () => {
+    const shown = project(adjustState(), [ev({ type: 'plan_rest', dayId: 2 })]);
+    expect(shown.today).toMatchObject({ protection: 'planned_rest', restTomorrow: false });
+  });
+
   it('a day built offline that was planned as rest shows as one', () => {
     const shown = project(serverState([], { rest_day: 2 }), [offlineEvent()]);
     expect(shown.offline).toBe(true);

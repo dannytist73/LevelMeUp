@@ -3,7 +3,7 @@
 // quest day. The minutes keep onboarding's notes (M2 review, M6c) for the player's own setup.
 import { DIFFICULTY_CHOICES, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, SETTINGS_TEXT, VOICES, VOICE_NAMES, VOICE_SAMPLES } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
-import { MINUTES_OPTIONS, strengthClosed, workoutsFit } from '@levelmeup/rules';
+import { DIFFICULTIES, MINUTES_OPTIONS, strengthClosed, workoutsFit } from '@levelmeup/rules';
 import type { Difficulty } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -22,9 +22,10 @@ import { useLeavingView } from './leaving.ts';
 
 const T = SETTINGS_TEXT.game;
 const R = ONBOARDING_TEXT.rhythm;
-const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
 
 type Picked = { voice: Voice; boundaryMinutes: number; minutesPerDay: number; difficulty: Difficulty };
+/** The day's end on the stepper's half-hour grid: the server takes only whole half hours, a profile may hold any minute. */
+const onGrid = (minutes: number): number => (Math.round(minutes / 30) * 30) % (24 * 60);
 const KEYS: readonly (keyof Picked)[] = ['voice', 'boundaryMinutes', 'minutesPerDay', 'difficulty'];
 
 export type GameSettingsProps = { onDone: () => void; onBack: () => void };
@@ -45,8 +46,10 @@ export function GameSettings({ onDone, onBack }: GameSettingsProps) {
     );
   }
   const p = view.profile;
-  const picked: Picked = { voice: p.voice, boundaryMinutes: p.boundaryMinutes, minutesPerDay: p.minutesPerDay, difficulty: p.difficulty, ...edits };
-  const changed = KEYS.some((k) => picked[k] !== p[k]);
+  // A day's end off the grid starts at the nearest half hour (review), so a save is never refused for it.
+  const saved: Picked = { voice: p.voice, boundaryMinutes: onGrid(p.boundaryMinutes), minutesPerDay: p.minutesPerDay, difficulty: p.difficulty };
+  const picked: Picked = { ...saved, ...edits };
+  const changed = KEYS.some((k) => picked[k] !== saved[k]);
   const player = { ...rulesProfile(p, view.character), minutesPerDay: picked.minutesPerDay };
   const noStrength = p.ownProgram && !p.gentleStart && strengthClosed(LIBRARY, player);
   const noWorkouts = !p.ownProgram && !p.gentleStart && !workoutsFit(LIBRARY, player);

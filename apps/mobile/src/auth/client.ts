@@ -30,6 +30,8 @@ installWebCrypto(globalThis as { crypto?: Crypto }, {
 
 /** The sealed storage the client keeps its session in; the sign-in guard checks it before a new guest (M7b). */
 export const sessionStore = makeSessionStorage(vault, kvStore, expoCipher);
+/** Another storage over the same vault, which reads the key from it as the next launch will (the guard's read-back). */
+export const freshSessionStore = () => makeSessionStorage(vault, kvStore, expoCipher);
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   global: { fetch: timedFetch(REQUEST_TIMEOUT_MS) },

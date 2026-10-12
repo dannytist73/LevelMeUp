@@ -180,7 +180,11 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         if (event.tomorrow === true) {
           character = { ...character, restDay: today.dayNumber + 1 };
           today.restTomorrow = false;
-        } else if (today.protection === null) today.protection = 'planned_rest';
+        } else if (today.protection === null) {
+          today.protection = 'planned_rest';
+          // Both rests count in the 2-in-7 limit: tomorrow's offer waits for the server's answer (review).
+          today.restTomorrow = false;
+        }
       } else if (event.type === 'hard_day') {
         if (today.hardDay) continue;
         today.hardDay = true;

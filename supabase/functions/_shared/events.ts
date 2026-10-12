@@ -4,7 +4,7 @@
 // M7b the game settings and the tap time on a rest or pain report; the rest arrive with the milestones whose screens send
 // them, and until then are rejected without touching anything.
 import {
-  CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, EQUIPMENT, MINUTES_OPTIONS, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone,
+  CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, DIFFICULTIES, EQUIPMENT, MINUTES_OPTIONS, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone,
   isWhyReason, questTimerDone, sessionSets,
 } from '../../../packages/rules/src/index.ts';
 import type {
@@ -15,7 +15,6 @@ import type { Voice } from '../../../packages/content/src/index.ts';
 import { isObject, problem, UUID } from './http.ts';
 import type { Problem } from './http.ts';
 import type { DayRow, InstanceRow } from './state.ts';
-import { DIFFICULTIES } from './onboarding.ts';
 
 export const MAX_EVENTS = 50;
 const RATINGS: readonly Rating[] = ['easy', 'right', 'too_hard'];

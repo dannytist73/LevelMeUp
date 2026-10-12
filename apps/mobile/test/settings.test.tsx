@@ -4,7 +4,7 @@ import { project } from '../src/game/project.ts';
 import { DeleteCharacter } from '../src/screens/DeleteCharacter.tsx';
 import { GameSettings } from '../src/screens/GameSettings.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
-import { adjustState } from './support/fixtures.ts';
+import { adjustState, profileRow } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const G = SETTINGS_TEXT.game;
@@ -26,6 +26,16 @@ describe('Your game (M7b decision 2)', () => {
       type: 'settings', voice: 'questmaster', boundaryMinutes: (view.profile.boundaryMinutes + 30) % 1440, minutesPerDay: 40, difficulty: 'hard',
     });
     expect(onDone).toHaveBeenCalled();
+  });
+
+  it('a day end off the half hour starts at the nearest one, so a save is never refused (review)', async () => {
+    const view = project(adjustState({ profile: profileRow(undefined, { boundary_minutes: 255 }) }), []);
+    const store = testStore({ view });
+    await render(withStore(store, <GameSettings onDone={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByRole('button', { name: G.save }).props.accessibilityState).toMatchObject({ disabled: true });
+    await fireEvent.press(screen.getByText(VOICE_NAMES.questmaster));
+    await fireEvent.press(screen.getByRole('button', { name: G.save }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith(expect.objectContaining({ voice: 'questmaster', boundaryMinutes: 270 }));
   });
 
   it('at 10 minutes says workouts need 25, as onboarding does', async () => {

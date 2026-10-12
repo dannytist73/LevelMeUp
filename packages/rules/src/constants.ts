@@ -83,6 +83,8 @@ export const MAX_GOALS = 2;
 export const LIMITATIONS: readonly Limitation[] = ['knee', 'back', 'shoulder', 'wrist'];
 /** The minutes a day a player can choose (onboarding board 5). */
 export const MINUTES_OPTIONS: readonly number[] = [10, 15, 25, 40];
+/** The difficulties a player can choose (onboarding, Settings → Your game). */
+export const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
 /** Minutes kept free for each side quest; the library always has quests this short. */
 export const MIN_SIDE_MINUTES = 2;
 /** The budget on light days: day 1, the first day back after time away, the day after a sick or injured check-in. */
