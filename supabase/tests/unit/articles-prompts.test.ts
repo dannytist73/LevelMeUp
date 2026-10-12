@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import { ARTICLE_SHAMING, ROBOTIC_PHRASES } from '../../../packages/content/src/index.ts';
+import { ARTICLE_MODEL, ARTICLE_SCHEMA, MAX_SEARCHES, customId, researchRequest, writeRequest } from '../../functions/_shared/prompts/articles.ts';
+import { HOUSE_STYLE } from '../../functions/_shared/prompts/style.ts';
+import { BRIEF } from './articles-fixtures.ts';
+
+const JOB = { id: 12, attempt: 1, cluster: 'sleep' as const, topic: 'How sleep cycles work' };
+
+/** Every object in a JSON schema, depth first. */
+function objects(schema: unknown): Record<string, unknown>[] {
+  if (typeof schema !== 'object' || schema === null) return [];
+  const node = schema as Record<string, unknown>;
+  const children = Object.values(node).flatMap((v) => (Array.isArray(v) ? v.flatMap(objects) : objects(v)));
+  return node.type === 'object' ? [node, ...children] : children;
+}
+
+describe('the two batch requests (architecture §5.2)', () => {
+  it('names each request by job, attempt and step, within the API\'s custom id rules', () => {
+    expect(customId(12, 2, 'write')).toBe('job-12-2-write');
+    expect(customId(12, 2, 'write')).toMatch(/^[a-zA-Z0-9_-]{1,64}$/);
+  });
+
+  it('researches with web search, capped, as plain text (citations need it)', () => {
+    const r = researchRequest(JOB);
+    expect(r.custom_id).toBe('job-12-1-research');
+    expect(r.params.model).toBe(ARTICLE_MODEL);
+    expect(r.params.tools).toEqual([{ type: 'web_search_20250305', name: 'web_search', max_uses: MAX_SEARCHES }]);
+    expect(MAX_SEARCHES).toBe(5);
+    expect(r.params.output_config).toEqual({ effort: 'medium' });
+    expect(JSON.stringify(r.params.messages)).toContain('How sleep cycles work');
+  });
+
+  it('writes as structured output from the brief, without tools or the pages\' addresses', () => {
+    const w = writeRequest(JOB, BRIEF);
+    expect(w.custom_id).toBe('job-12-1-write');
+    expect(w.params.tools).toBeUndefined();
+    expect(w.params.output_config).toEqual({ effort: 'medium', format: { type: 'json_schema', schema: ARTICLE_SCHEMA } });
+    const message = JSON.stringify(w.params.messages);
+    expect(message).toContain('Sleep cycles');
+    expect(message).toContain('Fact 1 about sleep and training.');
+    expect(message).not.toContain('https://');
+  });
+
+  it('has a schema the API accepts: every object closed, every property required', () => {
+    for (const node of objects(ARTICLE_SCHEMA)) {
+      expect(node.additionalProperties).toBe(false);
+      expect([...(node.required as string[])].sort()).toEqual(Object.keys(node.properties as object).sort());
+    }
+  });
+
+  it('gives the writer every banned phrase in the house style', () => {
+    for (const phrase of [...ROBOTIC_PHRASES, ...ARTICLE_SHAMING]) expect(HOUSE_STYLE).toContain(phrase);
+    expect(writeRequest(JOB, BRIEF).params.system).toContain(HOUSE_STYLE);
+  });
+});
