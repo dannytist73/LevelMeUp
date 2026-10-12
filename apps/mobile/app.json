@@ -31,7 +31,14 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#F0765E"
+        }
+      ]
     ],
     "android": {
       "package": "com.dannytist.levelmeup",
