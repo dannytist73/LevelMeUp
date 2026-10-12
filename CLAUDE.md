@@ -28,6 +28,10 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
   `config push`, `db reset`, `migration repair` or `functions deploy --prune`. Commands (details in
   `supabase/README.md`): `npm run db:deploy` (migrations), `npm run db:test` (pgTAP, always rolled back),
   `npm run deploy:functions`, `npm run test:live` (temporary players, always deleted), `npm run check:functions`.
+  `npm run articles -- …` (M8a): the article pipeline's owner commands; `setup`, `tick`, `evergreen`,
+  `publish`/`reject` and `cron on|off` change the live project or spend money, so they need the owner's yes. Claude
+  calls go through `_shared/claude.ts` and `_shared/articles/batches.ts` only, and every one is reserved against the
+  monthly budget first.
 - **The app** is `apps/mobile` (since M4; details in `apps/mobile/README.md`). `npm run app` starts Metro for the
   development build (`--tunnel`); `npm run check:bundle` fails if a secret is in the app bundle; EAS builds run in the
   cloud with `npx eas-cli@latest build --platform android --profile development` from `apps/mobile` (never Expo Go,

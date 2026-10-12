@@ -92,6 +92,7 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
 | `articles` | cluster, title, summary, sections, takeaways, reflection question, minutes, status, evergreen flag | read where status = published; server-only |
 | `article_sources` | article id, index, url, title | read for published articles; server-only |
 | `article_jobs` | the nightly pipeline's state machine (§5.2) | none |
+| `article_pipeline` | one row: the tick's lease and the last night queued (M8a) | none |
 | `ai_generations` | every Claude call: kind, model, tokens, cost, status, error | none |
 | `day_failures` | logged failures to create a player's day (used to auto-protect that day) | none |
 
@@ -245,7 +246,8 @@ last line of defence.
 
 - Server-side only; the API key is a Supabase secret.
 - Structured outputs, validated with a schema, then checked by code (word counts, source ids, banned phrases).
-- Every call is logged in `ai_generations` with tokens and cost; the monthly cap ($25) is checked before every call.
+- Every call is logged in `ai_generations` with tokens and cost (M8a; `_shared/costs.ts`, prices of 2026-10-12); the
+  monthly cap ($25) is checked before every call.
 - Model: Claude Opus 5.5 (owner's decision). Effort: low for the onboarding narrative, medium for research and writing,
   tuned by measurement. Refusal fallbacks enabled.
 - Prompts live in the repo (`supabase/functions/_shared/prompts/`) next to a written house-style guide.
@@ -257,15 +259,19 @@ last line of defence.
 | Step | Action |
 |---|---|
 | queued | Each night, enough jobs are queued to keep 2 new articles a day (topic rotation, skipping topics with a big unread backlog). |
-| research submitted | One batch request per job: web search (max ~5 uses) + web fetch → a structured brief (sources + facts tied to sources). |
-| research done | Results collected; brief validated (at least 2 reachable sources). |
-| write submitted | One batch request: the article as structured output, from the brief and the style guide. |
-| check | Code checks (§4.1 of the spec). Pass → published. Fail → one retry the next night, then failed. |
+| researching | One batch request per job: web search (max ~5 uses), plain text with citations; code builds the brief (sources + facts tied to sources) from the citations (M8a). |
+| researched | Results collected; brief validated (at least 2 cited sources and 6 cited facts). |
+| writing | One batch request: the article as structured output, from the brief and the style guide. |
+| done | Code checks (§4.1 of the spec) passed: published (evergreen: held for the owner's review). |
+| retry / failed | A failed check or a failed request: tried once more the next night from the research (`retry`), then `failed`. |
 
 - Most batches finish within an hour; the 24-hour batch window is long enough because articles go into a library
   ahead of need.
 - Cost estimate: about $0.10–0.17 per article plus about $0.05 of web searches → about $10/month for 2 a day.
 - Evergreen articles (about 20) are produced by the same pipeline before the pilot and reviewed by the owner.
+- *Built in M8a:* the tick is called with the publishable key on `apikey` and the tick secret on `x-lmu-tick` (from the
+  Vault); it runs one at a time (a lease in `article_pipeline`). Research uses `web_search_20250305` (max 5) without web
+  fetch (M8a decision 2).
 
 ### 5.3 The onboarding narrative
 
@@ -368,7 +374,7 @@ is needed. What the two apps share, and how LevelMeUp stays out of the wedding's
 | CLI commands | Every CLI call from LevelMeUp's scripts goes through `scripts/sb.ts`, an allow list: `db query --linked`, deploying or deleting named `lmu-` functions, `LMU_` secrets from an env file, all pinned to this project. It refuses `db push`, `db reset`, `config push`, `migration repair`, `link`, `--prune` and everything else. LevelMeUp has no `config.toml`, so nothing can push its settings over the wedding's. |
 | Edge Functions | All names prefixed `lmu-` (`lmu-sync`, `lmu-onboarding`, `lmu-account-delete`, `lmu-articles-tick`), deployed by name. |
 | Secrets | Prefixed `LMU_` (e.g. `LMU_ANTHROPIC_API_KEY`, `LMU_DB_URL`). |
-| Cron | One job, `lmu-articles-tick`. |
+| Cron | One job, `lmu-articles-tick` (pg_cron and pg_net enabled by `npm run articles -- cron on` with the owner's yes, M8a). |
 | Storage | One public bucket, `lmu-art` (migration 0007, M6a): the quest pictures (WebP, at most 1 MB each) and their `manifest.json`. The app reads public URLs only; the owner uploads in the dashboard. No storage policy is added, so nothing else in storage changes. |
 | Auth | Shared user list and settings; three additive changes (§4.4), each confirmed when needed. A player signing in with an email that is also a wedding admin's would be the same account; harmless, because wedding admin rights come only from `admin_emails`. |
 | Compute | Shared Micro instance. Pilot traffic is tiny. On the wedding day (30 Jan 2027), `/live` and `/wall` take priority; the article job can be paused that day if needed. |

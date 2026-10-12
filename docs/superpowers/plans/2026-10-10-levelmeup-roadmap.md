@@ -27,7 +27,8 @@ guesses). Only milestone 1's plan exists today.
 | 7b | **Settings** | Settings → Your game (voice, the day's end, minutes a day, difficulty; the `settings` event), Delete my character (a Google-linked account keeps its shared sign-in, and the screen says so), the sign-in-lost card, the sign-in guard; "Rest tomorrow" (`character_state.rest_day`); a tap time on `plan_rest` and `pain` so a rest synced late still protects its day, and the late notices (migration 0012). M7 split in four (M7b decision 1). **Built 2026-10-12**; deployed 2026-10-12 (0012, the functions v11); merges after M7a. | `2026-10-12-m7b-settings.md` |
 | 7c | **Accountability** | The Accountability Pact (levels 0–2, from Settings and the reveal's "Read the pact"; `accountability_set`); "I just didn't" under a pact: the Shadow's scene once, the mark on Today and the portrait until the recovery quest is cleared, the private note (`checkin_note`); level 2's side quests sealed on the phone until a 10-minute focus session (`trial`); at most one a day, paused after 3 in a rolling 7 days; the recovery quest listed first (migration 0013). The sterner evening reminder moved to M7d. **Built 2026-10-12**; merges after M7b. | `2026-10-12-m7c-accountability.md` |
 | 7d | **Notifications** | Local notifications (morning briefing, evening reminder with the Trial's sterner one, timer alerts; a new EAS build for `expo-notifications`), Settings → Notifications, the permission asked when the player turns one on; the briefing says when the day is a planned rest day. Moved from M7b (M7b decision 1). **Built 2026-10-13**; merges after M7c. | `2026-10-13-m7d-notifications.md` |
-| 8 | **Articles** | The Batch API pipeline (`lmu-articles-tick` on Supabase Cron), the checks, the $25 cap, about 20 owner-reviewed evergreen articles, the reader and the takeaway quest; spike: the real cost of one article. | later |
+| 8a | **The article library** | The Batch API pipeline (`lmu-articles-tick`, research with web search → a brief from the citations → writing → code checks), the $25 monthly budget on every Claude call (the reveal's cost logged), migration 0014, the owner's `npm run articles` commands, the evergreen articles and their review, the cron (pg_cron + pg_net, with the owner's yes); spike 3. M8 split in two (M8a decision 1). **Built 2026-10-13**; merges after M7d. | `2026-10-13-m8a-article-library.md` |
+| 8b | **Reading** | Each new day gets one unread published article (60 % from the player's goals and class; the evergreen library when nothing else), the phone caches a few for offline days, the reader and the takeaway quest, past readings in the Chronicle, the Mage's Insight (choose tomorrow's topic from 3). | later |
 | 9 | **Pilot release** | Class art, the EAS preview APK, the device checklist on the Find X9. The backend is already live since M3. | later |
 
 ## Carried forward from the M1 code review
@@ -53,7 +54,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M5 | Onboarding sets starting rungs from the training answer (until then everyone starts at the first rung, so early days are short), requires 1–2 goals, and decides whether equipment changes anything (no template uses equipment yet). A player on their own program who picks 10 or 15 minutes gets no strength work (the own-program session is 20 minutes and the other strength ladders are closed to them): say so on that screen and suggest 25 minutes, or add a shorter own-program rung. |
 | M6b | *(Why-lines and quest summaries: done in M4 and M6a. Scholar's Path progress: done in M6d.)* M6b: Vanish; hide the swap button when `swapOptions` is empty. On a hard day the card's numbers come from `questSummary`; voice lines quote the full version (for example "ten rises"), so keep numbers out of the hard-day card's line or accept it. |
 | M7a, M7c | *(Done in M7a: Unbreakable, the recovery quest, `secondWindRedo`; history already stored each slot's final template.)* *(Done in M7c: the Shadow's lines on its scene, Today and the quest screen; the mark line stays without "Five minutes.", since with Second Wind the recovery quest is the whole missed core quest.)* M7c: the Shadow's lines (`shadowLine`). If the owner wants "Five minutes." back in the approved mark line, show that line only with the plain recovery quest. |
-| M8 | Reuse `lintText` for articles; the shaming list may need an article variant (an article can discuss failure). Insight. |
+| M8 | Reuse `lintText` for articles; the shaming list may need an article variant (an article can discuss failure). *(Done in M8a: `lintArticle`.)* Insight: M8b. |
 
 ## Carried forward from M3
 
@@ -63,7 +64,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M4 | *(Done in M4; `provisional_day` done in M6e.)* The phone sends events, then reads `state` from `lmu-sync`; ids are numbers, times are ISO strings in responses and epoch milliseconds in events. Add the `provisional_day` event with `checkProvisionalDay`. Errors the client must handle: `session_ended` (401: the sign-in is gone; only then sign out), `auth_unavailable` and `busy` (503: retry later), per-event codes such as `event_reused`, `bad_payload`, `timer_short`, `day_closed` (show, then drop the event from the outbox). |
 | M6b | *(Level-ups a moment after a completion and `newAchievements`: done in M6a.)* Ladder changes (and the step-down offer after "too hard") arrive when the day closes: M6b shows the step-down offer. |
 | M7a | *(Done in M7a: `planAdvance` replays the queue; spec §3.7 reworded.)* Answering a check-in must replay the closed days queued behind it (`streak_applied = false`) in day order with `applyDay`, including away days (from jumps in day numbers): a missed day or away run in the queue then opens its own check-in, exactly as if the first answer had come at once. |
-| M8 | `ai_generations.cost_usd` is not filled yet; add the model's prices when the article budget is built. |
+| M8 | `ai_generations.cost_usd` is not filled yet; add the model's prices when the article budget is built. *(Done in M8a.)* |
 | Before launch | Per-player request rate limits for the functions (events per sync are capped at 50 today). |
 
 ## Carried forward from M4
@@ -135,7 +136,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The calendar reads the last 92 days; older months wait for the pilot to need them. The server still sends `recentDays` for app bundles from before M6d; drop it once none are in use. |
 | Later | A title picker (Character shows the latest earned title; titles earned in one sync tie-break by id). |
 | Later | Scholar's Path: the book's start is the server's time at sync, so a reading quest cleared offline right after a book set offline may not count toward it; a player who leaves Mage keeps a book they can't change until they return (quests stop showing it). |
-| M8 | *(Second Wind and Unbreakable: done in M7a.)* Insight (M8) says "Unlocked · it arrives in a later update" on the class path until its screen exists (`ABILITIES_LATER`, content). |
+| M8b | *(Second Wind and Unbreakable: done in M7a.)* Insight (M8) says "Unlocked · it arrives in a later update" on the class path until its screen exists (`ABILITIES_LATER`, content). |
 | M9 | The painted class portraits, changing with the level, replace the framed emblem (`src/ui/Portrait.tsx`). |
 
 ## Carried forward from M6e
@@ -199,13 +200,22 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Emulator | M7d rows 5 (planned while the core quest is open), 6 (a timer alert, its banner and its tap) and 9 (deleting leaves nothing planned) with Uma's deletion and the next test character. |
 | Owner | Find X9: the briefing and the evening reminder at their real times, the rest-day briefing, a timer alert with the screen off, the Shadow's reminder on a real Trial day, reminders after a reboot without opening the app (ColorOS), and the channels in the phone's settings. |
 
+## Carried forward from M8a
+
+| Milestone | Item |
+|---|---|
+| M8b | Remove `reserve_ai_call` (0003), unused since M8a, in the next migration that touches the AI log. |
+| Later | Topic seeds run out after 80 articles (about 40 nights at full demand): add seeds, or let a used cluster repeat with a new angle. |
+| Later | Dynamic filtering (`web_search_20260209`) as a cost lever, once the spike has measured the basic tool. |
+| Owner | The wedding day (30 Jan 2027): `npm run articles -- cron off` the day before, `cron on` after (architecture §12). |
+
 ## Spikes and where they run
 
 | Spike (architecture §13) | Milestone |
 |---|---|
 | 1. Shared rules package in Deno and Metro | M1 enforces Deno-style imports and proves plain Node ESM; M3 proved the Edge Runtime; M4 proved Metro and the Hermes compiler (the Hermes runtime: device self-check) |
 | 2. Anonymous → Google linking | M5 |
-| 3. Real cost of one batch article with web search | M8 |
+| 3. Real cost of one batch article with web search | M8a (Task 13) |
 | 4. Phone reaching the laptop's Supabase over the LAN | Dropped: development uses the live project (M3) |
 | 5. `db:deploy` leaves the wedding's migration history alone | Passed in M3 (checked on every deploy) |
 | 6. `lmu_service` is refused on the wedding's tables | Passed in M3 (DB test) |

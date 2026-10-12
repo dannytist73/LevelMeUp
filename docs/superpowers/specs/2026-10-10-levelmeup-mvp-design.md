@@ -389,6 +389,12 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
 - About 20 **evergreen** articles are generated and owner-reviewed before the pilot; they fill any gap (AI down,
   budget cap hit, nothing unread).
 - Original explanations only; never reproduce copyrighted text.
+- *Built in M8a (2026-10-13):* research is web search only, with the API's citations; code builds the brief from them
+  (each fact cites the pages the API says it used) and keeps the cited excerpts; the writer sees only the brief. The
+  checks also refuse any quotation of 4+ words, any run of 8 words from a cited excerpt, links and markdown; the reading
+  time is computed (180 words a minute). The night's two articles are queued only while a player who played this week
+  has fewer than 14 articles they haven't been given; 80 topic seeds in 8 clusters. Evergreen articles wait for the
+  owner's review (`npm run articles -- review`).
 
 **Assignment**
 - When a day is created, it gets one unread published article: about 60% from the player's goals and class,
@@ -403,6 +409,8 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
 - A hard monthly cap (**$25**) is checked before each call; over the cap the job stops and the evergreen library
   takes over.
 - Cost depends on articles per day, not on the number of users.
+- *M8a:* the cap covers every Claude call (the reveal too) for the UTC calendar month; each call is reserved with an
+  estimate before it is sent.
 
 ### 4.2 Onboarding AI
 

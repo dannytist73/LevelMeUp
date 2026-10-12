@@ -12,10 +12,18 @@ functions and its settings; LevelMeUp never touches them (architecture §12). Th
 | `npm run db:deploy -- --dry-run` | Lists applied and pending migrations; changes nothing |
 | `npm run db:deploy` | Applies pending migrations, each with its record in `levelmeup.schema_migrations` in one transaction, then checks the wedding's migration history is unchanged |
 | `npm run db:test [-- <name>]` | Runs `tests/db/*.sql` on the live project, each inside a transaction that always rolls back (pgTAP is created inside it), then checks nothing was left behind |
-| `npm run check:functions` | `deno check` on the three functions |
-| `npm run deploy:functions` | Deploys `lmu-onboarding`, `lmu-sync` and `lmu-account-delete` by name |
+| `npm run check:functions` | `deno check` on the four functions |
+| `npm run deploy:functions` | Deploys `lmu-onboarding`, `lmu-sync`, `lmu-account-delete` and `lmu-articles-tick` by name |
 | `npm run test:live` | Calls the deployed functions with up to 12 temporary anonymous players and deletes them all at the end |
 | `npm run lmu:password` | Gives `lmu_service` a new random password and stores `LMU_DB_URL`; prints nothing secret (also for rotation) |
+| `npm run articles -- setup` | Makes the tick secret: `LMU_TICK_SECRET` for the function and its Vault copy `lmu_tick_secret` for the cron; prints nothing secret |
+| `npm run articles -- tick` | Runs one pipeline step now, as the cron does |
+| `npm run articles -- evergreen <n>` | Queues n evergreen articles (they wait for review) |
+| `npm run articles -- jobs` | The latest jobs |
+| `npm run articles -- review` | Writes `.reviews/articles.html` (git-ignored) with every article waiting for review |
+| `npm run articles -- publish <id…>` / `reject <id…>` | Publishes reviewed articles, or keeps them out |
+| `npm run articles -- spend` | This month's Claude spend against the $25 cap |
+| `npm run articles -- cron on\|off\|status` | Schedules `lmu-articles-tick` every 30 minutes (enabling pg_cron and pg_net), unschedules it, or shows its last runs |
 
 `.env.local` (git-ignored) holds the project URL and the public anon key for the live tests. Service-role and
 model keys never leave Supabase.
@@ -33,6 +41,20 @@ model keys never leave Supabase.
   authenticated` (Postgres lets everyone execute a new function by default).
 - DB tests are `tests/db/*.sql` defining `lmu_test.test_*` functions; `_helpers.sql` runs first. A lint forbids
   transaction control, role changes and writes to `public` in them. Test players use ids `00000000-0000-4000-8000-…`.
+
+## Articles (M8a)
+
+- `lmu-articles-tick` moves the article pipeline one step (`_shared/articles/pipeline.ts`): it queues the night's two
+  jobs (from 18:00 UTC, only while a player who played this week has fewer than 14 articles they haven't been given),
+  collects finished batches (research → a brief built from the web search citations; writing → an article checked by
+  `_shared/articles/check.ts`) and submits what is ready through the Message Batches API. One tick runs at a time (a
+  lease in `article_pipeline`); every Claude call is reserved against the $25 monthly budget first
+  (`reserve_ai_spend`, `0014`) and its real cost logged.
+- The tick answers only to the tick secret on `x-lmu-tick` (`LMU_TICK_SECRET`, compared in constant time); the cron
+  reads its copy from the Vault (`lmu_tick_secret`) each time it runs. The gateway's JWT check stays on: the cron sends
+  the publishable key on `apikey`.
+- `setup`, `tick`, `evergreen`, `publish`, `reject` and `cron on|off` change the live project or spend money: the
+  owner's yes first.
 
 ## How it fits together
 
