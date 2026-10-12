@@ -110,7 +110,8 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
   reset; set together). `character_state` gains `next_day_light` (a "sick" or "injured" answer; used up by the next
   day built) and `profiles` gains `lighter_plan_at` (when the player last answered the lighter-plan offer).
 - M7b (2026-10-12, migration 0012): `character_state` gains `rest_day` (the day number planned as a rest day the day
-  before; the next day built with that number is protected as `planned_rest`).
+  before; the next day built with that number is protected as `planned_rest`, and when that day passes unopened as an
+  away day, `planAdvance` rests it in the streak and only the away days after it share a gap check-in).
 - Character totals are cached in `character_state` and updated in the same transaction as the ledger, so the
   ledger is the audit trail and the cache is what screens read.
 
@@ -159,7 +160,8 @@ the day the change names.
 M7b (2026-10-12): `settings` (the voice, `boundaryMinutes` in whole half hours, `minutesPerDay`, difficulty, always
 all four) joins the adjustments; `plan_rest` takes `tomorrow` (the server keeps `rest_day`) and, with `pain`, a tap
 time `at`: the planner and `levelmeup.adjust` (migration 0012) accept a day that has ended but isn't closed when the
-tap was inside it and the event arrives within 48 hours of its end, and then change only its protection. A rest
+tap was inside it and the event arrives within 48 hours of its end, and then change only its protection (while the day
+runs, the tap time isn't read, so a phone clock behind the server's never makes a tap look late). A rest
 refused because its day had closed is `rest_late`; a pain report applied without its day is `ok` with
 `notice: 'pain_late'` (an `lmu-sync` result can carry a notice). Account deletion is unchanged (`lmu-account-delete`).
 

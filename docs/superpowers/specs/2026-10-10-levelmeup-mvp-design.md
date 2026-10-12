@@ -305,7 +305,8 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
   smallest session that keeps the habit. A swap can offer a workout; Second Wind redoes a missed workout with today's
   plan; changing the equipment or program re-plans today's open workout (same rung and reward).
 - Built in M7b (2026-10-12): "Rest tomorrow" next to "Rest today", within the same 2-in-7 limit (tomorrow counted
-  ahead); that day is built as a rest day even if the app isn't opened. A rest or a pain report tapped without a
+  ahead); that day is a rest day even if the app isn't opened (built as one, or, never opened, rested rather than
+  asked about in a check-in). A rest or a pain report tapped without a
   connection still protects its day when it syncs after the day ended (within 48 hours, before the server closed the
   day); when it is too late, Today says so. A weekly rest pattern waits for the pilot's need.
 

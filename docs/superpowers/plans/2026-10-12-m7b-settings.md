@@ -2452,4 +2452,30 @@ Expected: all pass; `pacing` unchanged (no rules or content numbers changed: War
 
 ## As built
 
-(Filled in during the build.)
+- **Built 2026-10-12** on `m7b-settings` (8632045..fdb2b1e): content 1055, rules 447, server unit 351, app 635 tests;
+  typecheck, `check:functions`, `check:portable` (rules 199 exports), `check:bundle` pass; `pacing` unchanged (Warrior
+  steady rank C on day 151).
+- **Deviations from the tasks:**
+  - Task 3: a day without quests also offers rest tomorrow (the older offers test now expects `restTomorrow: true`);
+    the phone can't reach it, since Today shows no day actions on a day without quests.
+  - Task 6: `DayDraft.protection` widened to `planned_rest` (`state.ts`). a711306 was committed failing the Deno check;
+    b3973e6 fixed it (commits now wait for the checks).
+  - Task 13: the older "hides what the day no longer allows … already protected" test also has tomorrow planned, since
+    a protected today can still plan tomorrow.
+  - Task 14: the spec and architecture additions are plain paragraphs and bullets, like their neighbours.
+- **Code review** (15af934..c3de457): ready with fixes, nothing critical. Fixed in d4f183c and fdb2b1e:
+  - Important: the planner read the tap time while the day ran, so a phone clock behind the server's made a rest or
+    pain report early in the day `rest_late` / `pain_late`. It is now read only once the day has ended, as in
+    `levelmeup.adjust` (a unit test; the live test now expects that rest to be accepted).
+  - Important: a day planned as rest that passed unopened became an away day with a gap check-in, breaking the
+    banner's "your streak is safe". `planAdvance` now rests it in the streak and only the away days after it share a
+    check-in (`awayGap`, also in the replay after a check-in). This replaces decision 5's "covered by the gap check-in".
+  - Minor: a rest today waiting to sync hides tomorrow's offer until the server answers; `already_protected` and
+    `rest_limit` say "that day"; the sign-in guard reads its probe back through a fresh storage over the same vault (a
+    key SecureStore doesn't keep fails too); `DIFFICULTIES` moved to the rules (the app no longer bundles the server's
+    onboarding validator); Your game starts the day's end on the half-hour grid; the "when" line says a big change to
+    the day's end arrives over a few days.
+  - Carried forward (roadmap): SQL defense in depth in `adjust`, an outbox over one batch, the calendar mark for an
+    unopened rest day, a rest today over the limit behind a pending tomorrow, an old app's generic `rest_late` notice.
+- **Deploy:** pending (the owner's yes given 2026-10-12, after the review fixes).
+- **Emulator:** pending.

@@ -169,6 +169,9 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M7d | Notifications (moved from M7b, decision 1); the briefing names a planned rest day. |
 | Later | A weekly rest pattern ("every Sunday"); changing the name, goals or limitations in Settings. |
 | Later | A repeat of an applied event returns its stored result without its notice (`pain_late`): the phone dropped the event at the first answer, so only a lost response loses the notice. |
+| Later | Defense in depth in `levelmeup.adjust` (M7b review): the late-day branch doesn't check that the kind is `plan_rest` or `pain`, and a `settings` change could carry other keys. Only the planner calls it, so it waits with the other SQL hardening. |
+| Later | An outbox longer than one sync batch (50 events): the first call closes ended days, so a late rest in a later batch is `rest_late` (M7b review; rare). |
+| Later | The calendar has no mark for a planned rest day the app never opened, as for any away day (it is rested in the streak). A rest today tapped while a rest tomorrow still waits to sync may be refused over the limit (the phone can't count the week); its notice says so. An app from before M7b shows the generic notice for `rest_late`. |
 | Owner | Find X9: the M7b rows that need a real day boundary (the next day's minutes and end time, a rest day tomorrow, a late rest) and the delete screen's Google line on a throwaway saved character (never the owner's real one). |
 
 ## Spikes and where they run
