@@ -418,12 +418,14 @@ describe('Settings and rest days (M7b)', () => {
     expect(body.state.profile).toMatchObject({ voice: 'questmaster', boundaryMinutes: 300, minutesPerDay: 40, difficulty: 'hard' });
   });
 
-  it('a rest tapped before its day began is late; tomorrow can be planned once', async () => {
+  it("a rest tapped by a phone whose clock is behind still rests the running day; tomorrow can be planned once", async () => {
     const today = (await sync(p)).body.state.today;
     expect(today.restTomorrow).toBe(true);
-    const early = eventId();
-    const late = await sync(p, [{ id: early, type: 'plan_rest', dayId: today.id, at: Date.parse(today.startsAt) - 60_000 }]);
-    expect(late.body.results).toEqual([{ id: early, ok: false, code: 'rest_late' }]);
+    // The tap time reads as before the day began, but the day is running: it isn't late (M7b review).
+    const early = await sync(p, [{ id: eventId(), type: 'plan_rest', dayId: today.id, at: Date.parse(today.startsAt) - 60_000 }]);
+    expect(early.body.results[0].ok).toBe(true);
+    expect(early.body.state.today.protection).toBe('planned_rest');
+    // Today and tomorrow are two rest days in 7: still within the limit.
     const planned = await sync(p, [{ id: eventId(), type: 'plan_rest', dayId: today.id, tomorrow: true }]);
     expect(planned.body.results[0].ok).toBe(true);
     expect(planned.body.state.character.restDay).toBe(today.dayNumber + 1);
@@ -431,12 +433,5 @@ describe('Settings and rest days (M7b)', () => {
     const again = eventId();
     const twice = await sync(p, [{ id: again, type: 'plan_rest', dayId: today.id, tomorrow: true }]);
     expect(twice.body.results).toEqual([{ id: again, ok: false, code: 'already_protected' }]);
-  });
-
-  it('a rest tapped today protects today, the planned tomorrow counted in the limit', async () => {
-    const today = (await sync(p)).body.state.today;
-    const { body } = await sync(p, [{ id: eventId(), type: 'plan_rest', dayId: today.id, at: Date.parse(today.startsAt) + 1_000 }]);
-    expect(body.results[0].ok).toBe(true);
-    expect(body.state.today.protection).toBe('planned_rest');
   });
 });

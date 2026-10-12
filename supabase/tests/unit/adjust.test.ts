@@ -295,6 +295,18 @@ describe('planning an adjustment (adjust.ts)', () => {
     expect(plan(at(), { type: 'plan_rest', dayId: 2, at: NOW + 5 * HOUR })).toEqual({ change: { day: { id: 2, protection: 'planned_rest' } } });
   });
 
+  it("a phone clock behind the server's: a tap that looks earlier than the running day still counts (M7b review)", () => {
+    const { startsAt } = manilaDay(2);
+    const early = startsAt - 2 * 60_000;
+    const now = startsAt + 60_000;
+    const paused = { push: { ...newLadder(1), paused: true } };
+    expect(plan(at(), { type: 'plan_rest', dayId: 2, at: early }, now)).toEqual({ change: { day: { id: 2, protection: 'planned_rest' } } });
+    expect(plan(at(), { type: 'plan_rest', dayId: 2, at: early, tomorrow: true }, now)).toEqual({ change: { restDay: 3 } });
+    expect(plan(at(), { type: 'pain', instanceId: 200, choice: 'rest', at: early }, now)).toEqual({
+      change: { ladders: paused, day: { id: 2, protection: 'pain' } },
+    });
+  });
+
   it('pain tapped while the day ran: rest protects it after it ended; gentle movement rests the day instead', () => {
     const { endsAt } = manilaDay(2);
     const tapped = new Date(endsAt - HOUR).toISOString();

@@ -394,3 +394,30 @@ describe('a rest day planned ahead (M7b decision 5)', () => {
     expect(out.newDay!.protection).toBe('planned_rest');
   });
 });
+
+describe('a planned rest day the app never opened (M7b review)', () => {
+  it('is rested, not away: no check-in for it', () => {
+    const out = planAdvance(afterDay1(['core'], manilaDay(3).startsAt + HOUR, { character: characterRow({ rest_day: 2 }) }))!;
+    expect(out.gap).toBeNull();
+    expect(out.newDay!.dayNumber).toBe(3);
+    expect(out.streak).toEqual({ current: 1, best: 1, shields: 0, awaitingCheckin: false });
+  });
+
+  it('only the away days after it ask', () => {
+    const out = planAdvance(afterDay1(['core'], manilaDay(5).startsAt + 3 * HOUR, { character: characterRow({ rest_day: 2 }) }))!;
+    expect(out.gap).toEqual({ from: 3, to: 4 });
+    expect(out.streak).toEqual({ current: 1, best: 1, shields: 0, awaitingCheckin: true });
+  });
+
+  it('between days replayed after a check-in, too', () => {
+    const out = planAdvance(afterDay1([], manilaDay(5).startsAt + HOUR, {
+      character: characterRow({ rest_day: 3 }),
+      days: [closedRow(2, 'streak_day'), closedRow(4, 'streak_day'), dayRow(dayN(5), 5)],
+      instances: instanceRows(dayN(5), 5),
+      queue: [queued(2, 'streak_day'), queued(4, 'streak_day')],
+    }))!;
+    expect(out.applied).toEqual([2, 4]);
+    expect(out.opened).toEqual([]);
+    expect(out.streak.awaitingCheckin).toBe(false);
+  });
+});

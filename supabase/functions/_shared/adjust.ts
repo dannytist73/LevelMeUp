@@ -85,20 +85,21 @@ function questOf(s: Snapshot, instanceId: number, nowMs: number): Found<{ day: D
 }
 
 /**
- * M7b decision 6: the open day with this id, running when the player tapped (`at`, never later than now; now without
- * one) and reached within 48 hours of its end, as a completion is. A day that has ended is returned with the tap time,
- * which levelmeup.adjust checks too.
+ * M7b decision 6: the open day with this id, while it runs; or, once it has ended (not yet closed, within 48 hours, as a
+ * completion is), when the player tapped inside it (`at`, never later than now). A day that has ended is returned with
+ * the tap time, which levelmeup.adjust checks too. While the day runs the tap time isn't read, as in levelmeup.adjust:
+ * a phone clock behind the server's must not make a tap early in the day look late (review).
  */
 function tappedDay(s: Snapshot, dayId: number, at: number | undefined, nowMs: number): Found<{ day: DayRow; tappedAt: string | null }> {
   const day = s.days.find((d) => Number(d.id) === dayId);
   if (day === undefined) return { code: 'not_found' };
   const open = openDay(s);
-  const when = Math.min(at ?? nowMs, nowMs);
   const ends = day.ends_at.getTime();
-  if (open === null || String(open.id) !== String(day.id) || when < day.starts_at.getTime() || when >= ends || nowMs >= ends + LATE_SYNC_MS) {
-    return { code: 'day_closed' };
-  }
-  return { day, tappedAt: nowMs >= ends ? new Date(when).toISOString() : null };
+  if (open === null || String(open.id) !== String(day.id) || nowMs >= ends + LATE_SYNC_MS) return { code: 'day_closed' };
+  if (nowMs < ends) return { day, tappedAt: null };
+  const when = Math.min(at ?? nowMs, nowMs);
+  if (when < day.starts_at.getTime() || when >= ends) return { code: 'day_closed' };
+  return { day, tappedAt: new Date(when).toISOString() };
 }
 
 export function planAdjust(s: Snapshot, event: AdjustEvent, ctx: { nowMs: number; library: QuestLibrary }): Plan {

@@ -121,6 +121,21 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   };
 
   /**
+   * Away days `from`..`to` (a jump in day numbers) are one gap check-in, except (M7b review) the day planned as a rest
+   * day the day before: it is rested even though the app never built it, so only the days after it ask. The gap that
+   * opens, or null.
+   */
+  const awayGap = (from: number, to: number): { from: number; to: number } | null => {
+    if (input.character.rest_day === from) {
+      applyClosed(from, { kind: 'protected' });
+      from++;
+    }
+    if (from > to) return null;
+    streak = applyDay(streak, { kind: 'awaiting_checkin' }).state;
+    return { from, to };
+  };
+
+  /**
    * M7a (decision 5): while no check-in is pending, the days that waited behind one are applied in day order, as if it
    * had been answered at once. A missed day among them opens its own check-in and away days (a jump in day numbers) one
    * gap check-in; missed days right after it share that check-in, as they would have (M7a review), and the days after
@@ -133,8 +148,8 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
       applied.push(Number(day.id));
       const after = queue[0]?.day_number ?? next;
       if (!streak.awaitingCheckin && after !== null && after > day.day_number + 1) {
-        streak = applyDay(streak, { kind: 'awaiting_checkin' }).state;
-        opened.push({ gapFrom: day.day_number + 1, gapTo: after - 1 });
+        const away = awayGap(day.day_number + 1, after - 1);
+        if (away !== null) opened.push({ gapFrom: away.from, gapTo: away.to });
       }
     }
   };
@@ -209,10 +224,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
 
     // Away days are one gap check-in; a pending check-in covers them; behind a waiting day they wait too (the replay
     // finds them from the jump in day numbers).
-    if (away > 0 && !streak.awaitingCheckin && queue.length === 0) {
-      streak = applyDay(streak, { kind: 'awaiting_checkin' }).state;
-      gap = { from: last.day_number + 1, to: dayNumber - 1 };
-    }
+    if (away > 0 && !streak.awaitingCheckin && queue.length === 0) gap = awayGap(last.day_number + 1, dayNumber - 1);
     // Measured in time, like recordReentry, so a light comeback day and the rung step-down always come together.
     if (comeback) setLadders(reenterLadders(ladders, window.startsAt, last.ends_at.getTime()));
 
