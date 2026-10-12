@@ -1,6 +1,11 @@
-import { STATS } from '@levelmeup/rules';
+import { CONTENT_VERSION, LIBRARY } from '@levelmeup/content';
+import { STATS, findTemplate, newLadder, painKey, recordPain, templateById, useKey } from '@levelmeup/rules';
 import { planAdvance } from '../../../supabase/functions/_shared/advance.ts';
-import { DAY1, afterDay1, characterRow } from '../../../supabase/tests/unit/fixtures.ts';
+import { stateView } from '../../../supabase/functions/_shared/state.ts';
+import { dayOffers } from '../../../supabase/functions/_shared/today.ts';
+import {
+  DAY1, DAY_TWO_SLOTS, afterDay1, characterRow, dayTwoSnapshot, historyOf, ladderRows,
+} from '../../../supabase/tests/unit/fixtures.ts';
 import type { CharacterRow } from '../../../supabase/functions/_shared/state.ts';
 import { offlineDay } from '../src/game/offlineDay.ts';
 import { project } from '../src/game/project.ts';
@@ -45,5 +50,28 @@ describe('the day the phone builds offline (M6e decision 2)', () => {
     expect(offlineDay(s, shown, Date.parse(shown.today!.endsAt!) + HOUR, 'Asia/Manila')).toBeNull();
     const { ladders: _ladders, ...older } = s;
     expect(offlineDay(older as ServerState, project(older as ServerState, []), END + HOUR, 'Asia/Manila')).toBeNull();
+  });
+});
+
+describe('the offline day matches the server in more cases (M6e review)', () => {
+  it('leaves out an exercise a pain report on its way rests, as the server will', () => {
+    const s = serverState();
+    const hurt = s.today!.quests.find((q) => findTemplate(LIBRARY, q.templateId)?.exercise != null)!;
+    const key = painKey(templateById(LIBRARY, hurt.templateId));
+    const pain: PhoneEvent = { id: '00000000-0000-4000-8000-000000000998', type: 'pain', instanceId: hurt.id, choice: 'pause' };
+    const event = offlineDay(s, project(s, [pain]), END + HOUR, 'Asia/Manila')!;
+    const server = planAdvance(afterDay1([], END + HOUR, { ladders: ladderRows({ [key]: recordPain(newLadder()).state }) }))!.newDay!;
+    expect(quests(event)).toEqual(quests(server));
+    expect(event.quests.some((q) => useKey(templateById(LIBRARY, q.templateId)) === key)).toBe(false);
+  });
+
+  it('after day 2: two days of history and ladders above the first rung', () => {
+    const snapshot = dayTwoSnapshot(DAY_TWO_SLOTS, { ladders: ladderRows({ push: newLadder(1), walk: newLadder(1) }) });
+    const s = stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
+    const end = Date.parse(s.today!.endsAt!);
+    const event = offlineDay(s, project(s, []), end + HOUR, 'Asia/Manila')!;
+    const server = planAdvance({ ...snapshot, timeZone: 'Asia/Manila', nowMs: end + HOUR, library: LIBRARY, contentVersion: CONTENT_VERSION })!.newDay!;
+    expect(event.dayNumber).toBe(3);
+    expect(quests(event)).toEqual(quests(server));
   });
 });

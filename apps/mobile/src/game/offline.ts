@@ -51,13 +51,17 @@ export function findQuest(today: TodayView | null, id: number): QuestView | null
   return slot === undefined ? null : (today.quests.find((q) => q.slot === slot) ?? null);
 }
 
-/** An event about a quest of the offline day names it by day and slot: the server has no id for it yet (decision 7). */
+/**
+ * An event about a quest of the offline day names it by day and slot: the server has no id for it yet (decision 7). When
+ * the server's day arrived while the quest screen was open, the quest now in that slot is named by its id (review).
+ */
 export function withRef(event: NewEvent, view: Shown | null): NewEvent {
   if (event.type !== 'complete' && event.type !== 'undo' && event.type !== 'rate' && event.type !== 'pain') return event;
   const today = view?.today ?? null;
-  if (event.instanceId === null || event.instanceId >= 0 || today === null) return event;
-  const quest = today.quests.find((q) => q.id === event.instanceId);
-  if (quest === undefined) return event;
+  if (event.instanceId === null || event.instanceId >= 0) return event;
+  const quest = findQuest(today, event.instanceId);
+  if (today === null || quest === null) return event;
+  if (quest.id > 0) return { ...event, instanceId: quest.id };
   return { ...event, instanceId: null, ref: { dayNumber: today.dayNumber, slot: quest.slot, templateId: quest.templateId } };
 }
 

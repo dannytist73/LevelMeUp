@@ -48,8 +48,9 @@ describe('what the screens show: the server state plus the unsent events', () =>
 
   it('with nothing pending it is the server state, nothing waiting', () => {
     const shown = project(server, []);
-    const flags = { waiting: undefined, changingClass: undefined, changingBook: undefined, offline: undefined };
+    const flags = { waiting: undefined, changingClass: undefined, changingBook: undefined, offline: undefined, ladderChanges: undefined };
     expect({ ...shown, ...flags }).toEqual({ ...server, ...flags });
+    expect(shown.ladderChanges).toEqual([]);
     expect(shown.waiting.size).toBe(0);
     expect(shown.changingClass).toBe(false);
     expect(shown.changingBook).toBe(false);
@@ -211,5 +212,18 @@ describe('a day this phone built offline (M6e)', () => {
     const shown = project(adjustState(), [complete]);
     expect(shown.today!.quests.find((q) => q.id === 200)!.completedAt).not.toBeNull();
     expect(project(adjustState(), [{ ...complete, ref: { ...ref, dayNumber: 3 } }]).today!.quests[0]!.completedAt).toBeNull();
+  });
+});
+
+describe('ladder changes on their way (M6e review)', () => {
+  it('lists pain, Resume and step-downs in order, with the ladder or exercise each one changes', () => {
+    const s = adjustState(); // push-1, walk-1, reading-0, the article
+    const [core, side1] = s.today!.quests;
+    const pain: PhoneEvent = { id: '00000000-0000-4000-8000-0000000000f1', type: 'pain', instanceId: side1!.id, choice: 'pause' };
+    const resume: PhoneEvent = { id: '00000000-0000-4000-8000-0000000000f2', type: 'resume', ladderId: 'squat' };
+    const step: PhoneEvent = { id: '00000000-0000-4000-8000-0000000000f3', type: 'step_down', instanceId: core!.id };
+    expect(project(s, [pain, resume, step]).ladderChanges).toEqual([
+      { key: 'walk', change: 'pain' }, { key: 'squat', change: 'resume' }, { key: 'push', change: 'step_down' },
+    ]);
   });
 });

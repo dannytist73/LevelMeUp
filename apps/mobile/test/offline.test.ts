@@ -28,6 +28,8 @@ describe('an offline day as the screens show it (M6e)', () => {
     expect(withRef(complete, OFFLINE)).toEqual({ ...complete, instanceId: null, ref: { dayNumber: 2, slot: 'core', templateId: 'push-1' } });
     expect(withRef({ type: 'pain', instanceId: -2, choice: 'rest' }, OFFLINE)).toMatchObject({ instanceId: null, ref: { slot: 'side1' } });
     expect(withRef({ ...complete, instanceId: 200 }, project(DAY2, []))).toEqual({ ...complete, instanceId: 200 });
+    // The server's day arrived while the quest screen was open (review): the quest now in that slot, by its id.
+    expect(withRef(complete, project(DAY2, []))).toEqual({ ...complete, instanceId: 200 });
     expect(withRef({ type: 'resume', ladderId: 'push' }, OFFLINE)).toEqual({ type: 'resume', ladderId: 'push' });
   });
 

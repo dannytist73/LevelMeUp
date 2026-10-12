@@ -35,7 +35,12 @@ export type Shown = ServerState & {
   changingBook: boolean;
   /** Today is a day this phone built offline (M6e): its quests have no server ids yet. */
   offline: boolean;
+  /** Ladder changes on their way, in order (M6e review): the phone's offline day applies them as the server will. */
+  ladderChanges: readonly PendingLadder[];
 };
+
+/** "I felt pain" rests a ladder or exercise, Resume brings it back, a step-down lowers a ladder. */
+export type PendingLadder = { key: string; change: 'pain' | 'resume' | 'step_down' };
 
 const CHANGEABLE: readonly QuestView['slot'][] = ['core', 'side1', 'side2'];
 
@@ -56,6 +61,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   let today: TodayView | null = server.today === null ? null : { ...server.today, quests: server.today.quests.map((q) => ({ ...q })) };
   let quests = today?.quests ?? [];
   let offline = false;
+  const ladderChanges: PendingLadder[] = [];
   const waiting = new Set<number>();
   for (const event of pending) {
     if (event.type === 'provisional_day') {
@@ -74,6 +80,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
     }
     if (event.type === 'resume') {
       paused = paused.filter((key) => key !== event.ladderId);
+      ladderChanges.push({ key: event.ladderId, change: 'resume' });
       continue;
     }
     if (event.type === 'training') {
@@ -158,14 +165,16 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         if (template === undefined || template.exercise === null) break;
         const key = painKey(template);
         if (!paused.includes(key)) paused = [...paused, key].sort();
+        ladderChanges.push({ key, change: 'pain' });
         if (event.choice === 'gentle' && quest.completedAt === null && quest.gentle !== null) quests[i] = withFields(quest, quest.gentle);
         if (event.choice === 'rest' && today.protection === null) today.protection = 'pain';
         break;
       }
       case 'step_down':
         quests[i] = { ...quest, canStepDown: false };
+        if (quest.ladder !== null) ladderChanges.push({ key: quest.ladder, change: 'step_down' });
         break;
     }
   }
-  return { ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline };
+  return { ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline, ladderChanges };
 }

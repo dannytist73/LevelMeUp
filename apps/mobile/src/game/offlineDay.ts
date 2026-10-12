@@ -3,7 +3,8 @@
 // builds with the same rules (`buildDay`); the server checks it when it syncs (`checkProvisionalDay`).
 import { LIBRARY } from '@levelmeup/content';
 import {
-  DISCIPLINE_PER_CORE_DAY, RUNG_BONUS_XP, TRAINABLE_STATS, buildDay, closeLadders, followingDay, ladderById, reenterLadders,
+  DISCIPLINE_PER_CORE_DAY, RUNG_BONUS_XP, TRAINABLE_STATS, buildDay, closeLadders, followingDay, ladderById, newLadder, recordPain,
+  reenterLadders, resumeAfterPain, stepDown,
 } from '@levelmeup/rules';
 import type { LadderState, PastDay, PlayerProfile, TrainableStat, XpByStat } from '@levelmeup/rules';
 import { addStatXp } from './project.ts';
@@ -44,13 +45,22 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
   if (held.ladders === undefined || held.history === undefined || held.workoutsDone === undefined) return null;
   try {
     const next = followingDay(last, today.dayNumber, timeZone, shown.profile.boundaryMinutes, nowMs);
+    // Changes still on their way come first, as the server applies events before it closes a day (review): "I felt
+    // pain" rests an exercise, Resume brings it back a rung easier, a step-down lowers its ladder.
+    const beforeClose: Record<string, LadderState> = { ...held.ladders };
+    for (const { key, change } of shown.ladderChanges) {
+      const state = beforeClose[key] ?? newLadder();
+      if (change === 'pain') beforeClose[key] = recordPain(state).state;
+      else if (change === 'step_down') beforeClose[key] = stepDown(state).state;
+      else if (state.paused) beforeClose[key] = resumeAfterPain(state).state;
+    }
     // The ended day closes as the server will close it: the ladder sessions, then the XP the close pays.
-    const closed = closeLadders(LIBRARY, held.ladders, {
+    const closed = closeLadders(LIBRARY, beforeClose, {
       startsAt: last.startsAt,
       protected: today.protection !== null,
       quests: today.quests.map((q) => ({ ladder: q.ladder, rung: q.rung, done: q.completedAt !== null, rating: q.rating })),
     }, rulesProfile(shown.profile, shown.character));
-    let ladders: Record<string, LadderState> = { ...held.ladders, ...closed.changed };
+    let ladders: Record<string, LadderState> = { ...beforeClose, ...closed.changed };
     if (next.comeback) ladders = { ...ladders, ...reenterLadders(ladders, next.window.startsAt, last.endsAt) };
     let character = shown.character;
     if (today.quests.some((q) => q.slot === 'core' && q.completedAt !== null)) {

@@ -166,10 +166,13 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
     /** Reloads what the phone holds (one consistent read) and recomputes what to show. */
     const refresh = async (patch: Partial<GameState> = {}): Promise<void> => {
+      const before = get().view;
       const { cached, pending, notices } = await deps.local.snapshot();
       const view = cached === null ? null : project(cached.state, pending);
       set({ ...patch, cached, pending, notices, view, lastSyncedAt: cached?.syncedAt ?? null });
       watchDayEnd(view);
+      // M6e: the server's state has the offline day now, whatever refreshed first (review): its timers move along.
+      if (before?.offline === true && view?.offline !== true) void moveTimers(before);
     };
 
     /**
@@ -263,9 +266,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       switch (outcome.kind) {
         case 'synced': {
           const before = confirmedLevel;
-          const shownBefore = get().view;
           await refresh({ phase: 'ready', status: 'idle', error: null });
-          void moveTimers(shownBefore);
           const after = get().cached?.state.character.level ?? null;
           confirmedLevel = after;
           const found: Celebration[] = [];

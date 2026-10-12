@@ -241,8 +241,10 @@ template narrative is used; the player never sees an error.
   ladder's state, each recent day's quests, and the workouts done. On sync the server applies the event as of
   `builtAt`: it keeps the phone's quests when `provisionalDay` / `checkProvisionalDay` accept them (re-drafted from its
   own tables) and otherwise stores its own day; events about that day's quests name them by day and slot, and a
-  completion counts for the quest in that slot even when the server's day won (without the timer or rep check). Swaps,
-  hard days, rest and abilities wait for the sync.
+  completion counts for the quest in that slot even when the server's day won: checked against the quest the player
+  did, marked in its payload (`offlineQuest`) so it moves no ladder and is no workout done, without its rating; "I felt
+  pain" then rests the exercise the player did. Before building, the phone applies the pain reports, Resumes and
+  step-downs still on their way, as the server will. Swaps, hard days, rest and abilities wait for the sync.
 - Single device per player in the MVP; a second device just gets the server state on sign-in.
 - M6b: the state carries what the phone may offer today (swap options per quest, gentle movement after pain, whether
   rest is allowed, the ready abilities, which quests can step down), computed by the server from the same rules
