@@ -3074,3 +3074,33 @@ stops it." Wait for a clear yes.
   in `check.ts`; `BatchRequest`/`JobRef` in `prompts/articles.ts`; the SQL's JSON keys (`batchId`, `aiCallId`,
   `submittedAt`, `brief`, `error`, `attempt`; the article's `reflectionQuestion`, `readingMinutes`, `words`) match the
   TypeScript names.
+
+## As built (2026-10-13)
+
+- **Commits** (branch `m8a-article-library` from `m7d-notifications` 3fa6c97): 4c1b32f content, a2b3468 migration
+  0014, 1745613 the DB tests, f695b06 costs and the reveal under the budget, 33ae09b the brief, 1c89e73 the house style,
+  the requests and the checks, 1fdf7e1 topics and the pipeline, 5234698 the tick function, e8b5f7c the owner's
+  commands, c10aee9 docs, then the review's fixes.
+- **Review (Task 11) fixes**, each with tests:
+  - The Batch API client never retries a create (the API takes no idempotency key, so a retry after a lost answer could
+    make a second, billed batch). A failed submission is sorted by `SubmitError`: `busy` (429, 5xx: the jobs go back,
+    no attempt used, $0), `refused` (other 4xx: the attempt is used, $0), or no answer (timeout, lost connection: the
+    estimate stays spent and the attempt is used). A stale submission (no batch id after an hour) also keeps its
+    estimate and uses the attempt, so nothing can book an estimate every tick.
+  - One answer that breaks something no longer stops the pipeline: each batch and each job is collected inside its
+    own `try`; a broken job fails its attempt (`internal: …`), the report counts `errors`. Untrusted text is cut with
+    `clip` (whole characters, no control characters: Postgres's jsonb refuses half an emoji and U+0000), and a
+    source's address is stored as the URL parser's ASCII form.
+  - The checks also refuse quotations in straight single quotes (apostrophes allowed), an unclosed quotation mark, bare
+    domains and email addresses, reference ranges (`[1, 2]`), `*`, `_`, link syntax, HTML tags, list markers, and
+    control characters or half an emoji; whitespace inside a paragraph is one space.
+  - The reveal's cost: an answer that can't be used is still billed by its tokens; a call that never answered keeps
+    the $0.05 estimate.
+  - `npm run articles -- tick` and `setup` never print the CLI's output on a failure that might hold the secret.
+  - Writing is submitted before new research, so near the cap a paid-for brief gets the budget first.
+  - A brief's sources are only pages a kept fact cites; `article_short_players` counts published articles less the
+    ones a player's days hold (cheaper, same answer).
+- **Left as found** (minor): an orphaned `pending` reservation (a tick killed between reserving and moving) holds its
+  estimate until the month ends; a tick that dies between claiming a night and queueing it loses that night's new
+  jobs; `article_tick_end` doesn't check which tick holds the lease (every move is still guarded by status); research
+  input tokens have no hard limit (the spike measures them); `reserve_ai_call` stays until M8b (roadmap).

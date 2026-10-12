@@ -4,7 +4,7 @@
 import { lintArticle } from '../../../../packages/content/src/index.ts';
 import { isObject } from '../http.ts';
 import type { Brief } from './brief.ts';
-import { shingles, wordCount } from './text.ts';
+import { clip, hasBrokenCharacters, shingles, wordCount } from './text.ts';
 
 export type ArticleSection = { heading: string; paragraphs: string[]; systemNote: string | null; sourceIds: number[] };
 export type ArticleDraft = { title: string; summary: string; sections: ArticleSection[]; takeaways: string[]; reflectionQuestion: string };
@@ -19,6 +19,8 @@ export const QUOTE_WORDS = 4;
 
 const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === 'string');
 const integers = (v: unknown): v is number[] => Array.isArray(v) && v.every((n) => Number.isInteger(n));
+/** The app shows plain text: a line break inside a paragraph means nothing, so whitespace is one space. */
+const tidy = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
 /** The model's JSON as an article, or null when its shape is wrong (types only: the checks judge the content). */
 export function parseArticle(value: unknown): ArticleDraft | null {
@@ -28,15 +30,15 @@ export function parseArticle(value: unknown): ArticleDraft | null {
   for (const s of value.sections) {
     if (!isObject(s) || typeof s.heading !== 'string' || !strings(s.paragraphs) || !integers(s.source_ids)) return null;
     if (s.system_note !== null && typeof s.system_note !== 'string') return null;
-    const note = typeof s.system_note === 'string' ? s.system_note.trim() : '';
-    sections.push({ heading: s.heading.trim(), paragraphs: s.paragraphs.map((p) => p.trim()), systemNote: note === '' ? null : note, sourceIds: s.source_ids });
+    const note = typeof s.system_note === 'string' ? tidy(s.system_note) : '';
+    sections.push({ heading: tidy(s.heading), paragraphs: s.paragraphs.map(tidy), systemNote: note === '' ? null : note, sourceIds: s.source_ids });
   }
   return {
-    title: value.title.trim(),
-    summary: value.summary.trim(),
+    title: tidy(value.title),
+    summary: tidy(value.summary),
     sections,
-    takeaways: value.takeaways.map((t) => t.trim()),
-    reflectionQuestion: value.reflection_question.trim(),
+    takeaways: value.takeaways.map(tidy),
+    reflectionQuestion: tidy(value.reflection_question),
   };
 }
 
@@ -59,8 +61,17 @@ export function readingMinutes(words: number): number {
 }
 
 const between = (text: string, min: number, max: number): boolean => text.length >= min && text.length <= max;
-const QUOTED = /["“”„«»]([^"“”„«»]*)["“”„«»]|‘([^‘’]*)’/g;
-const MARKUP = /https?:\/\/|www\.|\*\*|__|##|`|^#|\[\d+\]/m;
+/**
+ * Double quotes of any kind, curly single quotes, and straight single quotes that aren't apostrophes: one opens after
+ * no letter (not "'90s"), may hold apostrophes ("don't") and closes before no letter.
+ */
+const QUOTED = /["“”„«»]([^"“”„«»]*)["“”„«»]|‘([^‘’]*)’|(?<![\p{L}\p{N}])'(?!\d)((?:[^']|'(?=\p{L}))*)'(?![\p{L}\p{N}])/gu;
+/** A quotation mark left over once the pairs are gone: an unclosed quotation. */
+const OPEN_QUOTE = /["“”„«»‘]/u;
+/** Links, markdown, HTML, reference numbers and list markers (M8a review: the first version let several through). */
+const MARKUP = /https?:\/\/|www\.|[*_`]|##|^#|\]\(|\[\s*\d[\d,\s–-]*\]|<\/?[a-z]|^[-•]\s/imu;
+/** A bare domain or an email address: a name, a dot and a lowercase ending of 2 or more letters (not "e.g."). */
+const DOMAIN = /(?<![\p{L}\p{N}.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9-]+)*\.[a-z]{2,24}(?![\p{L}\p{N}])/u;
 
 /** Why an article can't be published, or nothing. */
 export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
@@ -69,9 +80,9 @@ export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
   if (!between(a.summary, 40, 300)) problems.push('the summary must be 40–300 characters');
   if (a.sections.length < 4 || a.sections.length > 7) problems.push('an article has 4–7 sections');
   for (const s of a.sections) {
-    if (!between(s.heading, 2, 70)) problems.push(`heading "${s.heading.slice(0, 40)}" must be 2–70 characters`);
+    if (!between(s.heading, 2, 70)) problems.push(`heading "${clip(s.heading, 40)}" must be 2–70 characters`);
     if (s.paragraphs.length < 1 || s.paragraphs.length > 5 || s.paragraphs.some((p) => !between(p, 20, 1200))) {
-      problems.push(`section "${s.heading.slice(0, 40)}" needs 1–5 paragraphs of 20–1,200 characters`);
+      problems.push(`section "${clip(s.heading, 40)}" needs 1–5 paragraphs of 20–1,200 characters`);
     }
     if (s.systemNote !== null && !between(s.systemNote, 10, 300)) problems.push('a System note must be 10–300 characters');
   }
@@ -90,11 +101,13 @@ export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
 
   const texts = articleTexts(a);
   for (const t of texts) {
+    if (hasBrokenCharacters(t)) problems.push('control characters or half an emoji');
     for (const m of t.matchAll(QUOTED)) {
-      const quoted = m[1] ?? m[2] ?? '';
-      if (wordCount(quoted) >= QUOTE_WORDS) problems.push(`no quotations: "${quoted.slice(0, 40)}"`);
+      const quoted = m[1] ?? m[2] ?? m[3] ?? '';
+      if (wordCount(quoted) >= QUOTE_WORDS) problems.push(`no quotations: "${clip(quoted, 40)}"`);
     }
-    if (MARKUP.test(t)) problems.push(`no links, markdown or reference numbers: "${t.slice(0, 40)}"`);
+    if (OPEN_QUOTE.test(t.replace(QUOTED, ''))) problems.push(`an unclosed quotation mark: "${clip(t, 40)}"`);
+    if (MARKUP.test(t) || DOMAIN.test(t)) problems.push(`no links, markdown or reference numbers: "${clip(t, 40)}"`);
     problems.push(...lintArticle(t));
   }
   const excerpts = new Set(brief.excerpts.flatMap((e) => shingles(e, COPY_RUN)));

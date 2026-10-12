@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BRIEF_LIMITS, buildBrief, checkBrief } from '../../functions/_shared/articles/brief.ts';
-import { shingles, wordCount, wordsOf } from '../../functions/_shared/articles/text.ts';
+import { clip, hasBrokenCharacters, shingles, wordCount, wordsOf } from '../../functions/_shared/articles/text.ts';
 
 const cite = (url: string, cited_text = 'Sleep runs in cycles of about ninety minutes each night.', title: string | null = `Title of ${url}`) =>
   ({ type: 'web_search_result_location', url, title, cited_text, encrypted_index: 'x' });
@@ -15,6 +15,20 @@ describe('text helpers', () => {
     expect(shingles('a b c d', 3)).toEqual(['a b c', 'b c d']);
     expect(shingles('a b', 3)).toEqual([]);
   });
+
+  it('clips without splitting an emoji, and drops what Postgres refuses (M8a review)', () => {
+    expect(clip(`${'x'.repeat(39)}🔥 more`, 40)).toBe(`${'x'.repeat(39)}🔥`);
+    expect(clip('a\u0000b\u0007c', 10)).toBe('abc');
+    expect(clip('half \ud83c emoji', 20)).toBe('half \ufffd emoji');
+    expect(clip('line\nbreak', 20)).toBe('line\nbreak');
+  });
+
+  it('finds control characters and half emoji', () => {
+    expect(hasBrokenCharacters('Plain words 🔥.')).toBe(false);
+    expect(hasBrokenCharacters('a\u0000b')).toBe(true);
+    expect(hasBrokenCharacters('half \ud83c')).toBe(true);
+    expect(hasBrokenCharacters('\udd25 alone')).toBe(true);
+  });
 });
 
 describe('buildBrief (M8a decision 2)', () => {
@@ -28,11 +42,11 @@ describe('buildBrief (M8a decision 2)', () => {
     { type: 'text', text: 'A fact from a document citation is skipped.', citations: [{ type: 'char_location', cited_text: 'x' }] },
   ];
 
-  it('numbers the cited pages in the order they are first cited', () => {
+  it('numbers the pages the kept facts cite, in the order they are first cited', () => {
+    // c.org is cited only by a passage too short to be a fact (M8a review: a source must back a fact).
     expect(buildBrief(content).sources).toEqual([
       { id: 1, url: 'https://a.org/1', title: 'Title of https://a.org/1' },
       { id: 2, url: 'https://b.org/2', title: 'Title of https://b.org/2' },
-      { id: 3, url: 'https://c.org/3', title: 'Title of https://c.org/3' },
     ]);
   });
 
@@ -50,6 +64,12 @@ describe('buildBrief (M8a decision 2)', () => {
   it('names a page by its address when the title is missing, and ignores anything not a web address', () => {
     const brief = buildBrief([{ type: 'text', text: 'One two three four.', citations: [cite('https://d.org/x', 'y', null), cite('javascript:alert(1)')] }]);
     expect(brief.sources).toEqual([{ id: 1, url: 'https://d.org/x', title: 'd.org' }]);
+  });
+
+  it('keeps addresses as plain ASCII and titles and facts whole', () => {
+    const brief = buildBrief([{ type: 'text', text: `${'Fact '.repeat(119)}abcd🔥 tail`, citations: [cite('https://e.org/caf\u00e9', 'x', `${'t'.repeat(299)}🔥\u0000`)] }]);
+    expect(brief.sources).toEqual([{ id: 1, url: 'https://e.org/caf%C3%A9', title: `${'t'.repeat(299)}🔥` }]);
+    expect(brief.facts[0]!.text.endsWith('abcd🔥')).toBe(true);
   });
 
   it('survives anything the model sends', () => {

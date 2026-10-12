@@ -11,6 +11,7 @@ import { buildBrief, checkBrief } from './brief.ts';
 import type { Brief } from './brief.ts';
 import { articleWords, checkArticle, parseArticle, readingMinutes } from './check.ts';
 import type { ArticleDraft } from './check.ts';
+import { clip } from './text.ts';
 import { chooseTopics } from './topics.ts';
 import type { UsedTopic } from './topics.ts';
 
@@ -64,6 +65,19 @@ export interface Store {
 export type BatchMessage = { content: readonly unknown[]; stop_reason: string | null; usage: Usage };
 export type BatchResult = { customId: string; type: 'succeeded' | 'errored' | 'canceled' | 'expired'; message: BatchMessage | null; error: string | null };
 
+/**
+ * Thrown by `Batches.submit` when the API answered with an error, so no batch was made: `busy` (rate limited or
+ * overloaded: a later tick tries again) or `refused` (the same request would fail again). Any other error means no
+ * answer came, and the batch may have been made and billed (M8a review).
+ */
+export class SubmitError extends Error {
+  outcome: 'busy' | 'refused';
+  constructor(outcome: 'busy' | 'refused', message: string) {
+    super(message);
+    this.outcome = outcome;
+  }
+}
+
 export interface Batches {
   submit(requests: readonly BatchRequest[]): Promise<string>;
   state(batchId: string): Promise<{ ended: boolean; createdAtMs: number }>;
@@ -72,7 +86,8 @@ export interface Batches {
 }
 
 export type TickReport = {
-  ran: boolean; queued: number; submitted: number; collected: number; published: string[]; review: string[]; retry: number; failed: number; budget: boolean;
+  ran: boolean; queued: number; submitted: number; collected: number; published: string[]; review: string[]; retry: number; failed: number;
+  budget: boolean; errors: number;
 };
 
 /** The UTC date whose night has begun by `nowMs`, or null before 18:00 UTC. */
@@ -82,14 +97,15 @@ export function nightOf(nowMs: number): string | null {
 }
 
 export async function tick(store: Store, batches: Batches, nowMs: number): Promise<TickReport> {
-  const report: TickReport = { ran: false, queued: 0, submitted: 0, collected: 0, published: [], review: [], retry: 0, failed: 0, budget: false };
+  const report: TickReport = { ran: false, queued: 0, submitted: 0, collected: 0, published: [], review: [], retry: 0, failed: 0, budget: false, errors: 0 };
   if (!(await store.begin(LEASE_SECONDS))) return report;
   report.ran = true;
   try {
     report.queued = await queueNight(store, nowMs);
     await collect(store, batches, nowMs, report);
-    await submit(store, batches, nowMs, report, 'queued');
+    // Writing first: near the cap, a brief already paid for gets the budget before new research does (M8a review).
     await submit(store, batches, nowMs, report, 'researched');
+    await submit(store, batches, nowMs, report, 'queued');
   } finally {
     await store.end();
   }
@@ -118,32 +134,44 @@ async function collect(store: Store, batches: Batches, nowMs: number, report: Ti
   const jobs = await store.openJobs();
   for (const job of jobs) {
     if (inFlight(job) && job.batchId === null && job.submittedAtMs !== null && nowMs - job.submittedAtMs > SUBMIT_STALE_MS) {
-      await unsubmit(store, job, 'the submission did not finish');
+      // A submission that died midway may have gone out: its estimate stays spent and it uses the attempt, so a
+      // submission that keeps dying can't book the estimate every tick (M8a review).
+      const error = 'the submission did not finish';
+      if (job.aiCallId !== null) await store.finish(job.aiCallId, { status: 'failed', usage: null, costUsd: ESTIMATE_USD[stepOf(job)], error });
+      await failAttempt(store, job, error, report);
     }
   }
   const batchIds = [...new Set(jobs.flatMap((j) => (inFlight(j) && j.batchId !== null ? [j.batchId] : [])))];
   for (const batchId of batchIds) {
-    const state = await batches.state(batchId);
-    if (!state.ended) {
-      // Its jobs fail when the cancelled batch ends (its results say "canceled").
-      if (nowMs - state.createdAtMs > BATCH_GIVE_UP_MS) await batches.cancel(batchId);
+    let results: Map<string, BatchResult>;
+    try {
+      const state = await batches.state(batchId);
+      if (!state.ended) {
+        // Its jobs fail when the cancelled batch ends (its results say "canceled").
+        if (nowMs - state.createdAtMs > BATCH_GIVE_UP_MS) await batches.cancel(batchId);
+        continue;
+      }
+      results = new Map((await batches.results(batchId)).map((r) => [r.customId, r]));
+    } catch (error) {
+      // The API is unreachable for now: the next tick asks again.
+      report.errors++;
+      console.error(`article batch ${batchId}`, error);
       continue;
     }
-    const results = new Map((await batches.results(batchId)).map((r) => [r.customId, r]));
     for (const job of jobs.filter((j) => j.batchId === batchId && inFlight(j))) {
       report.collected++;
       const result = results.get(customId(job.id, job.attempt, stepOf(job)));
-      if (job.status === 'researching') await collectResearch(store, job, result, report);
-      else await collectWrite(store, job, result, report);
+      try {
+        if (job.status === 'researching') await collectResearch(store, job, result, report);
+        else await collectWrite(store, job, result, report);
+      } catch (error) {
+        // One answer that breaks something must not stop the pipeline (M8a review): its job fails this attempt.
+        report.errors++;
+        console.error(`article job ${job.id}`, error);
+        await failAttempt(store, job, `internal: ${clip(String(error), 200)}`, report);
+      }
     }
   }
-}
-
-/** A submission that died midway: its estimate stays spent (it may have gone out) and the job goes back a step. */
-async function unsubmit(store: Store, job: Job, error: string): Promise<void> {
-  const step = stepOf(job);
-  if (job.aiCallId !== null) await store.finish(job.aiCallId, { status: 'failed', usage: null, costUsd: ESTIMATE_USD[step], error });
-  await store.move(job.id, job.status, step === 'research' ? 'queued' : 'researched', { aiCallId: null, submittedAt: null, error });
 }
 
 /** The usable answer in a result, or why there is none; its cost is known whenever the API answered. */
@@ -201,7 +229,7 @@ async function collectWrite(store: Store, job: Job, result: BatchResult | undefi
 
 async function failAttempt(store: Store, job: Job, error: string, report: TickReport): Promise<void> {
   const to: JobStatus = job.attempt < 2 ? 'retry' : 'failed';
-  await store.move(job.id, job.status, to, { batchId: null, aiCallId: null, submittedAt: null, brief: null, error: error.slice(0, 1000) });
+  await store.move(job.id, job.status, to, { batchId: null, aiCallId: null, submittedAt: null, brief: null, error: clip(error, 1000) });
   if (to === 'retry') report.retry++;
   else report.failed++;
 }
@@ -232,10 +260,15 @@ async function submit(store: Store, batches: Batches, nowMs: number, report: Tic
   try {
     batchId = await batches.submit(ready.map(({ job }) => (step === 'research' ? researchRequest(job) : writeRequest(job, job.brief!))));
   } catch (error) {
-    // Nothing was sent: the jobs go back and the next tick tries again. A technical error uses no attempt.
+    // Busy: nothing was sent, so the jobs go back for a later tick and use no attempt. Refused: nothing was sent, but the
+    // same request would fail again, so each uses its attempt. No answer (a timeout, a lost connection): the batch may
+    // have been made and billed, so the estimate stays spent and each uses its attempt (M8a review).
+    const outcome = error instanceof SubmitError ? error.outcome : 'unknown';
+    const message = `submit: ${clip(String(error), 200)}`;
     for (const { job, aiCallId } of ready) {
-      await store.finish(aiCallId, { status: 'failed', usage: null, costUsd: 0, error: `submit: ${String(error).slice(0, 200)}` });
-      await store.move(job.id, to, from, { aiCallId: null, submittedAt: null });
+      await store.finish(aiCallId, { status: 'failed', usage: null, costUsd: outcome === 'unknown' ? ESTIMATE_USD[step] : 0, error: message });
+      if (outcome === 'busy') await store.move(job.id, to, from, { aiCallId: null, submittedAt: null });
+      else await failAttempt(store, { ...job, status: to }, message, report);
     }
     return;
   }

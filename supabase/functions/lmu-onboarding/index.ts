@@ -31,9 +31,11 @@ async function reveal(userId: string, choices: Choices): Promise<Reveal> {
   const call = await writeReveal(revealFacts(choices));
   const parsed = 'value' in call ? parseReveal(call.value) : null;
   const status = parsed !== null ? 'ok' : 'error' in call ? 'failed' : 'fallback';
-  const cost = 'value' in call ? costUsd(REVEAL_MODEL, { input_tokens: call.inputTokens, output_tokens: call.outputTokens }, false) : 0;
-  await db()`select levelmeup.finish_ai_call(${callId}::bigint, ${status}, ${'value' in call ? call.inputTokens : null}::int,
-    ${'value' in call ? call.outputTokens : null}::int, ${cost}::numeric, ${'error' in call ? call.error : parsed === null ? 'invalid reveal' : null})`;
+  const cost = call.inputTokens !== null && call.outputTokens !== null
+    ? costUsd(REVEAL_MODEL, { input_tokens: call.inputTokens, output_tokens: call.outputTokens }, false)
+    : 'maybeBilled' in call && call.maybeBilled ? ESTIMATE_USD.reveal : 0;
+  await db()`select levelmeup.finish_ai_call(${callId}::bigint, ${status}, ${call.inputTokens}::int,
+    ${call.outputTokens}::int, ${cost}::numeric, ${'error' in call ? call.error : parsed === null ? 'invalid reveal' : null})`;
   return parsed ?? fallback;
 }
 

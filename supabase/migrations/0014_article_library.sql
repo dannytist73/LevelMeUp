@@ -125,14 +125,15 @@ set search_path = levelmeup, pg_temp as $$
 $$;
 
 -- Decision 6: players who started a quest day in the last 7 days and have fewer than p_min published articles that no
--- day of theirs has been given.
+-- day of theirs has been given: all published articles less the published ones their days hold.
 create function levelmeup.article_short_players(p_min int) returns int language sql stable security definer
 set search_path = levelmeup, pg_temp as $$
-  select count(*)::int from levelmeup.profiles p
+  with published as (select count(*) as n from levelmeup.articles where status = 'published')
+  select count(*)::int from levelmeup.profiles p, published
   where exists (select 1 from levelmeup.quest_days d where d.user_id = p.user_id and d.created_at > now() - interval '7 days')
-    and (select count(*) from levelmeup.articles a
-         where a.status = 'published'
-           and not exists (select 1 from levelmeup.quest_days d where d.user_id = p.user_id and d.article_id = a.id)) < p_min
+    and published.n - (select count(distinct d.article_id) from levelmeup.quest_days d
+                       join levelmeup.articles a on a.id = d.article_id and a.status = 'published'
+                       where d.user_id = p.user_id) < p_min
 $$;
 
 -- Every topic ever queued, with when it was last queued (the rotation, decision 6).

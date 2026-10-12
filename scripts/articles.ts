@@ -32,14 +32,17 @@ const env = Object.fromEntries(
 const FUNCTION_URL = `${env.LMU_SUPABASE_URL}/functions/v1/${TICK_JOB}`;
 const ARTICLE_ID = /^article-\d+$/;
 
-/** Runs SQL from a temporary file (so a secret never reaches a command line), then deletes it. */
-function runSqlFile(sql: string): void {
+/**
+ * Runs SQL from a temporary file (so a secret never reaches a command line), then deletes it. With `secret`, a failure
+ * hides the CLI's output, which may repeat the statement (M8a review).
+ */
+function runSqlFile(sql: string, secret = false): void {
   const dir = mkdtempSync(join(tmpdir(), 'lmu-'));
   try {
     const file = join(dir, 'run.sql');
     writeFileSync(file, sql, { mode: 0o600 });
     const run = supabase(['db', 'query', '--linked', '--project-ref', PROJECT_REF, '--file', file]);
-    if (run.status !== 0) throw new Error(`the query failed: ${run.stderr.trim()}`);
+    if (run.status !== 0) throw new Error(secret ? 'the query failed (its output is hidden: it may hold the secret)' : `the query failed: ${run.stderr.trim()}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -56,12 +59,19 @@ function setup(): void {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
-  runSqlFile(vaultSql(secret));
+  runSqlFile(vaultSql(secret), true);
   console.log('The tick secret is set: LMU_TICK_SECRET for the function and its Vault copy for the cron. Nothing secret was printed.');
 }
 
 async function tickNow(): Promise<void> {
-  const [row] = query<{ secret: string }>([`select decrypted_secret as secret from vault.decrypted_secrets where name = '${VAULT_SECRET}'`]);
+  let rows: { secret: string }[];
+  try {
+    rows = query<{ secret: string }>([`select decrypted_secret as secret from vault.decrypted_secrets where name = '${VAULT_SECRET}'`]);
+  } catch {
+    // query() puts the CLI's output in its message, and that output may hold the secret (M8a review): never print it.
+    throw new Error('could not read the tick secret from the Vault (the details are hidden: they may hold it)');
+  }
+  const [row] = rows;
   if (row === undefined) throw new Error('no tick secret yet: run `npm run articles -- setup` first');
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',

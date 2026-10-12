@@ -1,8 +1,9 @@
 // The research step's brief (architecture §5.2), built by code from the API's own citations (M8a decision 2): each fact
 // is a passage Claude wrote while citing search results, and its sources are the pages the API says it cited, so a fact
-// can't claim a source it didn't use. The cited excerpts are kept for the copying check.
+// can't claim a source it didn't use. Only pages a kept fact cites become sources; every cited excerpt is kept for the
+// copying check.
 import { isObject } from '../http.ts';
-import { wordCount } from './text.ts';
+import { clip, wordCount } from './text.ts';
 
 export type BriefSource = { id: number; url: string; title: string };
 export type BriefFact = { id: number; text: string; sources: number[] };
@@ -10,10 +11,16 @@ export type Brief = { sources: BriefSource[]; facts: BriefFact[]; excerpts: stri
 
 export const BRIEF_LIMITS = { minSources: 2, minFacts: 6, maxSources: 20, maxFacts: 40, factChars: 600 } as const;
 
+/** A cited page's address, normalised by the URL parser (so it is plain ASCII), or null when it isn't a web page. */
+function pageUrl(url: unknown): string | null {
+  if (typeof url !== 'string' || !/^https?:\/\/\S+$/.test(url) || !URL.canParse(url)) return null;
+  const href = new URL(url).href;
+  return href.length <= 2000 ? href : null;
+}
+
 function sourceTitle(title: unknown, url: string): string {
-  const text = typeof title === 'string' ? title.replace(/\s+/g, ' ').trim() : '';
-  if (text !== '') return text.slice(0, 300);
-  return new URL(url).hostname;
+  const text = typeof title === 'string' ? clip(title.replace(/\s+/g, ' ').trim(), 300) : '';
+  return text !== '' ? text : new URL(url).hostname;
 }
 
 /** The brief in a research answer's content blocks; anything unexpected is skipped (AI output is untrusted input). */
@@ -24,24 +31,28 @@ export function buildBrief(content: readonly unknown[]): Brief {
   const excerpts = new Set<string>();
   for (const block of content) {
     if (!isObject(block) || block.type !== 'text' || typeof block.text !== 'string' || !Array.isArray(block.citations)) continue;
-    const cited = new Set<number>();
+    const pages: { url: string; title: unknown }[] = [];
     for (const c of block.citations) {
-      if (!isObject(c) || c.type !== 'web_search_result_location' || typeof c.url !== 'string') continue;
-      if (!/^https?:\/\/[^\s]+$/.test(c.url) || c.url.length > 2000 || !URL.canParse(c.url)) continue;
-      let id = ids.get(c.url);
+      if (!isObject(c) || c.type !== 'web_search_result_location') continue;
+      const url = pageUrl(c.url);
+      if (url === null) continue;
+      pages.push({ url, title: c.title });
+      if (typeof c.cited_text === 'string' && c.cited_text.trim() !== '') excerpts.add(clip(c.cited_text.trim(), 1000));
+    }
+    const text = clip(block.text.replace(/\s+/g, ' ').trim(), BRIEF_LIMITS.factChars);
+    if (pages.length === 0 || wordCount(text) < 4 || facts.length >= BRIEF_LIMITS.maxFacts) continue;
+    const cited = new Set<number>();
+    for (const page of pages) {
+      let id = ids.get(page.url);
       if (id === undefined) {
         if (sources.length >= BRIEF_LIMITS.maxSources) continue;
         id = sources.length + 1;
-        ids.set(c.url, id);
-        sources.push({ id, url: c.url, title: sourceTitle(c.title, c.url) });
+        ids.set(page.url, id);
+        sources.push({ id, url: page.url, title: sourceTitle(page.title, page.url) });
       }
       cited.add(id);
-      if (typeof c.cited_text === 'string' && c.cited_text.trim() !== '') excerpts.add(c.cited_text.trim());
     }
-    const text = block.text.replace(/\s+/g, ' ').trim();
-    if (cited.size > 0 && wordCount(text) >= 4 && facts.length < BRIEF_LIMITS.maxFacts) {
-      facts.push({ id: facts.length + 1, text: text.slice(0, BRIEF_LIMITS.factChars), sources: [...cited] });
-    }
+    if (cited.size > 0) facts.push({ id: facts.length + 1, text, sources: [...cited] });
   }
   return { sources, facts, excerpts: [...excerpts] };
 }

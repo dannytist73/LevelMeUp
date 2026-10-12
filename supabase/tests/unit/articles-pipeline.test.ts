@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { ARTICLE_TOPICS } from '../../../packages/content/src/index.ts';
 import type { ArticleCluster } from '../../../packages/content/src/index.ts';
-import { BATCH_GIVE_UP_MS, nightOf, tick } from '../../functions/_shared/articles/pipeline.ts';
+import { BATCH_GIVE_UP_MS, SubmitError, nightOf, tick } from '../../functions/_shared/articles/pipeline.ts';
 import type { BatchResult, Batches, Finish, Job, JobSet, JobStatus, Store, StoredArticle, StoredSource } from '../../functions/_shared/articles/pipeline.ts';
 import type { BatchRequest } from '../../functions/_shared/prompts/articles.ts';
-import { articleJson } from './articles-fixtures.ts';
+import { BRIEF, articleJson } from './articles-fixtures.ts';
 
 const HOUR = 3_600_000;
 const NIGHT = Date.parse('2026-10-13T18:05:00Z');
@@ -21,6 +21,8 @@ class FakeStore implements Store {
   budgetLeft = 25;
   queuedAt = new Map<string, number>();
   clock = NIGHT;
+  /** Makes the moves it matches throw, as a database error would. */
+  breakMove: ((id: number, to: JobStatus) => boolean) | null = null;
 
   async begin() { if (this.leased) return false; this.leased = true; return true; }
   async end() { this.leased = false; }
@@ -37,6 +39,7 @@ class FakeStore implements Store {
   }
   async openJobs() { return this.jobs.filter((j) => j.status !== 'done' && j.status !== 'failed').map((j) => ({ ...j })); }
   async move(id: number, from: JobStatus, to: JobStatus, set: JobSet) {
+    if (this.breakMove?.(id, to)) throw new Error('invalid input syntax for type json');
     const job = this.jobs.find((j) => j.id === id);
     if (job === undefined || job.status !== from) return false;
     job.status = to;
@@ -71,10 +74,12 @@ class FakeBatches implements Batches {
   submitted: { id: string; requests: readonly BatchRequest[]; createdAtMs: number }[] = [];
   ended = new Map<string, BatchResult[]>();
   cancelled: string[] = [];
-  failNext = false;
+  failNext: Error | null = null;
   clock = NIGHT;
   async submit(requests: readonly BatchRequest[]) {
-    if (this.failNext) { this.failNext = false; throw new Error('overloaded'); }
+    const failure = this.failNext;
+    this.failNext = null;
+    if (failure !== null) throw failure;
     const id = `batch-${this.submitted.length + 1}`;
     this.submitted.push({ id, requests, createdAtMs: this.clock });
     return id;
@@ -238,26 +243,65 @@ describe('tick (architecture §5.2)', () => {
     expect(batches.submitted[0]!.requests).toHaveLength(1);
   });
 
-  it('puts the jobs back when the submission fails, using no attempt', async () => {
+  it('puts the jobs back when the API is busy, using no attempt', async () => {
     const { store, batches, run } = setup();
-    batches.failNext = true;
+    batches.failNext = new SubmitError('busy', '529 overloaded');
     expect((await run()).submitted).toBe(0);
     expect(store.jobs.map((j) => [j.status, j.attempt, j.aiCallId])).toEqual([['queued', 1, null], ['queued', 1, null]]);
     expect(store.calls.map((c) => c.finish!.costUsd)).toEqual([0, 0]);
     expect((await run(NIGHT + HOUR)).submitted).toBe(2);
   });
 
-  it('notices a submission that died midway and keeps its estimate on the books', async () => {
+  it('uses the attempt when the API refuses the request, at no cost', async () => {
+    const { store, batches, run } = setup();
+    batches.failNext = new SubmitError('refused', '400 invalid_request_error');
+    expect(await run()).toMatchObject({ submitted: 0, retry: 2 });
+    expect(store.jobs.map((j) => [j.status, j.attempt, j.aiCallId])).toEqual([['retry', 1, null], ['retry', 1, null]]);
+    expect(store.calls.map((c) => c.finish!.costUsd)).toEqual([0, 0]);
+  });
+
+  it('keeps the estimate and uses the attempt when no answer came (M8a review: the batch may exist)', async () => {
+    const { store, batches, run } = setup();
+    batches.failNext = new Error('Request timed out.');
+    expect(await run()).toMatchObject({ submitted: 0, retry: 2 });
+    expect(store.jobs.map((j) => j.status)).toEqual(['retry', 'retry']);
+    expect(store.calls.map((c) => c.finish!.costUsd)).toEqual([0.4, 0.4]);
+    expect(store.job(1).error).toBe('submit: Error: Request timed out.');
+  });
+
+  it('notices a submission that died midway: its estimate stays spent and it uses the attempt', async () => {
     const { store, batches, run } = setup();
     store.short = 0;
     await store.queue([{ cluster: 'sleep', topic: 'How sleep cycles work', evergreen: false }]);
     const call = await store.reserve(1, 0.4);
     await store.move(1, 'queued', 'researching', { aiCallId: call as number, submittedAt: new Date(DAY).toISOString(), batchId: null });
-    await run(DAY + 2 * HOUR);
+    expect((await run(DAY + 2 * HOUR)).retry).toBe(1);
     expect(store.calls[0]!.finish).toEqual({ status: 'failed', usage: null, costUsd: 0.4, error: 'the submission did not finish' });
-    expect(store.job(1).status).toBe('researching');
-    expect(store.job(1).batchId).toBe('batch-1');
-    expect(batches.submitted).toHaveLength(1);
+    expect(store.job(1)).toMatchObject({ status: 'retry', aiCallId: null, error: 'the submission did not finish' });
+    expect(batches.submitted).toHaveLength(0);
+  });
+
+  it('carries on when one answer breaks something (M8a review)', async () => {
+    const { store, batches, run } = setup();
+    await run();
+    batches.finishLast(() => researchAnswer());
+    store.breakMove = (id, to) => id === 1 && to === 'researched';
+    const report = await run(NIGHT + HOUR);
+    expect(report).toMatchObject({ ran: true, errors: 1, retry: 1, submitted: 1 });
+    expect(store.job(1)).toMatchObject({ status: 'retry', error: 'internal: Error: invalid input syntax for type json' });
+    expect(store.job(2).status).toBe('writing');
+    expect(store.leased).toBe(false);
+  });
+
+  it('gives the budget to writing before new research (M8a review)', async () => {
+    const { store, batches, run } = setup();
+    store.short = 0;
+    await store.queue([{ cluster: 'sleep', topic: 'How sleep cycles work', evergreen: false }, { cluster: 'focus', topic: 'Single-tasking', evergreen: false }]);
+    await store.move(1, 'queued', 'researched', { brief: BRIEF });
+    store.budgetLeft = 0.3;
+    expect(await run(DAY)).toMatchObject({ submitted: 1, budget: true });
+    expect(store.jobs.map((j) => j.status)).toEqual(['writing', 'queued']);
+    expect(batches.submitted[0]!.requests.map((r) => r.custom_id)).toEqual(['job-1-1-write']);
   });
 
   it('cancels a batch still running after 25 hours, and fails its jobs when it ends', async () => {
