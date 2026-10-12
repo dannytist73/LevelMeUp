@@ -195,6 +195,8 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The days ahead are planned blind: a boundary change that is still arriving (M7b) can move a day's start, so a briefing planned for it may come a little early or late until the app is opened. |
 | Later | A "morning" briefing at a time just before the day ends (a late sleeper with an 08:00 day end and a 07:30 briefing) names the day that is ending: a hint on the screen, or naming the day that starts next (M7d review). |
 | Later | A shown evening reminder stays in the shade after the core quest is cleared (only planned ones are cancelled); dismissing it when the plan drops it. The developer preview schedules outside the store's queue (development builds only). |
+| Owner | Decide (M7d emulator): Android holds reminders as inexact alarms with a window of up to an hour, so on a sleeping phone a briefing may come that late. Keep it (the screen says so), or ask for exact alarms where the phone allows them (`SCHEDULE_EXACT_ALARM`: the spec ruled it out; Android 14+ needs the player to allow "Alarms & reminders"). Measure on the Find X9 first. |
+| Emulator | M7d rows 5 (planned while the core quest is open), 6 (a timer alert, its banner and its tap) and 9 (deleting leaves nothing planned) with Uma's deletion and the next test character. |
 | Owner | Find X9: the briefing and the evening reminder at their real times, the rest-day briefing, a timer alert with the screen off, the Shadow's reminder on a real Trial day, reminders after a reboot without opening the app (ColorOS), and the channels in the phone's settings. |
 
 ## Spikes and where they run

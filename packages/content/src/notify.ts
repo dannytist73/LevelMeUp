@@ -27,7 +27,7 @@ export const NOTIFY_TEXT = {
   shadowNote:
     'With the Pact at level 2: on a day the Shadow holds, a second, sterner reminder comes at {time} unless the ' +
     'recovery quest is cleared first. Lower the Pact to stop it.',
-  late: 'To save battery, your phone may deliver them a few minutes late.',
+  late: 'To save battery, your phone may deliver them late, sometimes by up to an hour.',
   ask: {
     title: 'Allow notifications?',
     line: 'Your phone will ask whether LevelMeUp may send notifications. Only the ones you turn on here will come.',

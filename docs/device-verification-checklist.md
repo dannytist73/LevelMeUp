@@ -373,15 +373,31 @@ the times the phone holds.
 
 | # | Check | Result |
 |---|---|---|
-| 1 | Settings shows Notifications: "Morning briefing · Off", "Evening reminder · Off", "Only if the core quest isn't done", and "Change notifications". | |
-| 2 | Turning on the briefing shows "Allow notifications?"; "Not now" leaves it off; "Allow notifications" brings Android's prompt; Allow turns it on with "7:30 AM" and the time stepper. | |
-| 3 | Deny twice (or `pm revoke`): the screen says notifications are off in the phone's settings; "Open phone settings" opens LevelMeUp's page; no prompt anywhere else, ever. | |
-| 4 | A briefing at its time (a time a few minutes ahead, or the developer screen's copy): the title "Day N · Morning briefing", the voice's line; on a planned rest day "Day N · Rest day". | |
-| 5 | The evening reminder is planned while the core quest is open and gone once it is cleared (the developer list and `dumpsys alarm`). | |
-| 6 | A running quest timer: with the app in the background, the alert comes at its time; pausing removes it; tapping it opens the quest. | |
-| 7 | A notification due while the app is open shows as a banner. | |
-| 8 | The phone's settings list the channels "Reminders" and "Quest timers"; the status-bar icon is the silhouette, not a white square. | |
-| 9 | Deleting the character (or starting over) leaves nothing planned (`dumpsys alarm`, the developer list). | |
-| 10 | The largest font: the Notifications screen and Settings' section wrap with nothing cut off; each switch and time stepper is at least 44 dp tall (`uiautomator dump`). | |
-| 11 | Unit tests, the typecheck and the bundle scan pass. Nothing is planned before the player turns one on, even where the phone allows notifications from install (Android 12 and older; unit tests). | |
+| 1 | Settings shows Notifications: "Morning briefing · Off", "Evening reminder · Off", "Only if the core quest isn't done", and "Change notifications". | Pass (emulator, Android 16, test character Uma in America/Caracas, development build 998b72c0, 2026-10-12): "Morning briefing · Off", "Evening reminder · Off", "Only if the core quest isn't done" and "Change notifications" under Notifications |
+| 2 | Turning on the briefing shows "Allow notifications?"; "Not now" leaves it off; "Allow notifications" brings Android's prompt; Allow turns it on with "7:30 AM" and the time stepper. | Pass: the briefing showed "Allow notifications?" with its line; "Not now" left it off and the phone unasked (POST_NOTIFICATIONS still not granted); "Allow notifications" brought Android's "Allow LevelMeUp to send you notifications?"; Allow turned the briefing on with "7:30 AM" and its stepper, and timer alerts came on with it |
+| 3 | Deny twice (or `pm revoke`): the screen says notifications are off in the phone's settings; "Open phone settings" opens LevelMeUp's page; no prompt anywhere else, ever. | Pass, with a note: after `pm revoke` and the user-fixed flag the app reads "may ask" (Expo learns "for good" only when it asks), so the first switch shows the System's card; Allow → Android refuses without a prompt → within a second the screen says notifications are off in the phone's settings and the switches are disabled; "Open phone settings" opens LevelMeUp's App info (Notifications · Off). No prompt at launch or anywhere else. With them off the plan is empty (0 planned) and the phone's alarms were cleared |
+| 4 | A briefing at its time (a time a few minutes ahead, or the developer screen's copy): the title "Day N · Morning briefing", the voice's line; on a planned rest day "Day N · Rest day". | Pass: the developer list held 6 briefings (day 2's 07:30 had passed): "Day 3 · Rest day" (Uma planned the rest) in the Questmaster's words, days 4-8 rotating their lines; `dumpsys alarm` held the same 6 at 07:30 Caracas (RTC_WAKEUP, inexact); the 10-second copy posted 11 s later on "Reminders" in ember; tapping it opened Today |
+| 5 | The evening reminder is planned while the core quest is open and gone once it is cleared (the developer list and `dumpsys alarm`). | Partly: with Uma's core quest cleared and tomorrow a rest day, turning the evening reminder on planned none (right). "Planned while open, gone once cleared" waits for the new test character (unit tests cover it, offline included) |
+| 6 | A running quest timer: with the app in the background, the alert comes at its time; pausing removes it; tapping it opens the quest. | Pending: Uma's only timer quest had run for 9 hours (nothing due, nothing planned: right); a fresh timer with the new test character |
+| 7 | A notification due while the app is open shows as a banner. | Partly: due with the app open, it is posted (status bar and shade) but shows no banner: "Reminders" is default importance (decision 6) and Android shows banners only for high importance ("Quest timers", row 6) |
+| 8 | The phone's settings list the channels "Reminders" and "Quest timers"; the status-bar icon is the silhouette, not a white square. | Pass, the icon improved for the next build: the channels "Reminders" (importance 3) and "Quest timers" (4) are listed; the status-bar icon is the LV silhouette, not a white square, but about half the size of the others (the adaptive icon's padding): a cropped 96 px `notification-icon.png` is in the config (633f853) and shows from the next build |
+| 9 | Deleting the character (or starting over) leaves nothing planned (`dumpsys alarm`, the developer list). | Pending: at Uma's deletion (after 08:00 UTC on 13 Oct); unit tests cover it |
+| 10 | The largest font: the Notifications screen and Settings' section wrap with nothing cut off; each switch and time stepper is at least 44 dp tall (`uiautomator dump`). | Pass after two fixes (font 2.0, then 1.0): the switches were Android's own, 27 dp tall, so each row is now the switch, 48 dp; the title broke inside "Notifications", so the header wraps and it moves under Back (both 633f853). Everything else wraps with nothing cut off; Settings' section too |
+| 11 | Unit tests, the typecheck and the bundle scan pass. Nothing is planned before the player turns one on, even where the phone allows notifications from install (Android 12 and older; unit tests). | Pass: content 1076, rules 449, server 376, app 742; typecheck and bundle scan clean; nothing planned before the player opts in (unit tests) |
 | 12 | Find X9: the briefing and the evening reminder at their real times over two days; the rest-day briefing; a timer alert with the screen off; the Shadow's reminder on a real Trial day; reminders after a reboot without opening the app (ColorOS). | Pending — owner |
+
+### What the emulator found (M7d, 2026-10-12)
+
+1. Android's switch is 27 dp tall, under the 44 dp target: each row is now the switch (48 dp), the native one only
+   drawn (633f853).
+2. At the largest text the title broke inside "Notifications": the header wraps, so it moves under Back (633f853).
+3. The status-bar icon (the adaptive monochrome icon) is small: a cropped 96 px icon is in the config for the next build.
+4. Expo learns that notifications are refused for good only when it asks: turned off in the phone's settings, they read
+   as "may ask", and one more tap (the System's card, then Allow) shows the refused card. Nothing else ever asks.
+5. A reminder due while the app is open goes to the shade without a banner (default importance, decision 6); only timer
+   alerts are high importance.
+6. The phone holds every reminder as an inexact alarm with a window of up to an hour (`dumpsys alarm`, Android 16): on a
+   sleeping phone it may come that late. The screen now says "sometimes by up to an hour"; the Find X9 measures the real
+   lateness (row 12).
+7. Once, right after Allow under the user-fixed flag, the refused card showed only after the screen was opened again; a
+   clean retry showed it within a second. Not reproduced.

@@ -2071,3 +2071,27 @@ git commit -m "M7d: emulator checks, as built"
   `planNotes` names match between Tasks 3 and 5; `NOTIFY_TEXT` keys used in Task 6 (`section`, `open`, `briefing`,
   `evening`, `eveningNote`, `timers`, `off`, `blocked`, `title`, `lead`, `briefingLine`, `eveningLine`, `timersLine`,
   `briefingAt`, `eveningAt`, `shadowTitle`, `shadowNote`, `late`, `ask.*`, `denied.*`) are defined in Task 1.
+
+## As built (2026-10-12)
+
+- **Commits** (branch `m7d-notifications` from `m7c-accountability` 0a1a1d4): 7f24a36 the words, b1ab821
+  `expo-notifications` ~57.0.22 (re-checked on that version: no exact-alarm permission, the inexact fallback), 6cb827f
+  the planner, a0e8c78 the seam and the applier, 76e0c8d the store, fcc2eaa the screen and Settings' section, a275733
+  taps, b7edd54 the developer screen, 1e8f45e docs, 90d4aea the review's fixes, 633f853 the emulator's fixes, then the
+  wording and these notes.
+- **Counts:** content 1076, rules 449, server 376 (unchanged), app 742; typecheck and bundle scan clean. No server change.
+- **Build:** EAS development build 998b72c0-5263-423e-9a29-2dd9682d6522 (free plan), installed on the emulator.
+- **Deviations from the plan:**
+  - Only a planned rest is named a rest day; a day protected another way (pain, no quests) is `settled`: no briefing and
+    no evening reminder for it.
+  - `listenTaps` clears the last response after every followed tap (Android remounts the root after Back); `NoteTaps`
+    survives a build without the native module.
+  - Review: a timer that would end after the quest day gets no alert; an `optedIn` flag in `lmu.notify` (Android 12 and
+    older allow notifications from install, so nothing is planned until the player turns one on); `forget` cancels first
+    and also clears the shade; the Shadow's reminder never comes before the evening time, and Settings shows its real
+    time (`shadowClock`) only while one can come; switches disabled while refused for good; the ask is announced.
+  - Emulator: each row is the switch (48 dp); the header wraps; a cropped notification icon (next build); the lateness
+    line says "sometimes by up to an hour" (Android's window for inexact alarms).
+  - No root `README.md` exists, so Task 9's status line went nowhere.
+- **Emulator** (Uma, America/Caracas): rows 1-4, 8, 10, 11 pass; 5 and 7 partly; 6 and 9 wait for the new test character
+  and Uma's deletion; 12 is the owner's (Find X9).
