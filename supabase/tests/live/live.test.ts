@@ -328,7 +328,7 @@ describe('offline-built days (M6e)', () => {
   });
 
   it("another quest in that slot still counts the work; pain rests the exercise the player did; a rating isn't kept", async () => {
-    // The phone showed walk-0 (a check-off) where the server has a rep quest (review fixes).
+    // The phone showed a walk (a check-off) where the server has another quest (review fixes).
     const did = quest(state, 'core').templateId === 'walk-0' ? 'walk-1' : 'walk-0';
     const ref = { dayNumber: 1, slot: 'core', templateId: did };
     const res = await sync(d, [

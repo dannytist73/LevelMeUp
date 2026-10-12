@@ -116,7 +116,11 @@ Claude's recommendations, under the owner's "use your recommendations" for this 
 15. **Accepted risks** (stated, not built against): a phone can claim to have opened a day it didn't (a made-up
     `builtAt`), within the 48 hours completions already allow, and a completion on a rebuilt day skips the timer and rep
     checks. Both only let someone fool themselves: the server still checks every quest, pays only its own rewards, and
-    counts each quest once.
+    counts each quest once. *As built (review):* a completion named by slot is checked against the quest the phone
+    says the player did, so a modified phone that names a check-off quest (or one this content doesn't know) still
+    completes the quest in that slot without its timer or rep check, on any day; it earns that quest's XP and streak
+    credit once, moves no ladder and counts as no workout. A modified phone can also send any day the rules allow, with
+    any why-line. A day built more than 48 hours plus a day ago is applied as of now.
 
 ## Remote steps (each needs the owner's yes)
 

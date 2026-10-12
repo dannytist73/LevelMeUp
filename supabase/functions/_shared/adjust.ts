@@ -7,7 +7,7 @@ import {
 } from '../../../packages/rules/src/index.ts';
 import type { BuiltDay, ClassId, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
-import type { AdjustEvent, DayAbility } from './events.ts';
+import type { AdjustEvent, DayAbility, PainChoice } from './events.ts';
 import { ladderMap, startPoints, statXp, toProfile } from './state.ts';
 import type { DayRow, InstanceDraft, InstanceRow, Snapshot } from './state.ts';
 import { QUEST_SLOTS, canStepDown, completedSlots, openDay, questsOf, restDays, todayBuilt, todayInput } from './today.ts';
@@ -218,11 +218,20 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
 
 /**
  * "I felt pain" about a quest of a day the phone built offline that the server rebuilt (M6e review): the exercise the
- * player did rests, as a report after its day ended does; the day and its quests stay as they are.
+ * player did rests, and "rest" still protects the day while it runs, as on any day (gentle movement was never offered
+ * there, so it rests too). The day's quests stay as they are.
  */
-export function planOfflinePain(s: Snapshot, templateId: string, library: QuestLibrary): Plan {
-  const template = findTemplate(library, templateId);
+export function planOfflinePain(
+  s: Snapshot,
+  pain: { dayNumber: number; templateId: string; choice: PainChoice },
+  ctx: { nowMs: number; library: QuestLibrary },
+): Plan {
+  const template = findTemplate(ctx.library, pain.templateId);
   if (template === undefined || template.exercise === null) return refuse('not_exercise');
   const key = painKey(template);
-  return { change: { ladders: { [key]: recordPain(ladderMap(s.ladders)[key] ?? newLadder()).state } } };
+  const ladders = { [key]: recordPain(ladderMap(s.ladders)[key] ?? newLadder()).state };
+  const stored = s.days.find((d) => d.day_number === pain.dayNumber);
+  const day = stored === undefined ? null : dayOf(s, Number(stored.id), ctx.nowMs);
+  if (pain.choice === 'pause' || day === null || 'code' in day || day.protection !== null) return { change: { ladders } };
+  return { change: { ladders, day: { id: Number(day.id), protection: 'pain' } } };
 }

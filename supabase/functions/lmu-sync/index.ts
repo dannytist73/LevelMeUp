@@ -156,7 +156,9 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
 async function slotPain(tx: Tx, userId: string, s: Snapshot, event: PainEvent & { ref: SlotRef }, nowMs: number): Promise<Plan> {
   const row = await questRow(tx, userId, event);
   if (row === null) return { code: 'not_found' };
-  if (row.template_id !== event.ref.templateId) return planOfflinePain(s, event.ref.templateId, LIBRARY);
+  if (row.template_id !== event.ref.templateId) {
+    return planOfflinePain(s, { dayNumber: event.ref.dayNumber, templateId: event.ref.templateId, choice: event.choice }, { nowMs, library: LIBRARY });
+  }
   return planAdjust(s, { id: event.id, type: 'pain', instanceId: Number(row.id), choice: event.choice }, { nowMs, library: LIBRARY });
 }
 

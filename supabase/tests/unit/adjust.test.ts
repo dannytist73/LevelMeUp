@@ -339,12 +339,28 @@ describe("Scholar's Path: the book (M6d decision 12)", () => {
 });
 
 describe('"I felt pain" about a quest the server rebuilt (M6e review)', () => {
-  it('rests the exercise the player did; the day stays as it is', () => {
-    expect(planOfflinePain(at(), 'push-1', LIBRARY)).toEqual({ change: { ladders: { push: recordPain(newLadder(1)).state } } });
+  const ctx = { nowMs: NOW, library: LIBRARY };
+  const rested = { push: recordPain(newLadder(1)).state };
+  const pain = (templateId: string, choice: 'rest' | 'pause' | 'gentle') => ({ dayNumber: 2, templateId, choice });
+  const dayTwoId = (s: Snapshot) => Number(s.days.find((d) => d.day_number === 2)!.id);
+
+  it('rests the exercise the player did; "pause" leaves the day as it is', () => {
+    expect(planOfflinePain(at(), pain('push-1', 'pause'), ctx)).toEqual({ change: { ladders: rested } });
+  });
+
+  it('"rest" also protects the day while it runs, as on any day', () => {
+    const s = at();
+    expect(planOfflinePain(s, pain('push-1', 'rest'), ctx)).toEqual({ change: { ladders: rested, day: { id: dayTwoId(s), protection: 'pain' } } });
+    expect(planOfflinePain(s, pain('push-1', 'gentle'), ctx)).toEqual({ change: { ladders: rested, day: { id: dayTwoId(s), protection: 'pain' } } });
+  });
+
+  it('after the day ended, or on a day already protected, only the exercise rests', () => {
+    expect(planOfflinePain(at(), pain('push-1', 'rest'), { ...ctx, nowMs: NOW + 2 * DAY_MS })).toEqual({ change: { ladders: rested } });
+    expect(planOfflinePain(at({}, { protection: 'planned_rest' }), pain('push-1', 'rest'), ctx)).toEqual({ change: { ladders: rested } });
   });
 
   it('refuses a quest that is no exercise, or one this content lacks', () => {
-    expect(planOfflinePain(at(), 'reading-0', LIBRARY)).toEqual({ code: 'not_exercise' });
-    expect(planOfflinePain(at(), 'nope-0', LIBRARY)).toEqual({ code: 'not_exercise' });
+    expect(planOfflinePain(at(), pain('reading-0', 'rest'), ctx)).toEqual({ code: 'not_exercise' });
+    expect(planOfflinePain(at(), pain('nope-0', 'rest'), ctx)).toEqual({ code: 'not_exercise' });
   });
 });
