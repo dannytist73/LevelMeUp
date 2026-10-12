@@ -5,3 +5,9 @@ export function goBack(): void {
   if (router.canGoBack()) router.back();
   else router.replace('/');
 }
+
+/** Back to the first screen (M7b: after deleting the character); Today then sends a player without one to the onboarding. */
+export function backToStart(): void {
+  if (router.canDismiss()) router.dismissAll();
+  else router.replace('/');
+}

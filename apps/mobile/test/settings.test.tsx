@@ -1,7 +1,9 @@
 import { DIFFICULTY_CHOICES, ONBOARDING_TEXT, PLAY_TEXT, SETTINGS_TEXT, VOICE_NAMES } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
+import { DeleteCharacter } from '../src/screens/DeleteCharacter.tsx';
 import { GameSettings } from '../src/screens/GameSettings.tsx';
+import { Settings } from '../src/screens/Settings.tsx';
 import { adjustState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
@@ -38,5 +40,67 @@ describe('Your game (M7b decision 2)', () => {
     await render(withStore(testStore({ view: null }), <GameSettings onDone={jest.fn()} onBack={onBack} />));
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.back }));
     expect(onBack).toHaveBeenCalled();
+  });
+});
+
+const D = SETTINGS_TEXT.delete;
+
+describe('Delete your character (M7b decision 3)', () => {
+  it('says what goes, asks a second time, then deletes and leaves', async () => {
+    const deleteCharacter = jest.fn(async () => ({ ok: true as const }));
+    const onDeleted = jest.fn();
+    await render(withStore(testStore({ account: { kind: 'guest' }, deleteCharacter }), <DeleteCharacter onDeleted={onDeleted} onBack={jest.fn()} />));
+    expect(screen.getByText(D.what)).toBeTruthy();
+    expect(screen.getByText(D.guest)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: D.start }));
+    expect(deleteCharacter).not.toHaveBeenCalled();
+    expect(screen.getByText(D.sure)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: D.yes }));
+    expect(deleteCharacter).toHaveBeenCalledTimes(1);
+    expect(onDeleted).toHaveBeenCalled();
+  });
+
+  it('a character saved with Google: the sign-in stays, and the screen says so', async () => {
+    await render(withStore(testStore({ account: { kind: 'saved', email: 'rin@example.com' } }), <DeleteCharacter onDeleted={jest.fn()} onBack={jest.fn()} />));
+    expect(screen.getByText(D.google)).toBeTruthy();
+    expect(screen.queryByText(D.guest)).toBeNull();
+  });
+
+  it('"Keep my character" sends nothing; a delete that fails says why and leaves nothing changed', async () => {
+    const deleteCharacter = jest.fn(async () => ({ ok: false as const, code: 'network' }));
+    const onDeleted = jest.fn();
+    await render(withStore(testStore({ deleteCharacter }), <DeleteCharacter onDeleted={onDeleted} onBack={jest.fn()} />));
+    await fireEvent.press(screen.getByRole('button', { name: D.start }));
+    await fireEvent.press(screen.getByRole('button', { name: D.keep }));
+    expect(deleteCharacter).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: D.start }));
+    await fireEvent.press(screen.getByRole('button', { name: D.yes }));
+    expect(await screen.findByText(D.network)).toBeTruthy();
+    expect(onDeleted).not.toHaveBeenCalled();
+  });
+});
+
+describe('Settings → Account and Game (M7b)', () => {
+  const settings = (onGame = jest.fn(), onDelete = jest.fn()) => (
+    <Settings onBack={() => {}} onTraining={() => {}} onGame={onGame} onDelete={onDelete} version="0.1.0" deviceZone="Asia/Manila" />
+  );
+
+  it('opens Your game and Delete my character', async () => {
+    const onGame = jest.fn();
+    const onDelete = jest.fn();
+    await render(withStore(testStore({ view: project(adjustState(), []) }), settings(onGame, onDelete)));
+    await fireEvent.press(screen.getByRole('button', { name: G.open }));
+    expect(onGame).toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: SETTINGS_TEXT.account.delete }));
+    expect(onDelete).toHaveBeenCalled();
+  });
+
+  it('with the sign-in gone for good: the start-again card, and no delete (decision 4)', async () => {
+    const store = testStore({ signInLost: true });
+    await render(withStore(store, settings()));
+    await fireEvent.press(screen.getByRole('button', { name: 'Start again as a new guest' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Yes, start again' }));
+    expect(store.getState().startOver).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: SETTINGS_TEXT.account.delete })).toBeNull();
   });
 });

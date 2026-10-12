@@ -4,7 +4,6 @@
 // reader arrives in M8.
 import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, artKey, authoredTemplate } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
-import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
@@ -14,7 +13,7 @@ import { streakNote } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
-import { SIGN_IN_LOST_TEXT, useGame } from '../state/store.ts';
+import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
@@ -27,6 +26,7 @@ import { XpBar } from '../ui/XpBar.tsx';
 import { CheckinNotes } from './CheckinNotes.tsx';
 import { DayActions, DayBanners, PausedExercises } from './DayActions.tsx';
 import { QuestCard } from './QuestCard.tsx';
+import { SignInLost } from './SignInLost.tsx';
 import { syncMark } from './syncLine.ts';
 
 export type TodayProps = {
@@ -57,10 +57,8 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
   const dismissNotice = useGame((s) => s.dismissNotice);
   const enqueue = useGame((s) => s.enqueue);
   const signInLost = useGame((s) => s.signInLost);
-  const startOver = useGame((s) => s.startOver);
   const trainingNoticeSeen = useGame((s) => s.trainingNoticeSeen);
   const dismissTrainingNotice = useGame((s) => s.dismissTrainingNotice);
-  const [confirming, setConfirming] = useState(false);
 
   const today = view?.today ?? null;
   const usable = today !== null && today.quests.length > 0 && Date.parse(today.endsAt!) > now();
@@ -80,20 +78,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
   let body;
   if (signInLost) {
     // M4 re-review: the sign-in is gone for good; starting again is the player's choice, confirmed, never automatic.
-    body = (
-      <View style={{ gap: 16 }}>
-        <NarrationBox>{SIGN_IN_LOST_TEXT}</NarrationBox>
-        {confirming ? (
-          <>
-            <Small tone="chalk">This clears the progress kept on this phone. It can't be undone.</Small>
-            <Button label="Yes, start again" variant="secondary" onPress={() => void startOver()} />
-            <Button label="Not now" variant="secondary" onPress={() => setConfirming(false)} />
-          </>
-        ) : (
-          <Button label="Start again as a new guest" variant="secondary" onPress={() => setConfirming(true)} />
-        )}
-      </View>
-    );
+    body = <SignInLost />;
   } else if (!usable) {
     body = (
       <View style={{ gap: 16 }}>

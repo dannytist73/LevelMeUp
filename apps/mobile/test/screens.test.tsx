@@ -316,7 +316,7 @@ describe('Settings', () => {
     const store = testStore({ view: project(SERVER, []), lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30), pending: [completeEvent(1), completeEvent(2)] });
     const onBack = jest.fn();
     const onTraining = jest.fn();
-    await render(withStore(store, <Settings onBack={onBack} onDeveloper={() => {}} onTraining={onTraining} version="0.1.0" deviceZone="Asia/Manila" />));
+    await render(withStore(store, <Settings onBack={onBack} onDeveloper={() => {}} onTraining={onTraining} onGame={() => {}} onDelete={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
     expect(screen.getByText('Playing as a guest.')).toBeTruthy();
     expect(screen.getByText('Last synced 20:30')).toBeTruthy();
     expect(screen.getByText('2 waiting')).toBeTruthy();
@@ -334,7 +334,7 @@ describe('Settings', () => {
   it('offers a guest to save with Google, and shows a saved account', async () => {
     const saveWithGoogle = jest.fn(async () => ({ ok: false as const, code: 'cancelled' as const }));
     const store = testStore({ account: { kind: 'guest' }, saveWithGoogle });
-    await render(withStore(store, <Settings onBack={() => {}} onTraining={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
+    await render(withStore(store, <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
     await fireEvent.press(screen.getByRole('button', { name: 'Save with Google' }));
     expect(saveWithGoogle).toHaveBeenCalled();
     expect(screen.getByText(GOOGLE_ERRORS.cancelled)).toBeTruthy();
@@ -342,14 +342,14 @@ describe('Settings', () => {
 
   it('shows the Google account a character is saved with', async () => {
     const store = testStore({ account: { kind: 'saved', email: 'rin@example.com' } });
-    await render(withStore(store, <Settings onBack={() => {}} onTraining={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
+    await render(withStore(store, <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
     expect(screen.getByText('Saved with Google.')).toBeTruthy();
     expect(screen.getByText('rin@example.com')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save with Google' })).toBeNull();
   });
 
   it('shows a refused sync as plain text, never hides the outbox', async () => {
-    await render(withStore(testStore({ error: 'The server refused a sync (400 bad_body).' }), <Settings onBack={() => {}} onTraining={() => {}} version="0.1.0" deviceZone="UTC" />));
+    await render(withStore(testStore({ error: 'The server refused a sync (400 bad_body).' }), <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} version="0.1.0" deviceZone="UTC" />));
     expect(screen.getByText('The server refused a sync (400 bad_body).')).toBeTruthy();
     expect(screen.getByText('Not synced yet')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Developer' })).toBeNull();
