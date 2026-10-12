@@ -77,6 +77,8 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
       if (r.id === null) continue;
       acknowledged.add(r.id);
       if (!r.ok) refused.push({ eventId: r.id, code: r.code });
+      // M7b decision 7: applied, with a word for the player (a pain report whose day couldn't change any more).
+      else if (typeof r.notice === 'string') refused.push({ eventId: r.id, code: r.notice });
     }
     for (const r of call.body.rejected) {
       if (r.id === null) continue;

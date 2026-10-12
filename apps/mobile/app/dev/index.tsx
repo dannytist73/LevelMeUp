@@ -18,7 +18,7 @@ export default function Developer() {
   const pending = useGame((s) => s.pending);
   const notices = useGame((s) => s.notices);
   const status = useGame((s) => s.status);
-  const deleteTestCharacter = useGame((s) => s.deleteTestCharacter);
+  const deleteCharacter = useGame((s) => s.deleteCharacter);
   const startOver = useGame((s) => s.startOver);
   const signInLost = useGame((s) => s.signInLost);
   const account = useGame((s) => s.account);
@@ -99,7 +99,7 @@ export default function Developer() {
             disabled={confirm !== 'DELETE' || busy}
             onPress={() =>
               void act(async () => {
-                const r = await deleteTestCharacter();
+                const r = await deleteCharacter();
                 setConfirm('');
                 return r.ok ? 'Deleted. The onboarding starts again; it makes the next guest at its analysis.' : `Not deleted: ${r.code}`;
               })

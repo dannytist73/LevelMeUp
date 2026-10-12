@@ -278,3 +278,39 @@ describe('a state from a server before M7a (review)', () => {
     expect([shown.checkin, shown.checkinResult, shown.lighterPlan]).toEqual([null, null, null]);
   });
 });
+
+describe('Settings and rest days (M7b)', () => {
+  it('the settings show at once; the lighter plan steps down from the new minutes', () => {
+    const shown = project(adjustState(), [ev({ type: 'settings', voice: 'questmaster', boundaryMinutes: 300, minutesPerDay: 40, difficulty: 'hard' })]);
+    expect(shown.profile).toMatchObject({ voice: 'questmaster', boundaryMinutes: 300, minutesPerDay: 40, difficulty: 'hard' });
+    expect(shown.lighterPlan).toMatchObject({ from: 40, to: 25 });
+    const lightest = project(adjustState(), [ev({ type: 'settings', voice: 'mentor', boundaryMinutes: 240, minutesPerDay: 10, difficulty: 'steady' })]);
+    expect(lightest.lighterPlan).toBeNull();
+  });
+
+  it('rest tomorrow plans the next day and spends the offer; today stays as it is', () => {
+    const shown = project(adjustState(), [ev({ type: 'plan_rest', dayId: 2, tomorrow: true })]);
+    expect(shown.character.restDay).toBe(3);
+    expect(shown.today).toMatchObject({ restTomorrow: false, protection: null });
+  });
+
+  it('a day built offline that was planned as rest shows as one', () => {
+    const shown = project(serverState([], { rest_day: 2 }), [offlineEvent()]);
+    expect(shown.offline).toBe(true);
+    expect(shown.today!.protection).toBe('planned_rest');
+  });
+
+  it('after a day whose core quest was not done, an offline day holds the streak for the check-in (emulator finding)', () => {
+    expect(project(serverState(), [offlineEvent()]).character.streak.awaitingCheckin).toBe(true); // day 1's core undone
+    expect(project(serverState(['core']), [offlineEvent()]).character.streak.awaitingCheckin).toBe(false);
+  });
+
+  it('a state from a server before M7b: no planned rest, no offer, rather than failing', () => {
+    const server = adjustState();
+    const { restDay: _r, ...character } = server.character;
+    const { restTomorrow: _t, ...today } = server.today!;
+    const shown = project({ ...server, character, today } as unknown as ServerState, []);
+    expect(shown.character.restDay).toBeNull();
+    expect(shown.today!.restTomorrow).toBe(false);
+  });
+});

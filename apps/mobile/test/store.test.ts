@@ -183,7 +183,7 @@ describe('the game store', () => {
       while (lateAnswer === null) await settle();
       await jest.advanceTimersByTimeAsync(120_000); // the scheduler gives up on the hung run
       await booting;
-      expect(await store.getState().deleteTestCharacter()).toEqual({ ok: true });
+      expect(await store.getState().deleteCharacter()).toEqual({ ok: true });
       expect(await local.load()).toBeNull();
       expect(store.getState()).toMatchObject({ signInLost: false, phase: 'not_started' });
     } finally {
@@ -274,7 +274,7 @@ describe('the game store', () => {
     expect(api.onboarding).toHaveBeenCalledWith(toRequest(READY_DRAFT, 'Asia/Manila', false));
     expect(store.getState()).toMatchObject({ phase: 'ready', reveal: REVEAL });
     expect((await local.load())?.state).toEqual(SERVER);
-    expect(await store.getState().deleteTestCharacter()).toEqual({ ok: true });
+    expect(await store.getState().deleteCharacter()).toEqual({ ok: true });
     expect(deps.signOut).toHaveBeenCalled();
     expect(await local.load()).toBeNull();
     expect(store.getState()).toMatchObject({ phase: 'not_started', draft: NEW_DRAFT, reveal: null });
@@ -795,5 +795,28 @@ describe('the check-in on this phone (M7a decision 10)', () => {
     await second.store.getState().startOver();
     expect(second.kv.has(CHECKIN_RESULT_KEY)).toBe(false);
     expect(second.store.getState().checkinResultSeen).toBeNull();
+  });
+});
+
+describe('Settings (M7b)', () => {
+  it("a rest and a pain report carry when they were tapped (decision 6); other events don't", async () => {
+    const { store, local } = await setup([{ ok: false, status: 0, code: 'network' }]);
+    await store.getState().enqueue({ type: 'plan_rest', dayId: 1 });
+    await store.getState().enqueue({ type: 'pain', instanceId: core.id, choice: 'rest' });
+    await store.getState().enqueue({ type: 'hard_day', dayId: 1 });
+    const [rest, pain, hard] = await local.pending(10);
+    expect(rest).toMatchObject({ type: 'plan_rest', at: NOW });
+    expect(pain).toMatchObject({ type: 'pain', at: NOW });
+    expect('at' in hard!).toBe(false);
+  });
+
+  it('the analysis on a phone that cannot keep a sign-in makes nothing and keeps the answers (decision 8)', async () => {
+    const ensureSession = jest.fn(async (): Promise<SessionState> => 'storage_failed');
+    const { store, api } = await setup([{ ok: false, status: 404, code: 'not_started' }], { ensureSession });
+    await store.getState().boot();
+    store.getState().editDraft(READY_DRAFT);
+    expect(await store.getState().startCharacter()).toEqual({ ok: false, code: 'storage' });
+    expect(api.onboarding).not.toHaveBeenCalled();
+    expect(store.getState().draft).toEqual(READY_DRAFT);
   });
 });

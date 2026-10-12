@@ -38,6 +38,10 @@ const TEXT = {
   clock_ahead: "This phone's clock is ahead of the System's, so the day it built offline wasn't used. Check the phone's time.",
   already_answered: 'That check-in was already answered.',
   no_lighter_plan: 'Your plan is already at its lightest: 10 minutes a day.',
+  rest_late:
+    "That day had already closed when your rest day reached the System, so it couldn't become a rest day. If its " +
+    'check-in asks, say what happened.',
+  pain_late: 'The exercise rests. That day had already closed when your report reached the System, so the day itself stayed as it was.',
 } as const;
 
 export type NoticeCode = keyof typeof TEXT;

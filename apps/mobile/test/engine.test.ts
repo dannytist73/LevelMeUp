@@ -39,6 +39,22 @@ async function setup(replies: Reply[], alive = true) {
 }
 
 describe('one sync run', () => {
+  it('an applied event with a notice leaves the outbox, and its notice is kept (M7b decision 7)', async () => {
+    const { local, deps } = await setup([
+      (events) => ({
+        ok: true,
+        body: {
+          results: events.map((e) => ({ id: e.id, ok: true as const, result: {}, notice: 'pain_late' })),
+          rejected: [], newAchievements: [], state: state(1),
+        },
+      }),
+    ]);
+    await local.enqueue(ev(1), 1);
+    expect(await syncOnce(deps)).toMatchObject({ kind: 'synced', notices: [{ eventId: ev(1).id, code: 'pain_late' }] });
+    expect(await local.pending(10)).toEqual([]);
+    expect((await local.snapshot()).notices).toEqual([{ eventId: ev(1).id, code: 'pain_late' }]);
+  });
+
   it('with an empty outbox, asks for the state and stores it', async () => {
     const { local, sent, deps } = await setup([applyAll]);
     expect(await syncOnce(deps)).toEqual({ kind: 'synced', state: state(0), notices: [], newAchievements: [] });

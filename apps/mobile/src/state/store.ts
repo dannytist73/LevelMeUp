@@ -123,7 +123,8 @@ export type GameState = {
   saveWithGoogle: () => Promise<GoogleResult>;
   /** "Saved a character before?": only on a phone that holds none. */
   signInWithGoogle: () => Promise<RestoreResult>;
-  deleteTestCharacter: () => Promise<{ ok: true } | { ok: false; code: string }>;
+  /** Deletes the character on the server and forgets this phone's (M7b decision 3; the developer screen's button too). */
+  deleteCharacter: () => Promise<{ ok: true } | { ok: false; code: string }>;
   /** Forget this phone's character and sign-in and start as a new guest (after the player confirms). */
   startOver: () => Promise<void>;
   dismissNotice: (eventId: string) => Promise<void>;
@@ -249,7 +250,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       const empty = held.cached === null && held.pending.length === 0;
       // A sync never makes a guest (M5, decision 10): an empty phone without a sign-in is a new player.
       const session = await deps.ensureSession(() => false);
-      if (session === 'offline') return { kind: 'offline' };
+      // A sync never makes a guest, so its storage is never checked here (`storage_failed` can't come back).
+      if (session === 'offline' || session === 'storage_failed') return { kind: 'offline' };
       if (session === 'no_session') return empty ? { kind: 'fresh' } : { kind: 'sign_in_lost' };
       const local = {
         pending: deps.local.pending,
@@ -377,8 +379,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       enqueue: async (event) => {
         const view = get().view;
         const replaced = replacedQuest(event, view);
+        // M7b decision 6: a rest or a pain report carries when it was tapped, so it still counts for its day if it syncs late.
+        const stamped: NewEvent = (event.type === 'plan_rest' || event.type === 'pain') && event.at === undefined ? { ...event, at: deps.now() } : event;
         // A quest of the offline day is named by day and slot (M6e decision 7).
-        await deps.local.enqueue({ ...withRef(event, view), id: deps.newId() } as PhoneEvent, deps.now());
+        await deps.local.enqueue({ ...withRef(stamped, view), id: deps.newId() } as PhoneEvent, deps.now());
         if (replaced !== null) await get().saveTimer(replaced, null).catch(() => {});
         await refresh();
         void scheduler.request();
@@ -400,7 +404,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           if (!stepsFor(draft).every((step) => complete(draft, step))) return { ok: false, code: 'incomplete' };
           const ask = async (redo: boolean): Promise<StartResult> => {
             const signedIn = await deps.ensureSession(() => !redo && get().cached === null && get().pending.length === 0);
-            if (signedIn !== 'signed_in') return { ok: false, code: signedIn === 'offline' ? 'network' : 'no_session' };
+            if (signedIn !== 'signed_in') {
+              return { ok: false, code: signedIn === 'offline' ? 'network' : signedIn === 'storage_failed' ? 'storage' : 'no_session' };
+            }
             const started = await deps.api.onboarding(toRequest(get().draft, deps.timeZone(), redo));
             if (!started.ok) {
               // Decision 11: the first answer was lost on the way back, so the untouched character is built again. Never
@@ -475,7 +481,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         return { ok: true, found: phase === 'not_started' && status === 'idle' && error === null ? false : 'unknown' };
       },
 
-      deleteTestCharacter: async () => {
+      deleteCharacter: async () => {
         const result = await fenced(async () => {
           const deleted = await deps.api.deleteAccount();
           if (!deleted.ok) return { ok: false as const, code: deleted.code };

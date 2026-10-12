@@ -8,10 +8,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * - `no_session`: the session is cleanly gone (Auth removed it after refusing a refresh, or its key is gone for good)
  *   and a new guest isn't allowed: this phone holds a character or unsent actions (M4 code review). Retrying can't
  *   bring it back; the player decides whether to start again.
+ * - `storage_failed` (M7b decision 8): a new guest was due, but this phone can't keep a sign-in; none was made.
  *
  * `allowNewGuest` is asked at the moment of signing in, so a sync abandoned meanwhile can't make a guest.
  */
-export type SessionState = 'signed_in' | 'offline' | 'no_session';
+export type SessionState = 'signed_in' | 'offline' | 'no_session' | 'storage_failed';
 
 export async function ensureSession(client: SupabaseClient, allowNewGuest: () => boolean): Promise<SessionState> {
   let session: unknown;

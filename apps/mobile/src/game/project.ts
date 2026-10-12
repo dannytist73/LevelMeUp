@@ -3,10 +3,12 @@
 // its slot. Streaks, Discipline and ladders change when the server closes a day. The server's numbers replace all of
 // this at the next sync. M6e: a `provisional_day` in the outbox is today until the server's state has that day; events
 // name its quests by day and slot. M7a: a check-in answer shows at once (the card goes, or the streak is held for the
-// recovery quest the server adds); the lighter plan drops the minutes one step.
+// recovery quest the server adds); the lighter plan drops the minutes one step. M7b: the game settings show at once; a
+// rest day planned for tomorrow, and the offline day it falls on.
 import { LIBRARY } from '@levelmeup/content';
 import {
-  STATS, checkinOutcome, findTemplate, levelProgress, lighterMinutes, painKey, rankFor, statPoints, xpToNextPoint,
+  STATS, STREAK_SLOTS, checkinOutcome, closedDayResolution, findTemplate, levelProgress, lighterMinutes, painKey, rankFor, statPoints,
+  xpToNextPoint,
 } from '@levelmeup/rules';
 import type { XpByStat } from '@levelmeup/rules';
 import { hardFields, withFields } from './adjust.ts';
@@ -63,13 +65,16 @@ function stepped(minutes: number): ServerState['lighterPlan'] {
 }
 
 export function project(server: ServerState, pending: readonly PhoneEvent[]): Shown {
-  let character = server.character;
+  // A state from a server before M7b has no planned rest day and no rest-tomorrow offer (decision 9).
+  let character = { ...server.character, restDay: server.character.restDay ?? null };
   let profile = server.profile;
   let paused = server.paused;
   let changingClass = false;
   let reading = server.reading;
   let changingBook = false;
-  let today: TodayView | null = server.today === null ? null : { ...server.today, quests: server.today.quests.map((q) => ({ ...q })) };
+  let today: TodayView | null = server.today === null
+    ? null
+    : { ...server.today, restTomorrow: server.today.restTomorrow ?? false, quests: server.today.quests.map((q) => ({ ...q })) };
   let quests = today?.quests ?? [];
   let offline = false;
   // A state from a server before M7a has none of these (review): nothing shows rather than Today failing.
@@ -82,7 +87,18 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
     if (event.type === 'provisional_day') {
       // M6e: a day this phone built offline is today until the server's state has that day (or a later one).
       if (today === null || today.dayNumber < event.dayNumber) {
+        // The day that ended may need a check-in (its core quest not done): the streak waits for it, as on the server.
+        if (today !== null) {
+          const done = today.quests.filter((q) => q.completedAt !== null);
+          const ended = closedDayResolution({
+            coreDone: done.some((q) => q.slot === 'core'), questsDone: done.filter((q) => STREAK_SLOTS.includes(q.slot)).length,
+            protection: today.protection,
+          });
+          if (ended.kind === 'awaiting_checkin') character = { ...character, streak: { ...character.streak, awaitingCheckin: true } };
+        }
         today = offlineToday(event);
+        // A day planned as rest the day before is built as one (decision 5), as the server will.
+        if (character.restDay === event.dayNumber) today.protection = 'planned_rest';
         quests = today.quests;
         offline = true;
       }
@@ -148,12 +164,23 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       lighterPlan = event.accept ? stepped(lighterPlan.to) : { ...lighterPlan, offered: false };
       continue;
     }
-    if (event.type === 'settings') continue; // M7b Task 9 projects it
+    if (event.type === 'settings') {
+      profile = {
+        ...profile, voice: event.voice, boundaryMinutes: event.boundaryMinutes, minutesPerDay: event.minutesPerDay, difficulty: event.difficulty,
+      };
+      // The lighter plan steps down from the new minutes; whether it is offered stays the server's (decision 2).
+      const to = lighterMinutes(event.minutesPerDay);
+      lighterPlan = to === null ? null : { from: event.minutesPerDay, to, offered: lighterPlan?.offered ?? false };
+      continue;
+    }
     if (today === null) continue;
     if (event.type === 'hard_day' || event.type === 'plan_rest' || event.type === 'ability') {
       if (event.dayId !== today.id) continue;
       if (event.type === 'plan_rest') {
-        if (today.protection === null) today.protection = 'planned_rest';
+        if (event.tomorrow === true) {
+          character = { ...character, restDay: today.dayNumber + 1 };
+          today.restTomorrow = false;
+        } else if (today.protection === null) today.protection = 'planned_rest';
       } else if (event.type === 'hard_day') {
         if (today.hardDay) continue;
         today.hardDay = true;

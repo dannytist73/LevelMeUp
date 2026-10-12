@@ -15,7 +15,7 @@ export type LighterView = ServerState['lighterPlan'];
 export type MissOutcome = NonNullable<ServerState['checkinResult']>['outcome'];
 export type { OnboardingBody, PhoneEvent, ProvisionalDayEvent, Rating, Reveal, SlotRef };
 
-export type EventResult = { id: string; ok: true; result: unknown } | { id: string | null; ok: false; code: string };
+export type EventResult = { id: string; ok: true; result: unknown; notice?: string } | { id: string | null; ok: false; code: string };
 export type SyncResponse = {
   results: EventResult[];
   rejected: { id: string | null; code: string }[];
