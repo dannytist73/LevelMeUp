@@ -194,7 +194,8 @@ export type DayDraft = {
   light: boolean;
   comeback: boolean;
   articleId: string | null;
-  protection: 'no_quests' | null;
+  /** `no_quests` when the day couldn't be built (spec §3.7); M7b: `planned_rest` when the player planned it (decision 5). */
+  protection: 'no_quests' | 'planned_rest' | null;
   contentVersion: number;
   quests: InstanceDraft[];
 };
