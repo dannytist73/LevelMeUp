@@ -1,0 +1,69 @@
+// Development only (M7a): Today with a made-up check-in for yesterday, and the check-in screen, in a store of their own.
+// Nothing is sent, so the words and the flow can be checked on a device without missing a day.
+import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { createStore } from 'zustand/vanilla';
+import type { StoreApi } from 'zustand/vanilla';
+import { project } from '../../src/game/project.ts';
+import { Checkin } from '../../src/screens/Checkin.tsx';
+import { Today } from '../../src/screens/Today.tsx';
+import { GameProvider, useGame } from '../../src/state/store.ts';
+import type { GameState } from '../../src/state/store.ts';
+import { colors, space } from '../../src/theme/tokens.ts';
+import { Button } from '../../src/ui/Button.tsx';
+import { NarrationBox } from '../../src/ui/NarrationBox.tsx';
+
+const noop = async () => {};
+
+export default function CheckinPreview() {
+  const insets = useSafeAreaInsets();
+  const cached = useGame((s) => s.cached);
+  const art = useGame((s) => s.art);
+  const [screen, setScreen] = useState<'today' | 'checkin'>('today');
+  const store = useMemo(() => {
+    const state = cached?.state;
+    if (state === undefined || state.today === null) return null;
+    const core = state.today.quests.find((q) => q.slot === 'core') ?? null;
+    const yesterday = Math.max(1, state.today.dayNumber - 1);
+    const view = project({
+      ...state,
+      character: { ...state.character, streak: { ...state.character.streak, awaitingCheckin: true } },
+      checkin: {
+        id: -1, from: yesterday, to: yesterday, gap: false, date: null, core: core?.templateId ?? null, ladder: core?.ladder ?? null,
+        answer: null, secondWind: null,
+      },
+      lighterPlan: state.lighterPlan === null ? null : { ...state.lighterPlan, offered: true },
+    }, []);
+    return createStore(() => ({
+      phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, trainingNoticeSeen: true, lastSyncedAt: null,
+      checkinLater: null, checkinResultSeen: null,
+      syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,
+      answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,
+    })) as unknown as StoreApi<GameState>;
+  }, [cached, art]);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.night }}>
+      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: space.gutter, gap: 8 }}>
+        <Button label="Back" variant="secondary" onPress={() => router.back()} style={{ alignSelf: 'flex-start' }} />
+        <NarrationBox>
+          {store === null ? 'No day is cached yet: sync once, then open this preview.' : 'A made-up check-in for yesterday. Nothing is sent.'}
+        </NarrationBox>
+      </View>
+      {store !== null && (
+        <GameProvider store={store}>
+          {screen === 'today'
+            ? (
+              <Today
+                onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}}
+                onCheckin={() => setScreen('checkin')}
+              />
+            )
+            : <Checkin onDone={() => setScreen('today')} />}
+        </GameProvider>
+      )}
+    </View>
+  );
+}
