@@ -1,7 +1,7 @@
 // Today's part of the check-in (M7a, board F3 without the Pact's parts): a settled "I just didn't" once, the question while
 // a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer.
 import { CHECKIN_TEXT, LIGHTER_TEXT, fillText } from '@levelmeup/content';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { checkinLead, resultText } from '../game/checkin.ts';
 import type { Shown } from '../game/project.ts';
@@ -27,6 +27,11 @@ export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
     void enqueue({ type: 'lighter_plan', accept });
   };
   const { checkin, checkinResult: result, lighterPlan } = view;
+  // Once the answer is in the view the offer is quiet anyway; a later offer (after its 14 days) shows again.
+  const offered = lighterPlan?.offered === true;
+  useEffect(() => {
+    if (!offered) setAnsweredOffer(false);
+  }, [offered]);
   return (
     <>
       {result !== null && result.id !== seen && (
@@ -51,7 +56,7 @@ export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
           {view.answering && <Small tone="chalk">{T.waiting}</Small>}
         </View>
       )}
-      {lighterPlan !== null && lighterPlan.offered && !answeredOffer && (
+      {lighterPlan !== null && offered && !answeredOffer && (
         <View style={{ gap: 8 }}>
           <NarrationBox>{fillText(LIGHTER_TEXT.offer, { from: lighterPlan.from, to: lighterPlan.to })}</NarrationBox>
           <Button label={LIGHTER_TEXT.accept} onPress={() => answerOffer(true)} />
