@@ -11,13 +11,13 @@ import type { Job, JobStatus, Store } from './pipeline.ts';
 
 type JobRow = {
   id: string; cluster: ArticleCluster; topic: string; evergreen: boolean; status: JobStatus; attempt: number;
-  batch_id: string | null; ai_call_id: string | null; submitted_at: Date | null; brief: Brief | null;
+  batch_id: string | null; ai_call_id: string | null; submitted_at: Date | null; brief: Brief | null; error: string | null;
 };
 
 const toJob = (r: JobRow): Job => ({
   id: Number(r.id), cluster: r.cluster, topic: r.topic, evergreen: r.evergreen, status: r.status, attempt: r.attempt,
   batchId: r.batch_id, aiCallId: r.ai_call_id === null ? null : Number(r.ai_call_id),
-  submittedAtMs: r.submitted_at === null ? null : r.submitted_at.getTime(), brief: r.brief,
+  submittedAtMs: r.submitted_at === null ? null : r.submitted_at.getTime(), brief: r.brief, error: r.error,
 });
 
 export function sqlStore(sql: Sql): Store {

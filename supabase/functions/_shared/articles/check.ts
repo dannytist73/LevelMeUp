@@ -114,6 +114,8 @@ export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
     problems.push(...lintArticle(t));
   }
   const excerpts = new Set(brief.excerpts.flatMap((e) => shingles(e, COPY_RUN)));
-  if (texts.some((t) => shingles(t, COPY_RUN).some((run) => excerpts.has(run)))) problems.push(`repeats ${COPY_RUN} or more words of a source`);
+  // The words themselves go in the reason: the rewrite is told what to change, and the owner can see it (M8a spike).
+  const copied = texts.flatMap((t) => shingles(t, COPY_RUN)).find((run) => excerpts.has(run));
+  if (copied !== undefined) problems.push(`repeats ${COPY_RUN} or more words of a source: "${clip(copied, 80)}"`);
   return [...new Set(problems)];
 }

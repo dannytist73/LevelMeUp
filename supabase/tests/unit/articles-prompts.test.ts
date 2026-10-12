@@ -39,6 +39,14 @@ describe('the two batch requests (architecture §5.2)', () => {
     expect(message).toContain('Sleep cycles');
     expect(message).toContain('Fact 1 about sleep and training.');
     expect(message).not.toContain('https://');
+    expect(message).not.toContain('failed these checks');
+  });
+
+  it('a rewrite tells the writer what the first draft failed (M8a spike)', () => {
+    const again = JSON.stringify(writeRequest({ ...JOB, attempt: 2, error: 'repeats 8 or more words of a source: "a cue a routine and a reward"' }, BRIEF).params.messages);
+    expect(again).toContain('Your first draft of this article failed these checks');
+    expect(again).toContain('a cue a routine and a reward');
+    expect(writeRequest({ ...JOB, attempt: 2, error: null }, BRIEF).custom_id).toBe('job-12-2-write');
   });
 
   it('has a schema the API accepts: every object closed, every property required', () => {

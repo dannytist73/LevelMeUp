@@ -13,6 +13,8 @@ export const MAX_SEARCHES = 5;
 
 export type BatchRequest = { custom_id: string; params: Record<string, unknown> };
 export type JobRef = { id: number; attempt: number; cluster: ArticleCluster; topic: string };
+/** A job about to be written: on its second attempt, why the first draft was refused (M8a spike). */
+export type WriteJob = JobRef & { error?: string | null };
 
 /** Unique per job, attempt and step, as the Batch API requires within a batch. */
 export function customId(jobId: number, attempt: number, step: 'research' | 'write'): string {
@@ -71,11 +73,17 @@ export const ARTICLE_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/** On a second attempt, what the checks refused in the first draft, so the writer fixes exactly that (M8a spike). */
+function rewrite(job: WriteJob): string {
+  if (job.attempt < 2 || job.error === undefined || job.error === null) return '';
+  return `\n\nYour first draft of this article failed these checks, so write it again and fix every one. Words named here appear word for word in a source: say that idea in different words. ${job.error}`;
+}
+
 export const WRITE_SYSTEM = `You write one daily article for LevelMeUp from a research brief. Follow the house style exactly.
 
 ${HOUSE_STYLE}`;
 
-export function writeRequest(job: JobRef, brief: Brief): BatchRequest {
+export function writeRequest(job: WriteJob, brief: Brief): BatchRequest {
   // The pages' addresses stay out: the writer cites by id, and the app lists the sources.
   const input = {
     topic: job.topic,
@@ -90,7 +98,7 @@ export function writeRequest(job: JobRef, brief: Brief): BatchRequest {
       max_tokens: 16000,
       system: WRITE_SYSTEM,
       output_config: { effort: 'medium', format: { type: 'json_schema', schema: ARTICLE_SCHEMA } },
-      messages: [{ role: 'user', content: `The research brief (JSON):\n${JSON.stringify(input)}` }],
+      messages: [{ role: 'user', content: `The research brief (JSON):\n${JSON.stringify(input)}${rewrite(job)}` }],
     },
   };
 }

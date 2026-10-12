@@ -32,7 +32,7 @@ class FakeStore implements Store {
   async queue(jobs: readonly { cluster: ArticleCluster; topic: string; evergreen: boolean }[]) {
     return jobs.map((j) => {
       const id = this.jobs.length + 1;
-      this.jobs.push({ id, ...j, status: 'queued', attempt: 1, batchId: null, aiCallId: null, submittedAtMs: null, brief: null });
+      this.jobs.push({ id, ...j, status: 'queued', attempt: 1, batchId: null, aiCallId: null, submittedAtMs: null, brief: null, error: null });
       this.queuedAt.set(`${id}`, this.clock);
       return id;
     });
@@ -48,7 +48,7 @@ class FakeStore implements Store {
     if (set.aiCallId !== undefined) job.aiCallId = set.aiCallId;
     if (set.submittedAt !== undefined) job.submittedAtMs = set.submittedAt === null ? null : Date.parse(set.submittedAt);
     if (set.brief !== undefined) job.brief = set.brief;
-    if (set.error !== undefined) (job as Job & { error?: string | null }).error = set.error;
+    if (set.error !== undefined) job.error = set.error;
     return true;
   }
   async reserve(jobId: number, estimate: number) {
@@ -66,7 +66,7 @@ class FakeStore implements Store {
     job.status = 'done';
     return id;
   }
-  job(id: number) { return this.jobs.find((j) => j.id === id)! as Job & { error?: string | null }; }
+  job(id: number) { return this.jobs.find((j) => j.id === id)!; }
 }
 
 /** The Batch API: submissions are kept; each batch ends when the test gives it results. */
@@ -234,7 +234,30 @@ describe('tick (architecture §5.2)', () => {
     expect(store.jobs).toHaveLength(2);
   });
 
-  it('refuses an article whose JSON or checks fail', async () => {
+  it('writes a refused draft again at once from the same research, told why; a second refusal fails the job (M8a spike)', async () => {
+    const { store, batches, run } = setup();
+    store.short = 0;
+    await store.queue([{ cluster: 'sleep', topic: 'How sleep cycles work', evergreen: false }]);
+    await run(DAY);
+    batches.finishLast(() => researchAnswer());
+    await run(DAY + HOUR);
+    const brief = store.job(1).brief;
+    batches.finishLast(() => writeAnswer({ ...articleJson(), title: 'Delve into rest and how it builds you' }));
+    expect(await run(DAY + 2 * HOUR)).toMatchObject({ retry: 1, submitted: 1 });
+    expect(store.job(1)).toMatchObject({ status: 'writing', attempt: 2, error: 'robotic phrase "delve"', brief });
+    const rewrite = batches.submitted.at(-1)!.requests[0]!;
+    expect(rewrite.custom_id).toBe('job-1-2-write');
+    expect(JSON.stringify(rewrite.params.messages)).toContain('robotic phrase \\"delve\\"');
+    expect(store.calls.map((c) => c.finish?.status ?? 'pending')).toEqual(['ok', 'failed', 'pending']);
+    expect(store.articles).toEqual([]);
+
+    batches.finishLast(() => writeAnswer({ ...articleJson(), title: 'Delve into rest, once more with feeling' }));
+    expect(await run(DAY + 3 * HOUR)).toMatchObject({ failed: 1 });
+    expect(store.job(1)).toMatchObject({ status: 'failed', error: 'robotic phrase "delve"', brief: null });
+    expect(store.articles).toEqual([]);
+  });
+
+  it('a rewrite that passes is published like any article', async () => {
     const { store, batches, run } = setup();
     store.short = 0;
     await store.queue([{ cluster: 'sleep', topic: 'How sleep cycles work', evergreen: false }]);
@@ -243,8 +266,8 @@ describe('tick (architecture §5.2)', () => {
     await run(DAY + HOUR);
     batches.finishLast(() => writeAnswer({ ...articleJson(), title: 'Delve into rest and how it builds you' }));
     await run(DAY + 2 * HOUR);
-    expect(store.job(1)).toMatchObject({ status: 'retry', error: 'robotic phrase "delve"' });
-    expect(store.articles).toEqual([]);
+    batches.finishLast(() => writeAnswer());
+    expect(await run(DAY + 3 * HOUR)).toMatchObject({ published: ['article-1'] });
   });
 
   it('keeps a job queued when the month\'s budget is spent, and says so', async () => {

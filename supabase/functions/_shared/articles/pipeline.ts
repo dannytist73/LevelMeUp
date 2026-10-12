@@ -42,6 +42,8 @@ export type Job = {
   aiCallId: number | null;
   submittedAtMs: number | null;
   brief: Brief | null;
+  /** Why the last attempt failed; a rewrite is told (M8a spike). */
+  error: string | null;
 };
 /** The fields a move sets (`article_job_move`); null clears one. */
 export type JobSet = { attempt?: number; batchId?: string | null; aiCallId?: number | null; submittedAt?: string | null; brief?: Brief | null; error?: string | null };
@@ -230,7 +232,18 @@ async function collectWrite(store: Store, job: Job, result: BatchResult | undefi
     : job.brief === null ? ['the brief is missing']
     : checkArticle(draft, job.brief);
   await finishCall(store, job, message, problems);
-  if (problems.length > 0 || draft === null || job.brief === null) return failAttempt(store, job, problems.join('; '), report);
+  if (problems.length > 0 || draft === null || job.brief === null) {
+    // M8a spike: a refused draft is written again at once from the same research, told why: the research is fine and
+    // costs most. A second refusal fails the job.
+    if (job.brief !== null && job.attempt < 2) {
+      await store.move(job.id, 'writing', 'researched', {
+        attempt: job.attempt + 1, batchId: null, aiCallId: null, submittedAt: null, error: clip(problems.join('; '), 1000),
+      });
+      report.retry++;
+      return;
+    }
+    return failAttempt(store, job, problems.join('; '), report);
+  }
   const words = articleWords(draft);
   const cited = new Set(draft.sections.flatMap((s) => s.sourceIds));
   const sources = job.brief.sources.filter((s) => cited.has(s.id)).map((s) => ({ idx: s.id, url: s.url, title: s.title }));

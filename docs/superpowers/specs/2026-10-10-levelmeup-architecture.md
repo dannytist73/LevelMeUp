@@ -263,7 +263,7 @@ last line of defence.
 | researched | Results collected; brief validated (at least 2 cited sources and 6 cited facts). |
 | writing | One batch request: the article as structured output, from the brief and the style guide. |
 | done | Code checks (§4.1 of the spec) passed: published (evergreen: held for the owner's review). |
-| retry / failed | A failed check or a failed request: tried once more the next night from the research (`retry`), then `failed`. |
+| retry / failed | Research that fails (a request, a thin brief): tried once more the next night from the research (`retry`), then `failed`. A draft the checks refuse: written once more at once from the same brief, told what failed (M8a spike), then `failed`. |
 
 - Most batches finish within an hour; the 24-hour batch window is long enough because articles go into a library
   ahead of need.

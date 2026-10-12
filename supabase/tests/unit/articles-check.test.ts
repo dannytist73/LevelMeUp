@@ -83,9 +83,10 @@ describe('checkArticle (spec §4.1 step 3)', () => {
     expect(checkArticle(withParagraph(`${paragraph(0, 85)} The word "kaizen" means change.`), BRIEF)).toEqual([]);
   });
 
-  it('refuses 8 words copied from a source', () => {
-    expect(checkArticle(withParagraph(`${paragraph(0, 80)} A typical night has four to six cycles of sleep.`), BRIEF)).toContain(
-      'repeats 8 or more words of a source');
+  it('refuses 8 words copied from a source, and names them (M8a spike: the first refusal could not be traced)', () => {
+    const problems = checkArticle(withParagraph(`${paragraph(0, 80)} A typical night has four to six cycles of sleep.`), BRIEF);
+    expect(problems.filter((p) => p.startsWith('repeats 8 or more words of a source: "'))).toHaveLength(1);
+    expect(problems.find((p) => p.startsWith('repeats'))).toMatch(/: "a typical night has four to six cycles( of)?"$/);
   });
 
   it('refuses links, markdown and reference numbers', () => {

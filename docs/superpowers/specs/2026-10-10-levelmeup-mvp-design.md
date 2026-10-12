@@ -394,7 +394,8 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
   checks also refuse any quotation of 4+ words, any run of 8 words from a cited excerpt, links and markdown; the reading
   time is computed (180 words a minute). The night's two articles are queued only while a player who played this week
   has fewer than 14 articles they haven't been given; 80 topic seeds in 8 clusters. Evergreen articles wait for the
-  owner's review (`npm run articles -- review`).
+  owner's review (`npm run articles -- review`). A draft the checks refuse is written once more at once from the same
+  research, told what failed; research that fails is tried once more the next night (the spike, 2026-10-12).
 
 **Assignment**
 - When a day is created, it gets one unread published article: about 60% from the player's goals and class,

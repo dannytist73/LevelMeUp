@@ -3123,3 +3123,19 @@ stops it." Wait for a clear yes.
   deploy failed due to an internal error" (500) from 19:14 to 19:21 UTC, while `lmu-onboarding` and
   `lmu-account-delete` redeployed fine; both succeeded on a retry at 19:31. The live functions kept serving the
   19:00 builds meanwhile.
+- **Spike, first run (Task 13, owner's yes, 2026-10-12 19:51–20:15 UTC):** one evergreen job (habits, "How habits
+  form: cue, routine and reward").
+  - **Research:** 68,933 input tokens (mostly search results), 2,698 output, 5 searches: $0.2148. Its batch ended
+    within 12 minutes (the first tick after submission collected it).
+  - **Writing:** 3,767 input, 3,004 output: $0.0376, also within 12 minutes.
+  - **The checks refused the draft:** "repeats 8 or more words of a source". The words weren't recorded, and the retry
+    cleared the brief, so the cause couldn't be traced. The job went to `retry` (research again on the next night),
+    and nothing reached a player.
+  - **Real cost per article:** about $0.25. Research is 85 % of it, and its search results dominate the input.
+- **Spike fix (needs a redeploy of `lmu-articles-tick`):**
+  - The copying refusal now names the words: `repeats 8 or more words of a source: "…"`.
+  - A draft the checks refuse is written once more at once, from the same brief. The writer is told what failed: the
+    reasons, with the copied words. Only a second refusal fails the job.
+  - A rewrite costs about $0.04, against about $0.25 and a night's wait for new research. Research that fails is
+    still tried once more the next night.
+  - Unit tests: 463 server tests, 2 new.
