@@ -1,5 +1,7 @@
 import { CHECKIN_TEXT, PACT_TEXT, PLAY_TEXT, SHADOW_LINES, SHADOW_TEXT, fillText, retreatLine, shadowLine } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { activateKeepAwakeAsync } from 'expo-keep-awake';
+import { AppState } from 'react-native';
 import { project } from '../src/game/project.ts';
 import { Character } from '../src/screens/Character.tsx';
 import { Pact } from '../src/screens/Pact.tsx';
@@ -7,6 +9,7 @@ import { Quest } from '../src/screens/Quest.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { Today } from '../src/screens/Today.tsx';
+import { Trial, clock } from '../src/screens/Trial.tsx';
 import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
 import { Portrait } from '../src/ui/Portrait.tsx';
 import { ShadowBox } from '../src/ui/ShadowBox.tsx';
@@ -213,5 +216,48 @@ describe('a sealed side quest and the marked portrait (M7c)', () => {
     await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
       <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} now={() => DAY_TWO_NOW} />));
     expect(screen.getByLabelText(new RegExp(SHADOW_TEXT.markLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeTruthy();
+  });
+});
+
+describe('the Trial of Stillness (board F4)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('shows minutes and seconds left', () => {
+    expect(clock(10 * 60_000)).toBe('10:00');
+    expect(clock(6 * 60_000 + 41_200)).toBe('06:42');
+    expect(clock(-5)).toBe('00:00');
+  });
+
+  it('counts while LevelMeUp is in front, pauses when it leaves, keeps the minutes, and breaks the seal at ten', async () => {
+    let t = DAY_TWO_NOW;
+    const listeners: ((state: string) => void)[] = [];
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
+      listeners.push(listener as (state: string) => void);
+      return { remove: jest.fn() } as unknown as ReturnType<typeof AppState.addEventListener>;
+    });
+    const store = testStore({ view: project(claimedState('trial'), []), trialMs: jest.fn(async () => 4 * 60_000) });
+    const tree = () => withStore(store, <Trial now={() => t} onDone={jest.fn()} />);
+    const view = await render(tree());
+    expect(await screen.findByText('06:00')).toBeTruthy(); // four minutes were kept
+    expect(activateKeepAwakeAsync).toHaveBeenCalledWith('lmu-trial');
+    t += 60_000;
+    await act(async () => {
+      for (const listener of listeners) listener('background');
+    });
+    expect(store.getState().saveTrialMs).toHaveBeenLastCalledWith(7, 5 * 60_000);
+    t += 60 * 60_000; // away for an hour: not counted
+    await act(async () => {
+      for (const listener of listeners) listener('active');
+    });
+    t += 5 * 60_000;
+    await view.rerender(tree());
+    expect(screen.getByText(SHADOW_TEXT.focus.done)).toBeTruthy();
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'trial', checkinId: 7 });
+    expect(store.getState().enqueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('there is nothing to do without a seal', async () => {
+    await render(withStore(testStore({ view: project(claimedState('shadow'), []) }), <Trial now={() => DAY_TWO_NOW} onDone={jest.fn()} />));
+    expect(screen.getByText(SHADOW_TEXT.focus.gone)).toBeTruthy();
   });
 });
