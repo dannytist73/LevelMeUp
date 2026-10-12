@@ -41,3 +41,11 @@ export function shadowLine(moment: ShadowMoment, dayNumber: number): string {
   const lines = SHADOW_LINES[moment];
   return lines[(dayNumber - 1) % lines.length]!;
 }
+
+/**
+ * The Shadow stepping back after 3 consequences in 7 days (M7c decision 5): the line that mentions the System's lighter
+ * plan only while the System offers one.
+ */
+export function retreatLine(offered: boolean): string {
+  return SHADOW_LINES.retreat[offered ? 0 : 1]!;
+}
