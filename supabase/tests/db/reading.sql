@@ -87,6 +87,9 @@ begin
     'P0001', 'lmu:bad_change', 'only the eight topics');
   return next throws_ok(format('select levelmeup.set_insight(%L, %L, %L, 2)', a, lmu_test.ev(4), 'sleep'),
     'P0001', 'lmu:day_closed', 'only on an open day');
+  update levelmeup.quest_days set starts_at = now() - interval '25 hours', ends_at = now() - interval '1 hour' where user_id = a;
+  return next throws_ok(format('select levelmeup.set_insight(%L, %L, %L, 1)', a, lmu_test.ev(5), 'sleep'),
+    'P0001', 'lmu:day_closed', 'nor on a day that has ended, before it is closed (review)');
   return next throws_ok(format('select levelmeup.complete_quest(%L, %L, %s, now(), null, null)', a, lmu_test.ev(2), lmu_test.quest(a, 'core')),
     'P0001', 'lmu:event_reused', 'an Insight event''s id is never reused');
 end $$;

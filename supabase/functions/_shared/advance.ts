@@ -272,7 +272,8 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     // M8b decision 1: the day's reading, never changed afterwards; decision 4: the phone's offline pick while it is
     // still published. A day without quests has no reading quest, so no article.
     const phonePick = input.provisional?.articleId ?? null;
-    const kept = phonePick === null ? undefined : input.articles.find((c) => c.id === phonePick);
+    // Unread too (review): a phone can't pick an article it already had; the evergreen fallback is the chooser's anyway.
+    const kept = phonePick === null ? undefined : input.articles.find((c) => c.id === phonePick && c.last_given === null);
     const article = quests.length === 0 ? null : kept ?? chooseArticle(input.articles, {
       dayNumber, preferred: preferredClusters(profile.goals, profile.class_id), insight: insightFor(input.character.insight, last.day_number),
     });

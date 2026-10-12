@@ -70,8 +70,8 @@ export function chooseArticle(candidates: readonly CandidateRow[], input: Choice
 }
 
 /** Insight's topic for the day built after `lastDay` (decision 8): chosen on that day, else none (a choice lapses). */
-export function insightFor(insight: InsightRow | null, lastDay: number): ArticleCluster | null {
-  return insight !== null && insight.day === lastDay && isCluster(insight.cluster) ? insight.cluster : null;
+export function insightFor(insight: InsightRow | null | undefined, lastDay: number): ArticleCluster | null {
+  return insight != null && insight.day === lastDay && isCluster(insight.cluster) ? insight.cluster : null;
 }
 
 export type Reader = { goals: readonly Goal[]; classId: ClassId; insight: InsightRow | null };

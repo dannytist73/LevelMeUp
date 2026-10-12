@@ -13,7 +13,11 @@ const MAX_ROUNDS = 10;
 
 export type Notice = { eventId: string; code: string };
 export type SyncOutcome =
-  | { kind: 'synced'; state: ServerState; notices: Notice[]; newAchievements: string[] }
+  | {
+      kind: 'synced'; state: ServerState; notices: Notice[]; newAchievements: string[];
+      /** M8b: the past readings the request that succeeded asked for; the store forgets only these (review). */
+      asked: string[];
+    }
   | { kind: 'not_started' }
   | { kind: 'session_ended' }
   | { kind: 'offline' }
@@ -31,7 +35,7 @@ export type SyncDeps = {
   now: () => number;
   /** Refreshes the session; false only when Auth says the sign-in is gone. */
   sessionAlive: () => Promise<boolean>;
-  /** M8b: past readings a screen asked for (decision 7), sent with the first request of the run. */
+  /** M8b: past readings a screen asked for (decision 7), sent until a request of the run succeeds. */
   wanted?: () => readonly string[];
 };
 
@@ -59,10 +63,12 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
   const newAchievements: string[] = [];
   let state: ServerState | null = null;
   let limit = BATCH;
+  let asked: string[] | null = null;
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const timeZone = deps.timeZone();
     const have = (await deps.local.articleIds()).slice(0, MAX_HAVE);
-    const want = round === 0 ? (deps.wanted?.() ?? []).filter((id) => !have.includes(id)).slice(0, MAX_WANT) : [];
+    // Asked for until a request succeeds: a 413 retry keeps asking (M8b review).
+    const want: string[] = asked !== null ? [] : (deps.wanted?.() ?? []).filter((id) => !have.includes(id)).slice(0, MAX_WANT);
     const events = fitBody(await deps.local.pending(limit), timeZone, { have, want });
     const call = await deps.api.sync({ timeZone, events, have, want });
     if (!call.ok) {
@@ -76,6 +82,7 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
       if (call.status === 401 || call.status >= 500) return { kind: 'retry', code: call.code };
       return { kind: 'failed', status: call.status, code: call.code };
     }
+    if (asked === null) asked = want;
     const acknowledged = new Set<string>();
     const refused: Notice[] = [];
     for (const r of call.body.results) {
@@ -97,5 +104,5 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
     if (acknowledged.size === 0 || (await deps.local.pending(1)).length === 0) break;
   }
   if (state === null) return { kind: 'failed', status: 413, code: 'too_large' };
-  return { kind: 'synced', state, notices, newAchievements };
+  return { kind: 'synced', state, notices, newAchievements, asked: asked ?? [] };
 }

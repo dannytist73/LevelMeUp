@@ -67,7 +67,7 @@ describe('past readings (board D5, decision 7)', () => {
     expect(screen.getByText(READING_TEXT.past.title)).toBeTruthy(); // SectionTitle capitalises it in its style
     expect(screen.queryByText(SAMPLE_ARTICLE.title)).toBeNull(); // today's (day 1) is on Today
     await fireEvent.press(screen.getByRole('button', { name: /The quiet power of a fixed wake time/ }));
-    expect(onOpenReading).toHaveBeenCalledWith('article-9');
+    expect(onOpenReading).toHaveBeenCalledWith('article-9', 0);
   });
 
   it('a past reading shows the article with the takeaway written that day', async () => {
@@ -76,6 +76,20 @@ describe('past readings (board D5, decision 7)', () => {
     expect(screen.getByText('Past reading · Fri 9 Oct')).toBeTruthy();
     expect(screen.getByText('Wake at seven.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Claim/ })).toBeNull();
+  });
+
+  it('an evergreen reading read twice opens on the day chosen (review)', async () => {
+    const twice: ServerState = {
+      ...state,
+      readings: [
+        { id: 'article-9', cluster: 'sleep', title: 'Wake time', minutes: 6, dayNumber: 5, date: '2026-10-14', takeaway: 'Second.' },
+        { id: 'article-9', cluster: 'sleep', title: 'Wake time', minutes: 6, dayNumber: 0, date: '2026-10-09', takeaway: 'First.' },
+      ],
+    };
+    const store = testStore({ view: project(twice, []), articles: { 'article-9': { ...SAMPLE_ARTICLE, id: 'article-9' } } });
+    await render(withStore(store, <Reading articleId="article-9" dayNumber={0} onBack={jest.fn()} />));
+    expect(screen.getByText('Past reading · Fri 9 Oct')).toBeTruthy();
+    expect(screen.getByText('First.')).toBeTruthy();
   });
 
   it('a past reading not on the phone is asked for', async () => {

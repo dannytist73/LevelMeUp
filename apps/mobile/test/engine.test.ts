@@ -73,9 +73,48 @@ describe('one sync run', () => {
     expect(acknowledge).toHaveBeenCalledWith([], [], state(0), 1000, [SAMPLE_ARTICLE]);
   });
 
+  it('never names more than 64 held articles or asks for more than 3 (M8b decision 3)', async () => {
+    const { local, deps } = await setup([applyAll]);
+    const requests: { have: string[]; want: string[] }[] = [];
+    const held = Array.from({ length: 70 }, (_, i) => `article-${i + 1}`);
+    deps.local = { ...local, articleIds: async () => held };
+    deps.api = {
+      sync: async (body) => {
+        requests.push(body as never);
+        return { ok: true, body: { results: [], rejected: [], newAchievements: [], state: state(0) } };
+      },
+    };
+    deps.wanted = () => ['article-71', 'article-72', 'article-73', 'article-74'];
+    expect(await syncOnce(deps)).toMatchObject({ kind: 'synced', asked: ['article-71', 'article-72', 'article-73'] });
+    expect(requests[0]!.have).toHaveLength(64);
+    expect(requests[0]!.want).toEqual(['article-71', 'article-72', 'article-73']);
+  });
+
+  it('keeps asking for a past reading when a 413 halves the batch (M8b review)', async () => {
+    const { local, deps } = await setup([applyAll]);
+    const wants: string[][] = [];
+    let first = true;
+    deps.api = {
+      sync: async (body) => {
+        wants.push([...(body.want ?? [])]);
+        if (first) {
+          first = false;
+          return { ok: false, status: 413, code: 'too_large' };
+        }
+        return applyAll(body.events);
+      },
+    };
+    deps.wanted = () => ['article-7'];
+    await local.enqueue(ev(1), 1);
+    await local.enqueue(ev(2), 2);
+    expect(await syncOnce(deps)).toMatchObject({ kind: 'synced', asked: ['article-7'] });
+    expect(wants.slice(0, 2)).toEqual([['article-7'], ['article-7']]);
+    expect(wants.slice(2).every((w) => w.length === 0)).toBe(true);
+  });
+
   it('with an empty outbox, asks for the state and stores it', async () => {
     const { local, sent, deps } = await setup([applyAll]);
-    expect(await syncOnce(deps)).toEqual({ kind: 'synced', state: state(0), notices: [], newAchievements: [] });
+    expect(await syncOnce(deps)).toEqual({ kind: 'synced', state: state(0), notices: [], newAchievements: [], asked: [] });
     expect(sent).toEqual([[]]);
     expect(await local.load()).toEqual({ state: state(0), syncedAt: 1000 });
   });
@@ -109,6 +148,7 @@ describe('one sync run', () => {
       state: state(1),
       notices: [{ eventId: ev(1).id, code: 'day_closed' }, { eventId: ev(2).id, code: 'unsupported_event' }],
       newAchievements: ['first-trial'],
+      asked: [],
     });
     expect(await local.pending(10)).toEqual([]);
     expect((await local.snapshot()).notices).toEqual([

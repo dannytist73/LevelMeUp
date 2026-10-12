@@ -7,7 +7,7 @@ import { colors } from '../../theme/tokens.ts';
 import { SectionTitle } from '../../ui/SectionTitle.tsx';
 import { Body, Label, Small } from '../../ui/Text.tsx';
 
-export function PastReadings({ readings, onOpen }: { readings: readonly ReadingView[]; onOpen: (id: string) => void }) {
+export function PastReadings({ readings, onOpen }: { readings: readonly ReadingView[]; onOpen: (id: string, dayNumber: number) => void }) {
   return (
     <View style={{ gap: 12 }}>
       <SectionTitle title={READING_TEXT.past.title} />
@@ -21,7 +21,7 @@ export function PastReadings({ readings, onOpen }: { readings: readonly ReadingV
               key={`${r.dayNumber}-${r.id}`}
               accessibilityRole="button"
               accessibilityLabel={`${date}. ${r.title}`}
-              onPress={() => onOpen(r.id)}
+              onPress={() => onOpen(r.id, r.dayNumber)}
               style={{ minHeight: 44, paddingVertical: 8, gap: 2, borderBottomWidth: 1, borderColor: colors.line }}
             >
               <Label>{date.toUpperCase()}</Label>

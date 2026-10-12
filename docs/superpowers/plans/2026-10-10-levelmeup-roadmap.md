@@ -209,6 +209,15 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | Dynamic filtering (`web_search_20260209`) as a cost lever, once the spike has measured the basic tool. |
 | Owner | The wedding day (30 Jan 2027): `npm run articles -- cron off` the day before, `cron on` after (architecture §12). |
 
+## Carried forward from M8b
+
+| Milestone | Item |
+|---|---|
+| Later | `loadSnapshot` reads the whole published library on every call (four times a sync, `awardAchievements` included): once the library holds hundreds of articles, load it only where an article is chosen. |
+| Later | Every store refresh re-reads the held article bodies (at most about 32): reload them only after a sync. |
+| Later | Avoiding the same topic two days in a row works within the day's group only (decision 1); revisit with the pilot's data. |
+| Emulator | M8b rows 3–6 wait for published articles (the owner's review of the starter articles). |
+
 ## Spikes and where they run
 
 | Spike (architecture §13) | Milestone |

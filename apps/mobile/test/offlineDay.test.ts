@@ -60,6 +60,15 @@ describe("the offline day's reading (M8b decision 4)", () => {
     const event = offlineDay(server, project(server, []), END + HOUR, 'Asia/Manila')!;
     expect(event.articleId).toBe('article-4');
     expect(project(server, [{ ...event, id: '00000000-0000-4000-8000-000000000999' } as PhoneEvent]).today!.article).toEqual(next);
+    // Its takeaway shows at once, as on a day from the server (review).
+    const shown = project(server, [{ ...event, id: '00000000-0000-4000-8000-000000000999' } as PhoneEvent]);
+    const reading = shown.today!.quests.find((q) => q.slot === 'article')!;
+    const claimed = project(server, [
+      { ...event, id: '00000000-0000-4000-8000-000000000999' } as PhoneEvent,
+      { id: '00000000-0000-4000-8000-000000000998', type: 'complete', instanceId: null, ref: { dayNumber: 2, slot: 'article', templateId: reading.templateId },
+        completedAt: END + 2 * HOUR, rating: null, payload: { text: 'Kept.' } } as PhoneEvent,
+    ]);
+    expect(claimed.readings[0]).toMatchObject({ id: 'article-4', dayNumber: 2, takeaway: 'Kept.' });
     const none: ServerState = { ...server, nextArticle: null };
     expect(offlineDay(none, project(none, []), END + HOUR, 'Asia/Manila')!.articleId).toBeNull();
   });

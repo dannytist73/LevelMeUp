@@ -2,7 +2,7 @@
 import { BACKOFF_MS, makeScheduler } from '../src/sync/scheduler.ts';
 import type { SyncOutcome } from '../src/sync/engine.ts';
 
-const synced: SyncOutcome = { kind: 'synced', state: {} as never, notices: [], newAchievements: [] };
+const synced: SyncOutcome = { kind: 'synced', state: {} as never, notices: [], newAchievements: [], asked: [] };
 const offline: SyncOutcome = { kind: 'offline' };
 
 function harness(outcomes: SyncOutcome[]) {

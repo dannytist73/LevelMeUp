@@ -88,6 +88,7 @@ describe("Insight's choice (decision 8)", () => {
     expect(insightFor({ cluster: 'history', day: 3 }, 4)).toBeNull();
     expect(insightFor({ cluster: 'cooking', day: 4 }, 4)).toBeNull();
     expect(insightFor(null, 4)).toBeNull();
+    expect(insightFor(undefined, 4)).toBeNull(); // a server ahead of its migration reads none (review)
   });
 
   it("offers up to 3 topics with an unread article, least recently read first, not today's", () => {

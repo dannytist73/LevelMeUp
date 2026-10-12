@@ -58,7 +58,7 @@ function Growth({ growth }: { growth: ServerState['growth'] }) {
   );
 }
 
-export function Chronicle({ onOpenReading = () => {} }: { onOpenReading?: (id: string) => void } = {}) {
+export function Chronicle({ onOpenReading = () => {} }: { onOpenReading?: (id: string, dayNumber: number) => void } = {}) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const status = useGame((s) => s.status);

@@ -44,6 +44,9 @@ describe("a new day's article (planAdvance, decisions 1, 4, 8)", () => {
     expect(kept?.newDay?.articleId).toBe('article-3');
     const gone = planAdvance(afterDay1(['core'], AFTER_DAY1, { articles, provisional: { dayNumber: 2, quests, articleId: 'article-99' } }));
     expect(gone?.newDay?.articleId).toBe('article-2');
+    const had = [lib(2, 'movement'), lib(3, 'history', { last_given: 1 })];
+    const read = planAdvance(afterDay1(['core'], AFTER_DAY1, { articles: had, provisional: { dayNumber: 2, quests, articleId: 'article-3' } }));
+    expect(read?.newDay?.articleId).toBe('article-2'); // the player had it: the server chooses (review)
   });
 
   it('is null without a published article', () => {

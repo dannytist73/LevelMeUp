@@ -33,6 +33,5 @@ export const READING_TEXT = {
     chosen: "Tomorrow's reading: {topic}.",
     change: 'Change',
     none: "No new topic is waiting yet. Tomorrow's reading is chosen as usual.",
-    pick: 'Choose {topic} for tomorrow',
   },
 } as const;

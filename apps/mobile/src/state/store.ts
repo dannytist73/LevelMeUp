@@ -379,9 +379,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     const handle = async (outcome: SyncOutcome): Promise<void> => {
       switch (outcome.kind) {
         case 'synced': {
-          wanted.clear();
           const before = confirmedLevel;
           await refresh({ phase: 'ready', status: 'idle', error: null });
+          // Forget only what this run asked for or what arrived: one asked for meanwhile goes with the next run (review).
+          for (const id of outcome.asked) wanted.delete(id);
+          for (const id of [...wanted]) if (get().articles[id] !== undefined) wanted.delete(id);
           const after = get().cached?.state.character.level ?? null;
           confirmedLevel = after;
           const found: Celebration[] = [];

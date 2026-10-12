@@ -8,8 +8,8 @@
 // consequence at once), the Trial's session and the note show at once.
 import { LIBRARY } from '@levelmeup/content';
 import {
-  STATS, STREAK_SLOTS, checkinOutcome, closedDayResolution, findTemplate, levelProgress, lighterMinutes, painKey, rankFor, statPoints,
-  xpToNextPoint,
+  STATS, STREAK_SLOTS, checkinOutcome, closedDayResolution, findTemplate, levelProgress, lighterMinutes, painKey, questDayDate, rankFor,
+  statPoints, xpToNextPoint,
 } from '@levelmeup/rules';
 import type { XpByStat } from '@levelmeup/rules';
 import { hardFields, withFields } from './adjust.ts';
@@ -116,6 +116,12 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         // M8b decision 4: its article is the one the server named for it; Insight waits for the server's own day.
         today.article = event.articleId != null && nextArticle !== null && nextArticle.id === event.articleId ? nextArticle : null;
         insight = null;
+        // Its reading joins the readings, so a takeaway written offline shows at once (review).
+        if (today.article !== null) {
+          const date = questDayDate({ startsAt: event.window.startsAt, endsAt: event.window.endsAt, timeZone: event.timeZone });
+          const reading = { ...today.article, dayNumber: event.dayNumber, date, takeaway: null };
+          readings = [reading, ...readings.filter((r) => r.dayNumber !== event.dayNumber)];
+        }
         // A day planned as rest the day before is built as one (decision 5), as the server will.
         if (character.restDay === event.dayNumber) today.protection = 'planned_rest';
         quests = today.quests;

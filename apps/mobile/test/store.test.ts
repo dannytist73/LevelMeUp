@@ -233,6 +233,24 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('a past reading asked for while a sync is in flight goes with the next one, and is asked for once (M8b review)', async () => {
+    let answer: (() => void) | null = null;
+    const slow = () => new Promise<Call<SyncResponse>>((resolve) => (answer = () => resolve(ok(SERVER))));
+    const { store, api } = await setup([slow, ok(SERVER)]);
+    const booting = store.getState().boot();
+    while (answer === null) await settle(); // the boot sync is waiting for the server
+    store.getState().fetchArticle('article-9');
+    (answer as () => void)();
+    await booting;
+    await store.getState().syncNow();
+    await store.getState().syncNow();
+    const wants = api.sync.mock.calls.map((c) => (c[0] as { want: string[] }).want);
+    expect(wants[0]).toEqual([]);
+    expect(wants.filter((w) => w.includes('article-9'))).toHaveLength(1);
+    expect(wants.at(-1)).toEqual([]);
+    store.getState().stop();
+  });
+
   it('a queued action projects onto the view while offline', async () => {
     const { store } = await setup([ok(SERVER), { ok: false, status: 0, code: 'network' }]);
     await store.getState().boot();

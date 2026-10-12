@@ -16,19 +16,22 @@ import { openSource } from './reading/openSource.ts';
 
 const R = READING_TEXT;
 
-export function Reading({ articleId, onBack }: { articleId: string; onBack: () => void }) {
+export function Reading({ articleId, dayNumber = null, onBack }: { articleId: string; dayNumber?: number | null; onBack: () => void }) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const article = useGame((s) => s.articles[articleId] ?? null);
   const fetchArticle = useGame((s) => s.fetchArticle);
-  const reading = view?.readings.find((r) => r.id === articleId) ?? null;
-  const known = reading !== null || view?.today?.article?.id === articleId;
+  // The day it was read on: the one named, else today's when it is today's reading (Read again).
+  const todayNumber = view?.today?.article?.id === articleId ? view.today.dayNumber : null;
+  const day = dayNumber ?? todayNumber;
+  const reading = view?.readings.find((r) => r.id === articleId && (day === null || r.dayNumber === day)) ?? null;
+  const known = reading !== null || todayNumber !== null;
 
   useEffect(() => {
     if (article === null && known) fetchArticle(articleId);
   }, [article, known, articleId, fetchArticle]);
 
-  const isToday = view?.today?.article?.id === articleId;
+  const isToday = day !== null && day === todayNumber;
   const label = isToday || reading === null ? R.label : fillText(R.past.label, { date: dateKeyLabel(reading.date) });
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
