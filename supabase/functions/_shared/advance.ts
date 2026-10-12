@@ -1,6 +1,7 @@
 // Lazy day closing and the next day (architecture §4.3, spec §2.4, §3.3, §3.7). Pure: it reads a snapshot of the
 // player's state and returns what `levelmeup.advance` should write, or null when nothing is due. M7a: once a check-in is
 // resolved, the days that waited behind it are applied in order, and "I just didn't" is settled when its recovery day ends.
+// M7b: a day planned as a rest day the day before is built protected.
 import {
   DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, STREAK_SLOTS, abilityReady, applyDay, buildDay, closeLadders,
   closedDayResolution, followingDay, ladderById, provisionalDay, reenterLadders, resolveCheckin,
@@ -250,6 +251,8 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
         buildError = error instanceof Error ? error.message : String(error);
       }
     }
+    // M7b decision 5: the player planned this day as a rest day; its quests stay as a bonus, as on any rest day.
+    if (protection === null && input.character.rest_day === dayNumber) protection = 'planned_rest';
     newDay = {
       dayNumber,
       startsAt: new Date(window.startsAt).toISOString(),

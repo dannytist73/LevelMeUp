@@ -375,3 +375,22 @@ describe('the check-in answered (M7a)', () => {
     expect(planAdvance(afterDay1(['core'], day1End))!.lightUsed).toBe(false);
   });
 });
+
+describe('a rest day planned ahead (M7b decision 5)', () => {
+  it('the next day with that number is built as planned rest, its quests kept as a bonus', () => {
+    const out = planAdvance(afterDay1(['core'], day1End + HOUR, { character: characterRow({ rest_day: 2 }) }))!;
+    expect(out.newDay).toMatchObject({ dayNumber: 2, protection: 'planned_rest' });
+    expect(out.newDay!.quests.length).toBeGreaterThan(0);
+    expect(planAdvance(afterDay1(['core'], day1End + HOUR, { character: characterRow({ rest_day: 3 }) }))!.newDay!.protection).toBeNull();
+  });
+
+  it('a day the phone built offline is the planned rest day too', () => {
+    const built = planAdvance(afterDay1(['core'], day1End + HOUR))!.newDay!;
+    const quests = built.quests.map((q) => ({ slot: q.slot, templateId: q.templateId, why: q.why, moves: plannedMoves(q.condition) }));
+    const out = planAdvance(afterDay1(['core'], day1End + HOUR, {
+      character: characterRow({ rest_day: 2 }), provisional: { dayNumber: 2, quests },
+    }))!;
+    expect(out.offline?.kept).toBe('phone');
+    expect(out.newDay!.protection).toBe('planned_rest');
+  });
+});
