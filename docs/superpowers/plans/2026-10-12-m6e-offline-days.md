@@ -2557,4 +2557,64 @@ git commit -m "M6e docs: architecture, MVP spec, roadmap, READMEs and device che
 
 ## As built
 
-(Filled in during the build.)
+Built 2026-10-12 on `m6e-offline-days`. M6c's and M6d's deploys ran first, from this branch before any M6e code, with
+the owner's yes of 2026-10-12 (migrations 0009 and 0010, `db:test`, the functions v7, `test:live` 29 of 29, no test
+player left; the v3 art set uploaded and verified 34 of 34, the app reads `lmu-art/v3`).
+
+| Task | Commit |
+|---|---|
+| T1 closing in the rules | 62d8233 |
+| T2 storedQuest, isWhyReason, sameMoves, provisionalDay | 8e1d387 |
+| T3 planAdvance on the closing helpers | caa91ed |
+| T4 the provisional input and offline outcome | b0f7f87 |
+| T5 the state's ladders, history, workoutsDone | 849a2c1 |
+| T6 the provisional_day event and refs | 1f31779 |
+| T7 lmu-sync applies offline days | ffcefa1 |
+| T8 live tests | 362c917 |
+| T10 words and notices | 9d4bbbb |
+| T11 showing an offline day | 93b068f |
+| T12 offlineDay | 0821f39 |
+| T13 the store | 58a45f0 |
+| T14 the screens and the preview | d006984 |
+| T15 docs | 3a70337 |
+
+### Changes from the plan
+
+- `closing.ts`: `followingDay`'s local variable is `next`, not `window` (the rules' portability test refuses `window.`
+  as a browser global).
+- Task 6's guard in `project.ts` (`provisional_day` skipped) held the phone's types until Task 11 replaced it; Task 7
+  step 5 wasn't needed (`planAdjust` compiles with `instanceId: number | null`).
+- Test fixes: a test name with an apostrophe (`offline.test.ts`); the "nothing pending" projection test blanks the new
+  fields.
+- Task 9 (the deploy) ran after the review, so only reviewed code went live.
+- Not M6e: M6c's quest screen test still expected the v2 picture URL (fixed on M6c, 2736d57, merged forward).
+
+### Code review (2026-10-12): fixes
+
+Review "With fixes" (no cross-player access, XP bounded, replays idempotent, `levelmeup.advance` accepts the as-of
+writes). Fixed in f7653ab (server), 1d34199 (phone) and 58d385a; the re-review confirmed them:
+- **Critical:** the offline day ignored pain reports, Resumes and step-downs still on their way, so it could bring back
+  an exercise just reported for pain. `project` now lists them (`ladderChanges`) and `offlineDay` applies them before
+  closing the day, as the server does.
+- A completion named by slot on a changed quest is checked against the quest the phone says the player did (its
+  completion type and condition), stored with `offlineQuest`, and its rating dropped; such a completion moves no ladder
+  (`remapped`, `planAdvance`) and isn't a workout done (`db.ts`). A rating sent by slot for a changed quest is refused
+  (`quest_changed`, notice reworded).
+- "I felt pain" by slot on a changed quest rests the exercise the player did (`planOfflinePain`); "rest" still protects
+  the day while it runs.
+- An offline day the rules can't read falls back to the server's own day; a day built more than 48 hours plus a day ago
+  is applied now; every rebuild is logged; a tap racing the sync finds its quest by slot; timers move on any refresh.
+- Decision 15 states the remaining risk exactly (a modified phone can name a check-off quest to skip a timer or rep
+  check, earning that quest's XP once; no ladder, no workout).
+
+### Deploy and device check (2026-10-12)
+
+Functions v8 after the review, `test:live` 33 of 33, no test player left; v9 after the device check (below), `test:live`
+33 of 33. Emulator rows 1, 4 and 5 pass (the checklist). Found and fixed: a pain report from an offline day the server
+never stored now still rests the exercise (563b88f); the preview's background (cc278b3); a brand-new player's quest art
+is fetched after onboarding (8557820, an M6a gap). Rows 2 and 3 need a real day boundary: test character Uma's day 1
+ends 2026-10-12 08:00 UTC; run then if the session is still on, otherwise on the Find X9.
+
+Checks: rules 439, content 1043, server 299, app 569 tests; `typecheck`, `check:functions`, `check:portable` (194/70
+exports), `check:bundle` (33 files, no secrets) pass; `npm run pacing` unchanged from M6c (Warrior steady rank C on day
+151, recorded in M6c).

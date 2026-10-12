@@ -253,8 +253,22 @@ boundary: on the emulator only when a test day ends during the session, otherwis
 
 | # | Check | Emulator | Find X9 | Automated coverage |
 |---|---|---|---|---|
-| 1 | Developer → Offline day preview: Today with the offline line, real dates and four quests (Hermes runs the builder). | | | `offlineDay.test.ts` |
+| 1 | Developer → Offline day preview: Today with the offline line, real dates and four quests (Hermes runs the builder). | Pass: Day 2 on Tue 13 Oct with the offline line, four quests (Walk, Sit-to-stands, Reading, the article) and the "open once this day reaches the System" line | | `offlineDay.test.ts` |
 | 2 | Real boundary: airplane mode before the day ends; open the app after the boundary → the offline line and the day's quests; clear one; airplane mode off → it syncs, no notice, the quest stays cleared with its XP, ids are the server's. | | | `store.test.ts`, live test (quests by slot) |
 | 3 | A quest screen open during that sync stays on the same quest (its slot), and a running timer keeps its time. | | | `quest.test.tsx`, `offline.test.ts` |
-| 4 | Clock ahead (emulator): airplane mode, set the clock a day ahead, open → an offline day; restore the clock, airplane mode off → the `clock_ahead` notice, then the server's day. | | | live test (`clock_ahead`) |
-| 5 | "I felt pain" on an offline day offers rest and pause (no gentle option); after the sync the exercise is resting. | | | `project.test.ts`, live test (`quest_changed`) |
+| 4 | Clock ahead (emulator): airplane mode, set the clock a day ahead, open → an offline day; restore the clock, airplane mode off → the `clock_ahead` notice, then the server's day. | Pass: offline with the clock at 13 Oct 05:00 UTC, an offline day 2 after the failed sync timed out (about 30 s of "preparing"); clock and network back → the clock_ahead notice, then the server's day 1 | | live test (`clock_ahead`) |
+| 5 | "I felt pain" on an offline day offers rest (pause once the quest is cleared or the day rests, as on any day) and no gentle option; after the sync the exercise is resting, also when the server refused the day. | Pass after a fix: "Rest today" and no gentle option; the phone showed Squats resting and the day rested at once; after the clock_ahead sync Squats was resting on the server too (563b88f: a pain report from a day the server never stored still rests the exercise) | | `project.test.ts`, live test (`quest_changed`) |
+
+### What the emulator found (M6e, 2026-10-12)
+
+Run after the M6e deploy (functions v8, then v9) with test characters Tess (UTC) and Uma (America/Caracas).
+
+1. A pain report on an offline day that the server never stored (the phone's clock was ahead) came back `not_found`, so
+   the exercise didn't rest. The server now rests the exercise the phone named whenever the day or the quest isn't the
+   one the phone showed (563b88f, functions v9; live test).
+2. The offline day appears only after the failed sync ends: with no network the first sync took about 30 seconds to
+   give up, and Today said "preparing" meanwhile. Carried forward.
+3. The offline day preview had no background of its own (white top bar, invisible buttons): fixed (cc278b3).
+4. A brand-new player's quest art was fetched only at the next launch (an M6a gap): it is fetched after onboarding too
+   (8557820).
+
