@@ -195,18 +195,27 @@ checks from the M6c branch (it contains M5–M6b), or with characters on day 1 o
 
 | # | Check | Emulator | Find X9 | Automated coverage |
 |---|---|---|---|---|
-| 1 | Onboarding shows Training after Body; Continue needs equipment (or "Just my body") and a program. | | | `flow.test.ts`, `onboarding.test.tsx` (Training) |
-| 2 | Training is skipped for "I follow my own plan" and after a safety-check "yes". | | | `flow.test.ts` (`stepsFor`) |
-| 3 | Rhythm says workouts need 25 minutes a day at 10 or 15. | | | `onboarding.test.tsx` (Rhythm) |
-| 4 | Settings → Training shows the setup, saves a change once, and the profile keeps it after a sync. | | | `adjust.test.tsx` (Training), server `adjust.test.ts`, live test |
-| 5 | Developer → Workout preview: every setup lists exercises that use that equipment, with the target, the form cue and the progress line; "How to do it" opens the steps; counters start at the bottom of the range; − and + work. | | | `quest.test.tsx` (a workout), content `training.test.ts` |
-| 6 | The workout log at the largest font size: nothing cut off, buttons at least 44 dp. | | | — |
-| 7 | Titles without numbers: a hard day's walk or reading quest keeps a title that fits the shorter target. | | | content `text.test.ts` |
-| 8 | A strength day's core quest is a workout: its card lists the exercises and minutes, with its family picture (or the ink fallback before v3). | | | rules `day.test.ts`, server `advance.test.ts` |
-| 9 | Log a workout → Quest cleared, XP, the rating; Undo. | | | `quest.test.tsx`, server `events.test.ts` |
-| 10 | Hard day on a workout day: one set of the first two exercises, 7 minutes, half XP. | | | rules `adjust.test.ts` |
-| 11 | "I felt pain" on a workout: workouts rest ("Workouts" under resting exercises); Resume brings them back. | | | rules and server pain tests |
-| 12 | The beginner rungs show their own pictures (wall, incline and knee push-ups; chair and split squats; dead bugs); the side plank keeps the forearm plank. | | | content `art.test.ts` |
+| 1 | Onboarding shows Training after Body; Continue needs equipment (or "Just my body") and a program. | Pass: Training is step 5 of 7, after Body; Continue stays on the step with nothing chosen and with only "Just my body" | | `flow.test.ts`, `onboarding.test.tsx` (Training) |
+| 2 | Training is skipped for "I follow my own plan" and after a safety-check "yes". | Not run (Find X9) | | `flow.test.ts` (`stepsFor`) |
+| 3 | Rhythm says workouts need 25 minutes a day at 10 or 15. | Pass: the note at 10 and 15 minutes, gone at 25 | | `onboarding.test.tsx` (Rhythm) |
+| 4 | Settings → Training shows the setup, saves a change once, and the profile keeps it after a sync. | Pass: Dumbbells saved, synced (0 waiting), and reopened with Dumbbells and No preference from the server | | `adjust.test.tsx` (Training), server `adjust.test.ts`, live test |
+| 5 | Developer → Workout preview: every setup lists exercises that use that equipment, with the target, the form cue and the progress line; "How to do it" opens the steps; counters start at the bottom of the range; − and + work. | Pass: bodyweight (wall push-ups, prone Y raises, chair squats), dumbbells (floor press, one-arm row, goblet squat), gym (seated cable row, leg press), bands (band chest press, seated row, squats); counters start at 10; − and + work; the steps open | | `quest.test.tsx` (a workout), content `training.test.ts` |
+| 6 | The workout log at the largest font size: nothing cut off, buttons at least 44 dp. | Pass at font scale 2.0: nothing cut off; − and + are 126 px (48 dp) | | — |
+| 7 | Titles without numbers: a hard day's walk or reading quest keeps a title that fits the shorter target. | Pass: a hard day on day 1 gave "Neck and shoulder rolls", 2 minutes, and "A good thing", half XP, no numbers in the titles | | content `text.test.ts` |
+| 8 | A strength day's core quest is a workout: its card lists the exercises and minutes, with its family picture (or the ink fallback before v3). | Not run (needs a Warrior's day 3; Find X9) | | rules `day.test.ts`, server `advance.test.ts` |
+| 9 | Log a workout → Quest cleared, XP, the rating; Undo. | Not run (Find X9) | | `quest.test.tsx`, server `events.test.ts` |
+| 10 | Hard day on a workout day: one set of the first two exercises, 7 minutes, half XP. | Not run (Find X9) | | rules `adjust.test.ts` |
+| 11 | "I felt pain" on a workout: workouts rest ("Workouts" under resting exercises); Resume brings them back. | Not run (Find X9) | | rules and server pain tests |
+| 12 | The beginner rungs show their own pictures (wall, incline and knee push-ups; chair and split squats; dead bugs); the side plank keeps the forearm plank. | Partly: Wall push-ups shows its own v3 picture; the other rungs weren't on screen | | content `art.test.ts` |
+
+### What the emulator found (M6c, 2026-10-12)
+
+Run with the M6e build after the M6c, M6d and M6e deploys (test characters Tess and Uma, deleted afterwards).
+
+1. The v3 pictures: a new player's first launch kept the art list it had cached (v2) until the next launch, so Wall
+   push-ups showed the ink panel on day 1. The list is now also fetched after onboarding (fixed on M6e, 8557820). After
+   a restart the picture shows.
+2. Rows 8–11 need a Warrior's first workout day (day 3), so they stay for the Find X9.
 
 ## M6d — Character and Chronicle
 
@@ -216,17 +225,26 @@ the Find X9 (the owner), after M6c's.
 
 | # | Check | Emulator | Find X9 | Automated coverage |
 |---|---|---|---|---|
-| 1 | Character: the framed class emblem, the name, the level tag, no title for a new player, total XP and the level bar. | | | `screens.test.tsx` (Character) |
-| 2 | Stats: five bars, "N XP to M", rank stamps, "rank D at 10" where it applies, Discipline's line; at the largest font size nothing is cut off. | | | `character.test.ts`, `screens.test.tsx` |
-| 3 | The class path: both abilities with "Level N · M to go" for a new player. | | | `character.test.ts` |
-| 4 | Achievements: "First Trial" after the first clear, and "N still hidden.". | | | `screens.test.tsx` |
-| 5 | The vow sworn in onboarding shows on Character (a new test character who swears one). | | | `store.test.ts`, `screens.test.tsx` |
-| 6 | Chronicle: the three tiles; this month with today's vermilion border; TalkBack reads the date and "today". | | | `screens.test.tsx` (Chronicle) |
-| 7 | After clearing the core quest, today's cell fills (paper). | | | `calendar.test.ts` (`todayMark`) |
-| 8 | Growth since day 1: the date and "Your first quests are waiting.", then the counts after a clear and a sync. | | | server `state.test.ts`, live test |
-| 9 | The training note: on a character with the default training it shows once on Today; "Set up training" opens Settings → Training; back on Today it is gone, also after a restart. A new character from onboarding never sees it. | | | `store.test.ts`, `screens.test.tsx` |
-| 10 | Developer → Character preview: the Scholar's Path card with the book, its progress and the finished book; the title; the vow; Chronicle's marks (paper, ink corner, dashed, hatched) and the previous-month button. | | | — |
-| 11 | The book screen from the preview's "Change book" with a non-Mage character: "Scholar's Path opens for a Mage at level 10." | | | `screens.test.tsx` (book screen) |
+| 1 | Character: the framed class emblem, the name, the level tag, no title for a new player, total XP and the level bar. | Pass after a fix: the emblem was drawn small in the frame's corner (a nested Svg on Android); now a scaled group, centred (02cb2c3) | | `screens.test.tsx` (Character) |
+| 2 | Stats: five bars, "N XP to M", rank stamps, "rank D at 10" where it applies, Discipline's line; at the largest font size nothing is cut off. | Pass: five bars, "22 XP to 8", rank stamps, "grows only from showing up"; at font scale 2.0 nothing cut off | | `character.test.ts`, `screens.test.tsx` |
+| 3 | The class path: both abilities with "Level N · M to go" for a new player. | Pass: Second Wind "Level 5 · 4 to go", Unbreakable "Level 10 · 9 to go" | | `character.test.ts` |
+| 4 | Achievements: "First Trial" after the first clear, and "N still hidden.". | Pass: the First Trial celebration, then "1 / 27", First Trial and "26 still hidden." | | `screens.test.tsx` |
+| 5 | The vow sworn in onboarding shows on Character (a new test character who swears one). | Pass: the sworn vow shows on Character | | `store.test.ts`, `screens.test.tsx` |
+| 6 | Chronicle: the three tiles; this month with today's vermilion border; TalkBack reads the date and "today". | Pass: the three tiles, October with the 12th outlined; the cell reads "Mon 12 Oct, today" | | `screens.test.tsx` (Chronicle) |
+| 7 | After clearing the core quest, today's cell fills (paper). | Pass: after the core quest, "Mon 12 Oct, today, cleared", filled paper | | `calendar.test.ts` (`todayMark`) |
+| 8 | Growth since day 1: the date and "Your first quests are waiting.", then the counts after a clear and a sync. | Pass: "Since day 1 · Mon 12 Oct" and "Your first quests are waiting.", then "0 levels gained, 1 quest cleared, no new rungs yet." | | server `state.test.ts`, live test |
+| 9 | The training note: on a character with the default training it shows once on Today; "Set up training" opens Settings → Training; back on Today it is gone, also after a restart. A new character from onboarding never sees it. | Partly: a new character with the default training never sees it (onboarding marks it seen); showing it needs a character from before M6c (Find X9) | | `store.test.ts`, `screens.test.tsx` |
+| 10 | Developer → Character preview: the Scholar's Path card with the book, its progress and the finished book; the title; the vow; Chronicle's marks (paper, ink corner, dashed, hatched) and the previous-month button. | Pass: the title, Meditations with "4 sessions · 60 min", the finished book, the vow; paper, ink-corner, dashed and (September) hatched marks; Previous month works. The preview's top bar was white with invisible buttons: fixed (02cb2c3) | | — |
+| 11 | The book screen from the preview's "Change book" with a non-Mage character: "Scholar's Path opens for a Mage at level 10." | Pass: "Scholar's Path opens for a Mage at level 10." | | `screens.test.tsx` (book screen) |
+
+### What the emulator found (M6d, 2026-10-12)
+
+Run with the M6e build after the M6c, M6d and M6e deploys (test character Tess, deleted afterwards).
+
+1. The class emblem was drawn small in the top-left corner of its frame: Android didn't honour a nested `<Svg>`'s
+   position and size. It is now a group scaled from the 24-unit icon grid, centred in the frame (02cb2c3).
+2. The Character preview had no background of its own, so its top bar was white and the Back and tab buttons were
+   nearly invisible; it now draws on the night background (02cb2c3).
 
 ## M6e — Offline-built days
 

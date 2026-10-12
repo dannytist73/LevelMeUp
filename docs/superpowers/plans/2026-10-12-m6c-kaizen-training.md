@@ -3886,3 +3886,13 @@ monk struggling           2.3   12.8   47.1  106.4      —        —
 Tightest margins: Mage struggling level 10 on day 47.8 (maximum 48) and Warrior steady level 10 on day 17.4 (minimum
 16.8). The campaign test is seeded, so the margin is stable; M9's pilot data should confirm the struggling pace.
 Experienced players (one rung up on day 1) also met every target (Warrior steady L10 17.4, Mage struggling L10 45.4).
+
+### Deploy and device check (2026-10-12)
+
+With the owner's yes ("Yes to all", 2026-10-12), run together with M6d's and from the M6e branch before any M6e code:
+`db:deploy` applied 0009 and 0010 (the wedding's history unchanged); `db:test` passed (adjust 59 assertions in 8 tests,
+functions 182 in 17, isolation 97, storage 6, tables 206; nothing left behind); `deploy:functions` (v7, ACTIVE);
+`test:live` 29 of 29; the leftovers check found no test player. The v3 art set (33 pictures and the manifest) was
+uploaded to `lmu-art/v3/` in the dashboard and verified byte for byte (34 of 34); the app reads v3 (2773f63, and the
+quest screen test in 2736d57). M6e's functions followed (v8, then v9). Emulator rows 1, 3–7 pass and row 12 partly
+(the checklist); rows 2 and 8–11 stay for the Find X9.
