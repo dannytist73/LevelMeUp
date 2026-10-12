@@ -42,3 +42,22 @@ export function lintShadowLine(text: string): string[] {
   for (const [phrase, re] of THREATS) if (re.test(text)) problems.push(`threat "${phrase}"`);
   return problems;
 }
+
+/**
+ * Articles may discuss failure, shame and excuses as subjects (an article about habits will); they never call the
+ * reader names (M8a decision 5).
+ */
+export const ARTICLE_SHAMING: readonly string[] = [
+  'lazy', 'pathetic', 'weakling', 'loser', 'worthless', 'disgrace', 'disappointed in you', 'coward', 'no excuses', 'you failed',
+];
+
+const ARTICLE_SHAME = matchers(ARTICLE_SHAMING);
+
+/** Problems in a piece of an article (spec §4.1 step 3): robotic phrases, name-calling, emoji. */
+export function lintArticle(text: string): string[] {
+  const problems: string[] = [];
+  for (const [phrase, re] of ROBOTIC) if (re.test(text)) problems.push(`robotic phrase "${phrase}"`);
+  for (const [phrase, re] of ARTICLE_SHAME) if (re.test(text)) problems.push(`shaming word "${phrase}"`);
+  if (EMOJI.test(text)) problems.push('emoji');
+  return problems;
+}
