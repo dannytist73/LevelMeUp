@@ -1,0 +1,89 @@
+// Development only (M7c): Today after a miss under a pact, the Shadow's scene, the Pact and the focus session, over the
+// cached day with a made-up "I just didn't" and its recovery quest, in a store of their own. Nothing is sent, so the
+// screens can be checked on a device without missing a day.
+import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { createStore } from 'zustand/vanilla';
+import type { StoreApi } from 'zustand/vanilla';
+import { project } from '../../src/game/project.ts';
+import type { QuestView } from '../../src/game/types.ts';
+import { Pact } from '../../src/screens/Pact.tsx';
+import { ShadowScene } from '../../src/screens/ShadowScene.tsx';
+import { Today } from '../../src/screens/Today.tsx';
+import { Trial } from '../../src/screens/Trial.tsx';
+import { GameProvider, useGame } from '../../src/state/store.ts';
+import type { GameState } from '../../src/state/store.ts';
+import { colors, space } from '../../src/theme/tokens.ts';
+import { Button } from '../../src/ui/Button.tsx';
+import { NarrationBox } from '../../src/ui/NarrationBox.tsx';
+
+const noop = async () => {};
+type Screen = 'today' | 'scene' | 'pact' | 'trial';
+
+export default function ShadowPreview() {
+  const insets = useSafeAreaInsets();
+  const cached = useGame((s) => s.cached);
+  const art = useGame((s) => s.art);
+  const [kind, setKind] = useState<'shadow' | 'trial' | 'paused'>('shadow');
+  const [screen, setScreen] = useState<Screen>('today');
+  const store = useMemo(() => {
+    const state = cached?.state;
+    if (state === undefined || state.today === null) return null;
+    const core = state.today.quests.find((q) => q.slot === 'core') ?? null;
+    const yesterday = Math.max(1, state.today.dayNumber - 1);
+    const recovery: QuestView = {
+      id: -2, slot: 'recovery', templateId: 'recovery-walk', ladder: null, rung: null, stat: 'discipline', tier: 'minor', minutes: 5,
+      completion: 'tap', condition: { kind: 'minutes', minutes: 5 }, hardDay: false, xp: { discipline: 5 }, why: { code: 'recovery' },
+      book: null, completedAt: null, rating: null, swaps: [], gentle: null, canStepDown: false,
+    };
+    const view = project({
+      ...state,
+      profile: { ...state.profile, accountabilityLevel: kind === 'trial' ? 2 : 1, accountabilityFrom: null },
+      character: { ...state.character, streak: { ...state.character.streak, awaitingCheckin: true } },
+      today: { ...state.today, quests: [...state.today.quests, recovery] },
+      checkin: {
+        id: -1, from: yesterday, to: yesterday, gap: false, date: null, core: core?.templateId ?? null, ladder: core?.ladder ?? null,
+        answer: 'just_didnt', secondWind: null, recoveryDayId: state.today.id, consequence: kind, trialDone: false, note: null,
+      },
+    }, []);
+    return createStore(() => ({
+      phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, trainingNoticeSeen: true, lastSyncedAt: null,
+      checkinLater: null, checkinResultSeen: null, shadowSeen: null, draft: { pact: null }, pending: [],
+      syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop, editDraft: () => {},
+      answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop, seeShadow: noop, trialMs: async () => 0, saveTrialMs: noop,
+    })) as unknown as StoreApi<GameState>;
+  }, [cached, art, kind]);
+
+  const back = () => setScreen('today');
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.night }}>
+      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: space.gutter, gap: 8 }}>
+        <Button label="Back" variant="secondary" onPress={() => router.back()} style={{ alignSelf: 'flex-start' }} />
+        <NarrationBox>
+          {store === null ? 'No day is cached yet: sync once, then open this preview.' : `A made-up "I just didn't" (${kind}). Nothing is sent.`}
+        </NarrationBox>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {(['shadow', 'trial', 'paused'] as const).map((k) => (
+            <Button key={k} label={k} variant={k === kind ? 'primary' : 'secondary'} onPress={() => { setKind(k); setScreen('today'); }} />
+          ))}
+          <Button label="Pact" variant="secondary" onPress={() => setScreen('pact')} />
+        </View>
+      </View>
+      {store !== null && (
+        <GameProvider store={store}>
+          {screen === 'today' && (
+            <Today
+              onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}}
+              onCheckin={() => {}} onShadow={() => setScreen('scene')} onTrial={() => setScreen('trial')}
+            />
+          )}
+          {screen === 'scene' && <ShadowScene onDone={back} onRecovery={back} onTrial={() => setScreen('trial')} onPact={() => setScreen('pact')} />}
+          {screen === 'pact' && <Pact mode="draft" onDone={back} />}
+          {screen === 'trial' && <Trial onDone={back} />}
+        </GameProvider>
+      )}
+    </View>
+  );
+}
