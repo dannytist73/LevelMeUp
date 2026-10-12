@@ -103,8 +103,9 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
         onPress={onOpen}
       >
         <NightCard quiet>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <View style={{ flex: 1, gap: 3 }}>
+          {/* Wraps: at the largest font the chip goes under the title instead of past the card's edge (emulator). */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexGrow: 1, flexShrink: 1, gap: 3 }}>
               <Body weight="bold" tone="ashLight">{words.title}</Body>
               <Meta>{`${stat} · ${summary}`}</Meta>
             </View>
