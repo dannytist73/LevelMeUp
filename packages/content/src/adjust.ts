@@ -27,6 +27,8 @@ export const ADJUST_TEXT = {
     limit:
       "You've rested twice in the last 7 days, so today can't be another rest day. If the days feel heavy, fewer minutes " +
       'a day may help.',
+    tomorrow: 'Rest tomorrow',
+    tomorrowBanner: 'Tomorrow is a rest day: your streak is safe. Its quests stay open as a bonus.',
   },
   swap: {
     title: 'Swap a quest',

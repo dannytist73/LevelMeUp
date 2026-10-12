@@ -175,6 +175,9 @@ export const ONBOARDING_TEXT = {
     offline: 'The System needs a connection to record your character. Your answers are kept on this phone.',
     locked: "Your trials have already begun, so the analysis can't run again. Class changes come with the Character screen.",
     failed: "The System couldn't record your character. Your answers are kept; try again.",
+    storage:
+      "This phone couldn't store a sign-in safely, so the System made nothing yet. Your answers are kept. Close the " +
+      'app, open it again and try once more.',
     retry: 'Try again',
     today: 'Go to Today',
   },
