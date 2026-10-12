@@ -47,7 +47,7 @@ export function Analysis({ onRevealed, onToday, minMs = 2_400 }: { onRevealed: (
 
   // `already_started` with a Google account: the saved character exists, so it is the same as `locked` (M5 review).
   const begun = failure === 'locked' || failure === 'already_started';
-  const message = failure === 'network' ? T.offline : begun ? T.locked : T.failed;
+  const message = failure === 'network' ? T.offline : failure === 'storage' ? T.storage : begun ? T.locked : T.failed;
   return (
     <ScreenScroll
       contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 24 }}

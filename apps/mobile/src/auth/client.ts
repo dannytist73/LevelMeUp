@@ -28,10 +28,13 @@ installWebCrypto(globalThis as { crypto?: Crypto }, {
   sha256: (data) => ExpoCrypto.digest(ExpoCrypto.CryptoDigestAlgorithm.SHA256, data),
 });
 
+/** The sealed storage the client keeps its session in; the sign-in guard checks it before a new guest (M7b). */
+export const sessionStore = makeSessionStorage(vault, kvStore, expoCipher);
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   global: { fetch: timedFetch(REQUEST_TIMEOUT_MS) },
   auth: {
-    storage: makeSessionStorage(vault, kvStore, expoCipher),
+    storage: sessionStore,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

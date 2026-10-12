@@ -14,7 +14,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  */
 export type SessionState = 'signed_in' | 'offline' | 'no_session' | 'storage_failed';
 
-export async function ensureSession(client: SupabaseClient, allowNewGuest: () => boolean): Promise<SessionState> {
+export async function ensureSession(
+  client: SupabaseClient,
+  allowNewGuest: () => boolean,
+  canStore: () => Promise<boolean> = async () => true,
+): Promise<SessionState> {
   let session: unknown;
   try {
     const { data, error } = await client.auth.getSession();
@@ -25,6 +29,8 @@ export async function ensureSession(client: SupabaseClient, allowNewGuest: () =>
   }
   if (session !== null) return 'signed_in';
   if (!allowNewGuest()) return 'no_session';
+  // M7b decision 8: a guest this phone can't keep would be lost at the next launch.
+  if (!(await canStore())) return 'storage_failed';
   const { error } = await client.auth.signInAnonymously();
   return error === null ? 'signed_in' : 'offline';
 }

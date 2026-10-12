@@ -10,6 +10,19 @@ function client(auth: Record<string, jest.Mock>) {
 const withSession = (session: unknown) => jest.fn(async () => ({ data: { session }, error: null }));
 
 describe('the guest sign-in', () => {
+  it('a phone that cannot keep a sign-in makes no guest (M7b decision 8)', async () => {
+    const signInAnonymously = jest.fn(async () => ({ data: {}, error: null }));
+    const empty = { getSession: withSession(null), signInAnonymously };
+    expect(await ensureSession(client(empty), () => true, async () => false)).toBe('storage_failed');
+    expect(signInAnonymously).not.toHaveBeenCalled();
+    expect(await ensureSession(client(empty), () => true, async () => true)).toBe('signed_in');
+    // Only a new guest is checked: a session already there, or no guest allowed, never asks.
+    const canStore = jest.fn(async () => false);
+    expect(await ensureSession(client({ getSession: withSession({}), signInAnonymously }), () => true, canStore)).toBe('signed_in');
+    expect(await ensureSession(client(empty), () => false, canStore)).toBe('no_session');
+    expect(canStore).not.toHaveBeenCalled();
+  });
+
   it('uses the session there is, without signing in again', async () => {
     const signInAnonymously = jest.fn();
     expect(await ensureSession(client({ getSession: withSession({}), signInAnonymously }), () => true)).toBe('signed_in');

@@ -5,9 +5,10 @@ import { getCalendars } from 'expo-localization';
 import kvStore from 'expo-sqlite/kv-store';
 import * as WebBrowser from 'expo-web-browser';
 import { ART_MANIFEST_URL } from '../art/manifest.ts';
-import { supabase } from '../auth/client.ts';
+import { sessionStore, supabase } from '../auth/client.ts';
 import { linkGoogle, readAccount, signInWithGoogle } from '../auth/google.ts';
 import { ensureSession, sessionAlive } from '../auth/session.ts';
+import { storageWorks } from '../auth/sessionStorage.ts';
 import { openExpoSql } from '../data/expoSql.ts';
 import { makeLocal, migrate } from '../data/local.ts';
 import { makeApi } from '../net/api.ts';
@@ -31,7 +32,7 @@ export async function createAppStore() {
   return createGameStore({
     local: makeLocal(sql),
     api: makeApi(supabase),
-    ensureSession: (allowNewGuest) => ensureSession(supabase, allowNewGuest),
+    ensureSession: (allowNewGuest) => ensureSession(supabase, allowNewGuest, () => storageWorks(sessionStore, Crypto.randomUUID())),
     sessionAlive: () => sessionAlive(supabase),
     signOut: async () => {
       await supabase.auth.signOut({ scope: 'local' });

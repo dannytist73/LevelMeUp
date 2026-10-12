@@ -173,6 +173,13 @@ describe('When you slip (O06)', () => {
 });
 
 describe('Analysis (O07)', () => {
+  it('a phone that cannot keep a sign-in: says so, keeps the answers, offers another try (M7b)', async () => {
+    const startCharacter = jest.fn(async () => ({ ok: false, code: 'storage' }));
+    await show(<Analysis onRevealed={() => {}} onToday={() => {}} minMs={0} />, READY_DRAFT, { startCharacter });
+    await waitFor(() => expect(screen.getByText(ONBOARDING_TEXT.analysis.storage)).toBeTruthy());
+    expect(screen.getByRole('button', { name: ONBOARDING_TEXT.analysis.retry })).toBeTruthy();
+  });
+
   it('makes the character, then shows the reveal', async () => {
     const onRevealed = jest.fn();
     const store = await show(<Analysis onRevealed={onRevealed} onToday={() => {}} minMs={0} />, READY_DRAFT);

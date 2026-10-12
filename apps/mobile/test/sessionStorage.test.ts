@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { makeSessionStorage } from '../src/auth/sessionStorage.ts';
+import { makeSessionStorage, storageWorks } from '../src/auth/sessionStorage.ts';
 import type { Blobs, Cipher, Vault } from '../src/auth/sessionStorage.ts';
 
 function fakes() {
@@ -84,5 +84,30 @@ describe('the sealed session storage', () => {
     await storage.setItem('sb-auth', 'x');
     await storage.removeItem('sb-auth');
     expect(await storage.getItem('sb-auth')).toBeNull();
+  });
+});
+
+describe('the sign-in guard (M7b decision 8)', () => {
+  const memory = (): Blobs => {
+    const m = new Map<string, string>();
+    return { getItem: async (k) => m.get(k) ?? null, setItem: async (k, v) => void m.set(k, v), removeItem: async (k) => void m.delete(k) };
+  };
+
+  it('a value that comes back means the storage works, and nothing is left behind', async () => {
+    const store = memory();
+    expect(await storageWorks(store, 'probe-1')).toBe(true);
+    expect(await store.getItem('lmu.storage-probe')).toBeNull();
+  });
+
+  it('a write that throws, or a value that does not come back, means it does not', async () => {
+    expect(await storageWorks({ ...memory(), setItem: async () => { throw new Error('Keystore'); } }, 'x')).toBe(false);
+    expect(await storageWorks({ ...memory(), getItem: async () => null }, 'x')).toBe(false);
+  });
+
+  it('through the sealed storage: a cipher that cannot seal fails the check', async () => {
+    const f = fakes();
+    const broken = makeSessionStorage(f.vault, f.store, { ...f.cipher, seal: async () => { throw new Error('crypto'); } });
+    expect(await storageWorks(broken, 'x')).toBe(false);
+    expect(await storageWorks(makeSessionStorage(f.vault, f.store, f.cipher), 'x')).toBe(true);
   });
 });

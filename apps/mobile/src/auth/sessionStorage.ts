@@ -3,7 +3,7 @@
 // AES-256-GCM and kept in the SQLite key-value store.
 // M4 code review: a sealed value is discarded only when it can never be opened again (the vault says the key is gone,
 // or the key in hand doesn't open it). An error reading the vault may pass, so it is thrown: the session is kept and
-// the next sync tries again.
+// the next sync tries again. M7b: `storageWorks`, the sign-in guard.
 
 export type Vault = { get(): Promise<string | null>; set(key: string): Promise<void> };
 export type Blobs = {
@@ -48,4 +48,22 @@ export function makeSessionStorage(vault: Vault, blobs: Blobs, cipher: Cipher): 
     },
     removeItem: (name) => blobs.removeItem(name),
   };
+}
+
+const PROBE = 'lmu.storage-probe';
+
+/**
+ * M7b decision 8, the sign-in guard (roadmap, "Carried forward from M4"): before a new guest signs in, a value goes
+ * through the sealed storage and must come back. If it doesn't, the guest would be lost at the next launch (the M4
+ * device check saw a guest made every launch), so none is made.
+ */
+export async function storageWorks(store: Blobs, value: string): Promise<boolean> {
+  try {
+    await store.setItem(PROBE, value);
+    const back = await store.getItem(PROBE);
+    await store.removeItem(PROBE);
+    return back === value;
+  } catch {
+    return false;
+  }
 }
