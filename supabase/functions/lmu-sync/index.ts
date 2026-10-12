@@ -151,12 +151,12 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
 
 /**
  * "I felt pain" about a quest named by its slot (M6e decision 7): the quest there when it is the one the phone showed;
- * when the server rebuilt the day, the exercise the player did rests and the day stays as it is (review).
+ * when the server rebuilt the day (review), or never stored it (a phone clock ahead, device check), the exercise the
+ * player did still rests: a pain report is never lost to a sync problem.
  */
 async function slotPain(tx: Tx, userId: string, s: Snapshot, event: PainEvent & { ref: SlotRef }, nowMs: number): Promise<Plan> {
   const row = await questRow(tx, userId, event);
-  if (row === null) return { code: 'not_found' };
-  if (row.template_id !== event.ref.templateId) {
+  if (row === null || row.template_id !== event.ref.templateId) {
     return planOfflinePain(s, { dayNumber: event.ref.dayNumber, templateId: event.ref.templateId, choice: event.choice }, { nowMs, library: LIBRARY });
   }
   return planAdjust(s, { id: event.id, type: 'pain', instanceId: Number(row.id), choice: event.choice }, { nowMs, library: LIBRARY });

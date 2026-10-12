@@ -342,14 +342,19 @@ describe('offline-built days (M6e)', () => {
     expect(res.body.state.paused).toEqual([painKey(templateById(LIBRARY, did))]);
   });
 
-  it("a day built while the server's day still runs is refused (clock_ahead); a malformed one is rejected", async () => {
+  it("a day built while the server's day still runs is refused (clock_ahead); a malformed one is rejected; pain still rests", async () => {
     const day = {
       type: 'provisional_day', dayNumber: 2, builtAt: now(), timeZone: 'Asia/Manila', window: { startsAt: now(), endsAt: now() + 86_400_000 },
       budget: 25, light: false, quests: [{ slot: 'core', templateId: quest(state, 'core').templateId, why: { code: 'light_day' }, moves: null, book: null }],
     };
-    const res = await sync(d, [{ id: eventId(), ...day }, { id: eventId(), ...day, dayNumber: 1 }]);
+    const core = quest(state, 'core').templateId;
+    const pain = { id: eventId(), type: 'pain', ref: { dayNumber: 2, slot: 'core', templateId: core }, choice: 'rest' };
+    const res = await sync(d, [{ id: eventId(), ...day }, { id: eventId(), ...day, dayNumber: 1 }, pain]);
     expect(res.body.results[0]).toMatchObject({ ok: false, code: 'clock_ahead' });
     expect(res.body.rejected).toEqual([expect.objectContaining({ code: 'bad_event' })]);
     expect(res.body.state.today.dayNumber).toBe(1);
+    // A pain report from the refused day still rests the exercise (device check).
+    expect(res.body.results[1]).toMatchObject({ ok: true });
+    expect(res.body.state.paused).toContain(painKey(templateById(LIBRARY, core)));
   });
 });
