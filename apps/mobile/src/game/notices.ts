@@ -32,6 +32,9 @@ const TEXT = {
   already_applied: 'That ability was already in use today.',
   bad_change: "That change couldn't be applied, so nothing changed.",
   no_book: 'No book was set, so there was nothing to finish or set aside.',
+  // M8b: the reading claim and Insight.
+  no_article: "That day's reading hadn't arrived, so there was nothing to claim.",
+  topic_empty: "No new reading was waiting in that topic, so tomorrow's reading is chosen as usual.",
   same_book: 'That book was already the one you are reading.',
   day_rebuilt: 'The System rebuilt the day this phone made offline. Anything you finished there counts for the quest now in its place.',
   quest_changed: "The System had rebuilt that quest's day, so your rating of it wasn't saved.",

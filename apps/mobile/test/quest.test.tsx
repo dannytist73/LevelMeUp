@@ -1,4 +1,6 @@
-import { ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, artKey, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
+import {
+  ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, artKey, authoredTemplate, questSummary, renderWhy,
+} from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
@@ -291,6 +293,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     await renderQuest(SERVER, article.id);
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Log it' })).toBeNull();
+    expect(screen.queryByLabelText(READING_TEXT.takeawayLabel)).toBeNull();
   });
 
   it('an open quest whose day has ended says so and offers no claim (review)', async () => {

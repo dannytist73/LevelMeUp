@@ -7,13 +7,24 @@ import { Button } from '../../ui/Button.tsx';
 import { Small } from '../../ui/Text.tsx';
 import { TextField } from '../../ui/TextField.tsx';
 
-export function SentenceLog({ disabled, onClaim }: { disabled: boolean; onClaim: (payload: Record<string, unknown>) => void }) {
+export type SentenceLogProps = {
+  disabled: boolean;
+  onClaim: (payload: Record<string, unknown>) => void;
+  /** M8b: the reader's "Your takeaway, one sentence", its note and "Claim +10 XP". */
+  label?: string;
+  note?: string;
+  claimLabel?: string;
+};
+
+export function SentenceLog({
+  disabled, onClaim, label = PLAY_TEXT.sentence.label, note = PLAY_TEXT.sentence.note, claimLabel = PLAY_TEXT.claim.log,
+}: SentenceLogProps) {
   const [text, setText] = useState('');
   return (
     <View style={{ gap: 12 }}>
-      <TextField label={PLAY_TEXT.sentence.label} value={text} onChangeText={setText} maxLength={MAX_SENTENCE} />
-      <Small>{PLAY_TEXT.sentence.note}</Small>
-      <Button label={PLAY_TEXT.claim.log} variant="commitment" disabled={disabled || !sentenceValid(text)} onPress={() => onClaim(textPayload(text))} />
+      <TextField label={label} value={text} onChangeText={setText} maxLength={MAX_SENTENCE} />
+      <Small>{note}</Small>
+      <Button label={claimLabel} variant="commitment" disabled={disabled || !sentenceValid(text)} onPress={() => onClaim(textPayload(text))} />
     </View>
   );
 }

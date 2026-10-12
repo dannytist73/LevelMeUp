@@ -3,8 +3,8 @@
 // M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag. M6c: a workout's log, and a way to change the
 // equipment or program.
 import {
-  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary,
-  renderWhy, shadowLine,
+  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText,
+  questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -35,6 +35,8 @@ import { SentenceLog } from './quest/SentenceLog.tsx';
 import { TapClaim } from './quest/TapClaim.tsx';
 import { TimerPanel } from './quest/TimerPanel.tsx';
 import { WorkoutLog } from './quest/WorkoutLog.tsx';
+import { openSource } from './reading/openSource.ts';
+import { Reader } from './reading/Reader.tsx';
 
 const T = PLAY_TEXT.quest;
 const A = ADJUST_TEXT;
@@ -49,10 +51,12 @@ export type QuestProps = {
   onTraining?: () => void;
   /** M7c: the Trial of Stillness, for a sealed side quest. */
   onTrial?: () => void;
+  /** M8b: a reading, read again (decision 5). */
+  onRead?: (articleId: string) => void;
   now?: () => number;
 };
 
-export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, now = Date.now }: QuestProps) {
+export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, onRead, now = Date.now }: QuestProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const pending = useGame((s) => s.pending);
@@ -60,6 +64,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, no
   const enqueue = useGame((s) => s.enqueue);
   const loadTimer = useGame((s) => s.timer);
   const saveTimer = useGame((s) => s.saveTimer);
+  const articles = useGame((s) => s.articles);
+  const fetchArticle = useGame((s) => s.fetchArticle);
   const [before, setBefore] = useState<Shot | null>(null);
   const [timer, setTimer] = useState<TimerState>(NEW_TIMER);
   const [busy, setBusy] = useState(false);
@@ -73,6 +79,13 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, no
   const quest = findQuest(today, questId);
   const timerId = quest?.id ?? questId;
   const openTimer = quest !== null && quest.completion === 'timer' && quest.completedAt === null;
+  // M8b decision 5: the reading quest is the reader; an article this phone doesn't hold yet is asked for.
+  const todaysArticle = quest !== null && quest.slot === 'article' ? (today?.article ?? null) : null;
+  const reading = todaysArticle === null ? null : (articles[todaysArticle.id] ?? null);
+  const missing = todaysArticle !== null && reading === null ? todaysArticle.id : null;
+  useEffect(() => {
+    if (missing !== null) fetchArticle(missing);
+  }, [missing, fetchArticle]);
 
   useEffect(() => {
     if (!openTimer) return;
@@ -125,7 +138,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, no
     return (
       <Cleared
         heading={`${slot} · ${template.name}`.toUpperCase()}
-        line={summary}
+        line={todaysArticle !== null ? todaysArticle.title : summary}
         numbers={clearedSummary(before, { character: view.character, quests: today.quests }, quest.id)}
         rating={quest.rating}
         dayOpen={dayOpen}
@@ -145,6 +158,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, no
           if (stillOpen()) void enqueue({ type: 'step_down', instanceId: quest.id });
         }}
         onPain={template.exercise !== null ? () => onPain(quest.id) : null}
+        rateable={quest.slot !== 'article'}
+        onReadAgain={todaysArticle !== null && onRead !== undefined ? () => onRead(todaysArticle.id) : undefined}
       />
     );
   }
@@ -173,7 +188,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, no
       </View>
     );
   } else if (quest.slot === 'article') {
-    panel = <NarrationBox>{T.article}</NarrationBox>;
+    panel = <NarrationBox>{todaysArticle === null ? T.article : READING_TEXT.waiting}</NarrationBox>;
   } else if (quest.completion === 'timer') {
     panel = (
       <TimerPanel
@@ -206,6 +221,31 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, no
     panel = <SentenceLog disabled={busy} onClaim={(payload) => void claim(payload)} />;
   } else {
     panel = <TapClaim disabled={busy} onClaim={(payload) => void claim(payload)} />;
+  }
+
+  if (reading !== null) {
+    const xp = questXp(quest);
+    return (
+      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
+        <Button label={T.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+        <Reader
+          article={reading}
+          label={READING_TEXT.label}
+          xp={xp}
+          onOpenSource={openSource}
+          footer={(
+            <SentenceLog
+              disabled={busy}
+              label={READING_TEXT.takeawayLabel}
+              note={READING_TEXT.takeawayNote}
+              claimLabel={fillText(READING_TEXT.claim, { xp })}
+              onClaim={(payload) => void claim(payload)}
+            />
+          )}
+        />
+        {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
+      </ScreenScroll>
+    );
   }
 
   return (

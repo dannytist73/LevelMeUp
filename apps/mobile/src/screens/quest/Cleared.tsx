@@ -1,7 +1,7 @@
 // "Quest cleared" (board D2; spec §2, §3.3; M6a decisions 5–7): the XP stamp, what went up, what today now counts for,
 // the XP bar, an optional rating, Continue, and Undo while the day is open. M6b: after "Too hard", the offer to step the
 // exercise down a rung; "I felt pain" stays reachable.
-import { ADJUST_TEXT, PLAY_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
+import { ADJUST_TEXT, PLAY_TEXT, READING_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -39,6 +39,10 @@ export type ClearedProps = {
   onStepDown: () => void;
   /** An exercise quest: "I felt pain" stays reachable after clearing it. */
   onPain: (() => void) | null;
+  /** M8b: false for the reading quest: it has no rung, so nothing to rate. */
+  rateable?: boolean;
+  /** M8b: the reading quest's "Read again". */
+  onReadAgain?: () => void;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -70,7 +74,7 @@ function RateButton({ label, selected, onPress }: { label: string; selected: boo
 }
 
 export function Cleared({
-  heading, line, numbers, rating, dayOpen, waiting, onRate, onUndo, onContinue, canStepDown, onStepDown, onPain,
+  heading, line, numbers, rating, dayOpen, waiting, onRate, onUndo, onContinue, canStepDown, onStepDown, onPain, rateable, onReadAgain,
 }: ClearedProps) {
   const insets = useSafeAreaInsets();
   /** The step down was just sent: say so, rather than "if it stays too hard" (the offer itself is gone). */
@@ -119,7 +123,7 @@ export function Cleared({
         </View>
       </SlantPanel>
 
-      {dayOpen && (
+      {dayOpen && rateable !== false && (
         <View style={{ gap: 8 }}>
           <Small>{C.rateLabel}</Small>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -149,6 +153,7 @@ export function Cleared({
       )}
 
       <Button label={C.continue} onPress={onContinue} />
+      {onReadAgain !== undefined && <Button label={READING_TEXT.readAgain} variant="secondary" onPress={onReadAgain} />}
       {dayOpen && <Button label={C.undo} variant="secondary" onPress={onUndo} />}
       {dayOpen && onPain !== null && <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} />}
       {waiting && <Caption>{PLAY_TEXT.quest.willSync}</Caption>}

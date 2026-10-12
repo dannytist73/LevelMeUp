@@ -11,6 +11,7 @@ export default function QuestRoute() {
       onPain={(questId) => router.push(`/pain/${questId}`)}
       onTraining={() => router.push('/training')}
       onTrial={() => router.push('/trial')}
+      onRead={(articleId) => router.push(`/reading/${articleId}`)}
     />
   );
 }

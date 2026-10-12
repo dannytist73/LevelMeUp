@@ -8,9 +8,9 @@ describe('notices for refused actions', () => {
       'ability_not_ready', 'already_answered', 'already_applied', 'already_completed', 'already_hard_day', 'already_protected', 'bad_change',
       'bad_event', 'bad_event_id', 'bad_payload', 'bad_rating', 'checkin_gone', 'class_locked', 'clock_ahead', 'day_closed', 'day_rebuilt',
       'event_reused', 'future',
-      'no_book', 'no_lighter_plan', 'no_swaps_left', 'no_trial', 'not_an_option', 'not_completed', 'not_current', 'not_exercise', 'not_found',
+      'no_article', 'no_book', 'no_lighter_plan', 'no_swaps_left', 'no_trial', 'not_an_option', 'not_completed', 'not_current', 'not_exercise', 'not_found',
       'not_paused', 'not_swappable', 'not_too_hard', 'outside_day', 'pain_late', 'quest_changed', 'rest_late', 'rest_limit', 'same_book',
-      'same_class', 'same_level', 'timer_short', 'too_late', 'trial_done',
+      'same_class', 'same_level', 'timer_short', 'too_late', 'topic_empty', 'trial_done',
       'unsupported_event',
     ]);
   });
