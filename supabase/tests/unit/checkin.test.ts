@@ -21,7 +21,10 @@ describe('answering the check-in (M7a decisions 2–8)', () => {
     expect(planAdjust(waiting(), { ...answer('sick'), checkinId: 8 }, ctx)).toEqual({ code: 'not_found' });
     expect(planAdjust(waiting({ checkin: null }), answer('sick'), ctx)).toEqual({ code: 'not_found' });
     expect(planAdjust(waiting({ checkin: pendingCheckin({ answer: 'just_didnt' }) }), answer('sick'), ctx)).toEqual({ code: 'already_answered' });
-    const resolved = { id: '7', answer: 'emergency' as const, answered_at: new Date(ctx.nowMs - HOUR), gap_from: null, gap_to: null };
+    const resolved = {
+      id: '7', answer: 'emergency' as const, answered_at: new Date(ctx.nowMs - HOUR), gap_from: null, gap_to: null, consequence: null,
+      recovery_day_id: null,
+    };
     expect(planAdjust(waiting({ checkin: null, answered: [resolved] }), answer('sick'), ctx)).toEqual({ code: 'already_answered' });
   });
 

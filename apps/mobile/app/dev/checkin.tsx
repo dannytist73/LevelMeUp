@@ -32,7 +32,7 @@ export default function CheckinPreview() {
       character: { ...state.character, streak: { ...state.character.streak, awaitingCheckin: true } },
       checkin: {
         id: -1, from: yesterday, to: yesterday, gap: false, date: null, core: core?.templateId ?? null, ladder: core?.ladder ?? null,
-        answer: null, secondWind: null,
+        answer: null, secondWind: null, recoveryDayId: null, consequence: null, trialDone: false, note: null,
       },
       lighterPlan: state.lighterPlan === null ? null : { ...state.lighterPlan, offered: true },
     }, []);

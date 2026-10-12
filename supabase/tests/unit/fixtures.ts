@@ -8,7 +8,7 @@ import type { AdvanceInput } from '../../functions/_shared/advance.ts';
 import { toDraft } from '../../functions/_shared/drafts.ts';
 import { startPoints, statXp, toProfile } from '../../functions/_shared/state.ts';
 import type {
-  CharacterRow, DayDraft, DayRow, History, InstanceDraft, InstanceRow, LadderRow, PendingCheckin, ProfileRow, Snapshot,
+  CharacterRow, Consequence, DayDraft, DayRow, History, InstanceDraft, InstanceRow, LadderRow, PendingCheckin, ProfileRow, Snapshot,
 } from '../../functions/_shared/state.ts';
 
 /** Onboarding at 8 PM in Manila on 10 October 2026; day 1 runs to 4 AM. */
@@ -40,7 +40,7 @@ export function profileRow(c: Choices = choices(), over: Partial<ProfileRow> = {
     time_zone: c.timeZone,
     boundary_minutes: c.boundaryMinutes, minutes_per_day: c.minutesPerDay, difficulty: c.difficulty, goals: c.goals,
     limitations: c.limitations, gentle_start: c.gentleStart, own_program: c.ownProgram, equipment: c.equipment,
-    program_style: c.programStyle, book: null, book_started_at: null, books_finished: [], reveal: {}, accountability_level: 0,
+    program_style: c.programStyle, book: null, book_started_at: null, books_finished: [], reveal: {}, accountability_level: 0, accountability_enabled_at: null,
     lighter_plan_at: null, ...over,
   };
 }
@@ -157,6 +157,34 @@ export function pendingCheckin(over: Partial<PendingCheckin> = {}): PendingCheck
   return {
     id: '7', day_id: '1', gap_from: null, gap_to: null, answer: null, recovery_day_id: null,
     missed_day: 1, missed_starts_at: new Date(DAY1.startsAt), missed_ends_at: new Date(DAY1.endsAt), missed_time_zone: 'Asia/Manila',
-    missed_core: core.templateId, missed_ladder: core.ladder, recovered: false, ...over,
+    missed_core: core.templateId, missed_ladder: core.ladder, recovered: false, gap_starts_at: null, consequence: null,
+    trial_done_at: null, note: null, ...over,
+  };
+}
+
+/**
+ * M7c: day 2 after "I just didn't" for day 1 under a pact: the class's recovery quest (id 204) on day 2, the check-in
+ * (id 7) held for it with `consequence`, and `done` slots of day 2 cleared.
+ */
+export function claimedSnapshot(consequence: Consequence | null, over: Partial<PendingCheckin> = {}, done: readonly Slot[] = []): Snapshot {
+  const s = dayTwoSnapshot();
+  const draft = toDraft(LIBRARY, draftQuest(templateById(LIBRARY, 'recovery-walk'), 'recovery', { code: 'recovery' }));
+  const recovery: InstanceRow = {
+    id: '204', day_id: '2', slot: 'recovery', template_id: draft.templateId, ladder_id: null, rung: null, stat: draft.stat,
+    tier: draft.tier, minutes: draft.minutes, completion: draft.completion, condition: draft.condition, hard_day: false,
+    xp: draft.xp, why: draft.why, book: null, completed_at: null, rating: null, payload: null,
+  };
+  const cleared = new Date(manilaDay(2).startsAt + HOUR);
+  const instances = [...s.instances, recovery].map((q) =>
+    String(q.day_id) === '2' && done.includes(q.slot) ? { ...q, completed_at: cleared } : q);
+  return {
+    ...s,
+    instances,
+    character: characterRow({ awaiting_checkin: true, streak_current: 4, streak_best: 6, shields: 1 }),
+    profile: profileRow(undefined, {
+      accountability_level: consequence === 'trial' ? 2 : consequence === null ? 0 : 1,
+      accountability_enabled_at: consequence === null ? null : new Date(manilaDay(1).startsAt - DAY_MS),
+    }),
+    checkin: pendingCheckin({ answer: 'just_didnt', recovery_day_id: '2', consequence, recovered: done.includes('recovery'), ...over }),
   };
 }

@@ -34,6 +34,8 @@ export type ProfileRow = {
   books_finished: FinishedBook[];
   reveal: unknown;
   accountability_level: number;
+  /** M7c: when the current pact level was signed (decision 2); null when off. */
+  accountability_enabled_at: Date | null;
   /** M7a: when the player last answered the lighter-plan offer (decision 9). */
   lighter_plan_at: Date | null;
 };
@@ -98,6 +100,9 @@ export type InstanceRow = {
   payload: unknown;
 };
 
+/** M7c: what the pact did with "I just didn't" (decision 2): the Shadow, the Trial, or paused after 3 in 7 days. */
+export type Consequence = 'shadow' | 'trial' | 'paused';
+
 /**
  * M7a: the check-in not yet resolved (one at a time, decision 3), with the missed day's window and core quest, and whether
  * the recovery quest on its recovery day was cleared.
@@ -116,13 +121,25 @@ export type PendingCheckin = {
   missed_core: string | null;
   missed_ladder: string | null;
   recovered: boolean;
+  /** M7c: for away days, the end of the day before them (when the first away day started); else null. */
+  gap_starts_at: Date | null;
+  /** M7c: what the pact did with "I just didn't" (decision 4), when the Trial's session was done, the private note. */
+  consequence: Consequence | null;
+  trial_done_at: Date | null;
+  note: string | null;
 };
 
 /** M7a: a closed day waiting behind a check-in (`streak_applied = false`). */
 export type QueuedDay = { id: Id; day_number: number; resolution: 'streak_day' | 'protected' | 'awaiting_checkin' };
 
-/** M7a: a check-in answered in the last 14 days (the lighter-plan offer; a second answer to it is `already_answered`). */
-export type AnsweredRow = { id: Id; answer: CheckinAnswer; answered_at: Date; gap_from: number | null; gap_to: number | null };
+/**
+ * M7a: a check-in answered in the last 14 days (the lighter-plan offer; a second answer to it is `already_answered`).
+ * M7c: what the pact did with it and its recovery day (the 3-in-7 pause, one a day; decision 4), and notes (decision 8).
+ */
+export type AnsweredRow = {
+  id: Id; answer: CheckinAnswer; answered_at: Date; gap_from: number | null; gap_to: number | null; consequence: Consequence | null;
+  recovery_day_id: Id | null;
+};
 
 /** How a settled "I just didn't" ended (decision 4). */
 export type MissOutcome = 'recovered' | 'unbreakable' | 'shield' | 'reset';
@@ -384,6 +401,12 @@ function checkinView(c: PendingCheckin, offers: DayOffers) {
     answer: c.answer,
     /** The quest Second Wind would redo with "I just didn't", or null. */
     secondWind: c.answer === null ? offers.secondWind : null,
+    /** M7c: the day the recovery quest is on, while "I just didn't" waits for it to end; null before the answer. */
+    recoveryDayId: c.recovery_day_id === null ? null : Number(c.recovery_day_id),
+    /** M7c: what the pact did with "I just didn't", whether the Trial's session is done, the private note (decisions 4, 7, 8). */
+    consequence: c.consequence,
+    trialDone: c.trial_done_at !== null,
+    note: c.note,
   };
 }
 
@@ -416,6 +439,8 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
       equipment: s.profile.equipment, programStyle: s.profile.program_style,
       book: s.profile.book, bookStartedAt: iso(s.profile.book_started_at), booksFinished: s.profile.books_finished,
       reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
+      /** M7c: when the current pact level was signed: only days that start after it count (decision 2). */
+      accountabilityFrom: iso(s.profile.accountability_enabled_at),
     },
     character,
     today: today === null ? null : {

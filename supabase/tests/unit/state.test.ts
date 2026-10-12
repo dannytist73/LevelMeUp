@@ -4,7 +4,7 @@ import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { CALENDAR_DAYS, calendarDate, calendarMark, stateView } from '../../functions/_shared/state.ts';
 import type { CalendarRow, Snapshot } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
-import { DAY1, DAY_TWO_SLOTS, characterRow, dayTwoSnapshot, historyOf, ladderRows, pendingCheckin, profileRow } from './fixtures.ts';
+import { DAY1, DAY_TWO_SLOTS, HOUR, characterRow, dayTwoSnapshot, historyOf, ladderRows, manilaDay, pendingCheckin, profileRow } from './fixtures.ts';
 
 const row = (over: Partial<CalendarRow>): CalendarRow => ({
   day_number: 3, starts_at: new Date(Date.UTC(2026, 9, 11, 22)), ends_at: new Date(Date.UTC(2026, 9, 12, 22)), time_zone: 'Asia/Manila', status: 'closed',
@@ -97,6 +97,7 @@ describe('the check-in in the state (M7a)', () => {
     const date = calendarDate({ starts_at: new Date(DAY1.startsAt), ends_at: new Date(DAY1.endsAt), time_zone: 'Asia/Manila' });
     expect(view(dayTwoSnapshot(DAY_TWO_SLOTS, { checkin: pendingCheckin() })).checkin).toEqual({
       id: 7, from: 1, to: 1, gap: false, date, core: 'push-0', ladder: 'push', answer: null, secondWind: null,
+      recoveryDayId: null, consequence: null, trialDone: false, note: null,
     });
   });
 
@@ -120,7 +121,7 @@ describe('the check-in in the state (M7a)', () => {
   it('the lighter plan: one step down, offered after 3 paused days in 14, quiet for 14 days after an answer', () => {
     const s = dayTwoSnapshot();
     const at = new Date(s.readAt.getTime() - 3_600_000);
-    const paused = { answered: [{ id: '8', answer: 'emergency' as const, answered_at: at, gap_from: 3, gap_to: 5 }] };
+    const paused = { answered: [{ id: '8', answer: 'emergency' as const, answered_at: at, gap_from: 3, gap_to: 5, consequence: null, recovery_day_id: null }] };
     expect(view(s).lighterPlan).toEqual({ from: 25, to: 15, offered: false });
     expect(view({ ...s, ...paused }).lighterPlan).toEqual({ from: 25, to: 15, offered: true });
     expect(view({ ...s, ...paused, profile: profileRow(undefined, { lighter_plan_at: at }) }).lighterPlan!.offered).toBe(false);
@@ -131,5 +132,25 @@ describe('the check-in in the state (M7a)', () => {
     const s = dayTwoSnapshot(DAY_TWO_SLOTS, { result: { id: '9', outcome: 'shield' }, character: characterRow({ next_day_light: true }) });
     expect(view(s).checkinResult).toEqual({ id: 9, outcome: 'shield' });
     expect(view(s).character.nextDayLight).toBe(true);
+  });
+});
+
+describe('the pact in the state (M7c)', () => {
+  const view = (s: Snapshot) => stateView(s, dayOffers(s, LIBRARY), historyOf(s));
+
+  it('the profile says the level and when it was signed', () => {
+    const signed = new Date(manilaDay(2).startsAt + HOUR);
+    const s = dayTwoSnapshot(DAY_TWO_SLOTS, { profile: profileRow(undefined, { accountability_level: 2, accountability_enabled_at: signed }) });
+    expect(view(s).profile).toMatchObject({ accountabilityLevel: 2, accountabilityFrom: signed.toISOString() });
+    expect(view(dayTwoSnapshot()).profile).toMatchObject({ accountabilityLevel: 0, accountabilityFrom: null });
+  });
+
+  it("\"I just didn't\" held for its recovery day: what the pact did, the Trial's session and the private note", () => {
+    const held = pendingCheckin({
+      answer: 'just_didnt', recovery_day_id: '2', consequence: 'trial', trial_done_at: new Date(manilaDay(2).startsAt + HOUR), note: 'A late shift.',
+    });
+    expect(view(dayTwoSnapshot(DAY_TWO_SLOTS, { checkin: held })).checkin).toMatchObject({
+      answer: 'just_didnt', recoveryDayId: 2, consequence: 'trial', trialDone: true, note: 'A late shift.',
+    });
   });
 });

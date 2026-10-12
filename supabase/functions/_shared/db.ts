@@ -60,11 +60,12 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
     const earned = await tx<{ achievement_id: string }[]>`
       select achievement_id from levelmeup.achievements_earned where user_id = ${userId} order by earned_at, achievement_id`;
     const [checkin] = await tx<PendingCheckin[]>`
-      select c.id, c.day_id, c.gap_from, c.gap_to, c.answer, c.recovery_day_id,
+      select c.id, c.day_id, c.gap_from, c.gap_to, c.answer, c.recovery_day_id, c.consequence, c.trial_done_at, c.note,
         d.day_number as missed_day, d.starts_at as missed_starts_at, d.ends_at as missed_ends_at, d.time_zone as missed_time_zone,
         q.template_id as missed_core, q.ladder_id as missed_ladder,
         exists (select 1 from levelmeup.quest_instances r
-          where r.day_id = c.recovery_day_id and r.slot = 'recovery' and r.completed_at is not null) as recovered
+          where r.day_id = c.recovery_day_id and r.slot = 'recovery' and r.completed_at is not null) as recovered,
+        (select g.ends_at from levelmeup.quest_days g where g.user_id = c.user_id and g.day_number = c.gap_from - 1) as gap_starts_at
       from levelmeup.checkins c
       left join levelmeup.quest_days d on d.id = c.day_id
       left join levelmeup.quest_instances q on q.day_id = c.day_id and q.slot = 'core'
@@ -74,7 +75,7 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       select id, day_number, resolution from levelmeup.quest_days
       where user_id = ${userId} and status = 'closed' and not streak_applied order by day_number`;
     const answered = await tx<AnsweredRow[]>`
-      select id, answer, answered_at, gap_from, gap_to from levelmeup.checkins
+      select id, answer, answered_at, gap_from, gap_to, consequence, recovery_day_id from levelmeup.checkins
       where user_id = ${userId} and answered_at > now() - make_interval(secs => ${LIGHTER_PLAN_WINDOW_MS / 1000})`;
     const [result] = await tx<ResultRow[]>`
       select id, outcome from levelmeup.checkins
