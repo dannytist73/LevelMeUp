@@ -285,3 +285,58 @@ begin
   return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''checkin'', ''{}'', %L)', a, lmu_test.ev(2),
       '{"ability": {"id": "unbreakable", "day": 1}}'), 'P0001', 'lmu:bad_change', 'Unbreakable is never a player''s change');
 end $$;
+
+create function lmu_test.test_adjust_settings() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  s jsonb := '{"settings": {"voice": "questmaster", "boundaryMinutes": 300, "minutesPerDay": 40, "difficulty": "hard"}}';
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(1), 1, 'settings', s -> 'settings', s);
+  return next is((select voice || '/' || boundary_minutes || '/' || minutes_per_day || '/' || difficulty
+      from levelmeup.profiles where user_id = a),
+    'questmaster/300/40/hard', 'the settings change the profile');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''swap'', ''{}'', %L)', a, lmu_test.ev(2), s),
+    'P0001', 'lmu:bad_change', 'the settings come only with their kind');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''settings'', ''{}'', %L)', a, lmu_test.ev(3),
+      jsonb_set(s, '{settings,minutesPerDay}', '30')),
+    '23514', null, 'the table refuses minutes it does not know');
+  return next is(lmu_test.version(a), 2, 'a refused change writes nothing');
+end $$;
+
+create function lmu_test.test_adjust_rest_ahead() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  day bigint := lmu_test.day_of(a);
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(1), 1, 'plan_rest', jsonb_build_object('dayId', day, 'tomorrow', true), '{"restDay": 2}');
+  return next is((select rest_day from levelmeup.character_state where user_id = a), 2, 'a rest day is planned for tomorrow');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''plan_rest'', ''{}'', ''{"restDay": 3}'')', a, lmu_test.ev(2)),
+    'P0001', 'lmu:bad_change', 'only for the day after the latest one');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''swap'', ''{}'', ''{"restDay": 2}'')', a, lmu_test.ev(3)),
+    'P0001', 'lmu:bad_change', 'and only with a rest');
+end $$;
+
+create function lmu_test.test_adjust_late_rest() returns setof text language plpgsql as $$
+declare
+  late uuid := lmu_test.start(1, now() - interval '25 hours', now() - interval '1 minute');
+  old uuid := lmu_test.start(2, now() - interval '74 hours', now() - interval '49 hours');
+  day bigint := lmu_test.day_of(late);
+  adj text := 'select levelmeup.adjust(%L, %L, 1, ''plan_rest'', ''{}'', %L)';
+  rest jsonb := jsonb_build_object('id', lmu_test.day_of(late), 'protection', 'planned_rest');
+  inside jsonb := to_jsonb(now() - interval '2 hours');
+begin
+  return next throws_ok(format(adj, late, lmu_test.ev(1), jsonb_build_object('day', rest)),
+    'P0001', 'lmu:day_closed', 'an ended day without a tap time takes no changes, as before');
+  return next throws_ok(format(adj, late, lmu_test.ev(2), jsonb_build_object('day', rest || jsonb_build_object('tappedAt', to_jsonb(now())))),
+    'P0001', 'lmu:day_closed', 'a tap after the day ended does not count');
+  return next throws_ok(format(adj, late, lmu_test.ev(3),
+      jsonb_build_object('day', rest || jsonb_build_object('tappedAt', inside, 'hardDay', true))),
+    'P0001', 'lmu:day_closed', 'after its end, only the protection can change');
+  return next throws_ok(format(adj, old, lmu_test.ev(4), jsonb_build_object('day',
+      jsonb_build_object('id', lmu_test.day_of(old), 'protection', 'planned_rest', 'tappedAt', to_jsonb(now() - interval '50 hours')))),
+    'P0001', 'lmu:day_closed', 'not more than 48 hours after the day ended');
+  perform levelmeup.adjust(late, lmu_test.ev(5), 1, 'plan_rest', jsonb_build_object('dayId', day),
+    jsonb_build_object('day', rest || jsonb_build_object('tappedAt', inside)));
+  return next is((select protection from levelmeup.quest_days where id = day), 'planned_rest',
+    'a rest tapped while the day ran protects it after it ended, before it is closed');
+end $$;
