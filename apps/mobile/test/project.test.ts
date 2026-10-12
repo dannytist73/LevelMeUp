@@ -51,7 +51,6 @@ describe('what the screens show: the server state plus the unsent events', () =>
     const shown = project(server, []);
     const flags = {
       waiting: undefined, changingClass: undefined, changingBook: undefined, offline: undefined, ladderChanges: undefined, answering: undefined,
-      changingPact: undefined,
     };
     expect({ ...shown, ...flags }).toEqual({ ...server, ...flags });
     expect(shown.ladderChanges).toEqual([]);
@@ -325,7 +324,6 @@ describe('the pact (M7c)', () => {
   it('a raise shows at once and waits for the server to sign it; a lowering keeps the time; off forgets it', () => {
     const raised = project(adjustState(), [ev({ type: 'accountability_set', level: 1 })]);
     expect(raised.profile).toMatchObject({ accountabilityLevel: 1, accountabilityFrom: null });
-    expect(raised.changingPact).toBe(true);
     const signed = claimedState('trial');
     const lowered = project(signed, [ev({ type: 'accountability_set', level: 1 })]);
     expect(lowered.profile.accountabilityFrom).toBe(signed.profile.accountabilityFrom);

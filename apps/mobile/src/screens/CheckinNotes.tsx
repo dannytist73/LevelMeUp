@@ -4,6 +4,7 @@ import { CHECKIN_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@l
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { checkinLead, resultText } from '../game/checkin.ts';
+import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { useGame } from '../state/store.ts';
 import { Button } from '../ui/Button.tsx';
@@ -12,9 +13,9 @@ import { Small } from '../ui/Text.tsx';
 
 const T = CHECKIN_TEXT;
 
-export type CheckinNotesProps = { view: Shown; onCheckin: () => void };
+export type CheckinNotesProps = { view: Shown; onCheckin: () => void; now?: () => number };
 
-export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
+export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesProps) {
   const enqueue = useGame((s) => s.enqueue);
   const later = useGame((s) => s.checkinLater);
   const answerLater = useGame((s) => s.answerLater);
@@ -31,8 +32,9 @@ export function CheckinNotes({ view, onCheckin }: CheckinNotesProps) {
   const offered = lighterPlan?.offered === true;
   // Once the recovery quest is cleared the streak is safe, and the note says so (emulator finding, M7b).
   const recovered = view.today?.quests.some((q) => q.slot === 'recovery' && q.completedAt !== null) ?? false;
-  // M7c: under a pact the Shadow holds the missed day (board F3).
-  const claimed = checkin !== null && (checkin.consequence === 'shadow' || checkin.consequence === 'trial');
+  // M7c: under a pact the Shadow holds the missed day (board F3), on the day it holds (review).
+  const hold = shadowHold(view, now());
+  const claimed = hold !== null && hold.kind !== 'paused';
   const yesterday = checkin !== null && !checkin.gap && checkin.from === (view.today?.dayNumber ?? 0) - 1;
   const held = recovered ? PLAY_TEXT.cleared.recovered : claimed ? (yesterday ? SHADOW_TEXT.heldYesterday : SHADOW_TEXT.held) : T.held;
   useEffect(() => {

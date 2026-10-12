@@ -211,7 +211,7 @@ export function Today({
             <Button label={ADJUST_TEXT.day.notNow} variant="secondary" onPress={() => void dismissTrainingNotice()} />
           </View>
         )}
-        {view !== null && <CheckinNotes view={view} onCheckin={onCheckin} />}
+        {view !== null && <CheckinNotes view={view} onCheckin={onCheckin} now={now} />}
         {noticeBoxes}
         {body}
       </View>

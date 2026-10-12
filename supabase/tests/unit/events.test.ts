@@ -424,4 +424,9 @@ describe('the pact, the Trial and the note (M7c)', () => {
     expect(isAdjust({ id: id(2), type: 'trial', checkinId: 7 })).toBe(true);
     expect(isAdjust({ id: id(3), type: 'checkin_note', checkinId: 7, note: null })).toBe(true);
   });
+
+  it("keep the note's words out of the event log (review)", () => {
+    expect(adjustPayload({ id: id(1), type: 'checkin_note', checkinId: 7, note: 'A late shift.' })).toEqual({ checkinId: 7, chars: 13 });
+    expect(adjustPayload({ id: id(2), type: 'checkin_note', checkinId: 7, note: null })).toEqual({ checkinId: 7, chars: 0 });
+  });
 });

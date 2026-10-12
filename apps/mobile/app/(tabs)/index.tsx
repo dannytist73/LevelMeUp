@@ -1,16 +1,22 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { shadowDue } from '../../src/game/pact.ts';
 import { Today } from '../../src/screens/Today.tsx';
 import { useGame } from '../../src/state/store.ts';
 
 export default function TodayRoute() {
-  // M7c decision 5: a consequence the phone hasn't shown opens the Shadow's scene, once, while Today is in front.
-  const due = useGame((s) => (s.view === null ? null : shadowDue(s.view, s.shadowSeen, Date.now())));
+  // M7c decision 5: a consequence the phone hasn't shown opens the Shadow's scene, once, while Today is in front. It is
+  // decided when Today comes into focus, at that moment's time, and never pushed twice for one check-in (review).
+  const view = useGame((s) => s.view);
+  const seen = useGame((s) => s.shadowSeen);
+  const pushed = useRef<number | null>(null);
   useFocusEffect(
     useCallback(() => {
-      if (due !== null) router.push('/shadow');
-    }, [due]),
+      const due = view === null ? null : shadowDue(view, seen, Date.now());
+      if (due === null || due === pushed.current) return;
+      pushed.current = due;
+      router.push('/shadow');
+    }, [view, seen]),
   );
   return (
     <Today

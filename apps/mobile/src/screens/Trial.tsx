@@ -91,6 +91,11 @@ export function Trial({ onDone, now = Date.now }: TrialProps) {
     return () => sub.remove();
   }, []);
 
+  // The hold went (the day ended, or the pact was lowered): the session stops and the screen may sleep again (review).
+  useEffect(() => {
+    if (!open) pause();
+  }, [open]);
+
   // While it runs: the screen stays awake, the clock redraws every second, and the minutes are kept every 5 seconds.
   useEffect(() => {
     if (!running) return;
@@ -130,9 +135,11 @@ export function Trial({ onDone, now = Date.now }: TrialProps) {
     );
   }
   if (!open) {
+    // Opened again once the Trial is done: the seal is broken (review); otherwise there is nothing to finish.
+    const broken = hold !== null && hold.kind === 'trial' && !hold.sealed;
     return frame(
       <>
-        <NarrationBox>{T.gone}</NarrationBox>
+        <NarrationBox>{broken ? T.done : T.gone}</NarrationBox>
         <Button label={SHADOW_TEXT.done} variant="secondary" onPress={onDone} />
       </>,
     );

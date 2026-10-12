@@ -46,8 +46,6 @@ export type Shown = ServerState & {
   ladderChanges: readonly PendingLadder[];
   /** A check-in answer is on its way (M7a): the recovery quest of "I just didn't" arrives with the sync. */
   answering: boolean;
-  /** An Accountability Pact change is on its way (M7c). */
-  changingPact: boolean;
 };
 
 /** "I felt pain" rests a ladder or exercise, Resume brings it back, a step-down lowers a ladder. */
@@ -90,7 +88,6 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       ...server.checkin, recoveryDayId: server.checkin.recoveryDayId ?? null, consequence: server.checkin.consequence ?? null,
       trialDone: server.checkin.trialDone ?? false, note: server.checkin.note ?? null,
     };
-  let changingPact = false;
   let lighterPlan = server.lighterPlan ?? null;
   let answering = false;
   const ladderChanges: PendingLadder[] = [];
@@ -177,7 +174,6 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         ...profile, accountabilityLevel: event.level,
         accountabilityFrom: event.level === 0 || event.level > before ? null : profile.accountabilityFrom,
       };
-      changingPact = true;
       // A lowering eases today's consequence at once, as the server will.
       if (event.level < before && checkin !== null && checkin.answer === 'just_didnt') {
         if (checkin.consequence === 'trial') checkin = { ...checkin, consequence: event.level === 1 ? 'shadow' : null };
@@ -291,6 +287,6 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   }
   return {
     ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline, ladderChanges, checkin, lighterPlan,
-    checkinResult: server.checkinResult ?? null, answering, changingPact,
+    checkinResult: server.checkinResult ?? null, answering,
   };
 }

@@ -1,6 +1,6 @@
 import { CHECKIN_TEXT, PACT_TEXT, PLAY_TEXT, SHADOW_LINES, SHADOW_TEXT, fillText, retreatLine, shadowLine } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { activateKeepAwakeAsync } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { AppState } from 'react-native';
 import { project } from '../src/game/project.ts';
 import { Character } from '../src/screens/Character.tsx';
@@ -259,5 +259,49 @@ describe('the Trial of Stillness (board F4)', () => {
   it('there is nothing to do without a seal', async () => {
     await render(withStore(testStore({ view: project(claimedState('shadow'), []) }), <Trial now={() => DAY_TWO_NOW} onDone={jest.fn()} />));
     expect(screen.getByText(SHADOW_TEXT.focus.gone)).toBeTruthy();
+  });
+});
+
+describe('the review fixes (M7c)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it("the System's line names the Shadow only on the day it holds", async () => {
+    const props = { onSettings: jest.fn(), onOpenQuest: jest.fn(), onSwap: jest.fn(), onPain: jest.fn(), onVanish: jest.fn(), onTraining: jest.fn(), onCheckin: jest.fn() };
+    await render(withStore(testStore({ view: project(claimedState('shadow', { recovery_day_id: '1' }), []) }), <Today {...props} now={() => DAY_TWO_NOW} />));
+    expect(screen.getByText(CHECKIN_TEXT.held)).toBeTruthy();
+    expect(screen.queryByText(SHADOW_TEXT.heldYesterday)).toBeNull();
+  });
+
+  it('a pasted tab or other control character in the note becomes a space', async () => {
+    const store = testStore({ view: project(claimedState('shadow'), []) });
+    await render(withStore(store, <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
+    await fireEvent.changeText(screen.getByLabelText(SHADOW_TEXT.noteLabel), 'Rain\tthen\r\nwind ');
+    await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.keepNote }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin_note', checkinId: 7, note: 'Rain then\nwind' });
+  });
+
+  it('ten minutes kept from before: the seal breaks at once, sent once', async () => {
+    const store = testStore({ view: project(claimedState('trial'), []), trialMs: jest.fn(async () => 10 * 60_000) });
+    await render(withStore(store, <Trial now={() => DAY_TWO_NOW} onDone={jest.fn()} />));
+    expect(await screen.findByText(SHADOW_TEXT.focus.done)).toBeTruthy();
+    expect(store.getState().enqueue).toHaveBeenCalledTimes(1);
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'trial', checkinId: 7 });
+  });
+
+  it('when the hold goes mid-session (the pact lowered, the day over), the session stops and the screen may sleep', async () => {
+    const store = testStore({ view: project(claimedState('trial'), []), trialMs: jest.fn(async () => 0) });
+    await render(withStore(store, <Trial now={() => DAY_TWO_NOW} onDone={jest.fn()} />));
+    expect(await screen.findByText('10:00')).toBeTruthy();
+    expect(activateKeepAwakeAsync).toHaveBeenCalledWith('lmu-trial');
+    (deactivateKeepAwake as jest.Mock).mockClear();
+    await act(async () => store.setState({ view: project(claimedState('shadow'), []) }));
+    expect(deactivateKeepAwake).toHaveBeenCalledWith('lmu-trial');
+    expect(screen.getByText(SHADOW_TEXT.focus.gone)).toBeTruthy();
+  });
+
+  it('opened again after it was done, the focus session says the seal is broken', async () => {
+    await render(withStore(testStore({ view: project(claimedState('trial', { trial_done_at: new Date(DAY_TWO_NOW) }), []) }),
+      <Trial now={() => DAY_TWO_NOW} onDone={jest.fn()} />));
+    expect(screen.getByText(SHADOW_TEXT.focus.done)).toBeTruthy();
   });
 });

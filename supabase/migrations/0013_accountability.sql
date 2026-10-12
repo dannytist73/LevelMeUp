@@ -119,7 +119,7 @@ begin
       select * into prof from levelmeup.profiles where user_id = p_user;
       if (p_change -> 'checkin' ->> 'answer') is distinct from 'just_didnt'
         or (p_change -> 'checkin' ->> 'recoveryDayId') is null
-        or prof.accountability_level = 0
+        or prof.accountability_level = 0 or prof.accountability_enabled_at is null
         or ((p_change -> 'checkin' ->> 'consequence') = 'trial' and prof.accountability_level <> 2) then
         raise exception 'lmu:bad_change';
       end if;

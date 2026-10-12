@@ -349,3 +349,4 @@ boundary. The Shadow preview (Developer → Shadow preview) shows the screens wi
 | 9 | A real missed day under a level 1 pact, answered "I just didn't": the scene opens once by itself, the note is kept, the mark goes when the recovery quest is cleared (Find X9 or a kept test character). | |
 | 10 | Level 2 on a real missed day: the side quests stay sealed until 10 minutes; a call during the session pauses it; they open after (Find X9). | |
 | 11 | Unit and database tests only: only "I just didn't" sets it off; never for a day that began before the signing; one a day; paused after 3 in 7; off lifts it; the server never refuses a completion for the seal. | |
+| 12 | The focus session left open across the day's end (or the pact lowered while it runs): the clock stops and the screen may sleep. | |

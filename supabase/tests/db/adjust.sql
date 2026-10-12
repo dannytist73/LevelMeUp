@@ -422,6 +422,9 @@ begin
     'checkin', jsonb_build_object('id', c, 'answer', 'just_didnt', 'recoveryDayId', today, 'outcome', null, 'consequence', 'shadow'));
   return next throws_ok(format('select levelmeup.adjust(%L, %L, 1, ''checkin'', ''{}'', %L)', a, lmu_test.ev(1), answer),
     'P0001', 'lmu:bad_change', 'no consequence without a pact');
+  update levelmeup.profiles set accountability_level = 1 where user_id = a;
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 1, ''checkin'', ''{}'', %L)', a, lmu_test.ev(6), answer),
+    'P0001', 'lmu:bad_change', 'nor under a level with no signing time (review)');
   update levelmeup.profiles set accountability_level = 1, accountability_enabled_at = now() - interval '3 days' where user_id = a;
   return next throws_ok(format('select levelmeup.adjust(%L, %L, 1, ''checkin'', ''{}'', %L)', a, lmu_test.ev(2),
       jsonb_set(answer, '{checkin,consequence}', '"trial"')),
@@ -434,4 +437,47 @@ begin
   return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''trial'', ''{}'', %L)', a, lmu_test.ev(5),
       jsonb_build_object('day', jsonb_build_object('id', today), 'trial', jsonb_build_object('checkinId', c))),
     'P0001', 'lmu:bad_change', 'no Trial without one');
+end $$;
+
+-- M7c review: what a modified client would meet (another player's check-in, a Trial without its day, a harsher easing,
+-- a settled check-in).
+create function lmu_test.test_adjust_pact_guards() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  b uuid := lmu_test.start(2);
+  da bigint := lmu_test.day_of(a);
+  db bigint := lmu_test.day_of(b);
+  ca bigint;
+  cb bigint;
+begin
+  update levelmeup.profiles set accountability_level = 2, accountability_enabled_at = now() - interval '3 days' where user_id in (a, b);
+  insert into levelmeup.checkins (user_id, gap_from, gap_to) values (a, 5, 5) returning id into ca;
+  insert into levelmeup.checkins (user_id, gap_from, gap_to) values (b, 5, 5) returning id into cb;
+  perform levelmeup.adjust(a, lmu_test.ev(1), 1, 'checkin', '{}', jsonb_build_object('day', jsonb_build_object('id', da),
+    'checkin', jsonb_build_object('id', ca, 'answer', 'just_didnt', 'recoveryDayId', da, 'outcome', null, 'consequence', 'trial')));
+  perform levelmeup.adjust(b, lmu_test.ev(2), 1, 'checkin', '{}', jsonb_build_object('day', jsonb_build_object('id', db),
+    'checkin', jsonb_build_object('id', cb, 'answer', 'just_didnt', 'recoveryDayId', db, 'outcome', null, 'consequence', 'trial')));
+
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''trial'', ''{}'', %L)', a, lmu_test.ev(3),
+      jsonb_build_object('day', jsonb_build_object('id', da), 'trial', jsonb_build_object('checkinId', cb))),
+    'P0001', 'lmu:bad_change', 'never the Trial of another player''s check-in');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''trial'', ''{}'', %L)', a, lmu_test.ev(4),
+      jsonb_build_object('trial', jsonb_build_object('checkinId', ca))),
+    'P0001', 'lmu:bad_change', 'nor without its recovery day');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''checkin_note'', ''{}'', %L)', a, lmu_test.ev(5),
+      jsonb_build_object('note', jsonb_build_object('checkinId', cb, 'text', 'Not mine.'))),
+    'P0001', 'lmu:checkin_gone', 'never a note on another player''s answered check-in');
+
+  perform levelmeup.adjust(a, lmu_test.ev(6), 2, 'accountability_set', '{}',
+    jsonb_build_object('pact', '{"level": 1}'::jsonb, 'consequence', jsonb_build_object('checkinId', ca, 'kind', 'shadow')));
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 3, ''accountability_set'', ''{}'', %L)', a, lmu_test.ev(7),
+      jsonb_build_object('pact', '{"level": 2}'::jsonb, 'consequence', jsonb_build_object('checkinId', ca, 'kind', 'trial'))),
+    'P0001', 'lmu:bad_change', 'a pact change never makes a consequence harsher');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 3, ''accountability_set'', ''{}'', %L)', a, lmu_test.ev(8),
+      jsonb_build_object('pact', '{"level": 0}'::jsonb, 'consequence', jsonb_build_object('checkinId', cb, 'kind', null))),
+    'P0001', 'lmu:bad_change', 'nor eases another player''s');
+  update levelmeup.checkins set outcome = 'recovered', resolved_at = now() where id = cb;
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''accountability_set'', ''{}'', %L)', b, lmu_test.ev(9),
+      jsonb_build_object('pact', '{"level": 0}'::jsonb, 'consequence', jsonb_build_object('checkinId', cb, 'kind', null))),
+    'P0001', 'lmu:bad_change', 'nor touches a settled check-in');
 end $$;

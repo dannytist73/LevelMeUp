@@ -19,6 +19,8 @@ import { TextField } from '../ui/TextField.tsx';
 import { Body, Label, Small } from '../ui/Text.tsx';
 
 const T = SHADOW_TEXT;
+/** Control characters other than a line break: the System refuses them in a note, so a pasted tab becomes a space. */
+const CONTROL = /[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/g;
 
 export type ShadowSceneProps = {
   onDone: () => void;
@@ -88,10 +90,14 @@ export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.no
   const lines = hold.cleared
     ? [shadowLine('release', day)]
     : [shadowLine('claim', day), shadowLine('mark', day), ...(hold.sealed ? [shadowLine('trial', day)] : [])];
-  const trimmed = note.trim();
-  const keep = (): void => {
-    void enqueue({ type: 'checkin_note', checkinId: hold.checkinId, note: trimmed === '' ? null : trimmed });
-    setKept(true);
+  const trimmed = note.replace(/\r\n?/g, '\n').replace(CONTROL, ' ').trim();
+  const keep = async (): Promise<void> => {
+    try {
+      await enqueue({ type: 'checkin_note', checkinId: hold.checkinId, note: trimmed === '' ? null : trimmed });
+      setKept(true);
+    } catch {
+      // Not kept: the note stays in the field, and "Keep the note" can be pressed again.
+    }
   };
 
   return frame(
@@ -105,7 +111,7 @@ export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.no
       )}
       {hold.sealed && <Button label={T.trial.start} variant="secondary" onPress={onTrial} />}
       <TextField label={T.noteLabel} value={note} onChangeText={(text) => { setNote(text); setKept(false); }} maxLength={500} multiline />
-      <Button label={T.keepNote} variant="secondary" disabled={trimmed === (hold.note ?? '')} onPress={keep} />
+      <Button label={T.keepNote} variant="secondary" disabled={trimmed === (hold.note ?? '')} onPress={() => void keep()} />
       {kept && <View accessibilityLiveRegion="polite"><Small>{T.noteKept}</Small></View>}
       <Button label={T.done} variant="secondary" onPress={onDone} />
       <Button label={T.settings} variant="secondary" onPress={onPact} />

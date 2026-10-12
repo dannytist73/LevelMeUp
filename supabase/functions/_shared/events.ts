@@ -112,6 +112,8 @@ export function applyOrder(events: readonly PhoneEvent[]): number[] {
 
 /** What `levelmeup.events` stores for an adjustment: the event without its id and type. */
 export function adjustPayload(event: AdjustEvent): Record<string, unknown> {
+  // M7c review: the private note lives only on its check-in (where an empty note clears it), never in the event log.
+  if (event.type === 'checkin_note') return { checkinId: event.checkinId, chars: event.note === null ? 0 : event.note.length };
   const { id: _id, type: _type, ...rest } = event;
   return rest;
 }
