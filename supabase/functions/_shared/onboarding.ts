@@ -69,7 +69,7 @@ export type Choices = {
 
 export type Reveal = { narrative: string; strengths: string[]; growth: string[]; source: 'claude' | 'template' };
 
-const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
+export const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
 const CONTROL = /[\p{Cc}\p{Cf}]/u;
 
 /** The onboarding body, validated field by field against the rules' own constants; the numbers are computed here. */

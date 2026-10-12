@@ -331,3 +331,43 @@ describe('the order a batch is applied in (M7a review)', () => {
     expect(applyOrder(body.events)).toEqual([1, 2, 4, 0, 3]);
   });
 });
+
+describe('the settings and the tap time (M7b decisions 2, 5, 6)', () => {
+  const one = (event: Record<string, unknown>) => parseSyncBody({ timeZone: 'Asia/Manila', events: [{ id: ID, ...event }] });
+  const SETTINGS = { type: 'settings', voice: 'mentor', boundaryMinutes: 270, minutesPerDay: 15, difficulty: 'gentle' };
+
+  it('the settings carry all four values', () => {
+    expect(one(SETTINGS)).toMatchObject({ events: [{ id: ID, ...SETTINGS }], rejected: [] });
+    expect(isAdjust((one(SETTINGS) as SyncRequest).events[0]!)).toBe(true);
+  });
+
+  it('refuses a voice, minutes, difficulty or day end it does not know', () => {
+    for (const bad of [
+      { voice: 'narrator' }, { minutesPerDay: 30 }, { difficulty: 'brutal' }, { boundaryMinutes: 45 }, { boundaryMinutes: 1440 },
+      { boundaryMinutes: -30 }, { boundaryMinutes: '240' }, { voice: undefined },
+    ]) {
+      expect(one({ ...SETTINGS, ...bad })).toMatchObject({ events: [], rejected: [{ id: ID, code: 'bad_event' }] });
+    }
+  });
+
+  it('a rest and a pain report may carry when they were tapped; a rest may be for tomorrow', () => {
+    const at = Date.UTC(2026, 9, 12, 9);
+    expect(one({ type: 'plan_rest', dayId: 3, at, tomorrow: true })).toMatchObject({
+      events: [{ id: ID, type: 'plan_rest', dayId: 3, at, tomorrow: true }],
+    });
+    expect(one({ type: 'pain', instanceId: 5, choice: 'rest', at })).toMatchObject({
+      events: [{ id: ID, type: 'pain', instanceId: 5, choice: 'rest', at }],
+    });
+    // Older phones send neither: the event is as before.
+    expect((one({ type: 'plan_rest', dayId: 3, tomorrow: false }) as SyncRequest).events[0]).toEqual({ id: ID, type: 'plan_rest', dayId: 3 });
+  });
+
+  it('refuses a tap time that is not a time, and a tomorrow that is not a yes or no', () => {
+    for (const bad of [
+      { type: 'plan_rest', dayId: 3, at: 'now' }, { type: 'plan_rest', dayId: 3, at: 12 }, { type: 'plan_rest', dayId: 3, tomorrow: 1 },
+      { type: 'pain', instanceId: 5, choice: 'rest', at: 1.5 },
+    ]) {
+      expect(one(bad)).toMatchObject({ events: [], rejected: [{ id: ID, code: 'bad_event' }] });
+    }
+  });
+});

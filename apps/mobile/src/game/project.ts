@@ -148,6 +148,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       lighterPlan = event.accept ? stepped(lighterPlan.to) : { ...lighterPlan, offered: false };
       continue;
     }
+    if (event.type === 'settings') continue; // M7b Task 9 projects it
     if (today === null) continue;
     if (event.type === 'hard_day' || event.type === 'plan_rest' || event.type === 'ability') {
       if (event.dayId !== today.id) continue;

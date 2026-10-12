@@ -1,17 +1,21 @@
 // Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; M6b the adjustments (swap, hard
 // day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); M6c the training setup; M6d the Scholar's
 // Path book; M6e the offline-built day and quests named by day and slot; M7a the check-in's answer and the lighter plan;
-// the rest arrive with the milestones whose screens send them, and until then are rejected without touching anything.
+// M7b the game settings and the tap time on a rest or pain report; the rest arrive with the milestones whose screens send
+// them, and until then are rejected without touching anything.
 import {
-  CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, EQUIPMENT, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone, isWhyReason, questTimerDone,
-  sessionSets,
+  CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, EQUIPMENT, MINUTES_OPTIONS, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone,
+  isWhyReason, questTimerDone, sessionSets,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  CheckinAnswer, ClassId, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
+  CheckinAnswer, ClassId, Difficulty, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
 } from '../../../packages/rules/src/index.ts';
+import { VOICES } from '../../../packages/content/src/index.ts';
+import type { Voice } from '../../../packages/content/src/index.ts';
 import { isObject, problem, UUID } from './http.ts';
 import type { Problem } from './http.ts';
 import type { DayRow, InstanceRow } from './state.ts';
+import { DIFFICULTIES } from './onboarding.ts';
 
 export const MAX_EVENTS = 50;
 const RATINGS: readonly Rating[] = ['easy', 'right', 'too_hard'];
@@ -38,8 +42,9 @@ export type PainChoice = 'gentle' | 'rest' | 'pause';
 export type DayAbility = 'stillness' | 'dawn_ritual';
 export type SwapEvent = { id: string; type: 'swap'; instanceId: number; templateId: string };
 export type HardDayEvent = { id: string; type: 'hard_day'; dayId: number };
-export type RestEvent = { id: string; type: 'plan_rest'; dayId: number };
-export type PainEvent = { id: string; type: 'pain'; choice: PainChoice } & QuestTarget;
+/** `at` (M7b decision 6): when it was tapped, so a rest synced late still counts for its day; `tomorrow` (decision 5). */
+export type RestEvent = { id: string; type: 'plan_rest'; dayId: number; at?: number; tomorrow?: true };
+export type PainEvent = { id: string; type: 'pain'; choice: PainChoice; at?: number } & QuestTarget;
 /** `ladderId`: a ladder, or a standalone exercise quest resting after pain (rules: painKey). */
 export type ResumeEvent = { id: string; type: 'resume'; ladderId: string };
 export type StepDownEvent = { id: string; type: 'step_down'; instanceId: number };
@@ -54,6 +59,10 @@ export const MAX_BOOK_TITLE = 120;
 export type CheckinEvent = { id: string; type: 'checkin'; checkinId: number; answer: CheckinAnswer; secondWind: boolean };
 /** M7a: the lighter-plan offer answered: lighten (one step fewer minutes) or keep the plan (decision 9). */
 export type LighterEvent = { id: string; type: 'lighter_plan'; accept: boolean };
+/** M7b: the game settings, always all four (decision 2). */
+export type SettingsEvent = {
+  id: string; type: 'settings'; voice: Voice; boundaryMinutes: number; minutesPerDay: number; difficulty: Difficulty;
+};
 /**
  * M6e: a day the phone built offline (decision 4). The server reads the day number, when it was built, the zone and each
  * quest's slot, template, why-line and exercises. The window, budget, light flag and books are what the phone showed:
@@ -72,13 +81,13 @@ export type ProvisionalDayEvent = {
 };
 export type AdjustEvent =
   | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent
-  | BookEvent | CheckinEvent | LighterEvent;
+  | BookEvent | CheckinEvent | LighterEvent | SettingsEvent;
 export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent | ProvisionalDayEvent;
 export type Rejected = { id: string | null; code: string };
 
 export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
   'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability', 'training', 'book', 'checkin',
-  'lighter_plan',
+  'lighter_plan', 'settings',
 ];
 export const isAdjust = (event: PhoneEvent): event is AdjustEvent => (ADJUST_TYPES as readonly string[]).includes(event.type);
 
@@ -121,6 +130,12 @@ function parseTarget(raw: Record<string, unknown>): QuestTarget | null {
   const ref = raw.ref;
   if (!isObject(ref) || !isDayNumber(ref.dayNumber) || !SLOTS.includes(ref.slot as Slot) || !isKey(ref.templateId)) return null;
   return { instanceId: null, ref: { dayNumber: ref.dayNumber, slot: ref.slot as Slot, templateId: ref.templateId } };
+}
+
+/** M7b decision 6: when a rest or pain report was tapped; older phones don't send it. Null when it isn't a time. */
+function tapTime(raw: Record<string, unknown>): { at?: number } | null {
+  if (raw.at === undefined) return {};
+  return isTime(raw.at) ? { at: raw.at } : null;
 }
 
 function parseMoves(raw: unknown): PlannedMove[] | null | undefined {
@@ -171,12 +186,16 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
       return isId(raw.instanceId) && isKey(raw.templateId) ? { id, type: 'swap', instanceId: raw.instanceId, templateId: raw.templateId } : bad;
     case 'hard_day':
       return isId(raw.dayId) ? { id, type: 'hard_day', dayId: raw.dayId } : bad;
-    case 'plan_rest':
-      return isId(raw.dayId) ? { id, type: 'plan_rest', dayId: raw.dayId } : bad;
+    case 'plan_rest': {
+      const at = tapTime(raw);
+      if (!isId(raw.dayId) || at === null || (raw.tomorrow !== undefined && typeof raw.tomorrow !== 'boolean')) return bad;
+      return { id, type: 'plan_rest', dayId: raw.dayId, ...at, ...(raw.tomorrow === true ? { tomorrow: true as const } : {}) };
+    }
     case 'pain': {
       const target = parseTarget(raw);
-      return target !== null && PAIN_CHOICES.includes(raw.choice as PainChoice)
-        ? { id, type: 'pain', ...target, choice: raw.choice as PainChoice }
+      const at = tapTime(raw);
+      return target !== null && at !== null && PAIN_CHOICES.includes(raw.choice as PainChoice)
+        ? { id, type: 'pain', ...target, choice: raw.choice as PainChoice, ...at }
         : bad;
     }
     case 'resume':
@@ -210,6 +229,17 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
     }
     case 'lighter_plan':
       return typeof raw.accept === 'boolean' ? { id, type: 'lighter_plan', accept: raw.accept } : bad;
+    case 'settings': {
+      const end = raw.boundaryMinutes;
+      if (!VOICES.includes(raw.voice as Voice) || !DIFFICULTIES.includes(raw.difficulty as Difficulty)) return bad;
+      if (!MINUTES_OPTIONS.includes(raw.minutesPerDay as number)) return bad;
+      // Whole half hours, as the phone's stepper sets them (the profile allows any minute of the day).
+      if (!Number.isInteger(end) || (end as number) < 0 || (end as number) >= 24 * 60 || (end as number) % 30 !== 0) return bad;
+      return {
+        id, type: 'settings', voice: raw.voice as Voice, boundaryMinutes: end as number, minutesPerDay: raw.minutesPerDay as number,
+        difficulty: raw.difficulty as Difficulty,
+      };
+    }
     case 'provisional_day': {
       if (!isDayNumber(raw.dayNumber) || raw.dayNumber < 2 || !isTime(raw.builtAt)) return bad;
       if (typeof raw.timeZone !== 'string' || !isValidTimeZone(raw.timeZone)) return bad;

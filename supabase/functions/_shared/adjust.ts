@@ -232,6 +232,8 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
     }
     case 'checkin':
       return planCheckin(s, event, { nowMs, library });
+    case 'settings':
+      return refuse('bad_change'); // Task 5
     case 'lighter_plan': {
       // Either answer quiets the offer for 14 days; accepting drops the daily minutes one step (decision 9).
       if (!event.accept) return { change: { lighterPlanAt: true } };
