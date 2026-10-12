@@ -40,6 +40,14 @@ begin
     raise exception 'lmu:bad_change';
   end if;
   if v <> p_version then raise exception 'lmu:conflict'; end if;
+  -- M7a: the check-in's keys come only with its kinds, Second Wind only with an answer, and an answer resolves at once
+  -- only as protected (code review: defense in depth; the planner never sends anything else).
+  if p_type not in ('checkin', 'lighter_plan')
+    and p_change ?| array['checkin', 'recovery', 'streak', 'minutes', 'lighterPlanAt', 'lightNext'] then
+    raise exception 'lmu:bad_change';
+  end if;
+  if (p_change -> 'ability' ->> 'id') = 'second_wind' and p_type <> 'checkin' then raise exception 'lmu:bad_change'; end if;
+  if (p_change -> 'checkin' ->> 'outcome') <> 'protected' then raise exception 'lmu:bad_change'; end if;
 
   if jsonb_typeof(p_change -> 'day') = 'object' then
     select * into d from levelmeup.quest_days where id = (p_change -> 'day' ->> 'id')::bigint and user_id = p_user;

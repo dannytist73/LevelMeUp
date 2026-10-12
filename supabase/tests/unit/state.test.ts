@@ -120,7 +120,7 @@ describe('the check-in in the state (M7a)', () => {
   it('the lighter plan: one step down, offered after 3 paused days in 14, quiet for 14 days after an answer', () => {
     const s = dayTwoSnapshot();
     const at = new Date(s.readAt.getTime() - 3_600_000);
-    const paused = { answered: [{ answer: 'emergency' as const, answered_at: at, gap_from: 3, gap_to: 5 }] };
+    const paused = { answered: [{ id: '8', answer: 'emergency' as const, answered_at: at, gap_from: 3, gap_to: 5 }] };
     expect(view(s).lighterPlan).toEqual({ from: 25, to: 15, offered: false });
     expect(view({ ...s, ...paused }).lighterPlan).toEqual({ from: 25, to: 15, offered: true });
     expect(view({ ...s, ...paused, profile: profileRow(undefined, { lighter_plan_at: at }) }).lighterPlan!.offered).toBe(false);

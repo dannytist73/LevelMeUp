@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_EVENTS, adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody, timerTargetMs } from '../../functions/_shared/events.ts';
+import {
+  MAX_EVENTS, adjustPayload, applyOrder, checkCompletionPayload, isAdjust, parseSyncBody, timerTargetMs,
+} from '../../functions/_shared/events.ts';
 import type { AdjustEvent, SyncRequest } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
 import { planWorkout, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
@@ -310,5 +312,22 @@ describe('the check-in and the lighter plan (M7a)', () => {
   it('reads the lighter-plan answer', () => {
     expect(one({ type: 'lighter_plan', accept: false })).toMatchObject({ events: [{ id, type: 'lighter_plan', accept: false }] });
     expect(one({ type: 'lighter_plan', accept: 'yes' })).toMatchObject({ rejected: [{ id, code: 'bad_event' }] });
+  });
+});
+
+describe('the order a batch is applied in (M7a review)', () => {
+  it('as sent, except that check-in answers go last, after every completion they would otherwise close', () => {
+    const body = parseSyncBody({
+      timeZone: 'UTC',
+      events: [
+        { id: id(1), type: 'checkin', checkinId: 7, answer: 'sick', secondWind: false },
+        { id: id(2), type: 'complete', instanceId: 5, completedAt: start + MIN, payload: {} },
+        { id: id(3), type: 'lighter_plan', accept: false },
+        { id: id(4), type: 'checkin', checkinId: 8, answer: 'emergency', secondWind: false },
+        { id: id(5), type: 'undo', instanceId: 5 },
+      ],
+    });
+    if (isProblem(body)) throw new Error('unexpected problem');
+    expect(applyOrder(body.events)).toEqual([1, 2, 4, 0, 3]);
   });
 });

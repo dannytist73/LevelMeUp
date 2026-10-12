@@ -74,7 +74,7 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       select id, day_number, resolution from levelmeup.quest_days
       where user_id = ${userId} and status = 'closed' and not streak_applied order by day_number`;
     const answered = await tx<AnsweredRow[]>`
-      select answer, answered_at, gap_from, gap_to from levelmeup.checkins
+      select id, answer, answered_at, gap_from, gap_to from levelmeup.checkins
       where user_id = ${userId} and answered_at > now() - make_interval(secs => ${LIGHTER_PLAN_WINDOW_MS / 1000})`;
     const [result] = await tx<ResultRow[]>`
       select id, outcome from levelmeup.checkins

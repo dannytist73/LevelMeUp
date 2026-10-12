@@ -44,8 +44,8 @@ export type ClosedDayOutcome = {
   resolution: 'streak_day' | 'protected' | 'awaiting_checkin';
   /**
    * False when the day waits, in order, for the pending check-in's answer (the replay applies it once the check-in is
-   * resolved). Once one day waits,
-   * every later day waits too, so answering late gives the same result as answering at once (spec §3.7).
+   * resolved). Once one day waits, every later day waits too, so answering late gives the same result as answering at
+   * once (spec §3.7).
    */
   streakApplied: boolean;
   /**
@@ -122,10 +122,11 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
   /**
    * M7a (decision 5): while no check-in is pending, the days that waited behind one are applied in day order, as if it
    * had been answered at once. A missed day among them opens its own check-in and away days (a jump in day numbers) one
-   * gap check-in; the days after it keep waiting. `next` is the number of the first day after the queue, when one exists.
+   * gap check-in; missed days right after it share that check-in, as they would have (M7a review), and the days after
+   * them keep waiting. `next` is the number of the first day after the queue, when one exists.
    */
   const drain = (next: number | null): void => {
-    while (!streak.awaitingCheckin && queue.length > 0) {
+    while (queue.length > 0 && (!streak.awaitingCheckin || queue[0]!.resolution === 'awaiting_checkin')) {
       const day = queue.shift()!;
       if (applyClosed(day.day_number, { kind: day.resolution })) opened.push({ dayId: Number(day.id) });
       applied.push(Number(day.id));

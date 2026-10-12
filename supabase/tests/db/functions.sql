@@ -336,6 +336,7 @@ create function lmu_test.test_advance_replays_and_settles() returns setof text l
 declare
   a uuid := lmu_test.start(1, now() - interval '30 hours', now() - interval '6 hours');
   day1 bigint := (select id from levelmeup.quest_days where user_id = a);
+  b uuid := lmu_test.start(2);
   c bigint;
 begin
   update levelmeup.quest_days set status = 'closed', resolution = 'streak_day', streak_applied = false, closed_at = now() where id = day1;
@@ -363,6 +364,6 @@ begin
   return next throws_ok(format('select levelmeup.advance(%L, 2, %L)', a, '{"ability": {"id": "stillness", "day": 2}}'),
     'P0001', 'lmu:bad_change', 'advance only ever uses Unbreakable');
   return next throws_ok(format('select levelmeup.advance(%L, 2, %L)', a,
-      jsonb_build_object('opened', jsonb_build_array(jsonb_build_object('dayId', (select id from levelmeup.quest_days where user_id = lmu_test.start(2)))))),
+      jsonb_build_object('opened', jsonb_build_array(jsonb_build_object('dayId', (select id from levelmeup.quest_days where user_id = b))))),
     '23503', null, 'a check-in opens only on the player''s own day');
 end $$;

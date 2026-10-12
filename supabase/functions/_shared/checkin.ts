@@ -16,7 +16,10 @@ const refuse = (code: AdjustCode): Plan => ({ code });
 
 export function planCheckin(s: Snapshot, event: CheckinEvent, { nowMs, library }: { nowMs: number; library: QuestLibrary }): Plan {
   const pending = s.checkin;
-  if (pending === null || Number(pending.id) !== event.checkinId) return refuse('not_found');
+  if (pending === null || Number(pending.id) !== event.checkinId) {
+    // Answered and resolved already (another phone, or a lost reply): say so rather than "not found" (review).
+    return refuse(s.answered.some((a) => Number(a.id) === event.checkinId) ? 'already_answered' : 'not_found');
+  }
   if (pending.answer !== null) return refuse('already_answered');
   // lmu-sync closes ended days before this event, so the answer lands on the day that runs now (decision 2).
   const day = openDay(s);

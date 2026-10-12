@@ -264,6 +264,14 @@ begin
     '23514', null, 'the table refuses minutes that are not an option');
   perform levelmeup.adjust(a, lmu_test.ev(6), 3, 'lighter_plan', '{"accept": false}', '{"lighterPlanAt": true}');
   return next is((select minutes_per_day from levelmeup.profiles where user_id = a), 15, '"Keep my plan" keeps the minutes');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 4, ''checkin'', ''{}'', %L)', a, lmu_test.ev(7),
+      jsonb_build_object('recovery', recovery)),
+    'P0001', 'lmu:bad_change', 'a recovery quest needs the day it joins');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 4, ''swap'', ''{}'', ''{"minutes": 10}'')', a, lmu_test.ev(8)),
+    'P0001', 'lmu:bad_change', 'only the check-in and the lighter plan change the minutes');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 4, ''checkin'', ''{}'', %L)', a, lmu_test.ev(9),
+      jsonb_build_object('checkin', jsonb_build_object('id', c, 'answer', 'just_didnt', 'recoveryDayId', null, 'outcome', 'recovered'))),
+    'P0001', 'lmu:bad_change', 'an answer is resolved at once only as protected');
 end $$;
 
 create function lmu_test.test_adjust_second_wind() returns setof text language plpgsql as $$

@@ -119,8 +119,8 @@ export type PendingCheckin = {
 /** M7a: a closed day waiting behind a check-in (`streak_applied = false`). */
 export type QueuedDay = { id: Id; day_number: number; resolution: 'streak_day' | 'protected' | 'awaiting_checkin' };
 
-/** M7a: a check-in answered in the last 14 days (the lighter-plan offer). */
-export type AnsweredRow = { answer: CheckinAnswer; answered_at: Date; gap_from: number | null; gap_to: number | null };
+/** M7a: a check-in answered in the last 14 days (the lighter-plan offer; a second answer to it is `already_answered`). */
+export type AnsweredRow = { id: Id; answer: CheckinAnswer; answered_at: Date; gap_from: number | null; gap_to: number | null };
 
 /** How a settled "I just didn't" ended (decision 4). */
 export type MissOutcome = 'recovered' | 'unbreakable' | 'shield' | 'reset';

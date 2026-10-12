@@ -82,6 +82,17 @@ export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
 ];
 export const isAdjust = (event: PhoneEvent): event is AdjustEvent => (ADJUST_TYPES as readonly string[]).includes(event.type);
 
+/**
+ * The order `lmu-sync` applies a batch in (indexes into `events`): as sent, except that check-in answers go last. An
+ * answer closes the days that have ended first (M7a decision 2), so every completion sent with it must land before it
+ * (M7a review: a completion sent after an answer would otherwise be refused as `day_closed`).
+ */
+export function applyOrder(events: readonly PhoneEvent[]): number[] {
+  const indexes = events.map((_, i) => i);
+  const answer = (i: number): boolean => events[i]!.type === 'checkin';
+  return [...indexes.filter((i) => !answer(i)), ...indexes.filter(answer)];
+}
+
 /** What `levelmeup.events` stores for an adjustment: the event without its id and type. */
 export function adjustPayload(event: AdjustEvent): Record<string, unknown> {
   const { id: _id, type: _type, ...rest } = event;

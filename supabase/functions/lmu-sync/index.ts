@@ -10,7 +10,7 @@ import type { Plan } from '../_shared/adjust.ts';
 import { planAdvance } from '../_shared/advance.ts';
 import { asPlayer, asService, db, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
-import { adjustPayload, checkCompletionPayload, isAdjust, parseSyncBody } from '../_shared/events.ts';
+import { adjustPayload, applyOrder, checkCompletionPayload, isAdjust, parseSyncBody } from '../_shared/events.ts';
 import type { AdjustEvent, PainEvent, PhoneEvent, ProvisionalDayEvent, Rejected, SlotRef } from '../_shared/events.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { provisionalClock, sameQuests } from '../_shared/offline.ts';
@@ -262,9 +262,10 @@ Deno.serve(async (req) => {
   try {
     const started = await db().begin((tx) => loadSnapshot(tx, player.userId));
     if (started === null) return problemResponse(problem(404, 'not_started'));
-    // Events first, so an offline completion always lands before its day closes (architecture §4.3).
-    const results: Applied[] = [];
-    for (const event of request.events) results.push(await applyEvent(player.userId, event, request.timeZone));
+    // Events first, so an offline completion always lands before its day closes (architecture §4.3); check-in answers
+    // last, since each closes the days that have ended (M7a review). The results keep the phone's order.
+    const results: Applied[] = new Array(request.events.length);
+    for (const i of applyOrder(request.events)) results[i] = await applyEvent(player.userId, request.events[i]!, request.timeZone);
     await advance(player.userId, request.timeZone);
     const newAchievementIds = await awardAchievements(player.userId);
     const { snapshot, history } = await db().begin(async (tx) => {

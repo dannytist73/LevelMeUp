@@ -287,6 +287,21 @@ describe('the check-in answered (M7a)', () => {
     expect(out.streak).toEqual({ current: 3, best: 3, shields: 0, awaitingCheckin: true });
   });
 
+  it('missed days right after it share its check-in, as they would have if it had been answered at once (review)', () => {
+    const out = planAdvance(afterDay1([], manilaDay(6).startsAt + HOUR, {
+      character: characterRow({ streak_current: 2, streak_best: 2 }),
+      days: [
+        closedRow(2, 'streak_day'), closedRow(3, 'awaiting_checkin'), closedRow(4, 'awaiting_checkin'), closedRow(5, 'streak_day'),
+        dayRow(dayN(6), 6),
+      ],
+      instances: instanceRows(dayN(6), 6),
+      queue: [queued(2, 'streak_day'), queued(3, 'awaiting_checkin'), queued(4, 'awaiting_checkin'), queued(5, 'streak_day')],
+    }))!;
+    expect(out.applied).toEqual([2, 3, 4]);
+    expect(out.opened).toEqual([{ dayId: 3 }]);
+    expect(out.streak.awaitingCheckin).toBe(true);
+  });
+
   it('away days between waiting days, or before the running day, are one gap check-in', () => {
     const between = planAdvance(afterDay1([], manilaDay(6).startsAt + HOUR, {
       days: [closedRow(2, 'streak_day'), closedRow(5, 'streak_day'), dayRow(dayN(6), 6)],

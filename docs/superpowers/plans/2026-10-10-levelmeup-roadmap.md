@@ -156,6 +156,8 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M7b | The late-rest notice (a "Rest today" synced after its day ended) and a tap time on `plan_rest` and `pain`, as carried from M6b. Settings raises the daily minutes again after a lighter plan. |
 | M7c | Consequences on an unrecovered "I just didn't" (`decideConsequence`, the opted-in levels), the "what got in the way?" note and the Shadow. |
 | M9 | The check-in in the pilot: which answers players choose, how often the recovery quest is cleared, and how often the lighter plan is offered and taken. |
+| Later | The lighter-plan offer counts a day check-in as one protected day, even when missed days right after it shared it (M7a review). |
+| Later | "Injured" rests the missed day's exercise from the next day built; a quest of that exercise already on today's list stays, with its "I felt pain" button (rest or gentle movement) (M7a review). |
 
 ## Spikes and where they run
 
