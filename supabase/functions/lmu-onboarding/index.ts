@@ -4,10 +4,11 @@ import type postgres from 'npm:postgres@3.4.9';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import { REVEAL_MODEL, claudeConfigured, writeReveal } from '../_shared/claude.ts';
 import { ESTIMATE_USD, MONTHLY_CAP_USD, costUsd } from '../_shared/costs.ts';
-import { db, hasActed, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
+import { db, hasActed, lmuCode, loadBodies, loadHistory, loadLibrary, loadSnapshot, one } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } from '../_shared/onboarding.ts';
 import type { Choices, Reveal } from '../_shared/onboarding.ts';
+import { bodiesToSend } from '../_shared/reading.ts';
 import { authenticate } from '../_shared/session.ts';
 import { stateView } from '../_shared/state.ts';
 import { dayOffers } from '../_shared/today.ts';
@@ -56,11 +57,11 @@ Deno.serve(async (req) => {
     // calls on an answer restart_player refuses anyway (M5 review).
     if (existing !== null && (await db().begin((tx) => hasActed(tx, player.userId)))) return problemResponse(problem(409, 'locked'));
     const words = await reveal(player.userId, choices);
-    const { snapshot, history } = await db().begin(async (tx) => {
+    const { state, articles } = await db().begin(async (tx) => {
       const j = (value: unknown) => tx.json(value as postgres.JSONValue);
       // Day 1 starts on the database clock, the one every later check uses.
       const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
-      const args = startArgs(choices, words, now.getTime(), LIBRARY);
+      const args = startArgs(choices, words, now.getTime(), LIBRARY, await loadLibrary(tx, player.userId));
       if (existing === null) {
         await tx`select levelmeup.start_player(${player.userId}::uuid, ${j(args.profile)}::jsonb, ${j(args.character)}::jsonb,
           ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
@@ -69,9 +70,12 @@ Deno.serve(async (req) => {
           ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
       }
       const snapshot = (await loadSnapshot(tx, player.userId))!;
-      return { snapshot, history: await loadHistory(tx, player.userId, snapshot.profile.book) };
+      const history = await loadHistory(tx, player.userId, snapshot.profile.book);
+      const state = stateView(snapshot, dayOffers(snapshot, LIBRARY), history);
+      const ids = bodiesToSend([state.today?.article?.id ?? null, state.nextArticle?.id ?? null], []);
+      return { state, articles: await loadBodies(tx, player.userId, ids) };
     });
-    return json(201, { reveal: words, state: stateView(snapshot, dayOffers(snapshot, LIBRARY), history) });
+    return json(201, { reveal: words, state, articles });
   } catch (error) {
     const code = lmuCode(error);
     if (code === 'already_started' || code === 'locked') return problemResponse(problem(409, code));

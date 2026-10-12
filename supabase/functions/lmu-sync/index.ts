@@ -8,15 +8,16 @@ import { ACHIEVEMENTS, CONTENT_VERSION, LIBRARY } from '../../../packages/conten
 import { planAdjust, planOfflinePain } from '../_shared/adjust.ts';
 import type { Plan } from '../_shared/adjust.ts';
 import { planAdvance } from '../_shared/advance.ts';
-import { asPlayer, asService, db, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
+import { asPlayer, asService, db, lmuCode, loadBodies, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
 import { adjustPayload, applyOrder, checkCompletionPayload, isAdjust, parseSyncBody } from '../_shared/events.ts';
-import type { AdjustEvent, PainEvent, PhoneEvent, ProvisionalDayEvent, Rejected, SlotRef } from '../_shared/events.ts';
+import type { AdjustEvent, InsightEvent, PainEvent, PhoneEvent, ProvisionalDayEvent, Rejected, SlotRef } from '../_shared/events.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { provisionalClock, sameQuests } from '../_shared/offline.ts';
+import { bodiesToSend, planInsight } from '../_shared/reading.ts';
 import { authenticate } from '../_shared/session.ts';
-import { achievementProgress, ladderMap, stateView } from '../_shared/state.ts';
-import { dayOffers } from '../_shared/today.ts';
+import { achievementProgress, characterView, ladderMap, stateView } from '../_shared/state.ts';
+import { dayOffers, openDay } from '../_shared/today.ts';
 import type { DayRow, InstanceRow, Snapshot } from '../_shared/state.ts';
 
 /** Tries at closing days or adjusting one when another write got there first (`lmu:conflict`). */
@@ -27,7 +28,7 @@ type Applied = { id: string; ok: true; result: unknown; notice?: string } | Reje
 
 const jsonParam = (tx: Tx, value: unknown) => tx.json(value as postgres.JSONValue);
 
-type PlayEvent = Exclude<PhoneEvent, AdjustEvent | ProvisionalDayEvent>;
+type PlayEvent = Exclude<PhoneEvent, AdjustEvent | ProvisionalDayEvent | InsightEvent>;
 
 type QuestRow = Pick<InstanceRow, 'id' | 'template_id' | 'completion' | 'condition' | 'minutes'> & Pick<DayRow, 'starts_at' | 'ends_at'>;
 
@@ -58,6 +59,7 @@ async function applyEvent(userId: string, event: PhoneEvent, timeZone: string): 
       if (kept.kept === 'server') return { id: event.id, ok: false, code: 'day_rebuilt' };
       return { id: event.id, ok: true, result: kept };
     }
+    if (event.type === 'insight') return { id: event.id, ok: true, result: await insight(userId, event) };
     // M7a decision 2: ended days close first, so a check-in's answer always lands on the day that runs now.
     if (event.type === 'checkin') await advance(userId, timeZone);
     if (!isAdjust(event)) return { id: event.id, ok: true, result: await play(userId, event) };
@@ -107,6 +109,36 @@ function play(userId: string, event: PlayEvent): Promise<unknown> {
     }
     return one(await tx<{ r: unknown }[]>`
       select levelmeup.rate_quest(${userId}::uuid, ${event.id}::uuid, ${instanceId}::bigint, ${event.rating}::text) as r`).r;
+  });
+}
+
+/**
+ * The Mage's Insight (M8b decision 8): checked against a fresh snapshot, then stored by levelmeup.set_insight. A repeat of
+ * an applied event answers from its stored result (set_insight reads it before the day).
+ */
+function insight(userId: string, event: InsightEvent): Promise<unknown> {
+  return db().begin(async (tx) => {
+    const s = await loadSnapshot(tx, userId);
+    if (s === null) throw new Error('lmu:not_started');
+    await asPlayer(tx, userId);
+    const seen = await tx`select 1 from levelmeup.events where user_id = ${userId}::uuid and client_event_id = ${event.id}::uuid`;
+    await asService(tx);
+    let day = 0;
+    if (seen.length === 0) {
+      const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
+      const open = openDay(s);
+      const plan = planInsight(
+        s.articles,
+        { classId: s.profile.class_id, level: characterView(s.character).level },
+        open === null ? null : { number: open.day_number, articleId: open.article_id, status: open.status, endsAtMs: open.ends_at.getTime() },
+        event.cluster,
+        now.getTime(),
+      );
+      if ('code' in plan) throw new Error(`lmu:${plan.code}`);
+      day = plan.day;
+    }
+    return one(await tx<{ r: unknown }[]>`
+      select levelmeup.set_insight(${userId}::uuid, ${event.id}::uuid, ${event.cluster}::text, ${day}::int) as r`).r;
   });
 }
 
@@ -196,7 +228,7 @@ async function provisional(userId: string, event: ProvisionalDayEvent): Promise<
         if (asOf === null) throw new Error('lmu:clock_ahead');
         const outcome = planAdvance({
           ...snapshot, pending: snapshot.checkin, timeZone: event.timeZone, nowMs: asOf, library: LIBRARY, contentVersion: CONTENT_VERSION,
-          provisional: { dayNumber: event.dayNumber, quests: event.quests },
+          provisional: { dayNumber: event.dayNumber, quests: event.quests, articleId: event.articleId ?? null },
         });
         // The server's last day was still running when the phone built the next one: the phone's clock is ahead.
         if (outcome === null || outcome.newDay === null) throw new Error('lmu:clock_ahead');
@@ -270,16 +302,15 @@ Deno.serve(async (req) => {
     for (const i of applyOrder(request.events)) results[i] = await applyEvent(player.userId, request.events[i]!, request.timeZone);
     await advance(player.userId, request.timeZone);
     const newAchievementIds = await awardAchievements(player.userId);
-    const { snapshot, history } = await db().begin(async (tx) => {
+    const { state, articles } = await db().begin(async (tx) => {
       const snapshot = (await loadSnapshot(tx, player.userId))!;
-      return { snapshot, history: await loadHistory(tx, player.userId, snapshot.profile.book) };
+      const history = await loadHistory(tx, player.userId, snapshot.profile.book);
+      const state = stateView(snapshot, dayOffers(snapshot, LIBRARY), history);
+      // M8b decision 3: today's and the next day's articles and those asked for, unless the phone holds them.
+      const ids = bodiesToSend([state.today?.article?.id ?? null, state.nextArticle?.id ?? null, ...request.want], request.have);
+      return { state, articles: await loadBodies(tx, player.userId, ids) };
     });
-    return json(200, {
-      results,
-      rejected: request.rejected,
-      newAchievements: newAchievementIds,
-      state: stateView(snapshot, dayOffers(snapshot, LIBRARY), history),
-    });
+    return json(200, { results, rejected: request.rejected, newAchievements: newAchievementIds, state, articles });
   } catch (error) {
     if (lmuCode(error) === 'conflict') return problemResponse(problem(503, 'busy', 'try again'));
     console.error('lmu-sync failed', error);
