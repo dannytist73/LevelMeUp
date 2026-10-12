@@ -13,7 +13,7 @@ import { project } from '../../src/game/project.ts';
 import { deviceZone } from '../../src/state/appStore.ts';
 import { GameProvider, useGame } from '../../src/state/store.ts';
 import type { GameState } from '../../src/state/store.ts';
-import { space } from '../../src/theme/tokens.ts';
+import { colors, space } from '../../src/theme/tokens.ts';
 import { Button } from '../../src/ui/Button.tsx';
 import { NarrationBox } from '../../src/ui/NarrationBox.tsx';
 import { Today } from '../../src/screens/Today.tsx';
@@ -41,7 +41,7 @@ export default function OfflinePreview() {
   }, [cached, art]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.night }}>
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: space.gutter, gap: 8 }}>
         <Button label="Back" variant="secondary" onPress={() => router.back()} style={{ alignSelf: 'flex-start' }} />
         <NarrationBox>{preview === null ? OFFLINE_TEXT.previewNone : OFFLINE_TEXT.previewLead}</NarrationBox>
