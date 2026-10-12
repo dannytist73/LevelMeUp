@@ -338,15 +338,30 @@ boundary. The Shadow preview (Developer → Shadow preview) shows the screens wi
 
 | # | Check | Result |
 |---|---|---|
-| 1 | Settings → Game shows "Accountability Pact · Off"; the Pact shows the three levels, "Preview the Shadow" and the five rules. | |
-| 2 | Hold to sign level 1: Settings then shows "The Shadow · level 1" and "It starts with your next quest day."; Off is one tap and takes effect at once. | |
-| 3 | The reveal after "real stakes" shows "Read the pact"; signed there, the reveal says it starts on day 2, and Settings shows it after the onboarding. | |
-| 4 | Preview, level 1: Today shows the Shadow mark, the Shadow's line and "Yesterday belongs to the Shadow…", the recovery quest first; the scene shows the claim, the stamp, the note field and "Take back the day". | |
-| 5 | Preview, level 2: the Trial panel above the side quests, both sealed; a sealed card opens the focus session. | |
-| 6 | The focus session: the clock counts with the app in front and the screen stays on; Home pauses it; back, it goes on; "End session" keeps the minutes. | |
-| 7 | Preview, paused: the Shadow's retreat line only. | |
-| 8 | At the largest font, the Pact, the scene, Today after a miss and the focus session wrap with nothing cut off. | |
+| 1 | Settings → Game shows "Accountability Pact · Off"; the Pact shows the three levels, "Preview the Shadow" and the five rules. | Pass (emulator, test character Uma, after the deploy, 2026-10-12): "Accountability Pact · Off" under Game; the Pact shows the three levels in full, "Preview the Shadow" (its box with the claim and mark lines) and the five rules on the paper panel |
+| 2 | Hold to sign level 1: Settings then shows "The Shadow · level 1" and "It starts with your next quest day."; Off is one tap and takes effect at once. | Pass: held 2.6 s, the Pact closed, Settings showed "The Shadow · level 1" and "It starts with your next quest day." at once, synced (0 waiting); Level 0 → "Turn off the Pact" (one tap, "This takes effect now…") showed Off at once and synced |
+| 3 | The reveal after "real stakes" shows "Read the pact"; signed there, the reveal says it starts on day 2, and Settings shows it after the onboarding. | Pending: needs a new onboarding (after Uma's checks and her deletion); unit tests cover "Read the pact", the draft and the send at the end of the onboarding |
+| 4 | Preview, level 1: Today shows the Shadow mark, the Shadow's line and "Yesterday belongs to the Shadow…", the recovery quest first; the scene shows the claim, the stamp, the note field and "Take back the day". | Pass (Shadow preview over Uma's day): the dashed "Shadow mark" tag, "Yesterday belongs to the Shadow…", the Shadow's box with the mark line, "The Shadow's claim", Recovery listed before the core quest; the scene: "Pact · level 1", the dark panel with ember eyes, "Claimed · Sun 11 Oct", the claim and mark lines, "Take back the day · 5 min", the note ("Kept. Only you can see it."). With Uma's real recovery quest cleared, the release line and no mark |
+| 5 | Preview, level 2: the Trial panel above the side quests, both sealed; a sealed card opens the focus session. | Pass: "Trial of Stillness" panel above "Side quests 0 / 2", both cards sealed (quiet cards, "Sealed" chip); the reading not sealed; a sealed card opens the focus session |
+| 6 | The focus session: the clock counts with the app in front and the screen stays on; Home pauses it; back, it goes on; "End session" keeps the minutes. | Pass: the clock counts with the app in front; Home for 12 s: 15 s of wall time, the clock moved 3 s (08:42 → 08:39); back, it goes on; "End session" returns to Today. The window keeps the screen on (KEEP_SCREEN_ON), but a development build always does (Expo's withDevTools keep-awake), so the trial's own release is the unit test's, and the screen sleeping after it is a release-build check (Find X9). The minutes kept: unit tests (the preview's store keeps nothing) |
+| 7 | Preview, paused: the Shadow's retreat line only. | Pass: Today paused: no mark, no Shadow box, M7a's line, Recovery first; the scene (preview's Scene button): "Enough for now. I step back while you find an easier pace." and "Back to today" only |
+| 8 | At the largest font, the Pact, the scene, Today after a miss and the focus session wrap with nothing cut off. | Pass after a fix (font 2.0, density 540): the scene, the focus session, the Pact and Today after a miss wrap with nothing cut off, except the sealed card's "Sealed" chip, which ran past the card's edge: fixed (18052d8, the row wraps and the title column shrinks), rechecked at 2.0 and at normal size. Minor: the Pact's title breaks inside "Accountability" at the largest display size (nothing cut off; carried forward) |
 | 9 | A real missed day under a level 1 pact, answered "I just didn't": the scene opens once by itself, the note is kept, the mark goes when the recovery quest is cleared (Find X9 or a kept test character). | |
 | 10 | Level 2 on a real missed day: the side quests stay sealed until 10 minutes; a call during the session pauses it; they open after (Find X9). | |
-| 11 | Unit and database tests only: only "I just didn't" sets it off; never for a day that began before the signing; one a day; paused after 3 in 7; off lifts it; the server never refuses a completion for the seal. | |
-| 12 | The focus session left open across the day's end (or the pact lowered while it runs): the clock stops and the screen may sleep. | |
+| 11 | Unit and database tests only: only "I just didn't" sets it off; never for a day that began before the signing; one a day; paused after 3 in 7; off lifts it; the server never refuses a completion for the seal. | Pass: unit tests (server 376, app 688) and db:test after the deploy (adjust.sql 112 assertions in 16 functions, including the review's guards); live 40/40 (39 in the full run, the pact's first test again alone after its time limit was raised to 120 s) |
+| 12 | The focus session left open across the day's end (or the pact lowered while it runs): the clock stops and the screen may sleep. | Partly: unit test (the hold goes mid-session: the clock stops, keep-awake released); the screen sleeping needs a release build (Find X9) |
+
+### What the emulator found (M7c, 2026-10-12)
+
+1. At the largest font the sealed card's "Sealed" chip ran past the card's edge (the title column kept its width);
+   fixed in 18052d8 and rechecked.
+2. The Shadow preview showed Uma's real cleared recovery quest instead of its own, and no stamp: the preview now
+   replaces a real recovery quest, dates the claim, and has a Scene button (9370b76). Development only.
+3. Not a bug: a development build keeps the screen on all the time (Expo's `withDevTools`), so the trial's keep-awake
+   can only be seen ending on a release build.
+4. Minor: "The Accountability Pact" breaks inside "Accountability" at the largest display size (density 540); nothing
+   is cut off.
+5. The live run: every `lmu-sync` call took 11-15 s from the laptop (the gateway answers in about 150 ms), so the
+   pact's six-call test passed its 60 s limit; it now has 120 s (9370b76). The time per call has grown slowly since M6
+   (408 s for 29 tests in M6c, 605 s for 36 in M6e, 764 s for 40 now); worth profiling before the pilot.
+

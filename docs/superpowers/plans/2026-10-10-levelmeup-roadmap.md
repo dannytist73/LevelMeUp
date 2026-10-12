@@ -180,8 +180,11 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 |---|---|
 | M7d | Level 2's second, sterner evening reminder (`checkin.consequence === 'trial'`, the Shadow's `evening` lines); the Pact's level 2 text then names it. |
 | M9 | The Shadow's painted art on its scene (board F2), and the mark on the painted portraits. |
+| M9 | `lmu-sync` takes 11-15 s per call in the live tests while the gateway answers in about 150 ms (the live run's time per test has grown since M6c): profile it (queries per request, connection set-up) before the pilot. |
 | Later | A pact signed on the reveal is lost if the app closes before the onboarding ends (Settings has it). A raise from 1 to 2 gives the day in progress no consequence at all (decision 3). |
-| Owner | Find X9: "I just didn't" under a pact on a real missed day (the scene once, the mark, the note, level 2's seal and focus session with the screen off and on, a call during the session), and turning the pact off on that day. |
+| Later | A title with one long word breaks inside it at the largest display size ("The Accountability Pact" on a 320 dp screen); nothing is cut off. Hyphenation or a smaller title there. |
+| Emulator | M7c row 3 (the reveal's "Read the pact", signed there, sent at the end of the onboarding) with the next new test character, after Uma's checks. |
+| Owner | Find X9: "I just didn't" under a pact on a real missed day (the scene once, the mark, the note, level 2's seal and focus session with the screen off and on, a call during the session), and turning the pact off on that day; the screen sleeps again after the focus session ends or its seal goes (a release build: development builds keep the screen on). |
 
 ## Spikes and where they run
 

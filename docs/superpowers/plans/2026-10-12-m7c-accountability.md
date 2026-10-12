@@ -3471,4 +3471,12 @@ rank C on day 151, known since M6c).
     check-in, a Trial without its day, a harsher easing and a settled check-in;
   - `changingPact` was dropped (nothing read it); the scene's button says "Change or turn off the Pact" (it opens the
     Pact, not Settings); checklist row 12 (the focus session across the day's end).
-- **Deploy and emulator:** see below once done.
+- **Deploy** (the owner's "yes, deploy", 2026-10-12): 0013 applied, the wedding's history unchanged; `db:test` all
+  files ok (adjust.sql: 112 assertions in 16 functions, the review's guards included); functions ACTIVE at version 12;
+  `test:live` 39/40 in the full run: the pact's first test passed its 60 s limit (six calls of 11-15 s each), so it
+  has 120 s now and passed alone, with the second pact test (9370b76); no "Live Test" players left, no consequence rows.
+- **Emulator** (Uma, America/Caracas, after the deploy): rows 1, 2, 4-8 pass, 11 passes, 12 partly (unit test; the
+  screen sleeping needs a release build), 3 waits for a new character, 9-10 for a real missed day. Found: the sealed
+  card's chip ran past the card at the largest font (fixed, 18052d8); the Shadow preview now replaces a real recovery
+  quest, dates the claim and opens the scene (9370b76); the Pact's title breaks inside "Accountability" at the largest
+  display size (carried forward).
