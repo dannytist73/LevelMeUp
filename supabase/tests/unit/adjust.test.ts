@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { levelForXp, newLadder, planWorkout, plannedMoves, questReward, sessionCondition, templateById } from '../../../packages/rules/src/index.ts';
+import {
+  levelForXp, newLadder, planWorkout, plannedMoves, questReward, recordPain, sessionCondition, templateById,
+} from '../../../packages/rules/src/index.ts';
 import type { PlayerProfile, Rating } from '../../../packages/rules/src/index.ts';
-import { planAdjust } from '../../functions/_shared/adjust.ts';
+import { planAdjust, planOfflinePain } from '../../functions/_shared/adjust.ts';
 import type { AdjustEvent } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
 import { parseOnboarding, startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
@@ -333,5 +335,16 @@ describe("Scholar's Path: the book (M6d decision 12)", () => {
 
   it('after the day ends only the profile changes', () => {
     expect(plan(mage(), book('Dune'), NOW + 2 * DAY_MS)).toEqual({ change: { book: { title: 'Dune', finished: false } } });
+  });
+});
+
+describe('"I felt pain" about a quest the server rebuilt (M6e review)', () => {
+  it('rests the exercise the player did; the day stays as it is', () => {
+    expect(planOfflinePain(at(), 'push-1', LIBRARY)).toEqual({ change: { ladders: { push: recordPain(newLadder(1)).state } } });
+  });
+
+  it('refuses a quest that is no exercise, or one this content lacks', () => {
+    expect(planOfflinePain(at(), 'reading-0', LIBRARY)).toEqual({ code: 'not_exercise' });
+    expect(planOfflinePain(at(), 'nope-0', LIBRARY)).toEqual({ code: 'not_exercise' });
   });
 });

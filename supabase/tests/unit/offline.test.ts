@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CLOCK_SKEW_MS, plannedMoves } from '../../../packages/rules/src/index.ts';
-import { provisionalClock, sameQuests } from '../../functions/_shared/offline.ts';
+import { CLOCK_SKEW_MS, LATE_SYNC_MS, MAX_DAY_MS, plannedMoves } from '../../../packages/rules/src/index.ts';
+import { provisionalClock, remapped, sameQuests } from '../../functions/_shared/offline.ts';
 import { DAY1, instanceRows } from './fixtures.ts';
 
 const NOW = Date.UTC(2026, 9, 12, 2);
@@ -20,6 +20,12 @@ describe('the clock an offline day is applied at (M6e decision 5)', () => {
   it('a day built more than 5 minutes ahead of now: the phone clock is ahead', () => {
     expect(provisionalClock(NOW + CLOCK_SKEW_MS + 1, NOW, LAST_END)).toBeNull();
   });
+
+  it('a day built so long ago that nothing on it can count any more is applied now (review)', () => {
+    const old = NOW - LATE_SYNC_MS - MAX_DAY_MS;
+    expect(provisionalClock(old, NOW, old - 1000)).toBe(old);
+    expect(provisionalClock(old - 1, NOW, old - 1000)).toBe(NOW);
+  });
 });
 
 describe('a stored day is the one the phone showed', () => {
@@ -30,5 +36,13 @@ describe('a stored day is the one the phone showed', () => {
     expect(sameQuests(rows, phone)).toBe(true);
     expect(sameQuests(rows, phone.slice(1))).toBe(false);
     expect(sameQuests(rows, phone.map((q, i) => (i === 0 ? { ...q, templateId: 'other-0' } : q)))).toBe(false);
+  });
+});
+
+describe('a completion counted for another quest (review)', () => {
+  it("is marked in its payload with the quest the player did", () => {
+    expect(remapped({ payload: { offlineQuest: 'push-1', sets: [5] } })).toBe(true);
+    expect(remapped({ payload: { sets: [5] } })).toBe(false);
+    expect(remapped({ payload: null })).toBe(false);
   });
 });

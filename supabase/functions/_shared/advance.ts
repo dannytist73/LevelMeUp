@@ -6,6 +6,7 @@ import {
 } from '../../../packages/rules/src/index.ts';
 import type { DayInput, LadderState, ProvisionalQuest, QuestLibrary, Stat, StreakState } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
+import { remapped } from './offline.ts';
 import { dayWindow, ladderMap, pastDays, startPoints, statXp, streakState, toProfile } from './state.ts';
 import type { CharacterRow, DayDraft, DayRow, InstanceDraft, InstanceRow, LadderRow, ProfileRow } from './state.ts';
 
@@ -113,10 +114,11 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
 
     // Ladders move only now, with each quest's final rating and the rung it was built at (M1 review). A protected
     // day (planned rest, no quests) never counts as a missed session. The phone closes a day it holds the same way (M6e).
+    // A completion counted for another quest (M6e review) moves no ladder: the player did the phone's quest.
     const closed = closeLadders(library, ladders, {
       startsAt: day.starts_at.getTime(),
       protected: day.protection !== null,
-      quests: quests.map((q) => ({ ladder: q.ladder_id, rung: q.rung, done: q.completed_at !== null, rating: q.rating })),
+      quests: quests.map((q) => ({ ladder: remapped(q) ? null : q.ladder_id, rung: q.rung, done: q.completed_at !== null, rating: q.rating })),
     }, rulesProfile());
     setLadders(closed.changed);
     for (const { ladder, rung } of closed.newRungs) {
@@ -150,10 +152,16 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     let quests: InstanceDraft[] = [];
     let budget = comeback ? LIGHT_DAY_MINUTES : profile.minutes_per_day;
     let protection: DayDraft['protection'] = null;
-    // The phone's day when the rules allow it (M6e decision 5), re-drafted from the server's tables.
-    const phone = input.provisional === undefined
-      ? null
-      : provisionalDay(library, dayInput, input.provisional.dayNumber, input.provisional.quests);
+    // The phone's day when the rules allow it (M6e decision 5), re-drafted from the server's tables. When the rules can't
+    // read it at all, the server's own day is stored (review): a queued event must never fail every sync.
+    let phone: ReturnType<typeof provisionalDay> | null = null;
+    if (input.provisional !== undefined) {
+      try {
+        phone = provisionalDay(library, dayInput, input.provisional.dayNumber, input.provisional.quests);
+      } catch (error) {
+        phone = { day: null, problems: [error instanceof Error ? error.message : String(error)] };
+      }
+    }
     if (phone !== null) offline = { kept: phone.day === null ? 'server' : 'phone', problems: phone.problems };
     if (phone !== null && phone.day !== null) {
       quests = phone.day.quests.map((q) => toDraft(library, q));

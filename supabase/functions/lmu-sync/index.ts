@@ -3,9 +3,10 @@
 // player's state. The server's numbers win. M6e: a day the phone built offline is applied as of when it was built, and
 // quests of that day are found by day and slot until the phone has their ids.
 import type postgres from 'npm:postgres@3.4.9';
-import { newAchievements } from '../../../packages/rules/src/index.ts';
+import { findTemplate, newAchievements } from '../../../packages/rules/src/index.ts';
 import { ACHIEVEMENTS, CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
-import { planAdjust } from '../_shared/adjust.ts';
+import { planAdjust, planOfflinePain } from '../_shared/adjust.ts';
+import type { Plan } from '../_shared/adjust.ts';
 import { planAdvance } from '../_shared/advance.ts';
 import { asPlayer, asService, db, lmuCode, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
@@ -16,7 +17,7 @@ import { provisionalClock, sameQuests } from '../_shared/offline.ts';
 import { authenticate } from '../_shared/session.ts';
 import { achievementProgress, ladderMap, stateView } from '../_shared/state.ts';
 import { dayOffers } from '../_shared/today.ts';
-import type { DayRow, InstanceRow } from '../_shared/state.ts';
+import type { DayRow, InstanceRow, Snapshot } from '../_shared/state.ts';
 
 /** Tries at closing days or adjusting one when another write got there first (`lmu:conflict`). */
 const MAX_TRIES = 3;
@@ -79,23 +80,40 @@ function play(userId: string, event: PlayEvent): Promise<unknown> {
       const row = await questRow(tx, userId, event);
       if (row === null) throw new Error('lmu:not_found');
       // Named by its slot (M6e) but not the quest the phone showed: the server's day won. The work still counts for the
-      // quest now in that slot, without the timer or rep check, which was for the phone's quest (decision 7).
-      const ref = event.ref;
-      const checked = ref !== undefined && row.template_id !== ref.templateId
-        ? { payload: { offlineQuest: ref.templateId } }
-        : checkCompletionPayload(row, row, event.payload, Date.now());
+      // quest now in that slot (decision 7), checked against the quest the player did; it is marked, so it moves no
+      // ladder and is no workout done, and its rating was for the other quest (review).
+      const did = event.ref !== undefined && row.template_id !== event.ref.templateId ? event.ref.templateId : null;
+      const checked = did === null ? checkCompletionPayload(row, row, event.payload, Date.now()) : checkDone(did, row, event.payload);
       if ('code' in checked) throw new Error(`lmu:${checked.code}`);
+      const payload = did === null ? checked.payload : { ...checked.payload, offlineQuest: did };
       return one(await tx<{ r: unknown }[]>`select levelmeup.complete_quest(${userId}::uuid, ${event.id}::uuid, ${row.id}::bigint,
-        ${new Date(event.completedAt)}::timestamptz, ${event.rating}::text, ${jsonParam(tx, checked.payload)}::jsonb) as r`).r;
+        ${new Date(event.completedAt)}::timestamptz, ${did === null ? event.rating : null}::text, ${jsonParam(tx, payload)}::jsonb) as r`).r;
     }
-    const instanceId = event.instanceId ?? (await questRow(tx, userId, event))?.id;
-    if (instanceId === undefined) throw new Error('lmu:not_found');
+    let instanceId = event.instanceId;
+    if (event.ref !== undefined) {
+      const row = await questRow(tx, userId, event);
+      if (row === null) throw new Error('lmu:not_found');
+      // A rating was for the phone's quest, not the one the server put in its slot (review).
+      if (event.type === 'rate' && row.template_id !== event.ref.templateId) throw new Error('lmu:quest_changed');
+      instanceId = Number(row.id);
+    }
+    if (instanceId === null) throw new Error('lmu:not_found');
     if (event.type === 'undo') {
       return one(await tx<{ r: unknown }[]>`select levelmeup.undo_quest(${userId}::uuid, ${event.id}::uuid, ${instanceId}::bigint) as r`).r;
     }
     return one(await tx<{ r: unknown }[]>`
       select levelmeup.rate_quest(${userId}::uuid, ${event.id}::uuid, ${instanceId}::bigint, ${event.rating}::text) as r`).r;
   });
+}
+
+/**
+ * A completion of the phone's quest counted for another (M6e review): its payload is checked against the quest the player
+ * did. A quest this content doesn't know (another app version) counts unchecked.
+ */
+function checkDone(templateId: string, row: QuestRow, payload: unknown): ReturnType<typeof checkCompletionPayload> {
+  const template = findTemplate(LIBRARY, templateId);
+  if (template === undefined) return { payload: {} };
+  return checkCompletionPayload({ completion: template.completion, condition: template.condition, minutes: template.minutes }, row, payload, Date.now());
 }
 
 /**
@@ -117,11 +135,11 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
         if (seen.length > 0) return write(-1, {});
         const snapshot = await loadSnapshot(tx, userId);
         if (snapshot === null) throw new Error('lmu:not_started');
-        // A pain report about a quest named by its slot (M6e): the quest there now, never an exercise the player didn't do.
-        const planned = event.type === 'pain' && event.ref !== undefined ? await slotPain(tx, userId, event) : event;
         // The database clock, the one levelmeup.adjust checks the day against.
         const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
-        const plan = planAdjust(snapshot, planned, { nowMs: now.getTime(), library: LIBRARY });
+        const plan = event.type === 'pain' && event.ref !== undefined
+          ? await slotPain(tx, userId, snapshot, event, now.getTime())
+          : planAdjust(snapshot, event, { nowMs: now.getTime(), library: LIBRARY });
         if ('code' in plan) throw new Error(`lmu:${plan.code}`);
         return write(snapshot.character.version, plan.change);
       });
@@ -131,12 +149,15 @@ async function adjust(userId: string, event: AdjustEvent): Promise<unknown> {
   }
 }
 
-/** "I felt pain" about a quest named by its slot (M6e decision 7): refused when the quest there isn't the one the phone showed. */
-async function slotPain(tx: Tx, userId: string, event: PainEvent & { ref: SlotRef }): Promise<PainEvent> {
+/**
+ * "I felt pain" about a quest named by its slot (M6e decision 7): the quest there when it is the one the phone showed;
+ * when the server rebuilt the day, the exercise the player did rests and the day stays as it is (review).
+ */
+async function slotPain(tx: Tx, userId: string, s: Snapshot, event: PainEvent & { ref: SlotRef }, nowMs: number): Promise<Plan> {
   const row = await questRow(tx, userId, event);
-  if (row === null) throw new Error('lmu:not_found');
-  if (row.template_id !== event.ref.templateId) throw new Error('lmu:quest_changed');
-  return { id: event.id, type: 'pain', instanceId: Number(row.id), choice: event.choice };
+  if (row === null) return { code: 'not_found' };
+  if (row.template_id !== event.ref.templateId) return planOfflinePain(s, event.ref.templateId, LIBRARY);
+  return planAdjust(s, { id: event.id, type: 'pain', instanceId: Number(row.id), choice: event.choice }, { nowMs, library: LIBRARY });
 }
 
 type Kept = { dayNumber: number; kept: 'phone' | 'existing' | 'server' };
@@ -155,9 +176,14 @@ async function provisional(userId: string, event: ProvisionalDayEvent): Promise<
         const stored = snapshot.days.find((d) => d.day_number === event.dayNumber);
         if (stored !== undefined) {
           const quests = snapshot.instances.filter((q) => String(q.day_id) === String(stored.id));
-          return { dayNumber: event.dayNumber, kept: sameQuests(quests, event.quests) ? 'existing' : 'server' };
+          if (sameQuests(quests, event.quests)) return { dayNumber: event.dayNumber, kept: 'existing' };
+          console.info('lmu-sync: an offline day was rebuilt', userId, ['the day was already stored with other quests']);
+          return { dayNumber: event.dayNumber, kept: 'server' };
         }
-        if (snapshot.days.some((d) => d.day_number > event.dayNumber)) return { dayNumber: event.dayNumber, kept: 'server' };
+        if (snapshot.days.some((d) => d.day_number > event.dayNumber)) {
+          console.info('lmu-sync: an offline day was rebuilt', userId, ['a later day is already stored']);
+          return { dayNumber: event.dayNumber, kept: 'server' };
+        }
         const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
         const lastEndsAt = Math.max(...snapshot.days.map((d) => d.ends_at.getTime()));
         const asOf = provisionalClock(event.builtAt, now.getTime(), lastEndsAt);

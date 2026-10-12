@@ -215,3 +215,14 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
     }
   }
 }
+
+/**
+ * "I felt pain" about a quest of a day the phone built offline that the server rebuilt (M6e review): the exercise the
+ * player did rests, as a report after its day ended does; the day and its quests stay as they are.
+ */
+export function planOfflinePain(s: Snapshot, templateId: string, library: QuestLibrary): Plan {
+  const template = findTemplate(library, templateId);
+  if (template === undefined || template.exercise === null) return refuse('not_exercise');
+  const key = painKey(template);
+  return { change: { ladders: { [key]: recordPain(ladderMap(s.ladders)[key] ?? newLadder()).state } } };
+}

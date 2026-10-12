@@ -219,4 +219,18 @@ describe('a day the phone built offline (M6e)', () => {
     expect(out.offline!.problems.some((p) => p.includes('day number'))).toBe(true);
     expect(out.newDay!.dayNumber).toBe(2);
   });
+
+  it("when the rules can't read the phone's day at all, the server's own day is stored (review)", () => {
+    const out = planAdvance({ ...afterDay1(['core'], end, { workoutsDone: -1 }), provisional: { dayNumber: 2, quests: phone } })!;
+    expect(out.offline).toEqual({ kept: 'server', problems: [expect.stringMatching(/workoutsDone/)] });
+    expect(out.newDay!.protection).toBe('no_quests');
+  });
+
+  it("a completion counted for another quest moves no ladder: the player did the phone's quest (review)", () => {
+    const instances = instanceRows(DAY1, 1, ['core']).map((q) => (q.slot === 'core' ? { ...q, payload: { offlineQuest: 'push-0' } } : q));
+    const out = planAdvance(afterDay1(['core'], end, { instances }))!;
+    const core = DAY1.quests.find((q) => q.slot === 'core')!;
+    expect(out.ladders[core.ladder!]).toBeUndefined();
+    expect(out.ledger).toContainEqual(expect.objectContaining({ sourceType: 'discipline', sourceId: 'day:1' }));
+  });
 });

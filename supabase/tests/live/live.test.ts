@@ -327,16 +327,19 @@ describe('offline-built days (M6e)', () => {
     expect(undone.body.state.character.totalXp).toBe(0);
   });
 
-  it("another quest in that slot still counts the work; a pain report about it is refused; an unknown day isn't found", async () => {
-    const ref = { dayNumber: 1, slot: 'core', templateId: 'not-this-0' };
+  it("another quest in that slot still counts the work; pain rests the exercise the player did; a rating isn't kept", async () => {
+    // The phone showed walk-0 (a check-off) where the server has a rep quest (review fixes).
+    const did = quest(state, 'core').templateId === 'walk-0' ? 'walk-1' : 'walk-0';
+    const ref = { dayNumber: 1, slot: 'core', templateId: did };
     const res = await sync(d, [
-      { id: eventId(), type: 'complete', ref, completedAt: now(), payload: {} },
+      { id: eventId(), type: 'complete', ref, completedAt: now(), rating: 'easy', payload: {} },
       { id: eventId(), type: 'pain', ref, choice: 'pause' },
+      { id: eventId(), type: 'rate', ref, rating: 'too_hard' },
       { id: eventId(), type: 'undo', ref: { ...ref, dayNumber: 9 } },
     ]);
-    expect(res.body.results.map((r: any) => r.ok ? 'ok' : r.code)).toEqual(['ok', 'quest_changed', 'not_found']);
-    expect(quest(res.body.state, 'core').completedAt).not.toBeNull();
-    expect(res.body.state.paused).toEqual([]);
+    expect(res.body.results.map((r: any) => r.ok ? 'ok' : r.code)).toEqual(['ok', 'ok', 'quest_changed', 'not_found']);
+    expect(quest(res.body.state, 'core')).toMatchObject({ completedAt: expect.any(String), rating: null });
+    expect(res.body.state.paused).toEqual([painKey(templateById(LIBRARY, did))]);
   });
 
   it("a day built while the server's day still runs is refused (clock_ahead); a malformed one is rejected", async () => {
