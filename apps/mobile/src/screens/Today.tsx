@@ -1,8 +1,9 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
 // quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx); M7a the check-in (CheckinNotes.tsx). The article
-// reader arrives in M8.
-import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, artKey, authoredTemplate } from '@levelmeup/content';
+// reader arrives in M8. M7c: after "I just didn't" under a pact, the Shadow's mark and box, the recovery quest first, and
+// at level 2 the Trial above the sealed side quests (board F3).
+import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SHADOW_TEXT, artKey, authoredTemplate, shadowLine } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { isExercise, isResting } from '../game/adjust.ts';
 import { trainingUnset } from '../game/character.ts';
 import { streakNote } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
+import { marked, sealedQuest, shadowHold } from '../game/pact.ts';
 import type { QuestView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
@@ -21,6 +23,8 @@ import { Icon } from '../ui/icons.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
+import { ShadowBox } from '../ui/ShadowBox.tsx';
+import { ShadowMark } from '../ui/ShadowMark.tsx';
 import { Body, Caption, Display, Heading, Label, Small } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
 import { CheckinNotes } from './CheckinNotes.tsx';
@@ -39,6 +43,10 @@ export type TodayProps = {
   onTraining: () => void;
   /** The check-in screen (M7a). */
   onCheckin: () => void;
+  /** The Shadow's scene, opened again from its box (M7c decision 5). */
+  onShadow?: () => void;
+  /** The Trial of Stillness's focus session (M7c decision 7). */
+  onTrial?: () => void;
   now?: () => number;
 };
 
@@ -46,7 +54,9 @@ const SECTION: Record<QuestView['slot'], string> = {
   core: 'Core quest', side1: 'Side quests', side2: 'Side quests', article: "Today's reading", recovery: 'Recovery',
 };
 
-export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTraining, onCheckin, now = Date.now }: TodayProps) {
+export function Today({
+  onSettings, onOpenQuest, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {}, now = Date.now,
+}: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
@@ -67,6 +77,8 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
   const mark = syncMark(status);
   // M7a: "paused" while a check-in waits, "held today" after "I just didn't".
   const note = view === null ? null : streakNote(view);
+  // M7c: what the Shadow holds today (the mark, the seal), from the state; none without a pact.
+  const hold = view === null ? null : shadowHold(view, now());
 
   const noticeBoxes = notices.map((n) => (
     <View key={n.eventId} style={{ gap: 8 }}>
@@ -89,32 +101,47 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
     );
   } else {
     const quests = today!.quests;
-    const slots = [...new Set(quests.map((q) => SECTION[q.slot]))];
+    const titles = [...new Set(quests.map((q) => SECTION[q.slot]))];
+    // Board F3 (M7c decision 6): the recovery quest comes first while it is open.
+    const slots = quests.some((q) => q.slot === 'recovery' && q.completedAt === null)
+      ? [SECTION.recovery, ...titles.filter((t) => t !== SECTION.recovery)]
+      : titles;
     const sides = quests.filter((q) => q.slot === 'side1' || q.slot === 'side2');
     body = (
       <View style={{ gap: 30 }}>
         {view!.offline && <NarrationBox>{OFFLINE_TEXT.built}</NarrationBox>}
         <DayBanners today={today!} restDay={view!.character.restDay} />
+        {hold !== null && hold.kind !== 'paused' && (
+          <View style={{ gap: 8 }}>
+            <ShadowBox lines={[shadowLine(hold.cleared ? 'release' : 'mark', today!.dayNumber)]} />
+            <Button label={SHADOW_TEXT.reopen} variant="secondary" onPress={onShadow} style={{ alignSelf: 'flex-start' }} />
+          </View>
+        )}
         {slots.map((title) => {
           const inSection = quests.filter((q) => SECTION[q.slot] === title);
           const count = title === 'Side quests' ? `${sides.filter((q) => q.completedAt !== null).length} / ${sides.length}` : undefined;
           return (
             <View key={title} style={{ gap: 14 }}>
+              {title === SECTION.side1 && hold !== null && hold.sealed && <TrialPanel onTrial={onTrial} />}
               <SectionTitle title={title} count={count} />
-              {inSection.map((q) => (
-                <QuestCard
-                  key={q.id}
-                  quest={q}
-                  voice={view!.profile.voice}
-                  classId={view!.profile.classId}
-                  timeZone={today!.timeZone}
-                  waiting={view!.waiting.has(q.id)}
-                  onOpen={() => onOpenQuest(q.id)}
-                  artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId), q.condition), q.id) : null}
-                  onPain={q.slot === 'core' && q.completedAt === null && isExercise(q) ? () => onPain(q.id) : undefined}
-                  resting={q.completedAt === null && isResting(q, view!.paused)}
-                />
-              ))}
+              {inSection.map((q) => {
+                const sealed = sealedQuest(hold, q);
+                return (
+                  <QuestCard
+                    key={q.id}
+                    quest={q}
+                    voice={view!.profile.voice}
+                    classId={view!.profile.classId}
+                    timeZone={today!.timeZone}
+                    waiting={view!.waiting.has(q.id)}
+                    onOpen={sealed ? onTrial : () => onOpenQuest(q.id)}
+                    sealed={sealed}
+                    artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId), q.condition), q.id) : null}
+                    onPain={q.slot === 'core' && q.completedAt === null && isExercise(q) ? () => onPain(q.id) : undefined}
+                    resting={q.completedAt === null && isResting(q, view!.paused)}
+                  />
+                );
+              })}
             </View>
           );
         })}
@@ -170,6 +197,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
                 <Small tone="chalk">of 2 shields</Small>
               </View>
             </View>
+            {marked(hold) && <ShadowMark label={SHADOW_TEXT.mark} accessibilityLabel={SHADOW_TEXT.markLabel} />}
             {mark !== null && usable && <Body tone="ash">{mark}</Body>}
           </>
         )}
@@ -188,5 +216,16 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
         {body}
       </View>
     </ScreenScroll>
+  );
+}
+
+/** Board F3: the Trial of Stillness above the sealed side quests (M7c decision 6). */
+function TrialPanel({ onTrial }: { onTrial: () => void }) {
+  return (
+    <View style={{ gap: 10, padding: 16, borderWidth: 2, borderColor: colors.ember, backgroundColor: colors.panel }}>
+      <Heading tone="ember">{SHADOW_TEXT.trial.title.toUpperCase()}</Heading>
+      <Small tone="chalk">{SHADOW_TEXT.trial.line}</Small>
+      <Button label={SHADOW_TEXT.trial.start} onPress={onTrial} />
+    </View>
   );
 }

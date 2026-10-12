@@ -1,9 +1,10 @@
 // Character (spec §1.3, board D4; M6d): the portrait frame, name, level and title, the stats with progress to their next
 // point, the class path, Scholar's Path for a Mage at level 10, the achievements, the vow, and the class change (M6b).
-import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, fillText, latestTitle } from '@levelmeup/content';
+import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scholarsPathOpen } from '../game/character.ts';
+import { marked, shadowHold } from '../game/pact.ts';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -52,12 +53,15 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
   const className = CLASS_NAMES[classId];
   const title = latestTitle(view.achievements);
   const lock = classLock(view, now());
+  // M7c decision 9: the Shadow's mark while it holds the day.
+  const mark = marked(shadowHold(view, now()));
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
         <Label>{T.label}</Label>
-        <Portrait classId={classId} label={fillText(T.portrait, { className, level })} />
+        <Portrait classId={classId} marked={mark}
+          label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
         <Title>{view.profile.name}</Title>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <View style={{ paddingVertical: 3, paddingHorizontal: 10, backgroundColor: colors.paper, transform: [{ skewX: '-10deg' }] }}>

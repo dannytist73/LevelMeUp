@@ -3,7 +3,8 @@
 // M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag. M6c: a workout's log, and a way to change the
 // equipment or program.
 import {
-  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary, renderWhy,
+  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText, questSummary,
+  renderWhy, shadowLine,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -13,6 +14,7 @@ import { timerTargetMs } from '../../../../supabase/functions/_shared/events.ts'
 import { artUrl } from '../art/manifest.ts';
 import { isResting } from '../game/adjust.ts';
 import { findQuest } from '../game/offline.ts';
+import { sealedQuest, shadowHold } from '../game/pact.ts';
 import { clearedSummary } from '../quest/cleared.ts';
 import type { Shot } from '../quest/cleared.ts';
 import { NEW_TIMER } from '../quest/timer.ts';
@@ -24,6 +26,7 @@ import { Chip } from '../ui/Chip.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { QuestArt } from '../ui/QuestArt.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { Body, Caption, Label, Small, Title } from '../ui/Text.tsx';
 import { COMPLETION_NAMES, questXp } from './QuestCard.tsx';
 import { Cleared } from './quest/Cleared.tsx';
@@ -44,10 +47,12 @@ export type QuestProps = {
   onPain: (questId: number) => void;
   /** A workout: change the equipment or program (M6c). */
   onTraining?: () => void;
+  /** M7c: the Trial of Stillness, for a sealed side quest. */
+  onTrial?: () => void;
   now?: () => number;
 };
 
-export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.now }: QuestProps) {
+export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, now = Date.now }: QuestProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const pending = useGame((s) => s.pending);
@@ -114,6 +119,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.
   const words = template.voice[view.profile.voice];
   const summary = questSummary(quest);
   const slot = quest.slot === 'side1' || quest.slot === 'side2' ? T.slots.side : T.slots[quest.slot];
+  const hold = shadowHold(view, now());
 
   if (quest.completedAt !== null) {
     return (
@@ -158,7 +164,15 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, now = Date.
   };
 
   let panel;
-  if (quest.slot === 'article') {
+  if (sealedQuest(hold, quest)) {
+    // M7c decision 6: the Trial of Stillness seals this side quest until its focus session (the phone's own seal).
+    panel = (
+      <View style={{ gap: 12 }}>
+        <ShadowBox lines={[shadowLine('trial', today.dayNumber)]} />
+        <Button label={SHADOW_TEXT.trial.start} onPress={onTrial ?? (() => {})} />
+      </View>
+    );
+  } else if (quest.slot === 'article') {
     panel = <NarrationBox>{T.article}</NarrationBox>;
   } else if (quest.completion === 'timer') {
     panel = (

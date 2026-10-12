@@ -1,8 +1,12 @@
-import { PACT_TEXT, SHADOW_LINES, SHADOW_TEXT, fillText } from '@levelmeup/content';
+import { CHECKIN_TEXT, PACT_TEXT, PLAY_TEXT, SHADOW_LINES, SHADOW_TEXT, fillText, retreatLine, shadowLine } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
+import { Character } from '../src/screens/Character.tsx';
 import { Pact } from '../src/screens/Pact.tsx';
+import { Quest } from '../src/screens/Quest.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
+import { ShadowScene } from '../src/screens/ShadowScene.tsx';
+import { Today } from '../src/screens/Today.tsx';
 import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
 import { Portrait } from '../src/ui/Portrait.tsx';
 import { ShadowBox } from '../src/ui/ShadowBox.tsx';
@@ -97,5 +101,117 @@ describe('the Accountability Pact (board F5)', () => {
     expect(onPact).toHaveBeenCalled();
     await act(async () => store.setState({ draft: { ...READY_DRAFT, pact: 1 } }));
     expect(screen.getByText(fillText(PACT_TEXT.reveal.signed, { name: PACT_TEXT.names[1] }))).toBeTruthy();
+  });
+});
+
+describe("the Shadow's scene (board F2)", () => {
+  const scene = async (state = claimedState('shadow')) => {
+    const store = testStore({ view: project(state, []) });
+    const props = { onDone: jest.fn(), onRecovery: jest.fn(), onTrial: jest.fn(), onPact: jest.fn() };
+    await render(withStore(store, <ShadowScene {...props} now={() => DAY_TWO_NOW} />));
+    return { store, ...props };
+  };
+
+  it('claims the day it took, and opening it shows it once', async () => {
+    const { store } = await scene();
+    expect(screen.getByLabelText(`The Shadow: ${shadowLine('claim', 2)} ${shadowLine('mark', 2)}`)).toBeTruthy();
+    expect(screen.getByText(/^Claimed · /)).toBeTruthy();
+    expect(store.getState().seeShadow).toHaveBeenCalledWith(7);
+  });
+
+  it('"Take back the day" opens the recovery quest', async () => {
+    const { onRecovery } = await scene();
+    await fireEvent.press(screen.getByRole('button', { name: fillText(SHADOW_TEXT.takeBack, { minutes: 5 }) }));
+    expect(onRecovery).toHaveBeenCalledWith(204);
+  });
+
+  it('keeps a private note', async () => {
+    const { store } = await scene();
+    await fireEvent.changeText(screen.getByLabelText(SHADOW_TEXT.noteLabel), '  A late shift.  ');
+    await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.keepNote }));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin_note', checkinId: 7, note: 'A late shift.' });
+    expect(screen.getByText(SHADOW_TEXT.noteKept)).toBeTruthy();
+  });
+
+  it('at level 2 the trial is one tap away, and the Shadow names its seal', async () => {
+    const { onTrial } = await scene(claimedState('trial'));
+    expect(screen.getByLabelText(`The Shadow: ${shadowLine('claim', 2)} ${shadowLine('mark', 2)} ${shadowLine('trial', 2)}`)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.trial.start }));
+    expect(onTrial).toHaveBeenCalled();
+  });
+
+  it('after 3 in 7 days the Shadow steps back (the lighter plan only when it is offered)', async () => {
+    await scene(claimedState('paused'));
+    expect(screen.getByLabelText(`The Shadow: ${retreatLine(false)}`)).toBeTruthy();
+  });
+
+  it('once the recovery quest is cleared, the Shadow lets the day go', async () => {
+    await scene(claimedState('shadow', {}, ['recovery']));
+    expect(screen.getByLabelText(`The Shadow: ${shadowLine('release', 2)}`)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: fillText(SHADOW_TEXT.takeBack, { minutes: 5 }) })).toBeNull();
+  });
+});
+
+describe('Today after a miss (board F3)', () => {
+  const today = async (state = claimedState('shadow'), over = {}) => {
+    const props = { onSettings: jest.fn(), onOpenQuest: jest.fn(), onSwap: jest.fn(), onPain: jest.fn(), onVanish: jest.fn(), onTraining: jest.fn(), onCheckin: jest.fn(), onShadow: jest.fn(), onTrial: jest.fn() };
+    await render(withStore(testStore({ view: project(state, []), ...over }), <Today {...props} now={() => DAY_TWO_NOW} />));
+    return props;
+  };
+  const sections = () => screen.getAllByText(/^(Core quest|Side quests|Recovery|Today's reading)$/).map((t) => t.props.children as string);
+
+  it('lists the recovery quest first while it is open, for every player', async () => {
+    await today(claimedState(null));
+    expect(sections()[0]).toBe('Recovery');
+    expect(screen.getByText(CHECKIN_TEXT.held)).toBeTruthy(); // no pact: M7a's line
+  });
+
+  it("the Shadow's mark, its line and the System's, and its claim one tap away", async () => {
+    const { onShadow } = await today();
+    expect(screen.getByLabelText(SHADOW_TEXT.markLabel)).toBeTruthy();
+    expect(screen.getByLabelText(`The Shadow: ${shadowLine('mark', 2)}`)).toBeTruthy();
+    expect(screen.getByText(SHADOW_TEXT.heldYesterday)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.reopen }));
+    expect(onShadow).toHaveBeenCalled();
+  });
+
+  it('once the recovery quest is cleared the mark goes and the Shadow lets the day go', async () => {
+    await today(claimedState('shadow', {}, ['recovery']));
+    expect(screen.queryByLabelText(SHADOW_TEXT.markLabel)).toBeNull();
+    expect(screen.getByLabelText(`The Shadow: ${shadowLine('release', 2)}`)).toBeTruthy();
+    expect(screen.getByText(PLAY_TEXT.cleared.recovered)).toBeTruthy();
+  });
+
+  it('level 2: the Trial above the side quests, which are sealed and open the Trial; the core quest is not', async () => {
+    const { onTrial, onOpenQuest } = await today(claimedState('trial'));
+    expect(screen.getByText(SHADOW_TEXT.trial.line)).toBeTruthy();
+    expect(screen.getAllByText(SHADOW_TEXT.trial.sealed)).toHaveLength(2);
+    await fireEvent.press(screen.getAllByRole('button', { name: new RegExp(SHADOW_TEXT.trial.sealedHint) })[0]!);
+    expect(onTrial).toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.trial.start }));
+    expect(onTrial).toHaveBeenCalledTimes(2);
+    expect(onOpenQuest).not.toHaveBeenCalled();
+  });
+
+  it('turned off, or the Trial done: nothing sealed', async () => {
+    await today(claimedState('trial', { trial_done_at: new Date(DAY_TWO_NOW) }));
+    expect(screen.queryByText(SHADOW_TEXT.trial.sealed)).toBeNull();
+  });
+});
+
+describe('a sealed side quest and the marked portrait (M7c)', () => {
+  it('the quest screen asks for the Trial instead of the log', async () => {
+    const onTrial = jest.fn();
+    await render(withStore(testStore({ view: project(claimedState('trial'), []) }),
+      <Quest questId={201} now={() => DAY_TWO_NOW} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onTrial={onTrial} />));
+    expect(screen.getByLabelText(`The Shadow: ${shadowLine('trial', 2)}`)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.trial.start }));
+    expect(onTrial).toHaveBeenCalled();
+  });
+
+  it('Character carries the mark until the recovery quest is cleared', async () => {
+    await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
+      <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} now={() => DAY_TWO_NOW} />));
+    expect(screen.getByLabelText(new RegExp(SHADOW_TEXT.markLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeTruthy();
   });
 });

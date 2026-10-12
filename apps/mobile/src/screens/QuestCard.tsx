@@ -1,7 +1,9 @@
 // A quest on Today (D1 board): the core quest in a paper panel with its XP stamp, the others as night cards. Words come
 // from the content package in the player's voice; numbers from the quest's stored snapshot. M4 showed; M6a makes every
 // card open its quest and puts the picture on the core quest; M6b adds the hard-day tag and "I felt pain".
-import { ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary, renderWhy } from '@levelmeup/content';
+import {
+  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, SHADOW_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary, renderWhy,
+} from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import type { ClassId } from '@levelmeup/rules';
 import { Pressable, View } from 'react-native';
@@ -34,6 +36,8 @@ export type QuestCardProps = {
   onPain?: () => void;
   /** The quest's exercise is resting after pain (M6b review): the card says so. */
   resting?: boolean;
+  /** M7c: a side quest the Trial of Stillness seals: a quiet card that opens the trial. */
+  sealed?: boolean;
 };
 
 export const questXp = (quest: QuestView): number => Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0);
@@ -42,7 +46,7 @@ function WillSync({ on }: { on: 'paper' | 'night' }) {
   return <Caption tone={on === 'paper' ? 'inkMuted' : 'ash'}>Will sync</Caption>;
 }
 
-export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, artUri, onPain, resting = false }: QuestCardProps) {
+export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, artUri, onPain, resting = false, sealed = false }: QuestCardProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
   const summary = questSummary(quest);
@@ -88,6 +92,26 @@ export function QuestCard({ quest, voice, classId, timeZone, waiting, onOpen, ar
           <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} style={{ alignSelf: 'flex-start' }} />
         )}
       </View>
+    );
+  }
+
+  if (sealed) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${words.title}. ${SHADOW_TEXT.trial.sealed}. ${SHADOW_TEXT.trial.sealedHint}`}
+        onPress={onOpen}
+      >
+        <NightCard quiet>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Body weight="bold" tone="ashLight">{words.title}</Body>
+              <Meta>{`${stat} · ${summary}`}</Meta>
+            </View>
+            <Chip label={SHADOW_TEXT.trial.sealed} kind="outline" />
+          </View>
+        </NightCard>
+      </Pressable>
     );
   }
 
