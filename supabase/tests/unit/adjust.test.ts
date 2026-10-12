@@ -84,7 +84,7 @@ describe('what the phone may offer today (today.ts)', () => {
   it('nothing on a closed day; only rest on a day without quests', () => {
     expect(dayOffers(at({}, { status: 'closed', resolution: 'streak_day' }), LIBRARY)).toEqual(NO_OFFERS);
     const s = at();
-    expect(dayOffers({ ...s, instances: s.instances.filter((q) => q.day_id !== '2') }, LIBRARY)).toEqual({ ...NO_OFFERS, restAllowed: true });
+    expect(dayOffers({ ...s, instances: s.instances.filter((q) => q.day_id !== '2') }, LIBRARY)).toEqual({ ...NO_OFFERS, restAllowed: true, restTomorrow: true });
   });
 
   it("the live test's day 1 has an open exercise quest and a swap for another quest (supabase/tests/live)", () => {
@@ -102,6 +102,20 @@ describe('what the phone may offer today (today.ts)', () => {
     expect(hurt).toBeDefined();
     expect(open.some((q) => q.swaps.length > 0 && q.id !== hurt!.id)).toBe(true);
   });
+
+  it('rest tomorrow: offered within the limit, not twice; a planned tomorrow counts for today (M7b decision 5)', () => {
+    expect(dayOffers(at(), LIBRARY).restTomorrow).toBe(true);
+    expect(dayOffers(at({ character: characterRow({ rest_day: 3 }) }), LIBRARY)).toMatchObject({ restTomorrow: false, restAllowed: true });
+    expect(dayOffers(rested(), LIBRARY)).toMatchObject({ restAllowed: false, restTomorrow: false });
+    const s = at({ character: characterRow({ rest_day: 3 }) });
+    const yesterday = { ...s, days: [s.days[0]!, { ...s.days[1]!, protection: 'planned_rest' as const }] };
+    expect(dayOffers(yesterday, LIBRARY).restAllowed).toBe(false); // days 1, 2 and 3 would be three in 7
+  });
+
+  it('a plan for a day already built is spent: it no longer counts ahead', () => {
+    const s = at({ character: characterRow({ rest_day: 2 }) }); // day 2 is today: it was built with its own protection
+    expect(dayOffers(s, LIBRARY).restTomorrow).toBe(true);
+  });
 });
 
 describe('the state view carries the offers (M6b)', () => {
@@ -117,6 +131,13 @@ describe('the state view carries the offers (M6b)', () => {
     expect(view.paused).toEqual(['squat']);
     expect(view.painReports).toBe(1);
     expect(view.profile.classChangedAt).toBeNull();
+  });
+
+  it('and the planned rest day with the rest-tomorrow offer (M7b)', () => {
+    const s = at({ character: characterRow({ rest_day: 3 }) });
+    const view = stateView(s, dayOffers(s, LIBRARY), historyOf(s));
+    expect(view.character.restDay).toBe(3);
+    expect(view.today!.restTomorrow).toBe(false);
   });
 });
 

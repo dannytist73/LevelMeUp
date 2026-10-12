@@ -118,7 +118,7 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
       const day = dayOf(s, event.dayId, nowMs);
       if ('code' in day) return day;
       if (day.protection !== null) return refuse('already_protected');
-      if (!restAllowed(restDays(s.days), day.day_number)) return refuse('rest_limit');
+      if (!restAllowed(restDays(s), day.day_number)) return refuse('rest_limit');
       return { change: { day: { id: Number(day.id), protection: 'planned_rest' } } };
     }
     case 'pain': {

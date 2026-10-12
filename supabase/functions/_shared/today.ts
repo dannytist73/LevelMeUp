@@ -59,9 +59,14 @@ export function fieldsOf(library: QuestLibrary, draft: QuestDraft): QuestFields 
   return fields;
 }
 
-/** Day numbers of planned rest among the snapshot's days. */
-export const restDays = (days: readonly DayRow[]): number[] =>
-  days.filter((d) => d.protection === 'planned_rest').map((d) => d.day_number);
+/** Planned rest days: the stored days rested as planned and (M7b decision 5) tomorrow, when it is planned. */
+export function restDays(s: Pick<Snapshot, 'days' | 'character'>): number[] {
+  const rested = s.days.filter((d) => d.protection === 'planned_rest').map((d) => d.day_number);
+  const latest = Math.max(0, ...s.days.map((d) => d.day_number));
+  const planned = s.character.rest_day;
+  // A plan for a day already built (or passed as an away day) is spent: that day has its own protection.
+  return planned !== null && planned > latest ? [...rested, planned] : rested;
+}
 
 /** "Too hard" can step this quest's ladder down: it is at the ladder's current rung, above the first, not resting. */
 export function canStepDown(s: Snapshot, q: InstanceRow): boolean {
@@ -101,11 +106,13 @@ export function dayOffers(s: Snapshot, library: QuestLibrary): DayOffers {
   const day = openDay(s);
   if (day === null) return NO_OFFERS;
   const quests = questsOf(s, day);
-  const restAllowedToday = day.protection === null && restAllowed(restDays(s.days), day.day_number);
+  const rests = restDays(s);
+  const restAllowedToday = day.protection === null && restAllowed(rests, day.day_number);
+  const restTomorrow = s.character.rest_day !== day.day_number + 1 && restAllowed(rests, day.day_number + 1);
   // A day without quests (protected `no_quests`), or with a template this version doesn't know, offers only rest.
   const whole = QUEST_SLOTS.every((slot) => quests.some((q) => q.slot === slot))
     && quests.every((q) => findTemplate(library, q.template_id) !== undefined);
-  if (!whole) return { ...NO_OFFERS, restAllowed: restAllowedToday };
+  if (!whole) return { ...NO_OFFERS, restAllowed: restAllowedToday, restTomorrow };
   const input = todayInput(s, day);
   const built = todayBuilt(day, quests);
   const swapsLeft = Math.max(0, swapLimit(input.profile.classId, input.profile.level) - day.swaps_used);
@@ -122,6 +129,7 @@ export function dayOffers(s: Snapshot, library: QuestLibrary): DayOffers {
   return {
     swapsLeft,
     restAllowed: restAllowedToday,
+    restTomorrow,
     abilities: abilityOffers(s, library, input, built, quests),
     swaps,
     gentle,

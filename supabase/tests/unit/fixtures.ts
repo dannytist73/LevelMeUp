@@ -51,7 +51,7 @@ export function characterRow(over: Partial<CharacterRow> = {}): CharacterRow {
     xp_strength: 0, xp_vitality: 0, xp_wisdom: 0, xp_focus: 0, xp_discipline: 0, total_xp: 0,
     streak_current: 0, streak_best: 0, shields: 0, awaiting_checkin: false,
     quests_cleared: 0, hard_days_cleared: 0, comebacks: 0, recoveries_cleared: 0, articles_read: 0,
-    ability_last_used: {}, next_day_light: false, version: 1, ...over,
+    ability_last_used: {}, next_day_light: false, rest_day: null, version: 1, ...over,
   };
 }
 

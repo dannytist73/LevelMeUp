@@ -52,6 +52,8 @@ export type CharacterRow = Record<`start_${Stat}` | `xp_${Stat}`, number> & {
   ability_last_used: Partial<Record<AbilityId, number>>;
   /** M7a: the next day is light (a "sick" or "injured" check-in answer, decision 6). */
   next_day_light: boolean;
+  /** M7b: the day number a rest day is planned for (decision 5), used when that day is built; null when none. */
+  rest_day: number | null;
   version: number;
 };
 
@@ -204,6 +206,8 @@ export type QuestFields = Omit<InstanceDraft, 'slot'>;
 export type DayOffers = {
   swapsLeft: number;
   restAllowed: boolean;
+  /** M7b: tomorrow can still be planned as a rest day (decision 5). */
+  restTomorrow: boolean;
   /** Day-shaping abilities ready now, each with the quest it puts in the core slot. */
   abilities: { ability: 'stillness' | 'dawn_ritual'; quest: QuestFields }[];
   swaps: Readonly<Record<string, QuestFields[]>>;
@@ -215,7 +219,7 @@ export type DayOffers = {
 };
 
 export const NO_OFFERS: DayOffers = {
-  swapsLeft: 0, restAllowed: false, abilities: [], swaps: {}, gentle: {}, stepDown: [], secondWind: null,
+  swapsLeft: 0, restAllowed: false, restTomorrow: false, abilities: [], swaps: {}, gentle: {}, stepDown: [], secondWind: null,
 };
 
 export function startPoints(c: CharacterRow): StatMap {
@@ -290,6 +294,7 @@ export function characterView(c: CharacterRow) {
     streak: streakState(c),
     abilityLastUsed: c.ability_last_used,
     nextDayLight: c.next_day_light,
+    restDay: c.rest_day,
     version: c.version,
   };
 }
@@ -416,7 +421,7 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
       id: Number(today.id), dayNumber: today.day_number, startsAt: iso(today.starts_at), endsAt: iso(today.ends_at),
       timeZone: today.time_zone, budget: today.budget, light: today.light, hardDay: today.hard_day, protection: today.protection,
       status: today.status,
-      swapsLeft: offers.swapsLeft, restAllowed: offers.restAllowed, abilities: offers.abilities,
+      swapsLeft: offers.swapsLeft, restAllowed: offers.restAllowed, restTomorrow: offers.restTomorrow, abilities: offers.abilities,
       quests: questsOf(today)
         .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))
         .map((q) => ({
