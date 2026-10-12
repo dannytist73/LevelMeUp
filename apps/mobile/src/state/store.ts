@@ -24,7 +24,7 @@ import { carriedTimers, withRef } from '../game/offline.ts';
 import { offlineDay, offlineView } from '../game/offlineDay.ts';
 import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
-import type { PhoneEvent, Reveal } from '../game/types.ts';
+import type { ArticleBody, PhoneEvent, Reveal } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
 import { makeApplier } from '../notify/apply.ts';
 import { planInput, planNotes } from '../notify/plan.ts';
@@ -97,6 +97,10 @@ export type GameState = {
   status: Status;
   lastSyncedAt: number | null;
   notices: Notice[];
+  /** M8b: the articles this phone holds, by id (today's, the next day's, the readings'). */
+  articles: Readonly<Record<string, ArticleBody>>;
+  /** M8b: asks the next sync for an article this phone doesn't hold (a past reading, decision 7), and syncs. */
+  fetchArticle: (id: string) => void;
   /** The phone holds data but its guest sign-in is gone for good: only the player can choose to start again. */
   signInLost: boolean;
   /** Shown on Settings: a sync the server refused as malformed (a bug). */
@@ -226,9 +230,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     /** Reloads what the phone holds (one consistent read) and recomputes what to show. */
     const refresh = async (patch: Partial<GameState> = {}): Promise<void> => {
       const before = get().view;
-      const { cached, pending, notices } = await deps.local.snapshot();
+      const { cached, pending, notices, articles } = await deps.local.snapshot();
       const view = cached === null ? null : project(cached.state, pending);
-      set({ ...patch, cached, pending, notices, view, lastSyncedAt: cached?.syncedAt ?? null });
+      set({ ...patch, cached, pending, notices, articles, view, lastSyncedAt: cached?.syncedAt ?? null });
       watchDayEnd(view);
       void replan();
       // M6e: the server's state has the offline day now, whatever refreshed first (review): its timers move along, and
@@ -254,6 +258,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
      * passed) may not write, or make a guest, when it wakes up (M4 re-review).
      */
     let generation = 0;
+
+    /** M8b: articles a screen asked for; the next sync names them, then they are forgotten (the screen asks again). */
+    const wanted = new Set<string>();
 
     /** The art manifest is fetched once per launch, after the first sync (or a new player's onboarding). */
     let artChecked = false;
@@ -327,12 +334,15 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       if (session === 'no_session') return empty ? { kind: 'fresh' } : { kind: 'sign_in_lost' };
       const local = {
         pending: deps.local.pending,
+        articleIds: deps.local.articleIds,
         acknowledge: async (...args: Parameters<Local['acknowledge']>) => {
           if (mine !== generation) throw new Error('abandoned'); // a newer run owns the cache now; resending is safe
           return deps.local.acknowledge(...args);
         },
       };
-      return syncOnce({ local, api: deps.api, timeZone: deps.timeZone, now: deps.now, sessionAlive: deps.sessionAlive });
+      return syncOnce({
+        local, api: deps.api, timeZone: deps.timeZone, now: deps.now, sessionAlive: deps.sessionAlive, wanted: () => [...wanted],
+      });
     };
 
     /** Forgets this phone's data, sign-in and interview; the onboarding makes the next guest. */
@@ -340,6 +350,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       // M7d decision 9: first, so nothing below can keep the last player's notifications on the phone.
       await deps.notes.cancelAll().catch(() => {});
       applier.forget();
+      wanted.clear();
       await deps.local.wipe();
       await deps.signOut();
       await deps.kv.removeItem(DRAFT_KEY);
@@ -368,6 +379,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     const handle = async (outcome: SyncOutcome): Promise<void> => {
       switch (outcome.kind) {
         case 'synced': {
+          wanted.clear();
           const before = confirmedLevel;
           await refresh({ phase: 'ready', status: 'idle', error: null });
           const after = get().cached?.state.character.level ?? null;
@@ -421,6 +433,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       status: 'idle',
       lastSyncedAt: null,
       notices: [],
+      articles: {},
       signInLost: false,
       error: null,
       draft: NEW_DRAFT,
@@ -502,7 +515,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
               if (!redo && started.code === 'already_started' && get().account.kind !== 'saved') return ask(true);
               return { ok: false, code: started.code };
             }
-            await deps.local.acknowledge([], [], started.body.state, deps.now());
+            await deps.local.acknowledge([], [], started.body.state, deps.now(), started.body.articles ?? []);
             confirmedLevel = started.body.state.character.level; // the server's own first state (review)
             // A new player just answered the Training step: the note for players from before M6c is never theirs (M6d).
             await deps.kv.setItem(TRAINING_NOTICE_KEY, 'seen').catch(() => {});
@@ -602,6 +615,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         await scheduler.request();
       },
 
+      fetchArticle: (id) => {
+        if (get().articles[id] !== undefined || wanted.has(id)) return;
+        wanted.add(id);
+        void scheduler.request();
+      },
       dismissNotice: async (eventId) => {
         await deps.local.dismissNotice(eventId);
         await refresh();

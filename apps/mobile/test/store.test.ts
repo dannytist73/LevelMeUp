@@ -211,7 +211,7 @@ describe('the game store', () => {
     await store.getState().boot();
     await store.getState().enqueue(completeCore);
     await store.getState().syncNow();
-    expect(api.sync).toHaveBeenCalledWith({ timeZone: 'Asia/Manila', events: [expect.objectContaining({ instanceId: core.id })] });
+    expect(api.sync).toHaveBeenCalledWith({ timeZone: 'Asia/Manila', events: [expect.objectContaining({ instanceId: core.id })], have: [], want: [] });
     expect(await local.pending(10)).toEqual([]);
     expect(store.getState()).toMatchObject({ status: 'idle', pending: [] });
     store.getState().stop();

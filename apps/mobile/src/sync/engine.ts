@@ -4,6 +4,7 @@
 import type { Local } from '../data/local.ts';
 import type { PhoneEvent, ServerState } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
+import { MAX_HAVE, MAX_WANT } from '../../../../supabase/functions/_shared/reading.ts';
 
 export const BATCH = 50;
 /** The server refuses bodies over 64 KB (supabase/functions/_shared/http.ts); batches stay under this. */
@@ -24,12 +25,14 @@ export type SyncOutcome =
   | { kind: 'fresh' };
 
 export type SyncDeps = {
-  local: Pick<Local, 'pending' | 'acknowledge'>;
+  local: Pick<Local, 'pending' | 'acknowledge' | 'articleIds'>;
   api: Pick<Api, 'sync'>;
   timeZone: () => string;
   now: () => number;
   /** Refreshes the session; false only when Auth says the sign-in is gone. */
   sessionAlive: () => Promise<boolean>;
+  /** M8b: past readings a screen asked for (decision 7), sent with the first request of the run. */
+  wanted?: () => readonly string[];
 };
 
 function utf8Bytes(text: string): number {
@@ -42,10 +45,10 @@ function utf8Bytes(text: string): number {
 }
 
 /** The oldest events that fit in one request body (always at least one). */
-export function fitBody(events: readonly PhoneEvent[], timeZone: string): PhoneEvent[] {
+export function fitBody(events: readonly PhoneEvent[], timeZone: string, extra: Record<string, unknown> = {}): PhoneEvent[] {
   const fitted: PhoneEvent[] = [];
   for (const event of events) {
-    if (fitted.length > 0 && utf8Bytes(JSON.stringify({ timeZone, events: [...fitted, event] })) > MAX_BODY_BYTES) break;
+    if (fitted.length > 0 && utf8Bytes(JSON.stringify({ timeZone, events: [...fitted, event], ...extra })) > MAX_BODY_BYTES) break;
     fitted.push(event);
   }
   return fitted;
@@ -58,8 +61,10 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
   let limit = BATCH;
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const timeZone = deps.timeZone();
-    const events = fitBody(await deps.local.pending(limit), timeZone);
-    const call = await deps.api.sync({ timeZone, events });
+    const have = (await deps.local.articleIds()).slice(0, MAX_HAVE);
+    const want = round === 0 ? (deps.wanted?.() ?? []).filter((id) => !have.includes(id)).slice(0, MAX_WANT) : [];
+    const events = fitBody(await deps.local.pending(limit), timeZone, { have, want });
+    const call = await deps.api.sync({ timeZone, events, have, want });
     if (!call.ok) {
       if (call.code === 'network') return { kind: 'offline' };
       if (call.status === 413 && events.length > 1) {
@@ -85,7 +90,7 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
       acknowledged.add(r.id);
       refused.push({ eventId: r.id, code: r.code });
     }
-    await deps.local.acknowledge([...acknowledged], refused, call.body.state, deps.now());
+    await deps.local.acknowledge([...acknowledged], refused, call.body.state, deps.now(), call.body.articles ?? []);
     notices.push(...refused);
     newAchievements.push(...call.body.newAchievements);
     state = call.body.state;

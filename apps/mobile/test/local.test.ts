@@ -1,7 +1,9 @@
 /** @jest-environment node */
 import { makeLocal, migrate } from '../src/data/local.ts';
 import { serialized } from '../src/data/sql.ts';
+import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
+import { serverState } from './support/fixtures.ts';
 import { nodeSql, rawNodeSql } from './support/nodeSql.ts';
 
 const state = (marker: number) => ({ marker }) as unknown as ServerState;
@@ -18,7 +20,7 @@ describe('the phone database', () => {
     const sql = nodeSql();
     await migrate(sql);
     await migrate(sql);
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 6 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 7 }]);
   });
 
   it("drops a state cached before M6b, whose shape the new screens can't read, and keeps the outbox (M6b review)", async () => {
@@ -27,7 +29,7 @@ describe('the phone database', () => {
     await local.acknowledge([], [], state(1), 1);
     await sql.exec('pragma user_version = 2'); // as an M5 or M6a install left it
     await migrate(sql);
-    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [] });
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
   });
 
   it('drops a state cached before M6c, which has no training setup, and keeps the outbox', async () => {
@@ -36,7 +38,7 @@ describe('the phone database', () => {
     await local.acknowledge([], [], state(1), 1);
     await sql.exec('pragma user_version = 3'); // as an M6b install left it
     await migrate(sql);
-    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [] });
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
   });
 
   it('drops a state cached before M6d, which has no calendar or growth, and keeps the outbox', async () => {
@@ -45,8 +47,8 @@ describe('the phone database', () => {
     await local.acknowledge([], [], state(1), 1);
     await sql.exec('pragma user_version = 4'); // as an M6c install left it
     await migrate(sql);
-    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [] });
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 6 }]);
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 7 }]);
   });
 
   it('drops a state cached before M7a, which has no check-in or lighter plan, and keeps the outbox', async () => {
@@ -55,13 +57,24 @@ describe('the phone database', () => {
     await local.acknowledge([], [], state(1), 1);
     await sql.exec('pragma user_version = 5'); // as an M6d or M6e install left it
     await migrate(sql);
-    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [] });
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 6 }]);
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 7 }]);
+  });
+
+  it('drops a state cached before M8b, which has no readings, and keeps the outbox', async () => {
+    const { sql, local } = await fresh();
+    await local.enqueue(complete('a'), 1);
+    await local.acknowledge([], [], state(1), 1);
+    await sql.exec('pragma user_version = 6'); // as an M7a to M8a install left it
+    await sql.exec('drop table articles');
+    await migrate(sql);
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 7 }]);
   });
 
   it('starts empty', async () => {
     const { local } = await fresh();
-    expect(await local.snapshot()).toEqual({ cached: null, pending: [], notices: [] });
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [], notices: [], articles: {} });
   });
 
   it('keeps the outbox in order and hands out the oldest first', async () => {
@@ -85,6 +98,7 @@ describe('the phone database', () => {
       cached: { state: state(7), syncedAt: 5000 },
       pending: [complete('b')],
       notices: [{ eventId: 'c', code: 'day_closed' }],
+      articles: {},
     });
   });
 
@@ -109,7 +123,7 @@ describe('the phone database', () => {
       },
     });
     await expect(makeLocal(failing).acknowledge(['a'], [{ eventId: 'a', code: 'day_closed' }], state(1), 2)).rejects.toThrow('disk full');
-    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [] });
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
   });
 
   it('an action queued while an acknowledge is writing is neither lost nor refused (M4 code review)', async () => {
@@ -129,12 +143,27 @@ describe('the phone database', () => {
     expect(consistent).toBe(true);
   });
 
+  it('keeps the articles a sync brings and drops those no longer needed (M8b)', async () => {
+    const { local } = await fresh();
+    const body = (id: string) => ({ ...SAMPLE_ARTICLE, id });
+    const s = serverState();
+    const keepOne: ServerState = { ...s, today: { ...s.today!, article: { id: 'article-1', cluster: 'sleep', title: 'One', minutes: 6 } } };
+    await local.acknowledge([], [], keepOne, 1, [body('article-1'), body('article-2')]);
+    expect(Object.keys((await local.snapshot()).articles)).toEqual(['article-1']);
+    expect(await local.articleIds()).toEqual(['article-1']);
+    await local.acknowledge([], [], s, 2);
+    expect(await local.articleIds()).toEqual([]);
+    await local.acknowledge([], [], keepOne, 3, [body('article-1')]);
+    await local.wipe();
+    expect(await local.articleIds()).toEqual([]);
+  });
+
   it('wipe empties the cache, the outbox and the notices', async () => {
     const { local } = await fresh();
     await local.enqueue(complete('a'), 1);
     await local.acknowledge([], [{ eventId: 'a', code: 'x' }], state(1), 2);
     await local.wipe();
-    expect(await local.snapshot()).toEqual({ cached: null, pending: [], notices: [] });
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [], notices: [], articles: {} });
   });
 });
 

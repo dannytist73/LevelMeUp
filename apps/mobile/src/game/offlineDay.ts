@@ -98,6 +98,8 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
       window: { startsAt: next.window.startsAt, endsAt: next.window.endsAt },
       budget: built.budget,
       light: built.light,
+      // M8b decision 4: the article the server named for the next day; it keeps it while it is published.
+      articleId: shown.nextArticle?.id ?? null,
       quests: built.quests.map((q) => ({ slot: q.slot, templateId: q.templateId, why: q.why, moves: q.moves, book: q.book })),
     };
   } catch {

@@ -28,7 +28,8 @@ export async function invoke<T>(client: SupabaseClient, name: FunctionName, body
 
 export function makeApi(client: SupabaseClient) {
   return {
-    sync: (body: { timeZone: string; events: readonly PhoneEvent[] }) => invoke<SyncResponse>(client, 'lmu-sync', body),
+    sync: (body: { timeZone: string; events: readonly PhoneEvent[]; have?: readonly string[]; want?: readonly string[] }) =>
+      invoke<SyncResponse>(client, 'lmu-sync', body),
     onboarding: (body: OnboardingBody) => invoke<OnboardingResponse>(client, 'lmu-onboarding', body),
     deleteAccount: () => invoke<DeleteResponse>(client, 'lmu-account-delete', { confirm: 'DELETE' }),
   };

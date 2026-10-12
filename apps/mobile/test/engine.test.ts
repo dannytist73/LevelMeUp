@@ -1,5 +1,6 @@
 /** @jest-environment node */
 import { makeLocal, migrate } from '../src/data/local.ts';
+import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
 import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Call } from '../src/net/api.ts';
 import { BATCH, MAX_BODY_BYTES, fitBody, syncOnce } from '../src/sync/engine.ts';
@@ -53,6 +54,23 @@ describe('one sync run', () => {
     expect(await syncOnce(deps)).toMatchObject({ kind: 'synced', notices: [{ eventId: ev(1).id, code: 'pain_late' }] });
     expect(await local.pending(10)).toEqual([]);
     expect((await local.snapshot()).notices).toEqual([{ eventId: ev(1).id, code: 'pain_late' }]);
+  });
+
+  it('names the articles it holds, asks for those wanted once, and stores the articles that come back (M8b)', async () => {
+    const { local, deps } = await setup([applyAll]);
+    const requests: unknown[] = [];
+    const acknowledge = jest.fn(local.acknowledge);
+    deps.local = { ...local, articleIds: async () => ['article-1'], acknowledge };
+    deps.api = {
+      sync: async (body) => {
+        requests.push(body);
+        return { ok: true, body: { results: [], rejected: [], newAchievements: [], state: state(0), articles: [SAMPLE_ARTICLE] } };
+      },
+    };
+    deps.wanted = () => ['article-1', 'article-7'];
+    expect(await syncOnce(deps)).toMatchObject({ kind: 'synced' });
+    expect(requests).toEqual([{ timeZone: 'Asia/Manila', events: [], have: ['article-1'], want: ['article-7'] }]);
+    expect(acknowledge).toHaveBeenCalledWith([], [], state(0), 1000, [SAMPLE_ARTICLE]);
   });
 
   it('with an empty outbox, asks for the state and stores it', async () => {

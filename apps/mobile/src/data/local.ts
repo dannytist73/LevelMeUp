@@ -1,7 +1,8 @@
 // What the phone keeps (architecture §6, M4 plan decision 4): the last state the server sent, the outbox of events it
 // hasn't acknowledged yet, and the notices for refused events (kept until the player has seen them). The screens show
 // the cache and the outbox combined (game/project.ts).
-import type { PhoneEvent, ServerState } from '../game/types.ts';
+import { articleKeep } from '../game/reading.ts';
+import type { ArticleBody, PhoneEvent, ServerState } from '../game/types.ts';
 import type { Notice } from '../sync/engine.ts';
 import type { Sql } from './sql.ts';
 
@@ -24,6 +25,10 @@ const MIGRATIONS: readonly string[] = [
   // M7a: the state gained the check-in, its result and the lighter plan; an older copy would break Today until the first
   // sync, so it goes (the outbox stays).
   `delete from cache where key = 'state';`,
+  // M8b: the articles the phone keeps (today's, the next day's, the past readings'); the state gained the readings and
+  // Insight, so an older copy goes (the outbox stays).
+  `create table if not exists articles (id text primary key, json text not null, saved_at integer not null);
+   delete from cache where key = 'state';`,
 ];
 
 export async function migrate(sql: Sql): Promise<void> {
@@ -37,7 +42,7 @@ export async function migrate(sql: Sql): Promise<void> {
 }
 
 export type Cached = { state: ServerState; syncedAt: number };
-export type Snapshot = { cached: Cached | null; pending: PhoneEvent[]; notices: Notice[] };
+export type Snapshot = { cached: Cached | null; pending: PhoneEvent[]; notices: Notice[]; articles: Record<string, ArticleBody> };
 
 const OUTBOX_LIMIT = 1000;
 
@@ -56,13 +61,15 @@ export function makeLocal(sql: Sql) {
     pending: (limit: number) => readPending(sql, limit),
     /** The cache, the outbox and the notices read together, so the screens never see one without the other. */
     async snapshot(): Promise<Snapshot> {
-      let result: Snapshot = { cached: null, pending: [], notices: [] };
+      let result: Snapshot = { cached: null, pending: [], notices: [], articles: {} };
       await sql.transaction(async (tx) => {
         const rows = await tx.all<{ event_id: string; code: string }>('select event_id, code from notices order by created_at, event_id');
+        const kept = await tx.all<{ id: string; json: string }>('select id, json from articles order by id');
         result = {
           cached: await readCache(tx),
           pending: await readPending(tx, OUTBOX_LIMIT),
           notices: rows.map((r) => ({ eventId: r.event_id, code: r.code })),
+          articles: Object.fromEntries(kept.map((r) => [r.id, JSON.parse(r.json) as ArticleBody])),
         };
       });
       return result;
@@ -71,21 +78,32 @@ export function makeLocal(sql: Sql) {
       await sql.run('insert into outbox (id, json, created_at) values (?, ?, ?)', [event.id, JSON.stringify(event), now]);
     },
     /** Drops the events the server acknowledged, records the refusals as notices and stores its state, all at once. */
-    async acknowledge(ids: readonly string[], notices: readonly Notice[], state: ServerState, now: number): Promise<void> {
+    async acknowledge(
+      ids: readonly string[], notices: readonly Notice[], state: ServerState, now: number, articles: readonly ArticleBody[] = [],
+    ): Promise<void> {
       await sql.transaction(async (tx) => {
         for (const id of ids) await tx.run('delete from outbox where id = ?', [id]);
         for (const n of notices) {
           await tx.run('insert or replace into notices (event_id, code, created_at) values (?, ?, ?)', [n.eventId, n.code, now]);
         }
         await tx.run("insert or replace into cache (key, json, updated_at) values ('state', ?, ?)", [JSON.stringify(state), now]);
+        for (const a of articles) {
+          await tx.run('insert or replace into articles (id, json, saved_at) values (?, ?, ?)', [a.id, JSON.stringify(a), now]);
+        }
+        // Only what today, the next day and the readings name stays (decision 3).
+        const keep = articleKeep(state);
+        if (keep.length === 0) await tx.run('delete from articles');
+        else await tx.run(`delete from articles where id not in (${keep.map(() => '?').join(', ')})`, keep);
       });
     },
+    /** M8b: the articles this phone holds, for the next sync's `have` (decision 3). */
+    articleIds: async () => (await sql.all<{ id: string }>('select id from articles order by id')).map((r) => r.id),
     async dismissNotice(eventId: string): Promise<void> {
       await sql.run('delete from notices where event_id = ?', [eventId]);
     },
     async wipe(): Promise<void> {
       await sql.transaction(async (tx) => {
-        await tx.exec('delete from outbox; delete from cache; delete from notices;');
+        await tx.exec('delete from outbox; delete from cache; delete from notices; delete from articles;');
       });
     },
   };

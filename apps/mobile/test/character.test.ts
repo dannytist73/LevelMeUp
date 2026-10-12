@@ -16,11 +16,11 @@ describe('the class path (M6d decision 9)', () => {
     expect(abilityStatus('second_wind', 'warrior', 2, null, 9)).toEqual({ kind: 'locked', level: 5, left: 3 });
   });
 
-  it('Second Wind and Unbreakable are ready or cooling down since M7a; Insight still arrives later', () => {
+  it('Second Wind and Unbreakable are ready or cooling down since M7a; Insight is unlocked since M8b', () => {
     expect(abilityStatus('second_wind', 'warrior', 5, null, 3)).toEqual({ kind: 'ready' });
     expect(abilityStatus('second_wind', 'warrior', 5, 3, 6)).toEqual({ kind: 'cooldown', days: 4 });
     expect(abilityStatus('unbreakable', 'warrior', 10, 2, 10)).toEqual({ kind: 'cooldown', days: 22 });
-    expect(abilityStatus('insight', 'mage', 5, null, 3)).toEqual({ kind: 'later' });
+    expect(abilityStatus('insight', 'mage', 5, null, 3)).toEqual({ kind: 'unlocked' });
   });
 
   it('puts each status in words', () => {

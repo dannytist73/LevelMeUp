@@ -53,6 +53,18 @@ describe('the day the phone builds offline (M6e decision 2)', () => {
   });
 });
 
+describe("the offline day's reading (M8b decision 4)", () => {
+  it("puts the next day's article on the offline day, and shows it there", () => {
+    const next = { id: 'article-4', cluster: 'sleep' as const, title: 'Four', minutes: 6 };
+    const server: ServerState = { ...serverState(), nextArticle: next };
+    const event = offlineDay(server, project(server, []), END + HOUR, 'Asia/Manila')!;
+    expect(event.articleId).toBe('article-4');
+    expect(project(server, [{ ...event, id: '00000000-0000-4000-8000-000000000999' } as PhoneEvent]).today!.article).toEqual(next);
+    const none: ServerState = { ...server, nextArticle: null };
+    expect(offlineDay(none, project(none, []), END + HOUR, 'Asia/Manila')!.articleId).toBeNull();
+  });
+});
+
 describe('the offline day matches the server in more cases (M6e review)', () => {
   it('leaves out an exercise a pain report on its way rests, as the server will', () => {
     const s = serverState();

@@ -30,6 +30,7 @@ export function offlineToday(event: Omit<ProvisionalDayEvent, 'id'>): TodayView 
     restAllowed: false,
     restTomorrow: false,
     abilities: [],
+    article: null,
     quests: event.quests.flatMap((q): QuestView[] => {
       const template = findTemplate(LIBRARY, q.templateId);
       if (template === undefined) return [];

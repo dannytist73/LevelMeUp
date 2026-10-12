@@ -77,7 +77,10 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   let changingBook = false;
   let today: TodayView | null = server.today === null
     ? null
-    : { ...server.today, restTomorrow: server.today.restTomorrow ?? false, quests: server.today.quests.map((q) => ({ ...q })) };
+    : {
+      ...server.today, restTomorrow: server.today.restTomorrow ?? false, article: server.today.article ?? null,
+      quests: server.today.quests.map((q) => ({ ...q })),
+    };
   let quests = today?.quests ?? [];
   let offline = false;
   // A state from a server before M7a has none of these (review): nothing shows rather than Today failing.
@@ -89,6 +92,10 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       trialDone: server.checkin.trialDone ?? false, note: server.checkin.note ?? null,
     };
   let lighterPlan = server.lighterPlan ?? null;
+  // M8b: a state from a server before M8b has no readings, next article or Insight (review pattern of M7a).
+  let readings = server.readings ?? [];
+  let insight = server.insight ?? null;
+  const nextArticle = server.nextArticle ?? null;
   let answering = false;
   const ladderChanges: PendingLadder[] = [];
   const waiting = new Set<number>();
@@ -106,6 +113,9 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
           if (ended.kind === 'awaiting_checkin') character = { ...character, streak: { ...character.streak, awaitingCheckin: true } };
         }
         today = offlineToday(event);
+        // M8b decision 4: its article is the one the server named for it; Insight waits for the server's own day.
+        today.article = event.articleId != null && nextArticle !== null && nextArticle.id === event.articleId ? nextArticle : null;
+        insight = null;
         // A day planned as rest the day before is built as one (decision 5), as the server will.
         if (character.restDay === event.dayNumber) today.protection = 'planned_rest';
         quests = today.quests;
@@ -204,6 +214,11 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       lighterPlan = to === null ? null : { from: event.minutesPerDay, to, offered: lighterPlan?.offered ?? false };
       continue;
     }
+    if (event.type === 'insight') {
+      // M8b decision 8: the choice shows at once; the server checks it.
+      if (insight !== null) insight = { ...insight, chosen: event.cluster };
+      continue;
+    }
     if (today === null) continue;
     if (event.type === 'hard_day' || event.type === 'plan_rest' || event.type === 'ability') {
       if (event.dayId !== today.id) continue;
@@ -249,6 +264,11 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
           quest.completedAt = new Date(event.completedAt).toISOString();
           quest.rating = event.rating;
           character = addStatXp(character, quest.xp, 1);
+          // M8b decision 7: the takeaway joins today's reading.
+          const text = (event.payload as { text?: unknown } | null)?.text;
+          if (quest.slot === 'article' && typeof text === 'string') {
+            readings = readings.map((r) => (r.dayNumber === today!.dayNumber ? { ...r, takeaway: text } : r));
+          }
         }
         break;
       case 'undo':
@@ -256,6 +276,7 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
           quest.completedAt = null;
           quest.rating = null;
           character = addStatXp(character, quest.xp, -1);
+          if (quest.slot === 'article') readings = readings.map((r) => (r.dayNumber === today!.dayNumber ? { ...r, takeaway: null } : r));
         }
         break;
       case 'rate':
@@ -287,6 +308,6 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   }
   return {
     ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline, ladderChanges, checkin, lighterPlan,
-    checkinResult: server.checkinResult ?? null, answering,
+    checkinResult: server.checkinResult ?? null, answering, readings, insight, nextArticle,
   };
 }
