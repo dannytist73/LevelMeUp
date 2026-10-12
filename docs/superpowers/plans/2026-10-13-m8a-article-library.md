@@ -3108,3 +3108,18 @@ stops it." Wait for a clear yes.
   estimate until the month ends; a tick that dies between claiming a night and queueing it loses that night's new
   jobs; `article_tick_end` doesn't check which tick holds the lease (every move is still guarded by status); research
   input tokens have no hard limit (the spike measures them); `reserve_ai_call` stays until M8b (roadmap).
+- **Deployed (Task 12, owner's yes, 2026-10-12 ~19:00–19:35 UTC):** `db:deploy` applied 0014 (the wedding's history
+  unchanged); `db:test` all ok (`articles.sql` 52 assertions, nothing left behind); functions `lmu-onboarding` and
+  `lmu-account-delete` v15, `lmu-sync` v15, `lmu-articles-tick` v3; `test:live` 42 passed, 0 leftovers; `articles
+  setup` set `LMU_TICK_SECRET` and the Vault's `lmu_tick_secret`; `articles tick` → 200 `{"ran":true,"queued":0,
+  "submitted":0,…}`, no jobs, no Claude call. The reveal's cost is now logged (this month: $0.105 over the live tests'
+  calls).
+- **Found at deploy:** the plan assumed the deploy would run before 18:00 UTC; it ran at 19:00 UTC, inside the night
+  window, with two players short of articles, so the test tick would have queued the night's two daily jobs (about
+  $0.80 reserved). Fixed with 7780680: the owner's manual tick sends `{ "nights": false }` and only moves jobs along;
+  the cron (body `{}`) and `tick --night` queue nights. Tonight (2026-10-12) was also marked queued in
+  `article_pipeline` before the test tick, as a second guard while the new build propagated.
+- **Supabase deploy errors:** redeploying `lmu-sync` (unchanged code) and `lmu-articles-tick` failed with "Function
+  deploy failed due to an internal error" (500) from 19:14 to 19:21 UTC, while `lmu-onboarding` and
+  `lmu-account-delete` redeployed fine; both succeeded on a retry at 19:31. The live functions kept serving the
+  19:00 builds meanwhile.
