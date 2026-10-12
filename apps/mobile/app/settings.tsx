@@ -11,6 +11,7 @@ export default function SettingsRoute() {
       onTraining={() => router.push('/training')}
       onGame={() => router.push('/game')}
       onDelete={() => router.push('/delete')}
+      onPact={() => router.push('/pact')}
       version={Constants.expoConfig?.version ?? 'unknown'}
       deviceZone={deviceZone()}
     />

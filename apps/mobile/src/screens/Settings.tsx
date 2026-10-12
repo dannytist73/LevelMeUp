@@ -1,10 +1,12 @@
 // Settings (spec §1.3, S1 board): the account (a guest, or saved with Google since M5), sync status, the
 // not-medical-advice line and the version. M6c: Training under Game. M7b: Your game (voice, the day's end, minutes,
-// difficulty), Delete my character, and the sign-in-lost card; notifications (M7d) and the Pact (M7c) come later.
-import { ADJUST_TEXT, GOOGLE_ERRORS, SETTINGS_TEXT } from '@levelmeup/content';
+// difficulty), Delete my character, and the sign-in-lost card. M7c: the Accountability Pact under Game. Notifications
+// come with M7d.
+import { ADJUST_TEXT, GOOGLE_ERRORS, PACT_TEXT, SETTINGS_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { pactName, pactStartsNext } from '../game/pact.ts';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -17,10 +19,11 @@ import { lastSynced, syncMark } from './syncLine.ts';
 
 export type SettingsProps = {
   onBack: () => void; onDeveloper?: () => void; onTraining: () => void; onGame: () => void; onDelete: () => void; version: string;
-  deviceZone: string;
+  deviceZone: string; onPact?: () => void;
 };
 
-export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, version, deviceZone }: SettingsProps) {
+export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, version, deviceZone, onPact }: SettingsProps) {
+  const view = useGame((s) => s.view);
   const account = useGame((s) => s.account);
   const phase = useGame((s) => s.phase);
   const signInLost = useGame((s) => s.signInLost);
@@ -83,6 +86,12 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
         <SectionTitle title="Game" />
         <Button label={SETTINGS_TEXT.game.open} variant="secondary" onPress={onGame} />
         <Button label={ADJUST_TEXT.training.open} variant="secondary" onPress={onTraining} />
+        {view !== null && onPact !== undefined && (
+          <>
+            <Button label={`${PACT_TEXT.settings} · ${pactName(view.profile.accountabilityLevel)}`} variant="secondary" onPress={onPact} />
+            {pactStartsNext(view) && <Small>{PACT_TEXT.startsNext}</Small>}
+          </>
+        )}
       </View>
 
       <View style={{ gap: 12 }}>
