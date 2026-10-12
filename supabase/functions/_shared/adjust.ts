@@ -3,9 +3,13 @@
 // from (today.ts), and every reward in a replaced quest is drafted here, never taken from the phone.
 import {
   abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout, ladderById,
-  newLadder, painKey, painOption, planWorkout, plannedMoves, recordPain, restAllowed, resumeAfterPain, stepDown, swapLimit, swapOptions,
+  lighterMinutes, newLadder, painKey, painOption, planWorkout, plannedMoves, recordPain, restAllowed, resumeAfterPain, stepDown, swapLimit,
+  swapOptions,
 } from '../../../packages/rules/src/index.ts';
-import type { BuiltDay, ClassId, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary } from '../../../packages/rules/src/index.ts';
+import type {
+  BuiltDay, CheckinAnswer, ClassId, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary, StreakState,
+} from '../../../packages/rules/src/index.ts';
+import { planCheckin } from './checkin.ts';
 import { toDraft } from './drafts.ts';
 import type { AdjustEvent, DayAbility, PainChoice } from './events.ts';
 import { ladderMap, startPoints, statXp, toProfile } from './state.ts';
@@ -16,7 +20,8 @@ import { QUEST_SLOTS, canStepDown, completedSlots, openDay, questsOf, restDays, 
 export const ADJUST_CODES = [
   'not_found', 'day_closed', 'already_completed', 'not_swappable', 'no_swaps_left', 'not_an_option', 'already_hard_day',
   'already_protected', 'rest_limit', 'not_exercise', 'not_paused', 'not_too_hard', 'not_current',
-  'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change', 'no_book', 'same_book',
+  'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change', 'no_book', 'same_book', 'already_answered',
+  'no_lighter_plan',
 ] as const;
 export type AdjustCode = (typeof ADJUST_CODES)[number];
 
@@ -29,10 +34,22 @@ export type Change = {
   quests?: QuestChange[];
   ladders?: Record<string, LadderState>;
   classId?: ClassId;
-  ability?: { id: DayAbility; day: number };
+  ability?: { id: DayAbility | 'second_wind'; day: number };
   training?: { equipment: Equipment[]; programStyle: ProgramStyle };
   /** M6d: Scholar's Path (decision 12). */
   book?: { title: string | null; finished: boolean };
+  /** M7a: the check-in's answer (decisions 2–4); `outcome` only when it is resolved at once. */
+  checkin?: { id: number; answer: CheckinAnswer; recoveryDayId: number | null; outcome: 'protected' | null };
+  /** M7a: the recovery quest, added to the day `day` names. */
+  recovery?: InstanceDraft;
+  /** M7a: the streak after a protected answer. */
+  streak?: StreakState;
+  /** M7a: the daily minutes, one step lighter (decisions 6, 9). */
+  minutes?: number;
+  /** M7a: the next day is light (decision 6). */
+  lightNext?: true;
+  /** M7a: the lighter-plan offer is answered (decision 9). */
+  lighterPlanAt?: true;
 };
 
 export type Plan = { change: Change } | { code: AdjustCode };
@@ -212,6 +229,15 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
         quests.push(replace(library, q, draftQuest(template, q.slot, q.why, { hardDay: q.hard_day, book: event.title, moves: plannedMoves(q.condition) })));
       }
       return { change: quests.length === 0 ? { book } : { book, day: { id: Number(day.id) }, quests } };
+    }
+    case 'checkin':
+      return planCheckin(s, event, { nowMs, library });
+    case 'lighter_plan': {
+      // Either answer quiets the offer for 14 days; accepting drops the daily minutes one step (decision 9).
+      if (!event.accept) return { change: { lighterPlanAt: true } };
+      const minutes = lighterMinutes(s.profile.minutes_per_day);
+      if (minutes === null) return refuse('no_lighter_plan');
+      return { change: { minutes, lighterPlanAt: true } };
     }
   }
 }

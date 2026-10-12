@@ -1,13 +1,13 @@
 // Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; M6b the adjustments (swap, hard
 // day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); M6c the training setup; M6d the Scholar's
-// Path book; M6e the offline-built day and quests named by day and slot; the rest arrive with the milestones whose
-// screens send them, and until then are rejected without touching anything.
+// Path book; M6e the offline-built day and quests named by day and slot; M7a the check-in's answer and the lighter plan;
+// the rest arrive with the milestones whose screens send them, and until then are rejected without touching anything.
 import {
-  CLASSES, CLOCK_SKEW_MS, EQUIPMENT, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone, isWhyReason, questTimerDone,
+  CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, EQUIPMENT, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone, isWhyReason, questTimerDone,
   sessionSets,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  ClassId, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
+  CheckinAnswer, ClassId, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
 } from '../../../packages/rules/src/index.ts';
 import { isObject, problem, UUID } from './http.ts';
 import type { Problem } from './http.ts';
@@ -50,6 +50,10 @@ export type TrainingEvent = { id: string; type: 'training'; equipment: Equipment
 /** M6d: Scholar's Path. A title starts that book; `finished` first records the current one; null sets it aside. */
 export type BookEvent = { id: string; type: 'book'; title: string | null; finished: boolean };
 export const MAX_BOOK_TITLE = 120;
+/** M7a: the answer to the pending check-in (decision 2); Second Wind only with "I just didn't" (decision 7). */
+export type CheckinEvent = { id: string; type: 'checkin'; checkinId: number; answer: CheckinAnswer; secondWind: boolean };
+/** M7a: the lighter-plan offer answered: lighten (one step fewer minutes) or keep the plan (decision 9). */
+export type LighterEvent = { id: string; type: 'lighter_plan'; accept: boolean };
 /**
  * M6e: a day the phone built offline (decision 4). The server reads the day number, when it was built, the zone and each
  * quest's slot, template, why-line and exercises. The window, budget, light flag and books are what the phone showed:
@@ -68,12 +72,13 @@ export type ProvisionalDayEvent = {
 };
 export type AdjustEvent =
   | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent
-  | BookEvent;
+  | BookEvent | CheckinEvent | LighterEvent;
 export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent | ProvisionalDayEvent;
 export type Rejected = { id: string | null; code: string };
 
 export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
-  'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability', 'training', 'book',
+  'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability', 'training', 'book', 'checkin',
+  'lighter_plan',
 ];
 export const isAdjust = (event: PhoneEvent): event is AdjustEvent => (ADJUST_TYPES as readonly string[]).includes(event.type);
 
@@ -187,6 +192,13 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
       if (title.length < 1 || title.length > MAX_BOOK_TITLE || CONTROL.test(title)) return bad;
       return { id, type: 'book', title, finished: raw.finished };
     }
+    case 'checkin': {
+      if (!isId(raw.checkinId) || !CHECKIN_ANSWERS.includes(raw.answer as CheckinAnswer) || typeof raw.secondWind !== 'boolean') return bad;
+      if (raw.secondWind && raw.answer !== 'just_didnt') return bad;
+      return { id, type: 'checkin', checkinId: raw.checkinId, answer: raw.answer as CheckinAnswer, secondWind: raw.secondWind };
+    }
+    case 'lighter_plan':
+      return typeof raw.accept === 'boolean' ? { id, type: 'lighter_plan', accept: raw.accept } : bad;
     case 'provisional_day': {
       if (!isDayNumber(raw.dayNumber) || raw.dayNumber < 2 || !isTime(raw.builtAt)) return bad;
       if (typeof raw.timeZone !== 'string' || !isValidTimeZone(raw.timeZone)) return bad;

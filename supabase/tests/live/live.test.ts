@@ -103,7 +103,7 @@ describe('a player from onboarding to a cleared quest', () => {
     const side1 = quest(state, 'side1');
     const side2 = quest(state, 'side2');
     const res = await sync(a, [
-      { id: eventId(), type: 'checkin', dayId: state.today.id },
+      { id: eventId(), type: 'accountability_set', level: 2 },
       { id: eventId(), type: 'complete', instanceId: side1.id, completedAt: now(), payload: side1.completion === 'text' ? { text: 'Done.' } : { sets: [3] } },
       { id: eventId(), type: 'complete', instanceId: side2.id, completedAt: now(), payload: { sets: [], text: '' } },
       { id: eventId(), type: 'complete', instanceId: side2.id, completedAt: now() + 3_600_000, payload: {} },

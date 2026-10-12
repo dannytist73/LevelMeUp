@@ -31,7 +31,7 @@ describe('the sync body', () => {
       timeZone: 'UTC',
       events: [
         { id: id(1), type: 'complete', instanceId: 5, completedAt: start + MIN, payload: {} },
-        { id: id(2), type: 'checkin', dayId: 5 },
+        { id: id(2), type: 'accountability_set', level: 2 },
         { id: 'not-a-uuid', type: 'undo', instanceId: 5 },
         { id: id(3), type: 'rate', instanceId: 5, rating: 'meh' },
         { id: id(4), type: 'undo', instanceId: -1 },
@@ -288,5 +288,27 @@ describe('offline-built days (M6e)', () => {
 
   it('an event with an id is read as before (no ref)', () => {
     expect(parse([{ id: id(60), type: 'undo', instanceId: 7 }]).events).toEqual([{ id: id(60), type: 'undo', instanceId: 7 }]);
+  });
+});
+
+describe('the check-in and the lighter plan (M7a)', () => {
+  const id = '00000000-0000-4000-8000-0000000000a1';
+  const one = (event: Record<string, unknown>) => parseSyncBody({ timeZone: 'Asia/Manila', events: [{ id, ...event }] });
+
+  it('reads an answer, with Second Wind only for "I just didn\'t"', () => {
+    expect(one({ type: 'checkin', checkinId: 7, answer: 'just_didnt', secondWind: true })).toMatchObject({
+      events: [{ id, type: 'checkin', checkinId: 7, answer: 'just_didnt', secondWind: true }],
+    });
+    for (const bad of [
+      { type: 'checkin', checkinId: 7, answer: 'sick', secondWind: true },
+      { type: 'checkin', checkinId: 7, answer: 'bored', secondWind: false },
+      { type: 'checkin', checkinId: 0, answer: 'sick', secondWind: false },
+      { type: 'checkin', checkinId: 7, answer: 'sick' },
+    ]) expect(one(bad)).toMatchObject({ events: [], rejected: [{ id, code: 'bad_event' }] });
+  });
+
+  it('reads the lighter-plan answer', () => {
+    expect(one({ type: 'lighter_plan', accept: false })).toMatchObject({ events: [{ id, type: 'lighter_plan', accept: false }] });
+    expect(one({ type: 'lighter_plan', accept: 'yes' })).toMatchObject({ rejected: [{ id, code: 'bad_event' }] });
   });
 });
