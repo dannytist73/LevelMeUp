@@ -5,10 +5,13 @@ import type { Slot } from './types.ts';
 
 export type AccountabilityLevel = 0 | 1 | 2;
 
+/** The Accountability Pact's levels (spec §4.3): off, the Shadow, the Trial of Stillness. */
+export const ACCOUNTABILITY_LEVELS: readonly AccountabilityLevel[] = [0, 1, 2];
+
 /**
- * The player's Accountability Pact. `appliesFrom` is the start of the first quest day it covers: the quest day after
- * the one in progress when it was signed ("it starts with tomorrow's quest day, never today's"); signed during
- * onboarding, that is day 2. Null when off.
+ * The player's Accountability Pact. `appliesFrom` is when the current level was signed (M7c decision 2): a missed day
+ * counts only if it started at or after that moment, so the pact starts with the quest day after the one in progress
+ * ("never today's"); signed during onboarding, that is day 2. Null when off.
  */
 export type Pact = { level: AccountabilityLevel; appliesFrom: number | null };
 

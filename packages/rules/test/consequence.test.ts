@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DAY_MS, HOUR_MS } from '../src/constants.ts';
 import { CHECKIN_ANSWERS } from '../src/checkin.ts';
 import type { CheckinAnswer } from '../src/checkin.ts';
-import { decideConsequence, isSealed } from '../src/consequence.ts';
+import { ACCOUNTABILITY_LEVELS, decideConsequence, isSealed } from '../src/consequence.ts';
 import type { AccountabilityLevel, ActiveConsequence, ConsequenceInput } from '../src/consequence.ts';
 
 /** Signed during the quest day before; covers quest days from the next one, which starts here. */
@@ -80,5 +80,20 @@ describe('Trial of Stillness sealing', () => {
     expect(isSealed('side1', trial, dayStartsAt - 1)).toBe(false);
     expect(isSealed('side1', trial, trial.dayEndsAt)).toBe(false);
     expect(isSealed('side1', trial, trial.dayEndsAt + 30 * DAY_MS)).toBe(false);
+  });
+});
+
+describe('the pact itself (M7c decisions 2–3)', () => {
+  it('has three levels: off, the Shadow, the Trial of Stillness', () => {
+    expect(ACCOUNTABILITY_LEVELS).toEqual([0, 1, 2]);
+  });
+
+  it('signed during a quest day, it never covers that day: only days that start after the signing count', () => {
+    const dayStart = Date.UTC(2026, 9, 12, 20);
+    const signed = dayStart + 5 * 3_600_000;
+    const answer = { answer: 'just_didnt' as const, consequenceTimes: [], nowMs: signed + 2 * DAY_MS, consequenceAlreadyOnThisQuestDay: false };
+    const pact = { level: 1 as const, appliesFrom: signed };
+    expect(decideConsequence({ ...answer, pact, missedDayStartsAt: dayStart })).toEqual({ kind: 'none', reason: 'day_started_before_pact' });
+    expect(decideConsequence({ ...answer, pact, missedDayStartsAt: dayStart + DAY_MS })).toEqual({ kind: 'apply', level: 1 });
   });
 });
