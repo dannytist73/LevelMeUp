@@ -29,6 +29,34 @@ const actions = (view = shown(), enqueue = jest.fn(async () => {}), onSwap = jes
   <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />;
 
 describe("Today's adjustments (M6b)", () => {
+  it('rest offers today and tomorrow, each within the limit; tomorrow is sent as such (M7b decision 5)', async () => {
+    const enqueue = jest.fn(async () => {});
+    await render(actions(shown(), enqueue));
+    await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
+    expect(screen.getByRole('button', { name: A.rest.confirm })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: A.rest.tomorrow }));
+    expect(enqueue).toHaveBeenLastCalledWith({ type: 'plan_rest', dayId: 2, tomorrow: true });
+  });
+
+  it('a rest day today can still plan tomorrow', async () => {
+    const view = shown();
+    await render(actions({ ...view, today: { ...view.today!, protection: 'planned_rest' } }));
+    await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
+    expect(screen.queryByRole('button', { name: A.rest.confirm })).toBeNull();
+    expect(screen.getByRole('button', { name: A.rest.tomorrow })).toBeTruthy();
+  });
+
+  it('with neither today nor tomorrow left, no rest button', async () => {
+    const view = shown();
+    await render(actions({ ...view, today: { ...view.today!, protection: 'planned_rest', restTomorrow: false } }));
+    expect(screen.queryByRole('button', { name: A.day.rest })).toBeNull();
+  });
+
+  it('tomorrow planned as rest shows on Today', async () => {
+    await render(<DayBanners today={shown().today!} restDay={3} />);
+    expect(screen.getByText(A.rest.tomorrowBanner)).toBeTruthy();
+  });
+
   it('offers swap, hard day and rest; each confirm says what happens, then sends its event', async () => {
     const enqueue = jest.fn(async () => {});
     const onSwap = jest.fn();
@@ -47,7 +75,7 @@ describe("Today's adjustments (M6b)", () => {
   it('"Not now" sends nothing; over the rest limit the confirm explains instead', async () => {
     const enqueue = jest.fn(async () => {});
     const view = shown();
-    await render(actions({ ...view, today: { ...view.today!, restAllowed: false } }, enqueue));
+    await render(actions({ ...view, today: { ...view.today!, restAllowed: false, restTomorrow: false } }, enqueue));
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
     expect(screen.getByText(A.rest.limit)).toBeTruthy();
     expect(screen.queryByRole('button', { name: A.rest.confirm })).toBeNull();
@@ -59,7 +87,7 @@ describe("Today's adjustments (M6b)", () => {
   it('over the rest limit the confirm offers the lighter plan, when there is one (M7a decision 9)', async () => {
     const enqueue = jest.fn(async () => {});
     const view = shown();
-    const limited = { ...view, today: { ...view.today!, restAllowed: false } };
+    const limited = { ...view, today: { ...view.today!, restAllowed: false, restTomorrow: false } };
     await render(actions({ ...limited, lighterPlan: { from: 25, to: 15, offered: false } }, enqueue));
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
     expect(screen.getByText(A.rest.limit)).toBeTruthy();
@@ -70,8 +98,9 @@ describe("Today's adjustments (M6b)", () => {
     expect(screen.queryByRole('button', { name: /^Lighten the plan/ })).toBeNull();
   });
 
-  it('hides what the day no longer allows: no swap left, already a hard day, already protected', async () => {
-    await render(actions(shown(adjustState({}, { swaps_used: 1, hard_day: true, protection: 'planned_rest' }))));
+  it('hides what the day no longer allows: no swap left, already a hard day, already protected (and tomorrow planned, M7b)', async () => {
+    const tomorrowPlanned = { character: characterRow({ rest_day: 3 }) };
+    await render(actions(shown(adjustState(tomorrowPlanned, { swaps_used: 1, hard_day: true, protection: 'planned_rest' }))));
     expect(screen.queryByRole('button', { name: /Swap ·/ })).toBeNull();
     expect(screen.queryByRole('button', { name: A.day.hardDay })).toBeNull();
     expect(screen.queryByRole('button', { name: A.day.rest })).toBeNull();

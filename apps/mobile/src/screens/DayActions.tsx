@@ -1,7 +1,7 @@
 // Today's adjustments (spec §2.5, §3.3–3.5; board D1's "Swap · 1 left" and "Hard day"; M6b decisions 3–11): what kind
 // of day it is; swap, hard day, a rest day, the Monk's Stillness and Dawn Ritual and the Rogue's Vanish, each behind a
 // plain confirm; and the exercises resting after pain, with Resume. The server decides what is offered (the state view),
-// so nothing here asks for a change it would refuse.
+// so nothing here asks for a change it would refuse. M7b: Rest tomorrow, and its banner.
 import { ABILITY_NAMES, ADJUST_TEXT, LIGHTER_TEXT, OFFLINE_TEXT, fillText, pausedName } from '@levelmeup/content';
 import { abilityUnlocked } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -17,41 +17,48 @@ import { Body, Small } from '../ui/Text.tsx';
 
 const T = ADJUST_TEXT;
 type Confirm = 'hard_day' | 'plan_rest' | 'stillness' | 'dawn_ritual';
-type Panel = { text: string; send: { label: string; event: NewEvent } | null };
+type Send = { label: string; event: NewEvent };
+type Panel = { text: string; sends: Send[] };
 
-/** What kind of day it is: a hard day, a rest day, a rest after pain. */
-export function DayBanners({ today }: { today: TodayView }) {
+/** What kind of day it is: a hard day, a rest day, a rest after pain; and (M7b) a rest day planned for tomorrow. */
+export function DayBanners({ today, restDay = null }: { today: TodayView; restDay?: number | null }) {
   const lines = [
     ...(today.hardDay ? [T.hardDay.banner] : []),
     ...(today.protection === 'planned_rest' ? [T.rest.banner] : today.protection === 'pain' ? [T.pain.restBanner] : []),
+    ...(restDay === today.dayNumber + 1 ? [T.rest.tomorrowBanner] : []),
   ];
   if (lines.length === 0) return null;
   return <View style={{ gap: 18 }}>{lines.map((line) => <NarrationBox key={line}>{line}</NarrationBox>)}</View>;
 }
 
-/** The confirm's words and what it sends; over the rest limit it explains, and offers the lighter plan when there is one. */
+/** The confirm's words and what it can send; over the rest limit it explains, and offers the lighter plan when there is one. */
 function panelFor(kind: Confirm, today: TodayView, lighter: Shown['lighterPlan']): Panel {
   switch (kind) {
     case 'hard_day':
-      return { text: T.hardDay.explain, send: { label: T.hardDay.confirm, event: { type: 'hard_day', dayId: today.id } } };
-    case 'plan_rest':
-      if (today.restAllowed) return { text: T.rest.explain, send: { label: T.rest.confirm, event: { type: 'plan_rest', dayId: today.id } } };
+      return { text: T.hardDay.explain, sends: [{ label: T.hardDay.confirm, event: { type: 'hard_day', dayId: today.id } }] };
+    case 'plan_rest': {
+      // Today and (M7b decision 5) tomorrow, each when the 2-in-7 limit allows it.
+      const sends: Send[] = [];
+      if (today.protection === null && today.restAllowed) sends.push({ label: T.rest.confirm, event: { type: 'plan_rest', dayId: today.id } });
+      if (today.restTomorrow) sends.push({ label: T.rest.tomorrow, event: { type: 'plan_rest', dayId: today.id, tomorrow: true } });
+      if (sends.length > 0) return { text: T.rest.explain, sends };
       // M7a decision 9: over the rest limit, a lighter plan is the other way.
       return {
         text: T.rest.limit,
-        send: lighter === null
-          ? null
-          : { label: fillText(LIGHTER_TEXT.restLimit, { from: lighter.from, to: lighter.to }), event: { type: 'lighter_plan', accept: true } },
+        sends: lighter === null
+          ? []
+          : [{ label: fillText(LIGHTER_TEXT.restLimit, { from: lighter.from, to: lighter.to }), event: { type: 'lighter_plan', accept: true } }],
       };
+    }
     case 'stillness':
       return {
         text: T.abilities.stillness,
-        send: { label: fillText(T.abilities.use, { ability: ABILITY_NAMES.stillness }), event: { type: 'ability', dayId: today.id, ability: 'stillness' } },
+        sends: [{ label: fillText(T.abilities.use, { ability: ABILITY_NAMES.stillness }), event: { type: 'ability', dayId: today.id, ability: 'stillness' } }],
       };
     case 'dawn_ritual':
       return {
         text: T.abilities.dawnRitual,
-        send: { label: fillText(T.abilities.use, { ability: ABILITY_NAMES.dawn_ritual }), event: { type: 'ability', dayId: today.id, ability: 'dawn_ritual' } },
+        sends: [{ label: fillText(T.abilities.use, { ability: ABILITY_NAMES.dawn_ritual }), event: { type: 'ability', dayId: today.id, ability: 'dawn_ritual' } }],
       };
   }
 }
@@ -70,25 +77,25 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
   const canSwap = today.swapsLeft > 0 && open.some((q) => q.swaps.length > 0);
   // A day this phone built offline gets only what the phone decides alone (M6e decision 8).
   const canHardDay = !view.offline && !today.hardDay && open.length > 0;
-  const canRest = !view.offline && today.protection === null;
+  const canRest = !view.offline && (today.protection === null || today.restTomorrow);
   const later = view.offline ? <Small tone="chalk">{OFFLINE_TEXT.later}</Small> : null;
   const canVanish = abilityUnlocked('vanish', view.profile.classId, view.character.level);
 
   if (confirm !== null) {
     const panel = panelFor(confirm, today, view.lighterPlan);
-    const send = panel.send;
     return (
       <View style={{ gap: 12 }}>
         <NarrationBox>{panel.text}</NarrationBox>
-        {send !== null && (
+        {panel.sends.map((send) => (
           <Button
+            key={send.label}
             label={send.label}
             onPress={() => {
               setConfirm(null);
               void enqueue(send.event);
             }}
           />
-        )}
+        ))}
         <Button label={T.day.notNow} variant="secondary" onPress={() => setConfirm(null)} />
       </View>
     );

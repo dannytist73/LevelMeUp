@@ -94,7 +94,7 @@ export function Today({ onSettings, onOpenQuest, onSwap, onPain, onVanish, onTra
     body = (
       <View style={{ gap: 30 }}>
         {view!.offline && <NarrationBox>{OFFLINE_TEXT.built}</NarrationBox>}
-        <DayBanners today={today!} />
+        <DayBanners today={today!} restDay={view!.character.restDay} />
         {slots.map((title) => {
           const inSection = quests.filter((q) => SECTION[q.slot] === title);
           const count = title === 'Side quests' ? `${sides.filter((q) => q.completedAt !== null).length} / ${sides.length}` : undefined;
