@@ -1,7 +1,7 @@
 // The deployed functions on the live project (npm run test:live). Every player created here is deleted at the end.
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { painKey, templateById } from '../../../packages/rules/src/index.ts';
+import { lighterMinutes, painKey, templateById } from '../../../packages/rules/src/index.ts';
 import { ANON_KEY, ONBOARDING, call, eventId, newPlayer, signedIn, sync } from './helpers.ts';
 import type { Player } from './helpers.ts';
 
@@ -356,5 +356,47 @@ describe('offline-built days (M6e)', () => {
     // A pain report from the refused day still rests the exercise (device check).
     expect(res.body.results[1]).toMatchObject({ ok: true });
     expect(res.body.state.paused).toContain(painKey(templateById(LIBRARY, core)));
+  });
+});
+
+describe('the check-in and the lighter plan (M7a)', () => {
+  let p: Player;
+
+  it('a new player has no check-in, no result, and a lighter plan that is not offered', async () => {
+    p = await newPlayer();
+    expect((await call('lmu-onboarding', p.token, ONBOARDING)).status).toBe(201);
+    const { body } = await sync(p);
+    expect(body.state.checkin).toBeNull();
+    expect(body.state.checkinResult).toBeNull();
+    expect(body.state.character.nextDayLight).toBe(false);
+    const minutes = body.state.profile.minutesPerDay;
+    expect(body.state.lighterPlan).toEqual({ from: minutes, to: lighterMinutes(minutes), offered: false });
+  });
+
+  it('an answer with no check-in due is refused; a malformed one is rejected', async () => {
+    const id = eventId();
+    const bad = eventId();
+    const { body } = await sync(p, [
+      { id, type: 'checkin', checkinId: 1, answer: 'sick', secondWind: false },
+      { id: bad, type: 'checkin', checkinId: 1, answer: 'bored', secondWind: false },
+    ]);
+    expect(body.results).toEqual([{ id, ok: false, code: 'not_found' }]);
+    expect(body.rejected).toEqual([{ id: bad, code: 'bad_event' }]);
+  });
+
+  it('"Keep my plan" keeps the minutes; accepting drops them one step at a time, down to 10', async () => {
+    const keep = await sync(p, [{ id: eventId(), type: 'lighter_plan', accept: false }]);
+    expect(keep.body.results[0].ok).toBe(true);
+    let minutes = keep.body.state.profile.minutesPerDay;
+    while (lighterMinutes(minutes) !== null) {
+      const { body } = await sync(p, [{ id: eventId(), type: 'lighter_plan', accept: true }]);
+      expect(body.results[0].ok).toBe(true);
+      expect(body.state.profile.minutesPerDay).toBe(lighterMinutes(minutes));
+      minutes = body.state.profile.minutesPerDay;
+    }
+    const id = eventId();
+    const { body } = await sync(p, [{ id, type: 'lighter_plan', accept: true }]);
+    expect(body.results).toEqual([{ id, ok: false, code: 'no_lighter_plan' }]);
+    expect(body.state.lighterPlan).toBeNull();
   });
 });

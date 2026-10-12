@@ -49,7 +49,7 @@ async function questRow(tx: Tx, userId: string, target: { instanceId: number | n
   }
 }
 
-async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
+async function applyEvent(userId: string, event: PhoneEvent, timeZone: string): Promise<Applied> {
   try {
     if (event.type === 'provisional_day') {
       const kept = await provisional(userId, event);
@@ -57,6 +57,8 @@ async function applyEvent(userId: string, event: PhoneEvent): Promise<Applied> {
       if (kept.kept === 'server') return { id: event.id, ok: false, code: 'day_rebuilt' };
       return { id: event.id, ok: true, result: kept };
     }
+    // M7a decision 2: ended days close first, so a check-in's answer always lands on the day that runs now.
+    if (event.type === 'checkin') await advance(userId, timeZone);
     const result = isAdjust(event) ? await adjust(userId, event) : await play(userId, event);
     return { id: event.id, ok: true, result };
   } catch (error) {
@@ -191,7 +193,7 @@ async function provisional(userId: string, event: ProvisionalDayEvent): Promise<
         const asOf = provisionalClock(event.builtAt, now.getTime(), lastEndsAt);
         if (asOf === null) throw new Error('lmu:clock_ahead');
         const outcome = planAdvance({
-          ...snapshot, timeZone: event.timeZone, nowMs: asOf, library: LIBRARY, contentVersion: CONTENT_VERSION,
+          ...snapshot, pending: snapshot.checkin, timeZone: event.timeZone, nowMs: asOf, library: LIBRARY, contentVersion: CONTENT_VERSION,
           provisional: { dayNumber: event.dayNumber, quests: event.quests },
         });
         // The server's last day was still running when the phone built the next one: the phone's clock is ahead.
@@ -225,7 +227,9 @@ async function advance(userId: string, timeZone: string): Promise<void> {
         if (snapshot === null) throw new Error('lmu:not_started');
         // The database clock, so "has this day ended?" means the same here and in levelmeup.advance.
         const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
-        const outcome = planAdvance({ ...snapshot, timeZone, nowMs: now.getTime(), library: LIBRARY, contentVersion: CONTENT_VERSION });
+        const outcome = planAdvance({
+          ...snapshot, pending: snapshot.checkin, timeZone, nowMs: now.getTime(), library: LIBRARY, contentVersion: CONTENT_VERSION,
+        });
         if (outcome === null) return;
         if (outcome.buildError !== null) console.error('lmu-sync: a day was built without quests', userId, outcome.buildError);
         await tx`select levelmeup.advance(${userId}::uuid, ${snapshot.character.version}::int, ${jsonParam(tx, outcome)}::jsonb)`;
@@ -260,7 +264,7 @@ Deno.serve(async (req) => {
     if (started === null) return problemResponse(problem(404, 'not_started'));
     // Events first, so an offline completion always lands before its day closes (architecture §4.3).
     const results: Applied[] = [];
-    for (const event of request.events) results.push(await applyEvent(player.userId, event));
+    for (const event of request.events) results.push(await applyEvent(player.userId, event, request.timeZone));
     await advance(player.userId, request.timeZone);
     const newAchievementIds = await awardAchievements(player.userId);
     const { snapshot, history } = await db().begin(async (tx) => {
