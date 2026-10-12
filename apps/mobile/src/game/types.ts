@@ -9,6 +9,10 @@ export type ServerState = ReturnType<typeof stateView>;
 export type TodayView = NonNullable<ServerState['today']>;
 export type QuestView = TodayView['quests'][number];
 export type CharacterView = ServerState['character'];
+/** M7a: the check-in waiting for an answer (or held after "I just didn't"), the lighter plan, how a settled miss ended. */
+export type CheckinView = NonNullable<ServerState['checkin']>;
+export type LighterView = ServerState['lighterPlan'];
+export type MissOutcome = NonNullable<ServerState['checkinResult']>['outcome'];
 export type { OnboardingBody, PhoneEvent, ProvisionalDayEvent, Rating, Reveal, SlotRef };
 
 export type EventResult = { id: string; ok: true; result: unknown } | { id: string | null; ok: false; code: string };

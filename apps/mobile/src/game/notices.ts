@@ -36,6 +36,8 @@ const TEXT = {
   day_rebuilt: 'The System rebuilt the day this phone made offline. Anything you finished there counts for the quest now in its place.',
   quest_changed: "The System had rebuilt that quest's day, so your rating of it wasn't saved.",
   clock_ahead: "This phone's clock is ahead of the System's, so the day it built offline wasn't used. Check the phone's time.",
+  already_answered: 'That check-in was already answered.',
+  no_lighter_plan: 'Your plan is already at its lightest: 10 minutes a day.',
 } as const;
 
 export type NoticeCode = keyof typeof TEXT;

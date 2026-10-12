@@ -2,9 +2,12 @@
 // change shows at once. Completions move stored XP snapshots; adjustments (M6b) put the option the server offered in
 // its slot. Streaks, Discipline and ladders change when the server closes a day. The server's numbers replace all of
 // this at the next sync. M6e: a `provisional_day` in the outbox is today until the server's state has that day; events
-// name its quests by day and slot.
+// name its quests by day and slot. M7a: a check-in answer shows at once (the card goes, or the streak is held for the
+// recovery quest the server adds); the lighter plan drops the minutes one step.
 import { LIBRARY } from '@levelmeup/content';
-import { STATS, findTemplate, levelProgress, painKey, rankFor, statPoints, xpToNextPoint } from '@levelmeup/rules';
+import {
+  STATS, checkinOutcome, findTemplate, levelProgress, lighterMinutes, painKey, rankFor, statPoints, xpToNextPoint,
+} from '@levelmeup/rules';
 import type { XpByStat } from '@levelmeup/rules';
 import { hardFields, withFields } from './adjust.ts';
 import { offlineToday } from './offline.ts';
@@ -37,6 +40,8 @@ export type Shown = ServerState & {
   offline: boolean;
   /** Ladder changes on their way, in order (M6e review): the phone's offline day applies them as the server will. */
   ladderChanges: readonly PendingLadder[];
+  /** A check-in answer is on its way (M7a): the recovery quest of "I just didn't" arrives with the sync. */
+  answering: boolean;
 };
 
 /** "I felt pain" rests a ladder or exercise, Resume brings it back, a step-down lowers a ladder. */
@@ -51,6 +56,12 @@ function questIndex(today: TodayView, event: { instanceId: number | null; ref?: 
   return today.quests.findIndex((q) => q.id === event.instanceId);
 }
 
+/** The lighter plan once the minutes are `minutes` (decision 9): the next step down, quiet for 14 days. */
+function stepped(minutes: number): ServerState['lighterPlan'] {
+  const to = lighterMinutes(minutes);
+  return to === null ? null : { from: minutes, to, offered: false };
+}
+
 export function project(server: ServerState, pending: readonly PhoneEvent[]): Shown {
   let character = server.character;
   let profile = server.profile;
@@ -61,6 +72,9 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
   let today: TodayView | null = server.today === null ? null : { ...server.today, quests: server.today.quests.map((q) => ({ ...q })) };
   let quests = today?.quests ?? [];
   let offline = false;
+  let checkin = server.checkin;
+  let lighterPlan = server.lighterPlan;
+  let answering = false;
   const ladderChanges: PendingLadder[] = [];
   const waiting = new Set<number>();
   for (const event of pending) {
@@ -100,6 +114,37 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         q.book = event.title;
         waiting.add(q.id);
       }
+      continue;
+    }
+    if (event.type === 'checkin') {
+      const asked = checkin;
+      if (asked === null || asked.id !== event.checkinId || asked.answer !== null) continue;
+      const outcome = checkinOutcome(event.answer);
+      answering = true;
+      if (outcome.resolution === 'protected') {
+        checkin = null;
+        character = { ...character, streak: { ...character.streak, awaitingCheckin: false } };
+      } else {
+        checkin = { ...asked, answer: 'just_didnt', secondWind: null };
+      }
+      const missed = asked.core === null ? undefined : findTemplate(LIBRARY, asked.core);
+      if (outcome.pauseLadder && missed !== undefined && missed.exercise !== null) {
+        const key = painKey(missed);
+        if (!paused.includes(key)) paused = [...paused, key].sort();
+        ladderChanges.push({ key, change: 'pain' });
+      }
+      if (outcome.stepDownLadder && asked.ladder !== null) ladderChanges.push({ key: asked.ladder, change: 'step_down' });
+      if (outcome.reduceDailyMinutes && lighterPlan !== null) {
+        profile = { ...profile, minutesPerDay: lighterPlan.to };
+        lighterPlan = stepped(lighterPlan.to);
+      }
+      if (outcome.lighterTomorrow) character = { ...character, nextDayLight: true };
+      continue;
+    }
+    if (event.type === 'lighter_plan') {
+      if (lighterPlan === null) continue;
+      if (event.accept) profile = { ...profile, minutesPerDay: lighterPlan.to };
+      lighterPlan = event.accept ? stepped(lighterPlan.to) : { ...lighterPlan, offered: false };
       continue;
     }
     if (today === null) continue;
@@ -176,5 +221,8 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
         break;
     }
   }
-  return { ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline, ladderChanges };
+  return {
+    ...server, profile, paused, character, today, reading, waiting, changingClass, changingBook, offline, ladderChanges, checkin, lighterPlan,
+    answering,
+  };
 }

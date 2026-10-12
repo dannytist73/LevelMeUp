@@ -18,7 +18,7 @@ describe('the phone database', () => {
     const sql = nodeSql();
     await migrate(sql);
     await migrate(sql);
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 5 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 6 }]);
   });
 
   it("drops a state cached before M6b, whose shape the new screens can't read, and keeps the outbox (M6b review)", async () => {
@@ -46,7 +46,17 @@ describe('the phone database', () => {
     await sql.exec('pragma user_version = 4'); // as an M6c install left it
     await migrate(sql);
     expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [] });
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 5 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 6 }]);
+  });
+
+  it('drops a state cached before M7a, which has no check-in or lighter plan, and keeps the outbox', async () => {
+    const { sql, local } = await fresh();
+    await local.enqueue(complete('a'), 1);
+    await local.acknowledge([], [], state(1), 1);
+    await sql.exec('pragma user_version = 5'); // as an M6d or M6e install left it
+    await migrate(sql);
+    expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [] });
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 6 }]);
   });
 
   it('starts empty', async () => {

@@ -1,11 +1,12 @@
 import { LIBRARY } from '@levelmeup/content';
 import { STATS, newLadder, questReward, templateById } from '@levelmeup/rules';
-import type { XpByStat } from '@levelmeup/rules';
+import type { CheckinAnswer, XpByStat } from '@levelmeup/rules';
 import { characterView } from '../../../supabase/functions/_shared/state.ts';
 import { addStatXp, project } from '../src/game/project.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import {
-  adjustState, characterRow, completeEvent, ladderRows, offlineEvent, profileRow, rateEvent, serverState, undoEvent, workoutState,
+  adjustState, characterRow, checkinState, completeEvent, ladderRows, offlineEvent, profileRow, rateEvent, serverState, undoEvent,
+  workoutState,
 } from './support/fixtures.ts';
 
 const deepFreeze = <T,>(value: T): T => {
@@ -48,7 +49,9 @@ describe('what the screens show: the server state plus the unsent events', () =>
 
   it('with nothing pending it is the server state, nothing waiting', () => {
     const shown = project(server, []);
-    const flags = { waiting: undefined, changingClass: undefined, changingBook: undefined, offline: undefined, ladderChanges: undefined };
+    const flags = {
+      waiting: undefined, changingClass: undefined, changingBook: undefined, offline: undefined, ladderChanges: undefined, answering: undefined,
+    };
     expect({ ...shown, ...flags }).toEqual({ ...server, ...flags });
     expect(shown.ladderChanges).toEqual([]);
     expect(shown.waiting.size).toBe(0);
@@ -225,5 +228,45 @@ describe('ladder changes on their way (M6e review)', () => {
     expect(project(s, [pain, resume, step]).ladderChanges).toEqual([
       { key: 'walk', change: 'pain' }, { key: 'squat', change: 'resume' }, { key: 'push', change: 'step_down' },
     ]);
+  });
+});
+
+describe('the check-in on its way (M7a decision 10)', () => {
+  const checkin = (answer: CheckinAnswer, checkinId = 7): PhoneEvent =>
+    ({ id: '00000000-0000-4000-8000-0000000000c1', type: 'checkin', checkinId, answer, secondWind: false });
+  const lighter = (accept: boolean): PhoneEvent => ({ id: '00000000-0000-4000-8000-0000000000c2', type: 'lighter_plan', accept });
+
+  it('a protected answer resolves it at once: no card, the streak goes on', () => {
+    const shown = project(checkinState(), [checkin('emergency')]);
+    expect(shown.checkin).toBeNull();
+    expect(shown.character.streak.awaitingCheckin).toBe(false);
+    expect(shown.answering).toBe(true);
+  });
+
+  it('"I just didn\'t" holds the streak until the recovery quest arrives', () => {
+    const shown = project(checkinState(), [checkin('just_didnt')]);
+    expect(shown.checkin).toMatchObject({ id: 7, answer: 'just_didnt', secondWind: null });
+    expect(shown.character.streak.awaitingCheckin).toBe(true);
+    expect(project(checkinState(), []).answering).toBe(false);
+  });
+
+  it('injured rests the missed exercise; too hard eases its ladder; sick makes the next day light', () => {
+    expect(project(checkinState(), [checkin('injured')])).toMatchObject({ paused: ['push'], ladderChanges: [{ key: 'push', change: 'pain' }] });
+    expect(project(checkinState(), [checkin('too_hard')]).ladderChanges).toEqual([{ key: 'push', change: 'step_down' }]);
+    expect(project(checkinState(), [checkin('sick')]).character.nextDayLight).toBe(true);
+  });
+
+  it('a lighter load or an accepted lighter plan drops the minutes one step; "keep my plan" quiets the offer', () => {
+    expect(project(checkinState(), [checkin('lighter_load')])).toMatchObject({
+      profile: { minutesPerDay: 15 }, lighterPlan: { from: 15, to: 10, offered: false },
+    });
+    expect(project(checkinState(), [lighter(true)])).toMatchObject({ profile: { minutesPerDay: 15 }, lighterPlan: { from: 15, to: 10 } });
+    expect(project(checkinState(), [lighter(false)])).toMatchObject({
+      profile: { minutesPerDay: 25 }, lighterPlan: { from: 25, to: 15, offered: false },
+    });
+  });
+
+  it('an answer for another check-in changes nothing', () => {
+    expect(project(checkinState(), [checkin('sick', 8)]).checkin).toMatchObject({ id: 7, answer: null });
   });
 });

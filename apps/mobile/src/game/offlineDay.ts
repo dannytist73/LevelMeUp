@@ -76,9 +76,10 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
       .sort((a, b) => a.dayNumber - b.dayNumber)
       .slice(-7);
     const workoutsDone = Math.max(0, held.workoutsDone + sessionsDone(today) - sessionsDone(server.today));
+    // A "sick" or "injured" answer asked for a light day (M7a decision 6): the server builds the same one, so it keeps it.
+    const light = next.comeback || shown.character.nextDayLight;
     const built = buildDay(LIBRARY, {
-      dayNumber: next.dayNumber, profile: rulesProfile(shown.profile, character), ladders, history, light: next.comeback, workoutsDone,
-      articleId: null,
+      dayNumber: next.dayNumber, profile: rulesProfile(shown.profile, character), ladders, history, light, workoutsDone, articleId: null,
     });
     return {
       type: 'provisional_day',

@@ -1,5 +1,5 @@
 import { CONTENT_VERSION, LIBRARY } from '@levelmeup/content';
-import { STATS, findTemplate, newLadder, painKey, recordPain, templateById, useKey } from '@levelmeup/rules';
+import { LIGHT_DAY_MINUTES, STATS, findTemplate, newLadder, painKey, recordPain, templateById, useKey } from '@levelmeup/rules';
 import { planAdvance } from '../../../supabase/functions/_shared/advance.ts';
 import { stateView } from '../../../supabase/functions/_shared/state.ts';
 import { dayOffers } from '../../../supabase/functions/_shared/today.ts';
@@ -70,8 +70,23 @@ describe('the offline day matches the server in more cases (M6e review)', () => 
     const s = stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
     const end = Date.parse(s.today!.endsAt!);
     const event = offlineDay(s, project(s, []), end + HOUR, 'Asia/Manila')!;
-    const server = planAdvance({ ...snapshot, timeZone: 'Asia/Manila', nowMs: end + HOUR, library: LIBRARY, contentVersion: CONTENT_VERSION })!.newDay!;
+    const server = planAdvance({
+      ...snapshot, pending: snapshot.checkin, timeZone: 'Asia/Manila', nowMs: end + HOUR, library: LIBRARY, contentVersion: CONTENT_VERSION,
+    })!.newDay!;
     expect(event.dayNumber).toBe(3);
     expect(quests(event)).toEqual(quests(server));
+  });
+});
+
+describe('a light day after a check-in answer (M7a decision 6)', () => {
+  it('is light after "sick" or "injured", as the server builds it, and not otherwise', () => {
+    const s = serverState([], { next_day_light: true });
+    const event = offlineDay(s, project(s, []), END + HOUR, 'Asia/Manila')!;
+    const server = planAdvance(afterDay1([], END + HOUR, { character: characterRow({ next_day_light: true }) }))!.newDay!;
+    expect(event).toMatchObject({ light: true, budget: LIGHT_DAY_MINUTES });
+    expect(server).toMatchObject({ light: true, budget: LIGHT_DAY_MINUTES });
+    expect(quests(event)).toEqual(quests(server));
+    const plain = serverState();
+    expect(offlineDay(plain, project(plain, []), END + HOUR, 'Asia/Manila')!.light).toBe(false);
   });
 });

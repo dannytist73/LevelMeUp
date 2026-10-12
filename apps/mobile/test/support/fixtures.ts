@@ -3,11 +3,11 @@ import { LIBRARY } from '@levelmeup/content';
 import { SAFETY_QUESTIONS, STATS, newLadder, plannedMoves } from '@levelmeup/rules';
 import type { Rating, Slot } from '@levelmeup/rules';
 import { stateView } from '../../../../supabase/functions/_shared/state.ts';
-import type { CharacterRow, DayRow, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
+import type { CharacterRow, DayRow, PendingCheckin, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
 import { dayOffers } from '../../../../supabase/functions/_shared/today.ts';
 import {
   DAY1, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows, manilaDay,
-  profileRow,
+  pendingCheckin, profileRow,
 } from '../../../../supabase/tests/unit/fixtures.ts';
 import type { PhoneEvent, Reveal, ServerState } from '../../src/game/types.ts';
 import { NEW_DRAFT } from '../../src/onboarding/flow.ts';
@@ -87,3 +87,23 @@ export function offlineEvent(from: ServerState = adjustState(), over: Partial<Ex
     ...over,
   };
 }
+
+/**
+ * M7a: day 2 with a check-in waiting for day 1 (push-0 missed; check-in id 7), the streak paused at 4 (best 6, one
+ * shield). `slots` changes day 2's quests (Second Wind needs a day without push).
+ */
+export function checkinState(
+  over: Partial<PendingCheckin> = {},
+  character: Partial<CharacterRow> = {},
+  slots: { core: string; side1: string; side2: string } = DAY_TWO_SLOTS,
+): ServerState {
+  const snapshot = dayTwoSnapshot(slots, {
+    ladders: ladderRows({ push: newLadder(1) }),
+    checkin: pendingCheckin(over),
+    character: characterRow({ awaiting_checkin: true, streak_current: 4, streak_best: 6, shields: 1, ...character }),
+  });
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
+}
+
+/** A day 2 without push-1, so Second Wind can redo day 1's push-0. */
+export const SECOND_WIND_SLOTS = { core: 'walk-1', side1: 'mobility-0', side2: 'reading-0' } as const;
