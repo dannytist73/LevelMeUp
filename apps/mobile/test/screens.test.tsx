@@ -53,7 +53,9 @@ describe('Today', () => {
     await renderToday();
     expect(screen.getByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByLabelText(/quest picture/)).toBeNull(); // not a stop of its own inside the card
-    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(4);
+    // M8b: the reading is its own card, with no button until the day has an article.
+    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(3);
+    expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
   });
 
   it('shows the day, the player, the XP bar, the streak and shields', async () => {
@@ -558,7 +560,7 @@ describe('a day this phone built offline (M6e decision 8)', () => {
     expect(screen.getByText(OFFLINE_TEXT.later)).toBeTruthy();
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.day.hardDay })).toBeNull();
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.day.rest })).toBeNull();
-    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(4);
+    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(3); // + the reading card (M8b)
   });
 
   it('shows none of it on a day from the server', async () => {

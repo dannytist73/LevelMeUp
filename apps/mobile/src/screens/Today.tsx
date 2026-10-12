@@ -1,7 +1,7 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
-// quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx); M7a the check-in (CheckinNotes.tsx). The article
-// reader arrives in M8. M7c: after "I just didn't" under a pact, the Shadow's mark and box, the recovery quest first, and
+// quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx); M7a the check-in (CheckinNotes.tsx). M8b: today's
+// reading card and the Mage's Insight. M7c: after "I just didn't" under a pact, the Shadow's mark and box, the recovery quest first, and
 // at level 2 the Trial above the sealed side quests (board F3).
 import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SHADOW_TEXT, artKey, authoredTemplate, shadowLine } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
@@ -30,6 +30,8 @@ import { XpBar } from '../ui/XpBar.tsx';
 import { CheckinNotes } from './CheckinNotes.tsx';
 import { DayActions, DayBanners, PausedExercises } from './DayActions.tsx';
 import { QuestCard } from './QuestCard.tsx';
+import { InsightPanel } from './reading/InsightPanel.tsx';
+import { ReadingCard } from './reading/ReadingCard.tsx';
 import { SignInLost } from './SignInLost.tsx';
 import { syncMark } from './syncLine.ts';
 
@@ -125,6 +127,15 @@ export function Today({
               {title === SECTION.side1 && hold !== null && hold.sealed && <TrialPanel onTrial={onTrial} />}
               <SectionTitle title={title} count={count} />
               {inSection.map((q) => {
+                if (q.slot === 'article') {
+                  // M8b decision 5: the reading card, and the Mage's Insight under it (decision 8).
+                  return (
+                    <View key={q.id} style={{ gap: 14 }}>
+                      <ReadingCard quest={q} article={today!.article} waiting={view!.waiting.has(q.id)} onOpen={() => onOpenQuest(q.id)} />
+                      {view!.insight !== null && <InsightPanel insight={view!.insight} onChoose={(cluster) => void enqueue({ type: 'insight', cluster })} />}
+                    </View>
+                  );
+                }
                 const sealed = sealedQuest(hold, q);
                 return (
                   <QuestCard
