@@ -31,18 +31,20 @@ type ToggleProps = { label: string; line: string; value: boolean; disabled: bool
 function Toggle({ label, line, value, disabled, onChange }: ToggleProps) {
   return (
     <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      {/* The whole row is the switch: Android's own is 27 dp tall, under the 44 dp target (emulator, M7d row 10). */}
+      <Pressable
+        accessibilityRole="switch"
+        accessibilityLabel={label}
+        accessibilityState={{ checked: value, disabled }}
+        disabled={disabled}
+        onPress={() => onChange(!value)}
+        style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+      >
         <Body weight="bold" style={{ flexShrink: 1 }}>{label}</Body>
-        <Switch
-          accessibilityLabel={label}
-          value={value}
-          disabled={disabled}
-          accessibilityState={{ disabled }}
-          onValueChange={onChange}
-          trackColor={{ false: colors.line, true: colors.ember }}
-          thumbColor={colors.chalk}
-        />
-      </View>
+        <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+          <Switch value={value} disabled={disabled} trackColor={{ false: colors.line, true: colors.ember }} thumbColor={colors.chalk} />
+        </View>
+      </Pressable>
       <Small>{line}</Small>
     </View>
   );
@@ -85,7 +87,8 @@ export function Notifications({ onBack, onOpenSettings }: NotificationsProps) {
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 20 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      {/* Wraps, so at the largest text the title moves under Back instead of breaking inside the word (emulator). */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"

@@ -32,7 +32,7 @@ describe('Settings → Notifications (M7d)', () => {
   it('turning one on asks first; "Allow notifications" asks the phone, then turns it on', async () => {
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     const { store } = await show({ permission: 'ask' });
-    await fireEvent(toggle(T.briefing), 'valueChange', true);
+    await fireEvent.press(toggle(T.briefing));
     expect(screen.getByText(T.ask.title)).toBeTruthy();
     expect(announce).toHaveBeenCalledWith(`${T.ask.title} ${T.ask.line}`); // the card shows at the top; a screen reader hears it
     announce.mockRestore();
@@ -44,7 +44,7 @@ describe('Settings → Notifications (M7d)', () => {
 
   it('"Not now" leaves it off and asks the phone nothing', async () => {
     const { store } = await show({ permission: 'ask' });
-    await fireEvent(toggle(T.evening), 'valueChange', true);
+    await fireEvent.press(toggle(T.evening));
     await fireEvent.press(screen.getByText(T.ask.notNow));
     expect(screen.queryByText(T.ask.title)).toBeNull();
     expect(store.getState().allowNotify).not.toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe('Settings → Notifications (M7d)', () => {
   it('when the phone says no, the switch stays off', async () => {
     const allowNotify = jest.fn(async (): Promise<Permission> => 'denied');
     const { store } = await show({ permission: 'ask', allowNotify });
-    await fireEvent(toggle(T.briefing), 'valueChange', true);
+    await fireEvent.press(toggle(T.briefing));
     await fireEvent.press(screen.getByText(T.ask.allow));
     await waitFor(() => expect(allowNotify).toHaveBeenCalled());
     expect(store.getState().setNotify).not.toHaveBeenCalled();
@@ -66,16 +66,16 @@ describe('Settings → Notifications (M7d)', () => {
     expect(toggle(T.timers)).toBeChecked();
     await fireEvent.press(screen.getByRole('button', { name: `${T.briefingAt} 30 minutes later` }));
     expect(store.getState().setNotify).toHaveBeenCalledWith({ ...BRIEFING_ON, briefing: { on: true, minutes: 8 * 60 } });
-    await fireEvent(toggle(T.evening), 'valueChange', true);
+    await fireEvent.press(toggle(T.evening));
     expect(store.getState().setNotify).toHaveBeenLastCalledWith({ ...BRIEFING_ON, evening: { on: true, minutes: 20 * 60 } });
-    await fireEvent(toggle(T.timers), 'valueChange', false);
+    await fireEvent.press(toggle(T.timers));
     expect(store.getState().setNotify).toHaveBeenLastCalledWith({ ...BRIEFING_ON, timers: false });
   });
 
   it('before the player turns one on, a phone that allows them from install (Android 12 and older) shows them off', async () => {
     const { store } = await show({ permission: 'granted', notify: DEFAULT_NOTIFY });
     expect(toggle(T.timers)).not.toBeChecked();
-    await fireEvent(toggle(T.timers), 'valueChange', true);
+    await fireEvent.press(toggle(T.timers));
     expect(screen.queryByText(T.ask.title)).toBeNull();
     expect(store.getState().setNotify).toHaveBeenCalledWith({ ...DEFAULT_NOTIFY, optedIn: true, timers: true });
   });
@@ -86,7 +86,7 @@ describe('Settings → Notifications (M7d)', () => {
     expect(toggle(T.briefing)).toBeDisabled();
     await fireEvent.press(screen.getByText(T.denied.open));
     expect(onOpenSettings).toHaveBeenCalled();
-    await fireEvent(toggle(T.briefing), 'valueChange', true);
+    await fireEvent.press(toggle(T.briefing));
     expect(screen.queryByText(T.ask.title)).toBeNull();
     expect(store.getState().allowNotify).not.toHaveBeenCalled();
   });
