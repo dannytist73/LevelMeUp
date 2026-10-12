@@ -254,8 +254,8 @@ boundary: on the emulator only when a test day ends during the session, otherwis
 | # | Check | Emulator | Find X9 | Automated coverage |
 |---|---|---|---|---|
 | 1 | Developer → Offline day preview: Today with the offline line, real dates and four quests (Hermes runs the builder). | Pass: Day 2 on Tue 13 Oct with the offline line, four quests (Walk, Sit-to-stands, Reading, the article) and the "open once this day reaches the System" line | | `offlineDay.test.ts` |
-| 2 | Real boundary: airplane mode before the day ends; open the app after the boundary → the offline line and the day's quests; clear one; airplane mode off → it syncs, no notice, the quest stays cleared with its XP, ids are the server's. | | | `store.test.ts`, live test (quests by slot) |
-| 3 | A quest screen open during that sync stays on the same quest (its slot), and a running timer keeps its time. | | | `quest.test.tsx`, `offline.test.ts` |
+| 2 | Real boundary: airplane mode before the day ends; open the app after the boundary → the offline line and the day's quests; clear one; airplane mode off → it syncs, no notice, the quest stays cleared with its XP, ids are the server's. | Pass (emulator, test character Uma, America/Caracas; day 1 ended 2026-10-12 08:00 UTC): networking off before the end; Day 2 (Mon 12 Oct) appeared offline about 10 s after the end with the offline line (Walk, Sit-to-stands, Reading); Walk cleared offline (+10, Discipline +5, "Will sync"); networking on: the app synced by itself, no notice, Walk stayed cleared with its XP (10 / 30), First Trial celebrated, the offline line gone, swaps offered (the server's ids) | | `store.test.ts`, live test (quests by slot) |
+| 3 | A quest screen open during that sync stays on the same quest (its slot), and a running timer keeps its time. | Pass: the Reading quest screen was open with its timer running (started 08:02:4x UTC) through that sync; afterwards it was still Reading, the timer at 02:02 and counting, now with "Swap this quest" | | `quest.test.tsx`, `offline.test.ts` |
 | 4 | Clock ahead (emulator): airplane mode, set the clock a day ahead, open → an offline day; restore the clock, airplane mode off → the `clock_ahead` notice, then the server's day. | Pass: offline with the clock at 13 Oct 05:00 UTC, an offline day 2 after the failed sync timed out (about 30 s of "preparing"); clock and network back → the clock_ahead notice, then the server's day 1 | | live test (`clock_ahead`) |
 | 5 | "I felt pain" on an offline day offers rest (pause once the quest is cleared or the day rests, as on any day) and no gentle option; after the sync the exercise is resting, also when the server refused the day. | Pass after a fix: "Rest today" and no gentle option; the phone showed Squats resting and the day rested at once; after the clock_ahead sync Squats was resting on the server too (563b88f: a pain report from a day the server never stored still rests the exercise) | | `project.test.ts`, live test (`quest_changed`) |
 
@@ -280,10 +280,10 @@ Find X9. Rows 7 and 9 need a Warrior at level 5 or a used-up week of rest days.
 
 | # | Check | Emulator | Find X9 | Automated coverage |
 |---|---|---|---|---|
-| 1 | After a day with the core quest undone, Today opens with "The day closed. What happened?", the lead names the day, and the streak reads "day streak · paused". | | | `screens.test.tsx`, `checkin.test.ts` |
-| 2 | "Later" hides the card; leaving the app and coming back shows it again. | | | `store.test.ts`, `screens.test.tsx` |
-| 3 | Each answer shows its line; "sick or injured" asks which; Answer returns to Today; after the sync the card is gone and the streak no longer paused. | | | `checkin-screen.test.tsx`, `project.test.ts`, server `checkin.test.ts` |
-| 4 | "I just didn't": Today says "Clear the recovery quest today…" (and "appears once the System has your answer" before the sync); after it, the recovery quest is under "Recovery", 5 minutes, Discipline +5; clearing it shows "You took the day back. Your streak holds when today ends." | | | `screens.test.tsx`, `quest.test.tsx`, pgTAP `test_adjust_checkin` |
+| 1 | After a day with the core quest undone, Today opens with "The day closed. What happened?", the lead names the day, and the streak reads "day streak · paused". | Pass (Uma, after the sync above): "The day closed. What happened?", "Yesterday's core quest wasn't cleared…", "0 day streak · paused" | | `screens.test.tsx`, `checkin.test.ts` |
+| 2 | "Later" hides the card; leaving the app and coming back shows it again. | Pass: "Later" hid the card (the streak still paused); Home, then reopening the app showed it again | | `store.test.ts`, `screens.test.tsx` |
+| 3 | Each answer shows its line; "sick or injured" asks which; Answer returns to Today; after the sync the card is gone and the streak no longer paused. | Partly: the five answers each show their line; "I was sick or injured" asks "Which was it? Sick / Injured" with the injured note. A protected answer wasn't sent (Uma answered "I just didn't", row 4); its server side is covered by the live test | | `checkin-screen.test.tsx`, `project.test.ts`, server `checkin.test.ts` |
+| 4 | "I just didn't": Today says "Clear the recovery quest today…" (and "appears once the System has your answer" before the sync); after it, the recovery quest is under "Recovery", 5 minutes, Discipline +5; clearing it shows "You took the day back. Your streak holds when today ends." | Pass: before the sync "day streak · held today", "Clear the recovery quest today…" and "…appears once the System has your answer"; after it, Recovery: "Recovery quest: walk", 5 minutes, Discipline +5 XP; cleared: "You took the day back. Your streak holds when today ends." (15 / 30 XP) | | `screens.test.tsx`, `quest.test.tsx`, pgTAP `test_adjust_checkin` |
 | 5 | The next day: the result shows once (recovered, or the shield or reset line); *Rise Again* celebrates. | | | `advance.test.ts`, pgTAP `test_advance_replays_and_settles` |
 | 6 | "I need a lighter load": the next day has the fewer minutes. | | | server `checkin.test.ts`, live test |
 | 7 | Second Wind (a Warrior at level 5 whose missed core quest was yesterday's): the choice names the quest; the recovery slot then holds it at full XP. | | | `checkin-screen.test.tsx`, server `checkin.test.ts` |
@@ -292,3 +292,13 @@ Find X9. Rows 7 and 9 need a Warrior at level 5 or a used-up week of rest days.
 | 10 | Character: Second Wind and Unbreakable read "Ready" or "Ready again in N days". | | | `character.test.ts` |
 | 11 | At the largest font, the check-in screen and Today's card keep every word. | Pass (the check-in preview at font scale 2.0): the card, both buttons, the offer, the five answers and the notes keep every word | | |
 | 12 | Developer → Check-in preview shows the card and the screen; nothing is sent. | Pass: Today with "day streak · paused", "The day closed. What happened?" and the offer; Answer opens the five answers; "Which was it?" after "sick or injured"; Answer waits for a full answer and returns to Today; 0 waiting afterwards | | |
+
+### What the emulator found (M7a, 2026-10-12, a real day boundary)
+
+Test character Uma (America/Caracas), day 1's core quest left undone, networking off across the 08:00 UTC boundary.
+
+1. On the day built offline after the missed day, Quest cleared said "Streak 0 → 1 days", though the server then held
+   the streak for day 1's check-in ("paused"). The phone's offline day now holds the streak too when the day that ended
+   needs a check-in (planned with M7b, Task 9).
+2. Row 5 (the result the next day, *Rise Again*) needs the next boundary (2026-10-13 08:00 UTC): Uma is kept for it.
+

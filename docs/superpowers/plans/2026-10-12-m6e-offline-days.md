@@ -2614,6 +2614,8 @@ Functions v8 after the review, `test:live` 33 of 33, no test player left; v9 aft
 never stored now still rests the exercise (563b88f); the preview's background (cc278b3); a brand-new player's quest art
 is fetched after onboarding (8557820, an M6a gap). Rows 2 and 3 need a real day boundary: test character Uma's day 1
 ends 2026-10-12 08:00 UTC; run then if the session is still on, otherwise on the Find X9.
+They ran then and pass (2026-10-12, the checklist): the day built offline about 10 s after the end, a quest cleared
+offline kept its XP through the sync, and an open quest screen kept its slot and its running timer.
 
 Checks: rules 439, content 1043, server 299, app 569 tests; `typecheck`, `check:functions`, `check:portable` (194/70
 exports), `check:bundle` (33 files, no secrets) pass; `npm run pacing` unchanged from M6c (Warrior steady rank C on day

@@ -1336,6 +1336,11 @@ describe('Settings and rest days (M7b)', () => {
     expect(shown.today!.protection).toBe('planned_rest');
   });
 
+  it('after a day whose core quest was not done, an offline day holds the streak for the check-in (emulator finding)', () => {
+    expect(project(serverState(), [offlineEvent()]).character.streak.awaitingCheckin).toBe(true); // day 1's core undone
+    expect(project(serverState(['core']), [offlineEvent()]).character.streak.awaitingCheckin).toBe(false);
+  });
+
   it('a state from a server before M7b: no planned rest, no offer, rather than failing', () => {
     const server = adjustState();
     const { restDay: _r, ...character } = server.character;
@@ -1438,10 +1443,21 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
     : { ...server.today, restTomorrow: server.today.restTomorrow ?? false, quests: server.today.quests.map((q) => ({ ...q })) };
 ```
 
-The `provisional_day` branch:
+The `provisional_day` branch (import `STREAK_SLOTS` and `closedDayResolution` from the rules). The emulator found
+(2026-10-12, test character Uma) that an offline day after a missed core quest showed "Streak 0 → 1" on Quest cleared,
+though the server then holds the streak for that day's check-in; the phone now holds it too:
 
 ```ts
       if (today === null || today.dayNumber < event.dayNumber) {
+        // The day that ended may need a check-in (its core quest not done): the streak waits for it, as on the server.
+        if (today !== null) {
+          const done = today.quests.filter((q) => q.completedAt !== null);
+          const ended = closedDayResolution({
+            coreDone: done.some((q) => q.slot === 'core'), questsDone: done.filter((q) => STREAK_SLOTS.includes(q.slot)).length,
+            protection: today.protection,
+          });
+          if (ended.kind === 'awaiting_checkin') character = { ...character, streak: { ...character.streak, awaitingCheckin: true } };
+        }
         today = offlineToday(event);
         // A day planned as rest the day before is built as one (decision 5), as the server will.
         if (character.restDay === event.dayNumber) today.protection = 'planned_rest';

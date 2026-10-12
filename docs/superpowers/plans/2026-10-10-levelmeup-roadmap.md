@@ -147,7 +147,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The offline day appears only once the failed sync gives up (about 30 seconds with no network on the emulator); Today says "preparing" meanwhile. Building it when the day ends with no connection known (before the sync) would be quicker. |
 | Later | After a refused offline day (`clock_ahead`), each completion sent for it comes back `not_found` too: fold those notices into the one. If the outbox is split across batches between a `provisional_day` and its completions and that day has already ended, they arrive `day_closed` (rare). |
 | Later | A completion counted for another quest still counts toward Scholar's Path sessions when the quest in that slot is a reading quest (the finished-book count and the Character card). |
-| Owner | Find X9: M6e rows 2–3 (a real day boundary) unless the emulator ran them; the M6c rows 2 and 8–11 and the M6d row 9 (a character from before M6c sees the training note). |
+| Owner | *(M6e rows 2–3 passed on the emulator on a real day boundary, 2026-10-12.)* Find X9: the M6c rows 2 and 8–11 and the M6d row 9 (a character from before M6c sees the training note). |
 
 ## Carried forward from M7a
 
