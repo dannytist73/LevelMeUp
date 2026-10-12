@@ -453,7 +453,7 @@ describe('the Accountability Pact (M7c)', () => {
     expect(lower.body.state.profile).toMatchObject({ accountabilityLevel: 1, accountabilityFrom: from });
     const off = await sync(p, [{ id: eventId(), type: 'accountability_set', level: 0 }]);
     expect(off.body.state.profile).toMatchObject({ accountabilityLevel: 0, accountabilityFrom: null });
-  });
+  }, 120_000); // six calls of 11–15 seconds each against the live project (deploy, 2026-10-12)
 
   it('a Trial or a note with nothing to finish is refused; malformed ones are rejected; nothing is claimed', async () => {
     const trial = eventId();

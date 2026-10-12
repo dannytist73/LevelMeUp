@@ -1,6 +1,7 @@
 // Development only (M7c): Today after a miss under a pact, the Shadow's scene, the Pact and the focus session, over the
 // cached day with a made-up "I just didn't" and its recovery quest, in a store of their own. Nothing is sent, so the
 // screens can be checked on a device without missing a day.
+import { DAY_MS, questDayDate } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -33,6 +34,10 @@ export default function ShadowPreview() {
     if (state === undefined || state.today === null) return null;
     const core = state.today.quests.find((q) => q.slot === 'core') ?? null;
     const yesterday = Math.max(1, state.today.dayNumber - 1);
+    // The day before today's window, so the scene shows its "Claimed" stamp.
+    const date = questDayDate({
+      startsAt: Date.parse(state.today.startsAt!) - DAY_MS, endsAt: Date.parse(state.today.endsAt!) - DAY_MS, timeZone: state.today.timeZone,
+    });
     const recovery: QuestView = {
       id: -2, slot: 'recovery', templateId: 'recovery-walk', ladder: null, rung: null, stat: 'discipline', tier: 'minor', minutes: 5,
       completion: 'tap', condition: { kind: 'minutes', minutes: 5 }, hardDay: false, xp: { discipline: 5 }, why: { code: 'recovery' },
@@ -42,9 +47,10 @@ export default function ShadowPreview() {
       ...state,
       profile: { ...state.profile, accountabilityLevel: kind === 'trial' ? 2 : 1, accountabilityFrom: null },
       character: { ...state.character, streak: { ...state.character.streak, awaitingCheckin: true } },
-      today: { ...state.today, quests: [...state.today.quests, recovery] },
+      // The made-up recovery quest replaces a real one (the emulator: a day with one already cleared).
+      today: { ...state.today, quests: [...state.today.quests.filter((q) => q.slot !== 'recovery'), recovery] },
       checkin: {
-        id: -1, from: yesterday, to: yesterday, gap: false, date: null, core: core?.templateId ?? null, ladder: core?.ladder ?? null,
+        id: -1, from: yesterday, to: yesterday, gap: false, date, core: core?.templateId ?? null, ladder: core?.ladder ?? null,
         answer: 'just_didnt', secondWind: null, recoveryDayId: state.today.id, consequence: kind, trialDone: false, note: null,
       },
     }, []);
@@ -68,6 +74,7 @@ export default function ShadowPreview() {
           {(['shadow', 'trial', 'paused'] as const).map((k) => (
             <Button key={k} label={k} variant={k === kind ? 'primary' : 'secondary'} onPress={() => { setKind(k); setScreen('today'); }} />
           ))}
+          <Button label="Scene" variant="secondary" onPress={() => setScreen('scene')} />
           <Button label="Pact" variant="secondary" onPress={() => setScreen('pact')} />
         </View>
       </View>
