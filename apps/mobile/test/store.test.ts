@@ -629,6 +629,18 @@ describe('the art manifest (M6a decision 10)', () => {
     expect(store.getState().art).toEqual({ version: 1, art: { 'ladder-walk': 1 } });
     expect(JSON.parse(kv.get(ART_KEY)!)).toEqual({ version: 1, art: { 'ladder-walk': 1 } });
   });
+
+  it("is fetched for a new player too, whose first launch never synced a character (M6e device check)", async () => {
+    const { store, deps } = await setup([{ ok: false, status: 404, code: 'not_started' }], { ensureSession: guestSession() });
+    await store.getState().boot();
+    await settle();
+    expect(deps.artManifest).not.toHaveBeenCalled();
+    store.getState().editDraft(READY_DRAFT);
+    expect(await store.getState().startCharacter()).toEqual({ ok: true });
+    await settle();
+    expect(deps.artManifest).toHaveBeenCalledTimes(1);
+    expect(store.getState().art).toEqual({ version: 1, art: { 'ladder-push': 2 } });
+  });
 });
 
 describe('quest timers (M6a decision 3)', () => {

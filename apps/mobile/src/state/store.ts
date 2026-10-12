@@ -194,8 +194,13 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
      */
     let generation = 0;
 
-    /** The art manifest is fetched once per launch, after the first sync. */
+    /** The art manifest is fetched once per launch, after the first sync (or a new player's onboarding). */
     let artChecked = false;
+    const checkArt = (): void => {
+      if (artChecked) return;
+      artChecked = true;
+      void refreshArt();
+    };
     const refreshArt = async (): Promise<void> => {
       const manifest = parseArtManifest(await deps.artManifest().catch(() => null));
       if (manifest === null) return;
@@ -274,10 +279,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           if (before !== null && after !== null && after > before) found.push({ kind: 'level', level: after });
           for (const id of outcome.newAchievements) found.push({ kind: 'achievement', id });
           if (found.length > 0) set({ celebrations: [...get().celebrations, ...found] });
-          if (!artChecked) {
-            artChecked = true;
-            void refreshArt();
-          }
+          checkArt();
           return;
         }
         case 'not_started':
@@ -392,6 +394,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
             await refresh({
               phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account(), trainingNoticeSeen: true,
             });
+            // A new player's first launch never synced a character, so the quest art is fetched now (M6e device check).
+            checkArt();
             return { ok: true };
           };
           const holding = get().cached !== null;
