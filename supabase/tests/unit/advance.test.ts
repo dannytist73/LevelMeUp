@@ -1,15 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, newLadder, nextDayWindow, planWorkout, plannedMoves, sessionCondition,
+  DAY_MS, DISCIPLINE_PER_CORE_DAY, LIGHT_DAY_MINUTES, RUNG_BONUS_XP, cumulativeXpForLevel, newLadder, nextDayWindow, planWorkout, plannedMoves, sessionCondition,
   templateById,
 } from '../../../packages/rules/src/index.ts';
 import { CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { planAdvance } from '../../functions/_shared/advance.ts';
 import { startPoints, statXp, toProfile } from '../../functions/_shared/state.ts';
-import { DAY1, HOUR, afterDay1, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay, profileRow } from './fixtures.ts';
+import type { CharacterRow, DayDraft, DayRow, PendingCheckin, QueuedDay } from '../../functions/_shared/state.ts';
+import {
+  DAY1, HOUR, afterDay1, characterRow, dayRow, dayTwoSnapshot, instanceRows, ladderRows, manilaDay, pendingCheckin, profileRow,
+} from './fixtures.ts';
 
 const day1End = new Date(DAY1.endsAt).getTime();
 const core = DAY1.quests.find((q) => q.slot === 'core')!;
+/** Day n (n ≥ 2) of the fixtures' player in Manila, with day 1's quests. */
+const dayN = (n: number): DayDraft => {
+  const w = manilaDay(n);
+  return { ...DAY1, dayNumber: n, startsAt: new Date(w.startsAt).toISOString(), endsAt: new Date(w.endsAt).toISOString() };
+};
+const closedRow = (n: number, resolution: DayRow['resolution']): DayRow =>
+  dayRow(dayN(n), n, { status: 'closed', resolution, streak_applied: false });
+const queued = (n: number, resolution: QueuedDay['resolution']): QueuedDay => ({ id: String(n), day_number: n, resolution });
+const held = (over: Partial<PendingCheckin> = {}): PendingCheckin => pendingCheckin({ answer: 'just_didnt', recovery_day_id: '2', ...over });
 
 describe('closing days and building the next one (architecture §4.3)', () => {
   it('does nothing while day 1 is running', () => {
@@ -97,15 +109,25 @@ describe('closing days and building the next one (architecture §4.3)', () => {
   });
 
   it('once a day waits from an earlier sync, every later day waits, missed or not', () => {
-    const out = planAdvance(afterDay1([], day1End, { queued: true, character: characterRow({ awaiting_checkin: true }) }))!;
-    expect(out.close).toEqual([{ dayId: 1, resolution: 'awaiting_checkin', streakApplied: false, checkin: false }]);
+    const out = planAdvance(afterDay1([], manilaDay(3).endsAt, {
+      character: characterRow({ awaiting_checkin: true }),
+      days: [closedRow(2, 'streak_day'), dayRow(dayN(3), 3)],
+      instances: instanceRows(dayN(3), 3),
+      queue: [queued(2, 'streak_day')],
+    }))!;
+    expect(out.close).toEqual([{ dayId: 3, resolution: 'awaiting_checkin', streakApplied: false, checkin: false }]);
+    expect(out.applied).toEqual([]);
   });
 
   it('away days behind a waiting day wait too: no gap check-in now', () => {
-    const now = manilaDay(5).startsAt + HOUR;
-    const out = planAdvance(afterDay1(['core'], now, { queued: true, character: characterRow({ awaiting_checkin: true }) }))!;
+    const out = planAdvance(afterDay1([], manilaDay(6).startsAt + HOUR, {
+      character: characterRow({ awaiting_checkin: true }),
+      days: [closedRow(2, 'streak_day'), dayRow(dayN(3), 3)],
+      instances: instanceRows(dayN(3), 3, ['core']),
+      queue: [queued(2, 'streak_day')],
+    }))!;
     expect(out.gap).toBeNull();
-    expect(out.newDay!.dayNumber).toBe(5);
+    expect(out.newDay!.dayNumber).toBe(6);
     expect(out.streak.awaitingCheckin).toBe(true);
   });
 
@@ -175,7 +197,9 @@ describe('closing days and building the next one (architecture §4.3)', () => {
 describe('workouts on built days (M6c decision 5)', () => {
   it('the next strength day is a workout planned from the workouts done so far', () => {
     const s = dayTwoSnapshot({ core: 'walk-1', side1: 'reading-0', side2: 'focus-0' }, { workoutsDone: 1 });
-    const outcome = planAdvance({ ...s, timeZone: 'Asia/Manila', nowMs: manilaDay(3).startsAt + HOUR, library: LIBRARY, contentVersion: CONTENT_VERSION });
+    const outcome = planAdvance({
+      ...s, pending: s.checkin, timeZone: 'Asia/Manila', nowMs: manilaDay(3).startsAt + HOUR, library: LIBRARY, contentVersion: CONTENT_VERSION,
+    });
     const core = outcome!.newDay!.quests.find((q) => q.slot === 'core')!;
     expect(core.templateId).toBe('workout-0');
     const template = templateById(LIBRARY, 'workout-0');
@@ -232,5 +256,107 @@ describe('a day the phone built offline (M6e)', () => {
     const core = DAY1.quests.find((q) => q.slot === 'core')!;
     expect(out.ladders[core.ladder!]).toBeUndefined();
     expect(out.ledger).toContainEqual(expect.objectContaining({ sourceType: 'discipline', sourceId: 'day:1' }));
+  });
+});
+
+describe('the check-in answered (M7a)', () => {
+  it('once the check-in is resolved, the days that waited are applied in order (decision 5)', () => {
+    const out = planAdvance(afterDay1([], manilaDay(4).startsAt + HOUR, {
+      character: characterRow({ streak_current: 5, streak_best: 6 }),
+      days: [closedRow(2, 'streak_day'), closedRow(3, 'streak_day'), dayRow(dayN(4), 4)],
+      instances: instanceRows(dayN(4), 4),
+      queue: [queued(3, 'streak_day'), queued(2, 'streak_day')],
+    }))!;
+    expect(out.applied).toEqual([2, 3]);
+    expect(out.opened).toEqual([]);
+    expect(out.streak).toEqual({ current: 7, best: 7, shields: 1, awaitingCheckin: false });
+    expect(out.ledger).toContainEqual({ sourceType: 'milestone', sourceId: 'day:3', stat: 'discipline', amount: 20 });
+    expect(out.close).toEqual([]);
+    expect(out.newDay).toBeNull();
+  });
+
+  it('the replay stops at a missed day, which opens its own check-in; the days after it keep waiting', () => {
+    const out = planAdvance(afterDay1([], manilaDay(5).startsAt + HOUR, {
+      character: characterRow({ streak_current: 2, streak_best: 2 }),
+      days: [closedRow(2, 'streak_day'), closedRow(3, 'awaiting_checkin'), closedRow(4, 'streak_day'), dayRow(dayN(5), 5)],
+      instances: instanceRows(dayN(5), 5),
+      queue: [queued(2, 'streak_day'), queued(3, 'awaiting_checkin'), queued(4, 'streak_day')],
+    }))!;
+    expect(out.applied).toEqual([2, 3]);
+    expect(out.opened).toEqual([{ dayId: 3 }]);
+    expect(out.streak).toEqual({ current: 3, best: 3, shields: 0, awaitingCheckin: true });
+  });
+
+  it('away days between waiting days, or before the running day, are one gap check-in', () => {
+    const between = planAdvance(afterDay1([], manilaDay(6).startsAt + HOUR, {
+      days: [closedRow(2, 'streak_day'), closedRow(5, 'streak_day'), dayRow(dayN(6), 6)],
+      instances: instanceRows(dayN(6), 6),
+      queue: [queued(2, 'streak_day'), queued(5, 'streak_day')],
+    }))!;
+    expect(between.applied).toEqual([2]);
+    expect(between.opened).toEqual([{ gapFrom: 3, gapTo: 4 }]);
+    expect(between.streak.awaitingCheckin).toBe(true);
+    const before = planAdvance(afterDay1([], manilaDay(5).startsAt + HOUR, {
+      days: [closedRow(2, 'streak_day'), dayRow(dayN(5), 5)],
+      instances: instanceRows(dayN(5), 5),
+      queue: [queued(2, 'streak_day')],
+    }))!;
+    expect(before.applied).toEqual([2]);
+    expect(before.opened).toEqual([{ gapFrom: 3, gapTo: 4 }]);
+  });
+
+  it('"I just didn\'t" is settled when its recovery day ends: recovered keeps the streak and counts for Rise Again', () => {
+    const out = planAdvance(afterDay1([], manilaDay(2).endsAt + HOUR, {
+      character: characterRow({ awaiting_checkin: true, streak_current: 5, streak_best: 5, shields: 1 }),
+      days: [dayRow(DAY1, 1, { status: 'closed', resolution: 'awaiting_checkin', streak_applied: true }), dayRow(dayN(2), 2)],
+      instances: instanceRows(dayN(2), 2, ['core']),
+      pending: held({ recovered: true }),
+    }))!;
+    expect(out.resolved).toEqual({ id: 7, outcome: 'recovered' });
+    expect(out.counters.recoveriesCleared).toBe(1);
+    expect(out.close).toEqual([{ dayId: 2, resolution: 'streak_day', streakApplied: true, checkin: false }]);
+    expect(out.streak).toEqual({ current: 6, best: 6, shields: 1, awaitingCheckin: false });
+    expect(out.ability).toBeNull();
+  });
+
+  it('not recovered: Unbreakable when ready (no shield needed), else a shield, else a reset that keeps the best', () => {
+    const settle = (character: Partial<CharacterRow>) => planAdvance(afterDay1([], manilaDay(2).endsAt + HOUR, {
+      character: characterRow({ awaiting_checkin: true, streak_current: 5, streak_best: 9, ...character }),
+      days: [dayRow(dayN(2), 2)],
+      instances: instanceRows(dayN(2), 2, ['side1', 'side2']),
+      pending: held(),
+    }))!;
+    const level10 = cumulativeXpForLevel(10);
+    const unbreakable = settle({ xp_strength: level10, shields: 0 });
+    expect(unbreakable.resolved).toEqual({ id: 7, outcome: 'unbreakable' });
+    expect(unbreakable.ability).toEqual({ id: 'unbreakable', day: 2 });
+    expect(unbreakable.streak.current).toBe(6);
+    const cooling = settle({ xp_strength: level10, shields: 1, ability_last_used: { unbreakable: 1 } });
+    expect(cooling.resolved).toEqual({ id: 7, outcome: 'shield' });
+    expect(cooling.streak).toMatchObject({ current: 6, shields: 0 });
+    const reset = settle({ shields: 0 });
+    expect(reset.resolved).toEqual({ id: 7, outcome: 'reset' });
+    expect(reset.streak).toEqual({ current: 1, best: 9, shields: 0, awaitingCheckin: false });
+  });
+
+  it('days that waited behind the held check-in are applied once it is settled, before the recovery day itself', () => {
+    const out = planAdvance(afterDay1([], manilaDay(3).endsAt + HOUR, {
+      character: characterRow({ awaiting_checkin: true, streak_current: 5, streak_best: 5, shields: 1 }),
+      days: [closedRow(2, 'streak_day'), dayRow(dayN(3), 3)],
+      instances: instanceRows(dayN(3), 3, ['core']),
+      queue: [queued(2, 'streak_day')],
+      pending: held({ recovery_day_id: '3' }),
+    }))!;
+    expect(out.resolved).toEqual({ id: 7, outcome: 'shield' });
+    expect(out.applied).toEqual([2]);
+    expect(out.close).toEqual([{ dayId: 3, resolution: 'streak_day', streakApplied: true, checkin: false }]);
+    expect(out.streak).toEqual({ current: 7, best: 7, shields: 1, awaitingCheckin: false });
+  });
+
+  it('after "sick" or "injured" the next day is light, and the flag is used up (decision 6)', () => {
+    const out = planAdvance(afterDay1(['core'], day1End, { character: characterRow({ next_day_light: true }) }))!;
+    expect(out.newDay).toMatchObject({ dayNumber: 2, light: true, comeback: false });
+    expect(out.lightUsed).toBe(true);
+    expect(planAdvance(afterDay1(['core'], day1End))!.lightUsed).toBe(false);
   });
 });
