@@ -1,4 +1,4 @@
-import { LIGHTER_PLAN_THRESHOLD, LIGHTER_PLAN_WINDOW_MS } from './constants.ts';
+import { LIGHTER_PLAN_THRESHOLD, LIGHTER_PLAN_WINDOW_MS, MINUTES_OPTIONS } from './constants.ts';
 
 export type CheckinAnswer = 'sick' | 'injured' | 'emergency' | 'too_hard' | 'lighter_load' | 'just_didnt';
 
@@ -51,4 +51,33 @@ export function shouldOfferLighterPlan(events: readonly LighterPlanEvent[], nowM
   const recent = events.filter((event) => event.at <= nowMs && nowMs - event.at < LIGHTER_PLAN_WINDOW_MS);
   const count = (kind: LighterPlanEvent['kind']): number => recent.filter((event) => event.kind === kind).length;
   return count('recovery_quest') >= LIGHTER_PLAN_THRESHOLD || count('protected_day') >= LIGHTER_PLAN_THRESHOLD;
+}
+
+/** A check-in the player answered: when, and how many days it covered (one missed day, or a run of away days). */
+export type AnsweredCheckin = { answer: CheckinAnswer; at: number; days: number };
+
+/**
+ * What answered check-ins count towards the lighter-plan offer (spec §3.7): "I just didn't" is a recovery quest; any
+ * other answer protects each day it covers.
+ */
+export function checkinEvents(answers: readonly AnsweredCheckin[]): LighterPlanEvent[] {
+  return answers.flatMap((a): LighterPlanEvent[] =>
+    a.answer === 'just_didnt'
+      ? [{ at: a.at, kind: 'recovery_quest' }]
+      : Array.from({ length: Math.max(1, a.days) }, (): LighterPlanEvent => ({ at: a.at, kind: 'protected_day' })));
+}
+
+/** The next lower daily minutes (spec §3.7: "daily minutes drop, plan lightens"), or null at the lowest. */
+export function lighterMinutes(minutes: number): number | null {
+  const lower = MINUTES_OPTIONS.filter((m) => m < minutes);
+  return lower.length === 0 ? null : lower[lower.length - 1]!;
+}
+
+/**
+ * The lighter-plan offer: shown when the check-ins call for it, and not again for LIGHTER_PLAN_WINDOW_MS after the
+ * player last answered it (M7a decision 9), so it never shows on every open.
+ */
+export function lighterPlanOffered(events: readonly LighterPlanEvent[], nowMs: number, answeredAt: number | null): boolean {
+  if (answeredAt !== null && nowMs - answeredAt < LIGHTER_PLAN_WINDOW_MS) return false;
+  return shouldOfferLighterPlan(events, nowMs);
 }

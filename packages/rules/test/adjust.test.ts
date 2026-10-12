@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addRecovery, applyDawnRitual, applyHardDay, applyStillness, applySwap, checkProvisionalDay, painKey, painOption, provisionalDay,
-  restAllowed, seeProfessional, swapOptions,
+  restAllowed, secondWindRedo, seeProfessional, swapOptions,
 } from '../src/adjust.ts';
 import type { ProvisionalQuest } from '../src/adjust.ts';
 import { buildDay, draftQuest } from '../src/day.ts';
@@ -142,6 +142,16 @@ describe('the recovery quest (spec §3.7)', () => {
     expect(() => addRecovery(FIXTURE, input, day, { kind: 'second_wind', missedCore: 'push-1', lastUsedDay: 4 })).toThrow(RangeError);
     expect(() => secondWind(missedPush('push-1', {}, { level: 4 }))).toThrow(RangeError);
     expect(() => secondWind(missedPush('article'), 'article')).toThrow(RangeError);
+  });
+
+  it('secondWindRedo is the redo exactly when addRecovery accepts it, else null (M2 review)', () => {
+    const input = missedPush();
+    const day = buildDay(FIXTURE, input);
+    expect(secondWindRedo(FIXTURE, input, day, 'push-1', null)).toMatchObject({ slot: 'recovery', templateId: 'push-1', why: { code: 'second_wind' } });
+    expect(secondWindRedo(FIXTURE, input, day, 'push-1', 4)).toBeNull();
+    const young = missedPush('push-1', {}, { level: 4 });
+    expect(secondWindRedo(FIXTURE, young, buildDay(FIXTURE, young), 'push-1', null)).toBeNull();
+    expect(secondWindRedo(FIXTURE, input, day, 'walk-1', null)).toBeNull();
   });
 
   it("Second Wind redoes only yesterday's core quest", () => {

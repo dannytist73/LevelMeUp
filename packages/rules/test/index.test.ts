@@ -5,7 +5,7 @@ describe('public API', () => {
   it.each([
     'levelForXp', 'levelProgress', 'statPoints', 'xpToNextPoint', 'pointProgress', 'nextRank', 'localDateKey', 'questDayDate', 'rankFor', 'startingStats', 'questXp', 'splitXp',
     'firstDayWindow', 'nextDayWindow', 'isClosed', 'acceptsCompletion', 'isValidTimeZone', 'applyDay', 'isStreakDay',
-    'checkinOutcome', 'shouldOfferLighterPlan', 'recordCompletion', 'recordMiss', 'recordReentry', 'recordPain',
+    'checkinOutcome', 'shouldOfferLighterPlan', 'checkinEvents', 'lighterMinutes', 'lighterPlanOffered', 'secondWindRedo', 'recordCompletion', 'recordMiss', 'recordReentry', 'recordPain',
     'resumeAfterPain', 'stepDown', 'decideConsequence', 'isSealed', 'elapsedMs', 'questTimerDone', 'trialDone',
     'simulatePacing', 'meetsTargets', 'closedDayResolution', 'resolveCheckin', 'canonicalTimeZone', 'templateAllowed',
     'effectiveRung', 'maxRungFor', 'abilityUnlocked', 'abilityReady', 'swapLimit', 'buildDay',

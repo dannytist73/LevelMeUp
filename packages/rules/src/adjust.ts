@@ -211,6 +211,21 @@ export function addRecovery(library: QuestLibrary, input: DayInput, day: BuiltDa
 }
 
 /**
+ * The quest Second Wind would put in the recovery slot today, or null when `addRecovery` would refuse it (M2 review: the
+ * app offers Second Wind only when the server will accept it).
+ */
+export function secondWindRedo(
+  library: QuestLibrary, input: DayInput, day: BuiltDay, missedCore: string, lastUsedDay: number | null,
+): QuestDraft | null {
+  try {
+    return addRecovery(library, input, day, { kind: 'second_wind', missedCore, lastUsedDay }).quests.find((q) => q.slot === 'recovery')!;
+  } catch (error) {
+    if (error instanceof RangeError) return null;
+    throw error;
+  }
+}
+
+/**
  * Problems with a day the phone built offline (architecture §6); empty means the server can accept it. Rewards are never
  * taken from the phone: the server re-drafts each quest from its own tables.
  */
