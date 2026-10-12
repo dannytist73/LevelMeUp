@@ -14,7 +14,7 @@ functions and its settings; LevelMeUp never touches them (architecture §12). Th
 | `npm run db:test [-- <name>]` | Runs `tests/db/*.sql` on the live project, each inside a transaction that always rolls back (pgTAP is created inside it), then checks nothing was left behind |
 | `npm run check:functions` | `deno check` on the three functions |
 | `npm run deploy:functions` | Deploys `lmu-onboarding`, `lmu-sync` and `lmu-account-delete` by name |
-| `npm run test:live` | Calls the deployed functions with up to 11 temporary anonymous players and deletes them all at the end |
+| `npm run test:live` | Calls the deployed functions with up to 12 temporary anonymous players and deletes them all at the end |
 | `npm run lmu:password` | Gives `lmu_service` a new random password and stores `LMU_DB_URL`; prints nothing secret (also for rotation) |
 
 `.env.local` (git-ignored) holds the project URL and the public anon key for the live tests. Service-role and
