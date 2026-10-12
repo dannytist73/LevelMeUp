@@ -103,7 +103,7 @@ describe('a player from onboarding to a cleared quest', () => {
     const side1 = quest(state, 'side1');
     const side2 = quest(state, 'side2');
     const res = await sync(a, [
-      { id: eventId(), type: 'accountability_set', level: 2 },
+      { id: eventId(), type: 'grant_xp', amount: 9999 },
       { id: eventId(), type: 'complete', instanceId: side1.id, completedAt: now(), payload: side1.completion === 'text' ? { text: 'Done.' } : { sets: [3] } },
       { id: eventId(), type: 'complete', instanceId: side2.id, completedAt: now(), payload: { sets: [], text: '' } },
       { id: eventId(), type: 'complete', instanceId: side2.id, completedAt: now() + 3_600_000, payload: {} },
@@ -433,5 +433,41 @@ describe('Settings and rest days (M7b)', () => {
     const again = eventId();
     const twice = await sync(p, [{ id: again, type: 'plan_rest', dayId: today.id, tomorrow: true }]);
     expect(twice.body.results).toEqual([{ id: again, ok: false, code: 'already_protected' }]);
+  });
+});
+
+describe('the Accountability Pact (M7c)', () => {
+  let p: Player;
+
+  it('signing raises the level from now; the same level is refused; lowering keeps the time; off is instant', async () => {
+    p = await newPlayer();
+    expect((await call('lmu-onboarding', p.token, ONBOARDING)).status).toBe(201);
+    const signed = await sync(p, [{ id: eventId(), type: 'accountability_set', level: 2 }]);
+    expect(signed.body.results[0].ok).toBe(true);
+    const from = signed.body.state.profile.accountabilityFrom;
+    expect(signed.body.state.profile.accountabilityLevel).toBe(2);
+    expect(Date.parse(from)).toBeGreaterThan(Date.parse(signed.body.state.today.startsAt)); // never today's
+    const same = eventId();
+    expect((await sync(p, [{ id: same, type: 'accountability_set', level: 2 }])).body.results).toEqual([{ id: same, ok: false, code: 'same_level' }]);
+    const lower = await sync(p, [{ id: eventId(), type: 'accountability_set', level: 1 }]);
+    expect(lower.body.state.profile).toMatchObject({ accountabilityLevel: 1, accountabilityFrom: from });
+    const off = await sync(p, [{ id: eventId(), type: 'accountability_set', level: 0 }]);
+    expect(off.body.state.profile).toMatchObject({ accountabilityLevel: 0, accountabilityFrom: null });
+  });
+
+  it('a Trial or a note with nothing to finish is refused; malformed ones are rejected; nothing is claimed', async () => {
+    const trial = eventId();
+    const note = eventId();
+    const bad = eventId();
+    const long = eventId();
+    const { body } = await sync(p, [
+      { id: trial, type: 'trial', checkinId: 1 },
+      { id: note, type: 'checkin_note', checkinId: 1, note: 'A late shift.' },
+      { id: bad, type: 'accountability_set', level: 3 },
+      { id: long, type: 'checkin_note', checkinId: 1, note: 'x'.repeat(501) },
+    ]);
+    expect(body.results).toEqual([{ id: trial, ok: false, code: 'no_trial' }, { id: note, ok: false, code: 'checkin_gone' }]);
+    expect(body.rejected).toEqual([{ id: bad, code: 'bad_event' }, { id: long, code: 'bad_event' }]);
+    expect(body.state.checkin).toBeNull();
   });
 });
