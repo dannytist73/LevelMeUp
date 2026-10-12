@@ -217,3 +217,63 @@ begin
   return next is((select books_finished -> 0 ->> 'title' from levelmeup.profiles where user_id = a), 'Book 2', 'the oldest goes');
   return next is((select books_finished -> 99 ->> 'title' from levelmeup.profiles where user_id = a), 'Last', 'the newest is last');
 end $$;
+
+-- M7a: the check-in's answer (decisions 2–6) and the lighter plan (decision 9).
+create function lmu_test.test_adjust_checkin() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+  today bigint := lmu_test.day_of(a);
+  g bigint;
+  c bigint;
+  recovery jsonb := '{"templateId": "recovery-walk", "ladder": null, "rung": null, "stat": "discipline", "tier": "minor",
+    "minutes": 5, "completion": "tap", "condition": {"kind": "habit"}, "hardDay": false, "xp": {"discipline": 5},
+    "why": {"code": "recovery"}, "book": null}';
+begin
+  insert into levelmeup.checkins (user_id, gap_from, gap_to) values (a, 5, 6) returning id into g;
+  insert into levelmeup.checkins (user_id, gap_from, gap_to) values (a, 7, 7) returning id into c;
+  update levelmeup.character_state set awaiting_checkin = true, streak_current = 4, streak_best = 4 where user_id = a;
+
+  perform levelmeup.adjust(a, lmu_test.ev(1), 1, 'checkin', jsonb_build_object('checkinId', g, 'answer', 'just_didnt', 'secondWind', false),
+    jsonb_build_object('day', jsonb_build_object('id', today),
+      'checkin', jsonb_build_object('id', g, 'answer', 'just_didnt', 'recoveryDayId', today, 'outcome', null),
+      'recovery', recovery));
+  return next is((select answer || '/' || (recovery_day_id = today) || '/' || (resolved_at is null) from levelmeup.checkins where id = g),
+    'just_didnt/true/true', '"I just didn''t" is stored and waits for today to end');
+  return next is((select template_id || '/' || (xp ->> 'discipline') from levelmeup.quest_instances where day_id = today and slot = 'recovery'),
+    'recovery-walk/5', 'the recovery quest joins today');
+  return next ok((select awaiting_checkin from levelmeup.character_state where user_id = a), 'the streak is held until then');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''checkin'', ''{}'', %L)', a, lmu_test.ev(2),
+      jsonb_build_object('checkin', jsonb_build_object('id', g, 'answer', 'sick', 'recoveryDayId', null, 'outcome', 'protected'))),
+    'P0001', 'lmu:already_answered', 'an answered check-in takes no other answer');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''checkin'', ''{}'', %L)', a, lmu_test.ev(3),
+      jsonb_build_object('day', jsonb_build_object('id', today),
+        'checkin', jsonb_build_object('id', c, 'answer', 'just_didnt', 'recoveryDayId', today + 1, 'outcome', null))),
+    'P0001', 'lmu:bad_change', 'the recovery day is the day the change names');
+
+  perform levelmeup.adjust(a, lmu_test.ev(4), 2, 'checkin', '{"answer": "lighter_load"}'::jsonb,
+    jsonb_build_object('checkin', jsonb_build_object('id', c, 'answer', 'lighter_load', 'recoveryDayId', null, 'outcome', 'protected'),
+      'streak', '{"current": 4, "best": 4, "shields": 0, "awaitingCheckin": false}'::jsonb,
+      'minutes', 15, 'lighterPlanAt', true, 'lightNext', true));
+  return next is((select outcome || '/' || (resolved_at is not null) from levelmeup.checkins where id = c), 'protected/true',
+    'a protected answer is resolved at once');
+  return next is((select awaiting_checkin::text || '/' || next_day_light from levelmeup.character_state where user_id = a), 'false/true',
+    'the streak goes on and the next day will be light');
+  return next is((select minutes_per_day || '/' || (lighter_plan_at is not null) from levelmeup.profiles where user_id = a), '15/true',
+    'the daily minutes drop and the offer is answered');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 3, ''lighter_plan'', ''{"accept": true}'', ''{"minutes": 12}'')', a, lmu_test.ev(5)),
+    '23514', null, 'the table refuses minutes that are not an option');
+  perform levelmeup.adjust(a, lmu_test.ev(6), 3, 'lighter_plan', '{"accept": false}', '{"lighterPlanAt": true}');
+  return next is((select minutes_per_day from levelmeup.profiles where user_id = a), 15, '"Keep my plan" keeps the minutes');
+end $$;
+
+create function lmu_test.test_adjust_second_wind() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1);
+begin
+  perform levelmeup.adjust(a, lmu_test.ev(1), 1, 'checkin', '{}',
+    jsonb_build_object('day', jsonb_build_object('id', lmu_test.day_of(a)), 'ability', '{"id": "second_wind", "day": 1}'::jsonb));
+  return next is((select ability_last_used from levelmeup.character_state where user_id = a), '{"second_wind": 1}'::jsonb,
+    'Second Wind''s quest day is kept');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 2, ''checkin'', ''{}'', %L)', a, lmu_test.ev(2),
+      '{"ability": {"id": "unbreakable", "day": 1}}'), 'P0001', 'lmu:bad_change', 'Unbreakable is never a player''s change');
+end $$;

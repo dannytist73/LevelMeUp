@@ -330,3 +330,39 @@ begin
   return next is((select equipment from levelmeup.profiles where user_id = b), '{}'::text[], 'no equipment by default');
   return next is((select program_style from levelmeup.profiles where user_id = b), 'none', 'no preference by default');
 end $$;
+
+-- M7a: the replay of waiting days, the settled "I just didn't", Unbreakable, Rise Again, the light day (decisions 4–8).
+create function lmu_test.test_advance_replays_and_settles() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(1, now() - interval '30 hours', now() - interval '6 hours');
+  day1 bigint := (select id from levelmeup.quest_days where user_id = a);
+  c bigint;
+begin
+  update levelmeup.quest_days set status = 'closed', resolution = 'streak_day', streak_applied = false, closed_at = now() where id = day1;
+  insert into levelmeup.checkins (user_id, gap_from, gap_to, answer, answered_at, recovery_day_id)
+  values (a, 1, 1, 'just_didnt', now(), day1) returning id into c;
+  update levelmeup.character_state set next_day_light = true where user_id = a;
+  perform levelmeup.advance(a, 1, jsonb_build_object(
+    'applied', jsonb_build_array(day1),
+    'opened', jsonb_build_array(jsonb_build_object('gapFrom', 2, 'gapTo', 3)),
+    'resolved', jsonb_build_object('id', c, 'outcome', 'unbreakable'),
+    'ability', '{"id": "unbreakable", "day": 2}'::jsonb,
+    'counters', '{"hardDaysCleared": 0, "comebacks": 0, "recoveriesCleared": 1}'::jsonb,
+    'lightUsed', true));
+  return next ok((select streak_applied from levelmeup.quest_days where id = day1), 'a waiting day is applied');
+  return next is((select gap_from || '-' || gap_to from levelmeup.checkins where user_id = a and answer is null), '2-3',
+    'the replay opens the next check-in');
+  return next is((select outcome || '/' || (resolved_at is not null) from levelmeup.checkins where id = c), 'unbreakable/true',
+    '"I just didn''t" is settled when its day ends');
+  return next is((select ability_last_used ->> 'unbreakable' from levelmeup.character_state where user_id = a), '2',
+    'Unbreakable''s use is kept');
+  return next is((select recoveries_cleared from levelmeup.character_state where user_id = a), 1, 'a recovered day counts for Rise Again');
+  return next ok(not (select next_day_light from levelmeup.character_state where user_id = a), 'the light day is used up');
+  return next throws_ok(format('select levelmeup.advance(%L, 2, %L)', a, jsonb_build_object('resolved', jsonb_build_object('id', c, 'outcome', 'reset'))),
+    'P0001', 'lmu:not_found', 'a check-in is settled once');
+  return next throws_ok(format('select levelmeup.advance(%L, 2, %L)', a, '{"ability": {"id": "stillness", "day": 2}}'),
+    'P0001', 'lmu:bad_change', 'advance only ever uses Unbreakable');
+  return next throws_ok(format('select levelmeup.advance(%L, 2, %L)', a,
+      jsonb_build_object('opened', jsonb_build_array(jsonb_build_object('dayId', (select id from levelmeup.quest_days where user_id = lmu_test.start(2)))))),
+    '23503', null, 'a check-in opens only on the player''s own day');
+end $$;
