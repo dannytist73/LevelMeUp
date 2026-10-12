@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITY_IDS } from '../../rules/src/index.ts';
 import { ACHIEVEMENTS } from '../src/achievements.ts';
 import { ABILITIES_LATER, BOOK_TEXT, CHARACTER_TEXT, CHRONICLE_TEXT, growthLine, latestTitle } from '../src/character.ts';
 import { lintText } from '../src/lint.ts';
@@ -22,9 +21,8 @@ describe('the words of Character, Chronicle and Scholar\'s Path (M6d)', () => {
     expect(fillText(BOOK_TEXT.questLine, { title: 'Dune' })).toBe('Reading: Dune');
   });
 
-  it('Insight arrives with the articles (M8); Second Wind and Unbreakable work since M7a', () => {
-    expect(ABILITIES_LATER).toEqual(['insight']);
-    for (const id of ABILITIES_LATER) expect(ABILITY_IDS).toContain(id);
+  it('every ability works now: Insight arrived with the readings (M8b)', () => {
+    expect(ABILITIES_LATER).toEqual([]);
   });
 
   it('the title is the latest earned achievement that has one', () => {

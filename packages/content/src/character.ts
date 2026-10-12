@@ -83,8 +83,8 @@ export const BOOK_TEXT = {
   closed: "Scholar's Path opens for a Mage at level 10.",
 } as const;
 
-/** Abilities that unlock now but whose screens arrive later: Insight (M8). Second Wind and Unbreakable work since M7a. */
-export const ABILITIES_LATER: readonly AbilityId[] = ['insight'];
+/** Abilities that unlock now but whose screens arrive later: none since M8b (Insight works on Today). */
+export const ABILITIES_LATER: readonly AbilityId[] = [];
 
 /** The latest earned title (`earned` oldest first), or null. */
 export function latestTitle(earned: readonly string[]): string | null {

@@ -1,5 +1,6 @@
 // The daily article's topics (spec §4.1): eight clusters, each with topic seeds the nightly job works through in order
 // (M8a decision 6). A seed is a subject, not a title: the research finds the facts and the writer the angle.
+import type { ClassId, Goal } from '../../rules/src/index.ts';
 
 export const ARTICLE_CLUSTERS = ['habits', 'psychology', 'movement', 'sleep', 'focus', 'learning', 'philosophy', 'history'] as const;
 export type ArticleCluster = (typeof ARTICLE_CLUSTERS)[number];
@@ -112,4 +113,33 @@ export const ARTICLE_TOPICS: Readonly<Record<ArticleCluster, readonly string[]>>
     'Sunk costs and knowing when to quit',
     'The Wright brothers and patient experiments',
   ],
+};
+
+/** M8b decision 2: the topic of each goal; with the class's, a player's areas (3 reading days in 5 come from them). */
+export const GOAL_CLUSTERS: Readonly<Record<Goal, ArticleCluster>> = {
+  body: 'movement',
+  energy: 'sleep',
+  learn: 'learning',
+  focus: 'focus',
+  routine: 'habits',
+};
+
+/** M8b decision 2: the topic of each class. */
+export const CLASS_CLUSTERS: Readonly<Record<ClassId, ArticleCluster>> = {
+  warrior: 'movement',
+  mage: 'learning',
+  rogue: 'psychology',
+  monk: 'philosophy',
+};
+
+/** What each topic is about, under its name in Insight's choice (M8b decision 8). */
+export const CLUSTER_LINES: Readonly<Record<ArticleCluster, string>> = {
+  habits: 'How habits form, hold and break.',
+  psychology: 'How minds weigh choices and keep going.',
+  movement: 'How bodies get stronger and stay able.',
+  sleep: 'How rest restores the body and the mind.',
+  focus: 'How attention works and how to guard it.',
+  learning: 'How memory and skill are built.',
+  philosophy: 'Old ideas about living well, tried on today.',
+  history: 'Decisions from the past and what they teach.',
 };
