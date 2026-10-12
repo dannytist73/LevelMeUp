@@ -17,7 +17,7 @@ export const PACT_TEXT = {
     2: {
       name: 'Level 2 · Trial of Stillness',
       line:
-        'Level 1, plus: that day your side quests stay sealed until you finish a 10-minute focus session and, with ' +
+        'Level 1, plus: that day your side quests stay sealed until you finish a 10-minute focus session. With ' +
         'notifications on, a second, sterner reminder comes that evening. The core quest, the recovery quest and the ' +
         'article are never sealed.',
     },

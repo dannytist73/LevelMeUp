@@ -16,7 +16,10 @@ export const HORIZON_DAYS = 7;
 /** The running day and the next one get an evening reminder (decision 4). */
 export const EVENING_DAYS = 2;
 const MINUTE = 60_000;
-/** The Shadow's reminder: an hour after the evening time, and never later than 30 minutes before the day ends. */
+/**
+ * The Shadow's reminder: an hour after the evening time, never later than 30 minutes before the day ends, and never
+ * before the evening time itself.
+ */
 export const SHADOW_AFTER_MS = 60 * MINUTE;
 export const SHADOW_LAST_MS = 30 * MINUTE;
 
@@ -51,6 +54,7 @@ function clockAt(window: DayWindow, minutes: number): number | null {
 }
 
 export function planNotes(p: PlanInput): PlannedNote[] {
+  if (!p.settings.optedIn) return [];
   const out: PlannedNote[] = [];
   /** Anything already due is dropped: the phone would show it the moment it was planned. */
   const push = (note: PlannedNote): void => {
@@ -74,7 +78,7 @@ export function planNotes(p: PlanInput): PlannedNote[] {
     if (k === 0 && p.shadowEvening) {
       const evening = clockAt(window, p.settings.evening.minutes);
       if (evening !== null) {
-        const at = Math.min(evening + SHADOW_AFTER_MS, window.endsAt - SHADOW_LAST_MS);
+        const at = Math.max(evening, Math.min(evening + SHADOW_AFTER_MS, window.endsAt - SHADOW_LAST_MS));
         push({ id: `shadow:${day}`, kind: 'shadow', at, ...shadowEveningWords(day), url: '/', channel: 'reminders' });
       }
     }
@@ -91,6 +95,14 @@ export function planNotes(p: PlanInput): PlannedNote[] {
   return out.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
+/** The Shadow's reminder as a clock time (minutes after midnight) for Settings: the rule above on a 24-hour day. */
+export function shadowClock(eveningMinutes: number, boundaryMinutes: number): number {
+  const day = 24 * 60;
+  const into = (eveningMinutes - boundaryMinutes + day) % day; // minutes into the quest day
+  const at = Math.max(into, Math.min(into + SHADOW_AFTER_MS / MINUTE, day - SHADOW_LAST_MS / MINUTE));
+  return (boundaryMinutes + at) % day;
+}
+
 /** The planner's input from what the phone shows; null without a quest day (before the onboarding ends). */
 export function planInput(
   view: Pick<Shown, 'profile' | 'today' | 'checkin' | 'character'>,
@@ -103,6 +115,7 @@ export function planInput(
   const voice = view.profile.voice;
   const hold = shadowHold(view, nowMs);
   const core = today.quests.find((q) => q.slot === 'core');
+  const endsAt = Date.parse(today.endsAt);
   return {
     settings,
     voice,
@@ -110,7 +123,7 @@ export function planInput(
     boundaryMinutes: view.profile.boundaryMinutes,
     today: {
       dayNumber: today.dayNumber,
-      window: { startsAt: Date.parse(today.startsAt), endsAt: Date.parse(today.endsAt), timeZone: today.timeZone },
+      window: { startsAt: Date.parse(today.startsAt), endsAt, timeZone: today.timeZone },
       restDay: today.protection === 'planned_rest',
       settled: (core !== undefined && core.completedAt !== null) || (today.protection !== null && today.protection !== 'planned_rest'),
     },
@@ -119,8 +132,11 @@ export function planInput(
     timers: today.quests.flatMap((q) => {
       const timer = timers[q.id];
       if (timer === undefined || timer.runningSince === null || q.completedAt !== null) return [];
-      const left = timerTargetMs(q) - elapsedMs(timer.segments);
-      return left > 0 ? [{ questId: q.id, title: authoredTemplate(q.templateId).voice[voice].title, doneAt: timer.runningSince + left }] : [];
+      const doneAt = timer.runningSince + timerTargetMs(q) - elapsedMs(timer.segments);
+      // The server counts no timer time past the day's end (review): a timer that would end later can't be claimed.
+      return doneAt > timer.runningSince && doneAt < endsAt
+        ? [{ questId: q.id, title: authoredTemplate(q.templateId).voice[voice].title, doneAt }]
+        : [];
     }),
   };
 }

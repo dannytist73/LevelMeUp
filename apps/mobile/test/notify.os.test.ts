@@ -11,6 +11,7 @@ const mockNotifications = {
   setNotificationChannelAsync: jest.fn(async (_id: string, _channel?: unknown): Promise<null> => null),
   setNotificationHandler: jest.fn(),
   cancelAllScheduledNotificationsAsync: jest.fn(async () => {}),
+  dismissAllNotificationsAsync: jest.fn(async () => {}),
   scheduleNotificationAsync: jest.fn(async () => 'id'),
   getLastNotificationResponse: jest.fn((): unknown => null),
   clearLastNotificationResponse: jest.fn(),
@@ -61,9 +62,10 @@ describe("the phone's notifications (the only file that imports expo-notificatio
     ]);
   });
 
-  it("cancels everything, and opens LevelMeUp's own page in the phone's settings", async () => {
+  it("cancels everything, shown ones too, and opens LevelMeUp's own page in the phone's settings", async () => {
     await expoNotes.cancelAll();
     expect(N.cancelAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(N.dismissAllNotificationsAsync).toHaveBeenCalledTimes(1); // and those already in the shade (decision 9)
     const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
     await expoNotes.openSettings();
     expect(open).toHaveBeenCalled();

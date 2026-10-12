@@ -382,6 +382,6 @@ the times the phone holds.
 | 7 | A notification due while the app is open shows as a banner. | |
 | 8 | The phone's settings list the channels "Reminders" and "Quest timers"; the status-bar icon is the silhouette, not a white square. | |
 | 9 | Deleting the character (or starting over) leaves nothing planned (`dumpsys alarm`, the developer list). | |
-| 10 | The largest font: the Notifications screen and Settings' section wrap with nothing cut off. | |
-| 11 | Unit tests, the typecheck and the bundle scan pass. | |
+| 10 | The largest font: the Notifications screen and Settings' section wrap with nothing cut off; each switch and time stepper is at least 44 dp tall (`uiautomator dump`). | |
+| 11 | Unit tests, the typecheck and the bundle scan pass. Nothing is planned before the player turns one on, even where the phone allows notifications from install (Android 12 and older; unit tests). | |
 | 12 | Find X9: the briefing and the evening reminder at their real times over two days; the rest-day briefing; a timer alert with the screen off; the Shadow's reminder on a real Trial day; reminders after a reboot without opening the app (ColorOS). | Pending — owner |

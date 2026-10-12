@@ -124,7 +124,7 @@ export type GameState = {
   notify: NotifySettings;
   /** M7d: whether the phone lets LevelMeUp notify; `unknown` until it is read. */
   permission: Permission;
-  /** M7d: the notifications planned now, as the phone last got them (the developer screen lists them). */
+  /** M7d: the notifications planned now (the developer screen lists them). */
   planned: readonly PlannedNote[];
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
@@ -337,6 +337,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
     /** Forgets this phone's data, sign-in and interview; the onboarding makes the next guest. */
     const forget = async (): Promise<void> => {
+      // M7d decision 9: first, so nothing below can keep the last player's notifications on the phone.
+      await deps.notes.cancelAll().catch(() => {});
+      applier.forget();
       await deps.local.wipe();
       await deps.signOut();
       await deps.kv.removeItem(DRAFT_KEY);
@@ -346,9 +349,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(CHECKIN_RESULT_KEY);
       await deps.kv.removeItem(SHADOW_KEY);
       await deps.kv.removeItem(TRIAL_KEY);
-      // M7d decision 9: the next player on this phone gets nothing the last one planned.
-      await deps.notes.cancelAll().catch(() => {});
-      applier.forget();
       await deps.kv.removeItem(NOTIFY_KEY);
       confirmedLevel = null;
       set({

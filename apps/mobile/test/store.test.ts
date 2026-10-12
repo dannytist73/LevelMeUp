@@ -870,7 +870,8 @@ describe('the pact on the phone (M7c)', () => {
 });
 
 describe('notifications (M7d)', () => {
-  const BRIEFING_ON = JSON.stringify({ ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 7 * 60 + 30 } });
+  const BRIEFING_ON = JSON.stringify({ ...DEFAULT_NOTIFY, optedIn: true, briefing: { on: true, minutes: 7 * 60 + 30 } });
+  const OPTED_IN = JSON.stringify({ ...DEFAULT_NOTIFY, optedIn: true });
   const ready = async (notes = fakeNotes(), kept: string | null = BRIEFING_ON, replies: SyncReply[] = [ok(SERVER)]) => {
     const made = await setup(replies, { notes });
     if (kept !== null) made.kv.set(NOTIFY_KEY, kept);
@@ -904,8 +905,17 @@ describe('notifications (M7d)', () => {
     expect(notes.replace).not.toHaveBeenCalled();
   });
 
+  it('plans nothing before the player turned one on, even with the phone allowing them (Android 12 and older)', async () => {
+    const { store, notes } = await ready(fakeNotes(), null);
+    const side = SERVER.today!.quests.find((q) => q.slot === 'side1')!;
+    await store.getState().saveTimer(side.id, { segments: [], runningSince: NOW });
+    await store.getState().checkNotify();
+    expect(store.getState().planned).toEqual([]);
+    expect(notes.replace).toHaveBeenLastCalledWith([]);
+  });
+
   it('adds a running timer, and drops it when the timer is paused', async () => {
-    const { store } = await ready(fakeNotes(), null); // the defaults: timer alerts on
+    const { store } = await ready(fakeNotes(), OPTED_IN); // timer alerts are on by default
     const side = SERVER.today!.quests.find((q) => q.slot === 'side1')!;
     await store.getState().saveTimer(side.id, { segments: [], runningSince: NOW });
     await store.getState().checkNotify();
@@ -917,8 +927,9 @@ describe('notifications (M7d)', () => {
 
   it("drops today's evening reminder once the core quest is cleared", async () => {
     // Day 1 runs from 20:00 to 04:00 in Manila and NOW is 21:00: a 22:00 reminder is still ahead.
-    const evening = JSON.stringify({ ...DEFAULT_NOTIFY, evening: { on: true, minutes: 22 * 60 } });
-    const { store } = await ready(fakeNotes(), evening, [ok(SERVER), ok(serverState(['core']))]);
+    const evening = JSON.stringify({ ...DEFAULT_NOTIFY, optedIn: true, evening: { on: true, minutes: 22 * 60 } });
+    // Offline after the completion: the phone's own projection drops it, not the server's answer (review).
+    const { store } = await ready(fakeNotes(), evening, [ok(SERVER), { ok: false, status: 0, code: 'network' }]);
     expect(store.getState().planned.map((n) => n.id)).toEqual(['evening:1', 'evening:2']);
     await store.getState().enqueue(completeCore);
     await store.getState().checkNotify();
@@ -927,7 +938,7 @@ describe('notifications (M7d)', () => {
 
   it('keeps a change on the phone and plans with it', async () => {
     const { store, kv, notes } = await ready(fakeNotes(), null);
-    await store.getState().setNotify({ ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 8 * 60 } });
+    await store.getState().setNotify({ ...DEFAULT_NOTIFY, optedIn: true, briefing: { on: true, minutes: 8 * 60 } });
     expect(JSON.parse(kv.get(NOTIFY_KEY)!)).toMatchObject({ briefing: { on: true, minutes: 480 } });
     expect(notes.replace).toHaveBeenLastCalledWith(store.getState().planned);
     expect(store.getState().planned[0]!.id).toBe('briefing:2');
@@ -954,8 +965,11 @@ describe('notifications (M7d)', () => {
 
   it('starting over cancels every notification and forgets the settings', async () => {
     const { store, kv, notes } = await ready();
+    void store.getState().checkNotify(); // a plan on its way while the player starts over
     await store.getState().startOver();
+    await store.getState().checkNotify();
     expect(notes.cancelAll).toHaveBeenCalled();
+    expect(notes.replace).toHaveBeenLastCalledWith([]); // nothing of the last player's reaches the phone after the cancel
     expect(kv.has(NOTIFY_KEY)).toBe(false);
     expect(store.getState()).toMatchObject({ notify: DEFAULT_NOTIFY, planned: [] });
   });

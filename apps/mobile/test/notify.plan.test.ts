@@ -3,7 +3,7 @@ import { NOTE_LINES, SHADOW_LINES, authoredTemplate } from '@levelmeup/content';
 import { elapsedMs } from '@levelmeup/rules';
 import { timerTargetMs } from '../../../supabase/functions/_shared/events.ts';
 import { project } from '../src/game/project.ts';
-import { planInput, planNotes } from '../src/notify/plan.ts';
+import { planInput, planNotes, shadowClock } from '../src/notify/plan.ts';
 import type { PlanInput } from '../src/notify/plan.ts';
 import { DEFAULT_NOTIFY, readNotify } from '../src/notify/settings.ts';
 import { claimedState, serverState } from './support/fixtures.ts';
@@ -13,8 +13,10 @@ const MINUTE = 60_000;
 /** Day 2 in Manila (UTC+8, no DST): 04:00 on 11 Oct to 04:00 on 12 Oct. */
 const DAY = { startsAt: Date.UTC(2026, 9, 10, 20), endsAt: Date.UTC(2026, 9, 11, 20), timeZone: 'Asia/Manila' };
 const NOW = DAY.startsAt + HOUR; // 05:00
+/** The player turned one on in Settings → Notifications (review item 2): what every test but one assumes. */
+const OPTED = { ...DEFAULT_NOTIFY, optedIn: true };
 const BASE: PlanInput = {
-  settings: DEFAULT_NOTIFY,
+  settings: OPTED,
   voice: 'mentor',
   nowMs: NOW,
   boundaryMinutes: 4 * 60,
@@ -23,13 +25,19 @@ const BASE: PlanInput = {
   shadowEvening: false,
   timers: [],
 };
-const BRIEFING = { ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 7 * 60 + 30 } };
-const EVENING = { ...DEFAULT_NOTIFY, evening: { on: true, minutes: 20 * 60 } };
+const BRIEFING = { ...OPTED, briefing: { on: true, minutes: 7 * 60 + 30 } };
+const EVENING = { ...OPTED, evening: { on: true, minutes: 20 * 60 } };
 const ids = (input: PlanInput) => planNotes(input).map((n) => n.id);
 
 describe('the notification planner (M7d decision 4)', () => {
   it('plans nothing until a reminder is on', () => {
     expect(planNotes(BASE)).toEqual([]);
+  });
+
+  it('plans nothing before the player turned one on, even where the phone allows them from install (Android 12 and older)', () => {
+    const timers = [{ questId: 201, title: 'Walk', doneAt: NOW + 10 * MINUTE }];
+    expect(planNotes({ ...BASE, settings: DEFAULT_NOTIFY, shadowEvening: true, timers })).toEqual([]);
+    expect(planNotes({ ...BASE, shadowEvening: true, timers }).map((n) => n.id)).toEqual(['timer:201', 'shadow:2']);
   });
 
   it('plans a briefing for the running quest day and the next six, at the time picked, in the voice', () => {
@@ -79,8 +87,25 @@ describe('the notification planner (M7d decision 4)', () => {
   });
 
   it("never brings the Shadow's reminder later than 30 minutes before the day ends", () => {
-    const late = { ...DEFAULT_NOTIFY, evening: { on: false, minutes: 3 * 60 + 30 } }; // 03:30, the day ends at 04:00
+    const late = { ...OPTED, evening: { on: false, minutes: 3 * 60 + 30 } }; // 03:30, the day ends at 04:00
     expect(planNotes({ ...BASE, settings: late, shadowEvening: true })[0]!.at).toBe(DAY.endsAt - 30 * MINUTE);
+  });
+
+  it("never brings the Shadow's reminder before the evening time (an evening time in the day's last half hour)", () => {
+    const last = { ...OPTED, evening: { on: true, minutes: 3 * 60 + 45 } }; // 03:45, the day ends at 04:00
+    const notes = planNotes({ ...BASE, settings: last, shadowEvening: true });
+    expect(notes.filter((n) => n.id.endsWith(':2')).map((n) => [n.id, n.at])).toEqual([
+      ['evening:2', DAY.endsAt - 15 * MINUTE],
+      ['shadow:2', DAY.endsAt - 15 * MINUTE],
+    ]);
+  });
+
+  it("names the Shadow's reminder as a clock time for Settings, by the same rule", () => {
+    expect(shadowClock(20 * 60, 4 * 60)).toBe(21 * 60);
+    expect(shadowClock(23 * 60, 0)).toBe(23 * 60 + 30); // capped 30 minutes before a midnight day end
+    expect(shadowClock(23 * 60 + 45, 0)).toBe(23 * 60 + 45); // never before the evening time
+    expect(shadowClock(3 * 60, 4 * 60)).toBe(3 * 60 + 30);
+    expect(shadowClock(23 * 60 + 30, 4 * 60)).toBe(30); // past midnight, inside the day
   });
 
   it('alerts when a running timer reaches its time; a quest built offline opens Today', () => {
@@ -93,7 +118,7 @@ describe('the notification planner (M7d decision 4)', () => {
       { id: 'timer:-3', kind: 'timer', at: NOW + 5 * MINUTE, title: 'Stretch', body: NOTE_LINES.mentor.timer, url: '/', channel: 'timers' },
       { id: 'timer:201', kind: 'timer', at: NOW + 10 * MINUTE, title: 'Walk', body: NOTE_LINES.mentor.timer, url: '/quest/201', channel: 'timers' },
     ]);
-    expect(planNotes({ ...BASE, timers, settings: { ...DEFAULT_NOTIFY, timers: false } })).toEqual([]);
+    expect(planNotes({ ...BASE, timers, settings: { ...OPTED, timers: false } })).toEqual([]);
   });
 
   it('lists them in time order', () => {
@@ -157,6 +182,17 @@ describe("the planner's input from the phone's view", () => {
     expect(at('no_quests')).toMatchObject({ restDay: false, settled: true });
   });
 
+  it("drops a timer that would end after the quest day: the server counts no time past it, so it can't be claimed", () => {
+    const view = project(serverState(), []);
+    const endsAt = Date.parse(view.today!.endsAt!);
+    const quest = view.today!.quests.find((q) => q.slot === 'side1')!;
+    const target = timerTargetMs(quest);
+    const late = { segments: [], runningSince: endsAt - target + 60_000 }; // would end a minute after the day
+    const inTime = { segments: [], runningSince: endsAt - target - 60_000 };
+    expect(planInput(view, { [quest.id]: late }, BRIEFING, endsAt - target + 120_000)!.timers).toEqual([]);
+    expect(planInput(view, { [quest.id]: inTime }, BRIEFING, endsAt - target)!.timers.map((t) => t.doneAt)).toEqual([endsAt - 60_000]);
+  });
+
   it('has nothing to plan without a day', () => {
     const view = project(serverState(), []);
     expect(planInput({ ...view, today: null }, {}, BRIEFING, 0)).toBeNull();
@@ -167,9 +203,10 @@ describe('the kept settings', () => {
   it('fall back to the defaults for anything unreadable', () => {
     expect(readNotify(null)).toEqual(DEFAULT_NOTIFY);
     expect(readNotify('not json')).toEqual(DEFAULT_NOTIFY);
-    expect(readNotify(JSON.stringify({ briefing: { on: true, minutes: 9999 }, evening: 'x', timers: 'yes' }))).toEqual({
+    expect(readNotify(JSON.stringify({ briefing: { on: true, minutes: 9999 }, evening: 'x', timers: 'yes', optedIn: 1 }))).toEqual({
       ...DEFAULT_NOTIFY, briefing: { on: true, minutes: DEFAULT_NOTIFY.briefing.minutes },
     });
     expect(readNotify(JSON.stringify(BRIEFING))).toEqual(BRIEFING);
+    expect(DEFAULT_NOTIFY.optedIn).toBe(false);
   });
 });

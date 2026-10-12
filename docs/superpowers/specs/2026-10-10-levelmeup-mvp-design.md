@@ -453,7 +453,8 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
 - No exact alarms (a few minutes late is fine), so no `SCHEDULE_EXACT_ALARM`.
 - Permission denied: the app works fully; Settings explains what's missing; no nagging.
 - Built in M7d (2026-10-13): Settings → Notifications with three switches (the morning briefing and the evening reminder,
-  each with a half-hour time; timer alerts), all off until the player turns one on; the phone's permission is asked then
+  each with a half-hour time; timer alerts), all off until the player turns one on (nothing comes before that, even
+  where Android allows notifications from install; timer alerts then come by default); the phone's permission is asked then
   (the System's card first, then Android's prompt), never at launch, and a refusal for good is named once with "Open
   phone settings". The briefing comes for the running quest day and the next six, in the player's voice, and says when
   the day is a planned rest day; today's is dropped once the core quest is cleared. The evening reminder comes for the

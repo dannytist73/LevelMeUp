@@ -1,5 +1,5 @@
 // Settings → Notifications as this phone keeps them (M7d decision 2): under `lmu.notify`, never on the server. Anything
-// unreadable falls back to the defaults: everything off, timer alerts on once the phone allows notifications.
+// unreadable falls back to the defaults: everything off until the player turns one on; timer alerts then come too.
 import type { NotifySettings } from './types.ts';
 
 export const NOTIFY_KEY = 'lmu.notify';
@@ -8,6 +8,7 @@ export const DEFAULT_NOTIFY: NotifySettings = {
   briefing: { on: false, minutes: 7 * 60 + 30 },
   evening: { on: false, minutes: 20 * 60 },
   timers: true,
+  optedIn: false,
 };
 
 const isMinutes = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) < 24 * 60;
@@ -27,10 +28,11 @@ export function readNotify(text: string | null): NotifySettings {
     return DEFAULT_NOTIFY;
   }
   if (typeof raw !== 'object' || raw === null) return DEFAULT_NOTIFY;
-  const { briefing, evening, timers } = raw as { briefing?: unknown; evening?: unknown; timers?: unknown };
+  const { briefing, evening, timers, optedIn } = raw as { briefing?: unknown; evening?: unknown; timers?: unknown; optedIn?: unknown };
   return {
     briefing: readSlot(briefing, DEFAULT_NOTIFY.briefing),
     evening: readSlot(evening, DEFAULT_NOTIFY.evening),
     timers: typeof timers === 'boolean' ? timers : DEFAULT_NOTIFY.timers,
+    optedIn: optedIn === true,
   };
 }

@@ -6,6 +6,11 @@ export type NotifySettings = {
   evening: { on: boolean; minutes: number };
   /** Timer alerts. */
   timers: boolean;
+  /**
+   * The player turned one on here at least once. Until then nothing is planned, the Shadow's reminder and timer alerts
+   * included: Android 12 and older allow notifications from install, without the player ever choosing them (review).
+   */
+  optedIn: boolean;
 };
 
 export type NoteKind = 'briefing' | 'evening' | 'shadow' | 'timer';
@@ -33,6 +38,7 @@ export type NoteOs = {
   ask: () => Promise<Permission>;
   /** Cancels what this app planned and plans these instead. */
   replace: (notes: readonly PlannedNote[]) => Promise<void>;
+  /** Cancels what is planned and clears what is already shown. */
   cancelAll: () => Promise<void>;
   openSettings: () => Promise<void>;
 };

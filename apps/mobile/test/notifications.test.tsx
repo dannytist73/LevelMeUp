@@ -1,5 +1,6 @@
 import { NOTIFY_TEXT, fillText } from '@levelmeup/content';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { project } from '../src/game/project.ts';
 import { DEFAULT_NOTIFY } from '../src/notify/settings.ts';
 import type { NotifySettings, Permission } from '../src/notify/types.ts';
@@ -9,7 +10,7 @@ import { serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const T = NOTIFY_TEXT;
-const BRIEFING_ON: NotifySettings = { ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 7 * 60 + 30 } };
+const BRIEFING_ON: NotifySettings = { ...DEFAULT_NOTIFY, optedIn: true, briefing: { on: true, minutes: 7 * 60 + 30 } };
 
 async function show(over: Partial<GameState> = {}) {
   const store = testStore({ view: project(serverState(), []), ...over });
@@ -29,9 +30,12 @@ describe('Settings → Notifications (M7d)', () => {
   });
 
   it('turning one on asks first; "Allow notifications" asks the phone, then turns it on', async () => {
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     const { store } = await show({ permission: 'ask' });
     await fireEvent(toggle(T.briefing), 'valueChange', true);
     expect(screen.getByText(T.ask.title)).toBeTruthy();
+    expect(announce).toHaveBeenCalledWith(`${T.ask.title} ${T.ask.line}`); // the card shows at the top; a screen reader hears it
+    announce.mockRestore();
     expect(store.getState().setNotify).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByText(T.ask.allow));
     await waitFor(() => expect(store.getState().setNotify).toHaveBeenCalledWith(BRIEFING_ON));
@@ -68,9 +72,18 @@ describe('Settings → Notifications (M7d)', () => {
     expect(store.getState().setNotify).toHaveBeenLastCalledWith({ ...BRIEFING_ON, timers: false });
   });
 
+  it('before the player turns one on, a phone that allows them from install (Android 12 and older) shows them off', async () => {
+    const { store } = await show({ permission: 'granted', notify: DEFAULT_NOTIFY });
+    expect(toggle(T.timers)).not.toBeChecked();
+    await fireEvent(toggle(T.timers), 'valueChange', true);
+    expect(screen.queryByText(T.ask.title)).toBeNull();
+    expect(store.getState().setNotify).toHaveBeenCalledWith({ ...DEFAULT_NOTIFY, optedIn: true, timers: true });
+  });
+
   it("refused for good: says so, opens the phone's settings, and never asks", async () => {
     const { store, onOpenSettings } = await show({ permission: 'denied' });
     expect(screen.getByText(T.denied.line)).toBeTruthy();
+    expect(toggle(T.briefing)).toBeDisabled();
     await fireEvent.press(screen.getByText(T.denied.open));
     expect(onOpenSettings).toHaveBeenCalled();
     await fireEvent(toggle(T.briefing), 'valueChange', true);
@@ -80,9 +93,16 @@ describe('Settings → Notifications (M7d)', () => {
 
   it("names the Shadow's reminder only at Pact level 2, an hour after the evening time", async () => {
     const view = project(serverState(), []);
-    await show({ view: { ...view, profile: { ...view.profile, accountabilityLevel: 2 } } });
+    await show({ view: { ...view, profile: { ...view.profile, accountabilityLevel: 2 } }, notify: BRIEFING_ON });
     expect(screen.getByText(T.shadowTitle)).toBeTruthy();
     expect(screen.getByText(fillText(T.shadowNote, { time: '9:00 PM' }))).toBeTruthy();
+  });
+
+  it("says nothing of the Shadow's reminder while none can come", async () => {
+    const view = project(serverState(), []);
+    const level2 = { ...view, profile: { ...view.profile, accountabilityLevel: 2 as const } };
+    await show({ view: level2, notify: BRIEFING_ON, permission: 'ask' });
+    expect(screen.queryByText(T.shadowTitle)).toBeNull();
   });
 
   it('says nothing of the Shadow below level 2', async () => {

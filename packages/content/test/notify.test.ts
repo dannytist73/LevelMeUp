@@ -53,6 +53,10 @@ describe('notifications (M7d)', () => {
     expect(timerWords('mentor', 'Walk')).toEqual({ title: 'Walk', body: NOTE_LINES.mentor.timer });
   });
 
+  it("say the Shadow's reminder stops once the recovery quest is cleared", () => {
+    expect(NOTIFY_TEXT.shadowNote).toMatch(/unless the recovery quest is cleared first/);
+  });
+
   it('refuse a day number below 1', () => {
     expect(() => briefingWords('mentor', 0, false)).toThrow(RangeError);
     expect(() => eveningWords('mentor', 1.5)).toThrow(RangeError);

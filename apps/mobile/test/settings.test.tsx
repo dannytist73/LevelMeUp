@@ -119,7 +119,7 @@ describe('Settings → Account and Game (M7b)', () => {
 
 describe('Settings → Notifications section (M7d, S1 board)', () => {
   const show = async (permission: Permission, onNotifications = jest.fn()) => {
-    const store = testStore({ view: project(adjustState(), []), permission, notify: { ...DEFAULT_NOTIFY, briefing: { on: true, minutes: 450 } } });
+    const store = testStore({ view: project(adjustState(), []), permission, notify: { ...DEFAULT_NOTIFY, optedIn: true, briefing: { on: true, minutes: 450 } } });
     await render(withStore(store,
       <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} onNotifications={onNotifications} version="0.1.0" deviceZone="Asia/Manila" />));
     return onNotifications;

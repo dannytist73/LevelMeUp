@@ -25,8 +25,8 @@ export const NOTIFY_TEXT = {
   eveningAt: 'Reminder time',
   shadowTitle: "The Shadow's reminder",
   shadowNote:
-    'With the Pact at level 2: on a day the Shadow holds, a second, sterner reminder comes at {time} until the ' +
-    'recovery quest is cleared. Lower the Pact to stop it.',
+    'With the Pact at level 2: on a day the Shadow holds, a second, sterner reminder comes at {time} unless the ' +
+    'recovery quest is cleared first. Lower the Pact to stop it.',
   late: 'To save battery, your phone may deliver them a few minutes late.',
   ask: {
     title: 'Allow notifications?',

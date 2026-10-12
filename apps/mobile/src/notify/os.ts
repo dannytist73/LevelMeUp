@@ -46,8 +46,10 @@ export const expoNotes: NoteOs = {
       });
     }
   },
+  /** Those planned and those already in the shade (decision 9: the next player sees nothing of the last one's). */
   cancelAll: async () => {
     await lib().cancelAllScheduledNotificationsAsync();
+    await lib().dismissAllNotificationsAsync();
   },
   openSettings: () => Linking.openSettings(),
 };
