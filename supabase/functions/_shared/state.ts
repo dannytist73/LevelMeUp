@@ -7,6 +7,8 @@ import type {
   AbilityId, AchievementProgress, CheckinAnswer, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState,
   Limitation, PastDay, PlayerProfile, ProgramStyle, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
 } from '../../../packages/rules/src/index.ts';
+import { insightView, nextArticle, readingsView, summaryOf } from './reading.ts';
+import type { CandidateRow, InsightRow, ReadingRow } from './reading.ts';
 
 /** Bigint ids arrive as strings from postgres.js. */
 export type Id = number | string;
@@ -56,6 +58,8 @@ export type CharacterRow = Record<`start_${Stat}` | `xp_${Stat}`, number> & {
   next_day_light: boolean;
   /** M7b: the day number a rest day is planned for (decision 5), used when that day is built; null when none. */
   rest_day: number | null;
+  /** M8b: Insight's topic and the quest day it was chosen on, for the next day built (decision 8); null when none. */
+  insight: InsightRow | null;
   version: number;
 };
 
@@ -166,6 +170,8 @@ export type History = {
   newRungs: number;
   /** Quests cleared with the current book since it was set. */
   reading: { sessions: number; minutes: number };
+  /** M8b: the latest days with an article, newest first, at most READINGS_SHOWN (decision 7). */
+  readings: ReadingRow[];
 };
 
 export type CalendarMark = 'open' | 'cleared' | 'hard' | 'rest' | 'paused' | 'none';
@@ -364,6 +370,8 @@ export type Snapshot = {
   painReports: number;
   /** Workouts completed so far (M6c): the program day of the next workout (rules: planWorkout). */
   workoutsDone: number;
+  /** M8b: the published library, each with the last quest day it was given to this player (decision 1). */
+  articles: CandidateRow[];
 };
 
 const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];
@@ -430,6 +438,12 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
   const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
   const today = days[0] ?? null;
   const questsOf = (day: DayRow) => s.instances.filter((q) => String(q.day_id) === String(day.id));
+  const articleOf = (id: string | null) => {
+    const found = id === null ? undefined : s.articles.find((a) => a.id === id);
+    return found === undefined ? null : summaryOf(found);
+  };
+  const reader = { goals: s.profile.goals, classId: s.profile.class_id, insight: s.character.insight };
+  const day = today === null ? null : { number: today.day_number, articleId: today.article_id, open: today.status === 'open' };
   return {
     profile: {
       name: s.profile.name, voice: s.profile.voice, classId: s.profile.class_id, classChangedAt: iso(s.profile.class_changed_at),
@@ -447,6 +461,7 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
       id: Number(today.id), dayNumber: today.day_number, startsAt: iso(today.starts_at), endsAt: iso(today.ends_at),
       timeZone: today.time_zone, budget: today.budget, light: today.light, hardDay: today.hard_day, protection: today.protection,
       status: today.status,
+      article: articleOf(today.article_id),
       swapsLeft: offers.swapsLeft, restAllowed: offers.restAllowed, restTomorrow: offers.restTomorrow, abilities: offers.abilities,
       quests: questsOf(today)
         .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))
@@ -464,6 +479,12 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
     checkinResult: s.result === null ? null : { id: Number(s.result.id), outcome: s.result.outcome },
     /** M7a: the lighter plan (decision 9). */
     lighterPlan: lighterPlanView(s),
+    /** M8b: what the next day would read, as of now: the phone's offline day takes it (decision 4). */
+    nextArticle: day === null || !day.open ? null : nextArticle(s.articles, reader, day),
+    /** M8b: the latest readings, newest first, with the player's takeaway (decision 7). */
+    readings: readingsView(history.readings),
+    /** M8b: Insight's options and choice for a Mage from level 5 on an open day, else null (decision 8). */
+    insight: insightView(s.articles, { ...reader, level: character.level }, day),
     recentDays: days.slice(1).map((d) => ({
       dayNumber: d.day_number, startsAt: iso(d.starts_at), status: d.status, resolution: d.resolution,
       cleared: questsOf(d).filter((q) => q.completed_at !== null).length,

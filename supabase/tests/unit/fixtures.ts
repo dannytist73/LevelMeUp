@@ -51,7 +51,7 @@ export function characterRow(over: Partial<CharacterRow> = {}): CharacterRow {
     xp_strength: 0, xp_vitality: 0, xp_wisdom: 0, xp_focus: 0, xp_discipline: 0, total_xp: 0,
     streak_current: 0, streak_best: 0, shields: 0, awaiting_checkin: false,
     quests_cleared: 0, hard_days_cleared: 0, comebacks: 0, recoveries_cleared: 0, articles_read: 0,
-    ability_last_used: {}, next_day_light: false, rest_day: null, version: 1, ...over,
+    ability_last_used: {}, next_day_light: false, rest_day: null, insight: null, version: 1, ...over,
   };
 }
 
@@ -80,7 +80,8 @@ export const DAY1: DayDraft = startArgs(choices(), templateReveal(choices()), ON
 export function afterDay1(done: readonly Slot[], nowMs: number, over: Partial<AdvanceInput> = {}): AdvanceInput {
   return {
     profile: profileRow(), character: characterRow(), ladders: [], days: [dayRow(DAY1, 1)], instances: instanceRows(DAY1, 1, done),
-    queue: [], pending: null, workoutsDone: 0, timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION, ...over,
+    queue: [], pending: null, workoutsDone: 0, articles: [], timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION,
+    ...over,
   };
 }
 
@@ -138,6 +139,7 @@ export function dayTwoSnapshot(
     readAt: new Date(w.startsAt + HOUR),
     painReports: 0,
     workoutsDone: 0,
+    articles: [],
     ...over,
   };
 }
@@ -146,7 +148,7 @@ export function dayTwoSnapshot(
 export function historyOf(s: Snapshot): History {
   const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
   const one = days.find((d) => d.day_number === 1);
-  return { days, dayOne: one === undefined ? null : one, newRungs: 0, reading: { sessions: 0, minutes: 0 } };
+  return { days, dayOne: one === undefined ? null : one, newRungs: 0, reading: { sessions: 0, minutes: 0 }, readings: [] };
 }
 
 export { DAY_MS };

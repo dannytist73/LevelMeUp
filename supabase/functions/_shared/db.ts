@@ -3,6 +3,8 @@
 // can read LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (migration 0004).
 import postgres from 'npm:postgres@3.4.9';
 import { LIGHTER_PLAN_WINDOW_MS, PAIN_WINDOW_MS } from '../../../packages/rules/src/index.ts';
+import { READINGS_SHOWN, articleBody } from './reading.ts';
+import type { ArticleBody, ArticleRow, CandidateRow, ReadingRow, SourceRow } from './reading.ts';
 import { CALENDAR_DAYS } from './state.ts';
 import type {
   AnsweredRow, CalendarRow, CharacterRow, DayRow, History, InstanceRow, LadderRow, PendingCheckin, ProfileRow, QueuedDay, ResultRow, Snapshot,
@@ -89,10 +91,18 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       select count(*)::int as workouts from levelmeup.quest_instances
       where user_id = ${userId} and completed_at is not null and condition ->> 'kind' = 'session'
         and payload ->> 'offlineQuest' is null`);
+    // M8b: the published library, with the last day each article was given to this player ("unread": never).
+    const articles = await tx<CandidateRow[]>`
+      select a.id, a.cluster, a.title, a.reading_minutes, a.evergreen, a.published_at, g.last_given
+      from levelmeup.articles a
+      left join (select article_id, max(day_number)::int as last_given from levelmeup.quest_days
+        where user_id = ${userId} and article_id is not null group by article_id) g on g.article_id = a.id
+      where a.status = 'published'
+      order by a.published_at, a.id`;
     return {
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances],
       earned: earned.map((r) => r.achievement_id), checkin: checkin ?? null, queue: [...queue], answered: [...answered],
-      result: result ?? null, readAt: now, painReports: pain, workoutsDone: workouts,
+      result: result ?? null, readAt: now, painReports: pain, workoutsDone: workouts, articles: [...articles],
     };
   } finally {
     await asService(tx);
@@ -117,7 +127,47 @@ export async function loadHistory(tx: Tx, userId: string, book: string | null): 
           from levelmeup.quest_instances q join levelmeup.profiles p on p.user_id = q.user_id
           where q.user_id = ${userId} and q.book = ${book} and q.completed_at is not null
             and q.completed_at >= coalesce(p.book_started_at, '-infinity'::timestamptz)`);
-    return { days: [...days], dayOne: dayOne ?? null, newRungs: rungs, reading };
+    // M8b: the latest days with a published article, and the takeaway written on each (decision 7).
+    const readings = await tx<ReadingRow[]>`
+      select d.day_number, d.starts_at, d.ends_at, d.time_zone, a.id as article_id, a.title, a.cluster, a.reading_minutes,
+        q.payload ->> 'text' as takeaway
+      from levelmeup.quest_days d
+      join levelmeup.articles a on a.id = d.article_id
+      left join levelmeup.quest_instances q on q.day_id = d.id and q.slot = 'article' and q.completed_at is not null
+      where d.user_id = ${userId}
+      order by d.day_number desc limit ${READINGS_SHOWN}`;
+    return { days: [...days], dayOne: dayOne ?? null, newRungs: rungs, reading, readings: [...readings] };
+  } finally {
+    await asService(tx);
+  }
+}
+
+/** M8b: whole articles, read as the player (row level security: published only), in the order asked. */
+export async function loadBodies(tx: Tx, userId: string, ids: readonly string[]): Promise<ArticleBody[]> {
+  if (ids.length === 0) return [];
+  await asPlayer(tx, userId);
+  try {
+    const rows = await tx<ArticleRow[]>`
+      select id, cluster, title, summary, sections, takeaways, reflection_question, reading_minutes
+      from levelmeup.articles where id in ${tx(ids)}`;
+    const sources = await tx<SourceRow[]>`
+      select article_id, idx, url, title from levelmeup.article_sources where article_id in ${tx(ids)}`;
+    return ids.flatMap((id) => {
+      const row = rows.find((r) => r.id === id);
+      return row === undefined ? [] : [articleBody(row, sources)];
+    });
+  } finally {
+    await asService(tx);
+  }
+}
+
+/** M8b: the published library, all unread: a new character's day 1 (a restart starts the readings over too). */
+export async function loadLibrary(tx: Tx, userId: string): Promise<CandidateRow[]> {
+  await asPlayer(tx, userId);
+  try {
+    return [...await tx<CandidateRow[]>`
+      select id, cluster, title, reading_minutes, evergreen, published_at, null::int as last_given
+      from levelmeup.articles where status = 'published' order by published_at, id`];
   } finally {
     await asService(tx);
   }

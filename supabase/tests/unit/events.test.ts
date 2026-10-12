@@ -20,7 +20,7 @@ describe('the sync body', () => {
     expect(isProblem(parseSyncBody({ timeZone: 'Mars/Base', events: [] }))).toBe(true);
     expect(isProblem(parseSyncBody({ events: [] }))).toBe(true);
     const ok = parseSyncBody({ timeZone: 'Asia/Manila' });
-    expect(ok).toEqual({ timeZone: 'Asia/Manila', events: [], rejected: [] });
+    expect(ok).toEqual({ timeZone: 'Asia/Manila', events: [], rejected: [], have: [], want: [] });
   });
 
   it(`takes at most ${MAX_EVENTS} events`, () => {
@@ -251,13 +251,16 @@ describe('offline-built days (M6e)', () => {
   const parse = (events: unknown[]) => parseSyncBody({ timeZone: 'UTC', events }) as SyncRequest;
 
   it('reads the day, the zone and each quest, and drops anything else', () => {
-    expect(parse([{ ...day, extra: 1, quests: [{ ...quest, extra: 2 }, workout] }])).toEqual({ timeZone: 'UTC', events: [day], rejected: [] });
+    expect(parse([{ ...day, extra: 1, quests: [{ ...quest, extra: 2 }, workout] }]))
+      .toEqual({ timeZone: 'UTC', events: [{ ...day, articleId: null }], rejected: [], have: [], want: [] });
+    // M8b decision 4: the article the phone put on the day, when it names one.
+    expect(parse([{ ...day, articleId: 'article-3' }]).events).toEqual([{ ...day, articleId: 'article-3' }]);
   });
 
   it('refuses a malformed day', () => {
     for (const bad of [
       { dayNumber: 1 }, { dayNumber: 2.5 }, { builtAt: 5 }, { timeZone: 'Mars/Base' }, { window: { startsAt: start, endsAt: start } },
-      { budget: 0 }, { light: 'no' }, { quests: [] }, { quests: [quest, quest] }, { quests: [{ ...quest, slot: 'nope' }] },
+      { budget: 0 }, { light: 'no' }, { articleId: '../x' }, { articleId: 3 }, { quests: [] }, { quests: [quest, quest] }, { quests: [{ ...quest, slot: 'nope' }] },
       { quests: [{ ...quest, why: { code: 'nope' } }] }, { quests: [{ ...quest, templateId: 'Push 1' }] },
       { quests: [{ ...workout, moves: [{ move: 'Bridge', unit: 'reps', min: 8, max: 12, perSide: false }] }] },
       { quests: [{ ...workout, moves: [{ move: 'bridge', unit: 'laps', min: 8, max: 12, perSide: false }] }] },

@@ -11,6 +11,8 @@ import type {
 } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
 import { remapped } from './offline.ts';
+import { chooseArticle, insightFor, preferredClusters } from './reading.ts';
+import type { CandidateRow } from './reading.ts';
 import { dayWindow, ladderMap, pastDays, startPoints, statXp, streakState, toProfile } from './state.ts';
 import type {
   CharacterRow, DayDraft, DayRow, InstanceDraft, InstanceRow, LadderRow, MissOutcome, PendingCheckin, ProfileRow, QueuedDay,
@@ -29,13 +31,15 @@ export type AdvanceInput = {
   pending: PendingCheckin | null;
   /** Workouts completed so far, the days being closed included (Snapshot.workoutsDone). */
   workoutsDone: number;
+  /** M8b: the published library, with the last day each article was given (Snapshot.articles). */
+  articles: readonly CandidateRow[];
   /** The phone's time zone now, canonical. */
   timeZone: string;
   nowMs: number;
   library: QuestLibrary;
   contentVersion: number;
   /** M6e: a day the phone built offline (its number and quests), kept when the rules allow it. */
-  provisional?: { dayNumber: number; quests: readonly ProvisionalQuest[] };
+  provisional?: { dayNumber: number; quests: readonly ProvisionalQuest[]; articleId?: string | null };
 };
 
 export type LedgerLine = { sourceType: 'rung' | 'discipline' | 'milestone'; sourceId: string; stat: Stat; amount: number };
@@ -265,6 +269,13 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     }
     // M7b decision 5: the player planned this day as a rest day; its quests stay as a bonus, as on any rest day.
     if (protection === null && input.character.rest_day === dayNumber) protection = 'planned_rest';
+    // M8b decision 1: the day's reading, never changed afterwards; decision 4: the phone's offline pick while it is
+    // still published. A day without quests has no reading quest, so no article.
+    const phonePick = input.provisional?.articleId ?? null;
+    const kept = phonePick === null ? undefined : input.articles.find((c) => c.id === phonePick);
+    const article = quests.length === 0 ? null : kept ?? chooseArticle(input.articles, {
+      dayNumber, preferred: preferredClusters(profile.goals, profile.class_id), insight: insightFor(input.character.insight, last.day_number),
+    });
     newDay = {
       dayNumber,
       startsAt: new Date(window.startsAt).toISOString(),
@@ -273,7 +284,7 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
       budget,
       light,
       comeback,
-      articleId: null,
+      articleId: article?.id ?? null,
       protection,
       contentVersion: input.contentVersion,
       quests,

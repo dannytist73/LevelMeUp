@@ -11,9 +11,10 @@ import type {
   AccountabilityLevel, CheckinAnswer, ClassId, Difficulty, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
 } from '../../../packages/rules/src/index.ts';
 import { VOICES } from '../../../packages/content/src/index.ts';
-import type { Voice } from '../../../packages/content/src/index.ts';
+import type { ArticleCluster, Voice } from '../../../packages/content/src/index.ts';
 import { isObject, problem, UUID } from './http.ts';
 import type { Problem } from './http.ts';
+import { MAX_HAVE, MAX_WANT, isArticleId, isCluster } from './reading.ts';
 import type { DayRow, InstanceRow } from './state.ts';
 
 export const MAX_EVENTS = 50;
@@ -68,6 +69,8 @@ export type PactEvent = { id: string; type: 'accountability_set'; level: Account
 export type TrialEvent = { id: string; type: 'trial'; checkinId: number };
 /** M7c: the private "what got in the way?" note on a check-in (decision 8); null clears it. */
 export type NoteEvent = { id: string; type: 'checkin_note'; checkinId: number; note: string | null };
+/** M8b: the Mage's Insight, tomorrow's topic (decision 8). Not an adjustment of today: lmu-sync's own path. */
+export type InsightEvent = { id: string; type: 'insight'; cluster: ArticleCluster };
 export const MAX_NOTE = 500;
 /** Control characters other than a line break (a note may have several lines). */
 const NOTE_CONTROL = /[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/u;
@@ -85,12 +88,14 @@ export type ProvisionalDayEvent = {
   window: { startsAt: number; endsAt: number };
   budget: number;
   light: boolean;
+  /** M8b: the article the phone put on the day (the state's nextArticle), or null; absent from older phones. */
+  articleId?: string | null;
   quests: (ProvisionalQuest & { book: string | null })[];
 };
 export type AdjustEvent =
   | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent
   | BookEvent | CheckinEvent | LighterEvent | SettingsEvent | PactEvent | TrialEvent | NoteEvent;
-export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent | ProvisionalDayEvent;
+export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent | ProvisionalDayEvent | InsightEvent;
 export type Rejected = { id: string | null; code: string };
 
 export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
@@ -118,7 +123,7 @@ export function adjustPayload(event: AdjustEvent): Record<string, unknown> {
   return rest;
 }
 
-export type SyncRequest = { timeZone: string; events: PhoneEvent[]; rejected: Rejected[] };
+export type SyncRequest = { timeZone: string; events: PhoneEvent[]; rejected: Rejected[]; have: string[]; want: string[] };
 
 /** Instance and day ids: positive safe integers. */
 const isId = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) > 0;
@@ -264,6 +269,8 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
       if (note.length > MAX_NOTE || NOTE_CONTROL.test(note)) return bad;
       return { id, type: 'checkin_note', checkinId: raw.checkinId, note: note === '' ? null : note };
     }
+    case 'insight':
+      return isCluster(raw.cluster) ? { id, type: 'insight', cluster: raw.cluster } : bad;
     case 'provisional_day': {
       if (!isDayNumber(raw.dayNumber) || raw.dayNumber < 2 || !isTime(raw.builtAt)) return bad;
       if (typeof raw.timeZone !== 'string' || !isValidTimeZone(raw.timeZone)) return bad;
@@ -278,14 +285,24 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
         quests.push(parsed);
       }
       if (new Set(quests.map((q) => q.slot)).size !== quests.length) return bad;
+      const articleId = raw.articleId ?? null;
+      if (articleId !== null && !isArticleId(articleId)) return bad;
       return {
         id, type: 'provisional_day', dayNumber: raw.dayNumber, builtAt: raw.builtAt, timeZone: canonicalTimeZone(raw.timeZone),
-        window: { startsAt: w.startsAt, endsAt: w.endsAt }, budget: raw.budget as number, light: raw.light, quests,
+        window: { startsAt: w.startsAt, endsAt: w.endsAt }, budget: raw.budget as number, light: raw.light,
+        articleId, quests,
       };
     }
     default:
       return { id, code: 'unsupported_event' };
   }
+}
+
+/** The article ids a sync body names (M8b decision 3): none, or up to `max` well-formed ids, once each; null when bad. */
+function articleIds(raw: unknown, max: number): string[] | null {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw) || raw.length > max || !raw.every(isArticleId)) return null;
+  return [...new Set(raw as string[])];
 }
 
 /** The sync body: the phone's time zone (canonical) and its events in order. Bad events are rejected one by one. */
@@ -295,6 +312,9 @@ export function parseSyncBody(body: unknown): SyncRequest | Problem {
   const raw = body.events ?? [];
   if (!Array.isArray(raw)) return problem(400, 'bad_body');
   if (raw.length > MAX_EVENTS) return problem(413, 'too_many_events', `at most ${MAX_EVENTS} events per sync`);
+  const have = articleIds(body.have, MAX_HAVE);
+  const want = articleIds(body.want, MAX_WANT);
+  if (have === null || want === null) return problem(400, 'bad_body');
   const events: PhoneEvent[] = [];
   const rejected: Rejected[] = [];
   const seen = new Set<string>();
@@ -308,7 +328,7 @@ export function parseSyncBody(body: unknown): SyncRequest | Problem {
       rejected.push(parsed);
     }
   }
-  return { timeZone: canonicalTimeZone(body.timeZone), events, rejected };
+  return { timeZone: canonicalTimeZone(body.timeZone), events, rejected, have, want };
 }
 
 /** What a timer must cover: the condition's time, else the quest's minutes. */

@@ -105,6 +105,7 @@ describe('the state the phone receives', () => {
       readAt: new Date(manilaDay(2).startsAt),
       painReports: 0,
       workoutsDone: 0,
+      articles: [],
     };
     const view = stateView(s, NO_OFFERS, historyOf(s));
     expect(view.today).toMatchObject({ id: 2, dayNumber: 2, status: 'open' });

@@ -18,6 +18,8 @@ import type { Voice } from '../../../packages/content/src/index.ts';
 import { isObject, isProblem, problem } from './http.ts';
 import type { Problem } from './http.ts';
 import { toDraft } from './drafts.ts';
+import { chooseArticle, preferredClusters } from './reading.ts';
+import type { CandidateRow } from './reading.ts';
 import type { DayDraft } from './state.ts';
 
 /** What the phone sends (apps/mobile/src/onboarding/flow.ts builds it). */
@@ -202,7 +204,9 @@ export type StartArgs = {
 };
 
 /** Everything `levelmeup.start_player` stores: the profile, start points, starting ladders, day 1 (light). */
-export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, library: QuestLibrary): StartArgs {
+export function startArgs(
+  choices: Choices, reveal: Reveal, nowMs: number, library: QuestLibrary, articles: readonly CandidateRow[] = [],
+): StartArgs {
   const character = startingStats(choices.estimates, choices.classId);
   const window = firstDayWindow(nowMs, choices.timeZone, choices.boundaryMinutes);
   const stats = Object.fromEntries(TRAINABLE_STATS.map((s) => [s, character[s]])) as Record<TrainableStat, number>;
@@ -214,6 +218,8 @@ export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, libra
   const answers = { goals: choices.goals, training: choices.training, reading: choices.reading, focus: choices.focus };
   const ladders = startingLadders(library, player, answers, SEEDS);
   const built = buildDay(library, { dayNumber: 1, profile: player, ladders, history: [], light: true, workoutsDone: 0, articleId: null });
+  // M8b decision 1: day 1's reading, from the player's areas (day 1 is one of their days).
+  const article = chooseArticle(articles, { dayNumber: 1, preferred: preferredClusters(choices.goals, choices.classId), insight: null });
   return {
     profile: {
       name: choices.name, voice: choices.voice, classId: choices.classId, timeZone: choices.timeZone,
@@ -231,7 +237,7 @@ export function startArgs(choices: Choices, reveal: Reveal, nowMs: number, libra
       budget: built.budget,
       light: true,
       comeback: false,
-      articleId: null,
+      articleId: article?.id ?? null,
       protection: null,
       contentVersion: CONTENT_VERSION,
       quests: built.quests.map((q) => toDraft(library, q)),

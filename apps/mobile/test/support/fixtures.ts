@@ -35,6 +35,7 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     readAt: new Date(ONBOARDED + HOUR),
     painReports: 0,
     workoutsDone: 0,
+    articles: [],
   };
   return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
 }
