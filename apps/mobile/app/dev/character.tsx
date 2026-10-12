@@ -16,7 +16,7 @@ import { Character } from '../../src/screens/Character.tsx';
 import { Chronicle } from '../../src/screens/Chronicle.tsx';
 import { GameProvider, useGame } from '../../src/state/store.ts';
 import type { GameState } from '../../src/state/store.ts';
-import { space } from '../../src/theme/tokens.ts';
+import { colors, space } from '../../src/theme/tokens.ts';
 import { Button } from '../../src/ui/Button.tsx';
 import { NarrationBox } from '../../src/ui/NarrationBox.tsx';
 import { ScreenScroll } from '../../src/ui/ScreenScroll.tsx';
@@ -64,7 +64,7 @@ export default function CharacterPreview() {
     [real],
   );
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.night }}>
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: space.gutter, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Button label="Back" variant="secondary" onPress={() => router.back()} />
         <Button label="Character" variant={tab === 'character' ? 'primary' : 'secondary'} onPress={() => setTab('character')} />

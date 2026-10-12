@@ -2,7 +2,7 @@
 // ink. The painted portraits, changing with the level, replace the emblem in M9 (visual spec §6).
 import type { ClassId } from '@levelmeup/rules';
 import { View, useWindowDimensions } from 'react-native';
-import Svg, { Circle, Defs, Line, Path, Pattern, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Line, Path, Pattern, Rect } from 'react-native-svg';
 import { colors, space } from '../theme/tokens.ts';
 
 const EMBLEM: Record<ClassId, string[]> = {
@@ -27,11 +27,12 @@ export function Portrait({ classId, label }: { classId: ClassId; label: string }
         </Defs>
         <Rect x={0} y={0} width={w} height={h} fill={colors.paper} stroke={colors.ink} strokeWidth={6} />
         <Rect x={3} y={3} width={w - 6} height={h - 6} fill="url(#portrait-hatch)" />
-        <Svg x={w * 0.25} y={h * 0.22} width={w * 0.5} height={w * 0.5} viewBox="0 0 24 24" fill="none" stroke={colors.ink}
+        {/* A group scaled from the 24-unit icon grid: Android drew a nested <Svg> small, in the corner (device check). */}
+        <G transform={`translate(${w * 0.25} ${h * 0.22}) scale(${(w * 0.5) / 24})`} fill="none" stroke={colors.ink}
           strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
           {EMBLEM[classId].map((d) => <Path key={d} d={d} />)}
           {classId === 'rogue' && <Circle cx="12" cy="20.5" r="1.5" />}
-        </Svg>
+        </G>
       </Svg>
     </View>
   );
