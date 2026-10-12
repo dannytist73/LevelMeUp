@@ -14,6 +14,7 @@ export * from './adjust.ts';
 export * from './checkin.ts';
 export * from './settings.ts';
 export * from './pact.ts';
+export * from './notify.ts';
 export * from './character.ts';
 export * from './offline.ts';
 export * from './quests/workout.ts';

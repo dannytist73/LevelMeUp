@@ -20,8 +20,10 @@ describe('the Pact and the Shadow on screen (M7c, boards F2–F5)', () => {
     expect(PACT_TEXT.rules[4]).toMatch(/never touches your progress/);
   });
 
-  it("promise no evening reminder before notifications exist (M7d)", () => {
-    for (const text of strings(PACT_TEXT)) expect(text).not.toMatch(/reminder/i);
+  it('name the evening reminder at level 2 only, with notifications on (M7d)', () => {
+    expect(PACT_TEXT.levels[2].line).toMatch(/with notifications on, a second, sterner reminder comes that evening/);
+    const others = { ...PACT_TEXT, levels: { 0: PACT_TEXT.levels[0], 1: PACT_TEXT.levels[1] } };
+    for (const text of strings(others)) expect(text).not.toMatch(/reminder/i);
   });
 
   it('say that the core quest, the recovery quest and the article are never sealed', () => {

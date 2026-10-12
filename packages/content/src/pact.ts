@@ -1,6 +1,6 @@
 // The Accountability Pact and what the System says around the Shadow (spec §4.3; M7c, boards F2–F5). The Shadow's own
-// lines are SHADOW_LINES (shadow.ts): it speaks only in Shadow boxes. Level 2's evening reminder arrives with
-// notifications (M7d), so these words don't promise it yet (M7c decision 1).
+// lines are SHADOW_LINES (shadow.ts): it speaks only in Shadow boxes. Level 2's evening reminder came with
+// notifications (M7d): the level 2 text names it.
 
 export const PACT_TEXT = {
   title: 'The Accountability Pact',
@@ -17,8 +17,9 @@ export const PACT_TEXT = {
     2: {
       name: 'Level 2 · Trial of Stillness',
       line:
-        'Level 1, plus: that day your side quests stay sealed until you finish a 10-minute focus session. The core ' +
-        'quest, the recovery quest and the article are never sealed.',
+        'Level 1, plus: that day your side quests stay sealed until you finish a 10-minute focus session and, with ' +
+        'notifications on, a second, sterner reminder comes that evening. The core quest, the recovery quest and the ' +
+        'article are never sealed.',
     },
   },
   preview: 'Preview the Shadow',
