@@ -109,6 +109,8 @@ and reference `auth.users(id) on delete cascade` where they hold player data.
   just didn't", on the player's own days), `resolved_at` and `outcome` (protected, recovered, unbreakable, shield or
   reset; set together). `character_state` gains `next_day_light` (a "sick" or "injured" answer; used up by the next
   day built) and `profiles` gains `lighter_plan_at` (when the player last answered the lighter-plan offer).
+- M7b (2026-10-12, migration 0012): `character_state` gains `rest_day` (the day number planned as a rest day the day
+  before; the next day built with that number is protected as `planned_rest`).
 - Character totals are cached in `character_state` and updated in the same transaction as the ledger, so the
   ledger is the audit trail and the cache is what screens read.
 
@@ -153,6 +155,13 @@ that is running. The planner (`_shared/checkin.ts`) refuses an answer for any ch
 answer (`already_answered`) and an unready Second Wind; `lighter_plan` accepted at 10 minutes is `no_lighter_plan`.
 `levelmeup.adjust` (migration 0011) answers only this player's unanswered check-in and adds the recovery quest only to
 the day the change names.
+
+M7b (2026-10-12): `settings` (the voice, `boundaryMinutes` in whole half hours, `minutesPerDay`, difficulty, always
+all four) joins the adjustments; `plan_rest` takes `tomorrow` (the server keeps `rest_day`) and, with `pain`, a tap
+time `at`: the planner and `levelmeup.adjust` (migration 0012) accept a day that has ended but isn't closed when the
+tap was inside it and the event arrives within 48 hours of its end, and then change only its protection. A rest
+refused because its day had closed is `rest_late`; a pain report applied without its day is `ok` with
+`notice: 'pain_late'` (an `lmu-sync` result can carry a notice). Account deletion is unchanged (`lmu-account-delete`).
 
 ### 4.2 How a write happens
 
@@ -213,6 +222,9 @@ last line of defence.
 - **Email:** without a custom SMTP sender, Supabase's built-in sender only mails the project's team members, so
   "save with email" can't reach pilot friends. Pilot: save with Google. Before launch: a custom SMTP sender (e.g.
   Resend's free tier), which also helps the wedding's admin emails.
+- M7b, the sign-in guard: before a new guest signs in (only the onboarding's analysis makes one), the app writes a
+  random value through the sealed session storage and reads it back; if that fails, no guest and no character are
+  made and the analysis says so.
 
 ## 5. AI
 
@@ -276,6 +288,8 @@ template narrative is used; the player never sees an error.
   follows the phone's own projected day.
 
 ## 7. Notifications
+
+*Moved to M7d (M7b decision 1).*
 
 Local only. A pure `plan()` function (rules package) decides which reminders should exist from settings, today's
 state and the clock; one file talks to `expo-notifications`. Re-planned on every app open and after every

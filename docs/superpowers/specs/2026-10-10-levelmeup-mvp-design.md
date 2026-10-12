@@ -72,6 +72,12 @@ best streak and shields as tiles, a month calendar with real dates for the last 
 paused, today; a closed day is never drawn as a miss; earlier months by button), and growth since day 1 (stat points
 gained, levels, quests cleared, new rungs). Past readings arrive with articles (M8).
 
+*Built in M7b (2026-10-12):* Settings has the account (a guest's or Google's, "Delete my character", and the
+start-again card when a guest sign-in is gone for good), Game ("Voice, rhythm and minutes": the voice, the time the
+quest day ends in half-hour steps, minutes a day and difficulty, one change; and Training), sync and the version.
+Deleting says what goes and, for a Google-saved character, that the Google sign-in stays; it needs a second tap.
+Notifications arrive with M7d, the Pact with M7c.
+
 ### 1.4 Screen states
 
 | Screen | Loading | Empty | Error |
@@ -298,6 +304,10 @@ After a completion, one optional tap: Easy / Right (default) / Too hard.
 - Built in M6c (2026-10-12): a hard-day workout is one set of its first two exercises (7 minutes, half XP), the
   smallest session that keeps the habit. A swap can offer a workout; Second Wind redoes a missed workout with today's
   plan; changing the equipment or program re-plans today's open workout (same rung and reward).
+- Built in M7b (2026-10-12): "Rest tomorrow" next to "Rest today", within the same 2-in-7 limit (tomorrow counted
+  ahead); that day is built as a rest day even if the app isn't opened. A rest or a pain report tapped without a
+  connection still protects its day when it syncs after the day ended (within 48 hours, before the server closed the
+  day); when it is too late, Today says so. A weekly rest pattern waits for the pilot's need.
 
 ### 3.6 Completion
 
@@ -350,6 +360,8 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
   still gets a real day.
 - After travel, a day ends at the first boundary at least 20 hours after it starts, capped at 28 hours; the
   boundary re-syncs within a few days.
+- M7b: Settings changes when the quest day ends; the change applies from the next day built, which still lasts 20–28
+  hours, so a large change arrives over a few days.
 
 ## 4. Daily article, accountability and notifications (approved 2026-10-10)
 

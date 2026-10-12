@@ -86,5 +86,13 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   **Run this bundle only against a server with the M7a deploy**: it reads the state's `checkin`, `checkinResult` and
   `lighterPlan`. The check-in preview (`app/dev/checkin.tsx`) shows Today with a made-up check-in for yesterday and the
   check-in screen; nothing is sent.
+- **Settings** (M7b): Settings → "Voice, rhythm and minutes" opens Your game (`app/game.tsx`,
+  `src/screens/GameSettings.tsx`), which sends one `settings` event; "Delete my character" opens
+  `app/delete.tsx` (`src/screens/DeleteCharacter.tsx`), which calls the store's `deleteCharacter` (lmu-account-delete)
+  after a second tap and then returns to Today. The sign-in-lost card (`src/screens/SignInLost.tsx`) shows on Today and
+  in Settings. Today's rest panel offers "Rest tomorrow"; the store stamps `plan_rest` and `pain` with the tap time
+  (`at`). The sign-in guard (`storageWorks` in `src/auth/sessionStorage.ts`) checks the sealed storage before a new
+  guest signs in; if it fails, the analysis says so (code `storage`) and nothing is made. **Run this bundle only
+  against a server with the M7b deploy**: an older server refuses `settings` and would take "Rest tomorrow" as today.
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

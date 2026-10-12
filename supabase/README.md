@@ -56,6 +56,12 @@ model keys never leave Supabase.
   now applies the days queued behind a check-in, opens the check-ins that replay finds, settles "I just didn't" and
   records Unbreakable; and adds the check-in's resolution, `next_day_light` and `profiles.lighter_plan_at`). `lmu-sync`
   closes ended days before it applies a `checkin` answer (`_shared/checkin.ts` plans it).
+- Settings (M7b, `0012`: `character_state.rest_day`; `adjust` takes `settings`, `restDay` and a late day's `tappedAt`):
+  the `settings` event carries the voice, `boundaryMinutes` (whole half hours), `minutesPerDay` and difficulty, always
+  all four; `plan_rest` may carry `tomorrow: true` (the next day is built as planned rest) and, like `pain`, a tap time
+  `at`, so a rest tapped while its day ran still protects it when it syncs after the day ended (within 48 hours, before
+  the day is closed; only its protection changes). A late rest is refused as `rest_late`; a pain report applied without
+  its day is `ok` with `notice: 'pain_late'`.
 - The state each response returns (`_shared/state.ts`, `stateView`) adds what only Character and Chronicle show (M6d):
   the last 92 days' dates and marks, growth since day 1 and the book's progress, read once per response by
   `loadHistory` (`db.ts`) as the player.
