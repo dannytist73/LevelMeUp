@@ -2481,5 +2481,10 @@ Expected: all pass; `pacing` unchanged (no rules or content numbers changed: War
   day that passed with the app closed still counts in the 2-in-7 limit (`restDays` counts a planned day the last 8
   loaded days don't hold), with a test, and a test that a used-up plan never rests a later away day. Checklist row 12
   added (a planned rest day with the app closed all day).
-- **Deploy:** pending (the owner's yes given 2026-10-12, after the review fixes).
-- **Emulator:** pending.
+- **Deploy** (the owner's "yes, deploy after the review fixes", 2026-10-12): `db:deploy` applied 0012 (the wedding's
+  migration history unchanged); `db:test` passed every file (adjust.sql 86 assertions in 13 test functions, nothing
+  left behind); `deploy:functions` v11, ACTIVE (09:02 UTC); `test:live` 38 of 38; no "Live Test" player left.
+- **Emulator** (test character Uma, after a full reload): rows 1, 2, 3, 10 and 11 pass; rows 4, 6 and 8 partly (the
+  note, the offer and banner, the delete screen's two steps). Uma's day 3 (after 2026-10-13 08:00 UTC) checks row 6's
+  next day with M7a row 5; then row 8 deletes Uma. Rows 5, 7, 9 and 12 go to the Find X9. Found: Today kept "Clear the
+  recovery quest today…" after the recovery quest was cleared; fixed (d7961d7).

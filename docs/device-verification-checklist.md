@@ -304,19 +304,29 @@ Test character Uma (America/Caracas), day 1's core quest left undone, networking
 
 ## M7b — Settings
 
-Emulator unless marked. A fresh test character, deleted at the end with row 8 (which tests the delete screen itself).
+Emulator unless marked. The test character Uma (kept from M7a for its row 5; a fresh one would have replaced her on the
+emulator), deleted with row 8 after that row (which tests the delete screen itself).
 
 | # | Check | Result |
 |---|---|---|
-| 1 | Settings shows Account (the guest card, "Delete my character"), Game ("Voice, rhythm and minutes", "Training"), Sync and About. | |
-| 2 | Your game shows the current voice, day end, minutes and difficulty; Save stays off until something changes. | |
-| 3 | A new voice saved: Today's quest words change at once; Your game shows the saved values after the sync. | |
-| 4 | 10 minutes shows "Workouts need 25 minutes…" (a Warrior); saved, the next day has a 10-minute budget (Find X9: a real day boundary). | |
+| 1 | Settings shows Account (the guest card, "Delete my character"), Game ("Voice, rhythm and minutes", "Training"), Sync and About. | Pass (emulator, test character Uma, after the deploy and a full reload, 2026-10-12): Account (the guest card, "Delete my character"), Game ("Voice, rhythm and minutes", "Training"), Sync, About |
+| 2 | Your game shows the current voice, day end, minutes and difficulty; Save stays off until something changes. | Pass: System voice, "4:00 AM", 25 minutes and Steady selected; Save dimmed until a change |
+| 3 | A new voice saved: Today's quest words change at once; Your game shows the saved values after the sync. | Pass: Questmaster saved; Save closed the screen, "1 waiting" then synced; Your game showed Questmaster after the sync; Today's core quest read "The first march" (was "Walk") with a Questmaster why-line |
+| 4 | 10 minutes shows "Workouts need 25 minutes…" (a Warrior); saved, the next day has a 10-minute budget (Find X9: a real day boundary). | Partly: 10 minutes shows "Workouts need 25 minutes a day or more…" (Warrior) and lights Save; not saved (Uma kept at 25). The next day's budget: Find X9 |
 | 5 | A new day end: the next day ends at the new time, or moves toward it within 20–28 hours (Find X9: a real day boundary). | |
-| 6 | The rest panel offers "Rest today" and "Rest tomorrow"; "Rest tomorrow" shows "Tomorrow is a rest day"; the next day shows the rest banner (Find X9 for the next day). | |
+| 6 | The rest panel offers "Rest today" and "Rest tomorrow"; "Rest tomorrow" shows "Tomorrow is a rest day"; the next day shows the rest banner (Find X9 for the next day). | Partly: the panel offers "Rest today" and "Rest tomorrow"; "Rest tomorrow" showed "Tomorrow is a rest day: your streak is safe…" at once and after the sync, no notice. The next day (Uma's day 3 after 2026-10-13 08:00 UTC): pending |
 | 7 | Late rest: networking off, "Rest today"; after the day ends, networking on: the day closed as a rest day (Chronicle: rest; no check-in) (Find X9: a real day boundary). | |
-| 8 | Delete my character (a guest): the words, the second tap; then the onboarding; the leftovers check finds no profile for that guest. | |
+| 8 | Delete my character (a guest): the words, the second tap; then the onboarding; the leftovers check finds no profile for that guest. | Partly: the screen (the guest line, "Deleting needs a connection"), "Delete everything" opens the second step, "Keep my character" returns with nothing sent. The delete itself waits for Uma's M7a row 5 (2026-10-13) |
 | 9 | Delete for a Google-saved character shows the Google line (Find X9, a throwaway saved character, never the owner's). | |
-| 10 | At the largest font, Your game and Delete wrap with nothing cut off. | |
-| 11 | Unit tests only: the sign-in guard (no guest when the storage fails) and the sign-in-lost card in Settings. | |
+| 10 | At the largest font, Your game and Delete wrap with nothing cut off. | Pass: font 2.0 and density 540: Settings, Your game (the minutes wrap to two rows) and Delete (both steps, "Yes, delete my character" on two lines) wrap with nothing cut off |
+| 11 | Unit tests only: the sign-in guard (no guest when the storage fails) and the sign-in-lost card in Settings. | Pass (unit tests): the guard (a failing write, a value that doesn't come back, a cipher that can't seal, a key the vault doesn't keep) and the sign-in-lost card in Settings |
 | 12 | "Rest tomorrow", then the app stays closed all of that day: the next open shows no check-in and the streak held (Find X9: two real day boundaries). | |
+
+### What the emulator found (M7b, 2026-10-12)
+
+1. After "I just didn't" and its recovery quest cleared, Today still said "Clear the recovery quest today and your streak
+   survives." It now says "You took the day back. Your streak holds when today ends." once the recovery quest is
+   cleared (d7961d7, a screen test).
+2. Not a bug: "configured linking in multiple places" after a display-size change (a development warning, as in M6a
+   and M6b); the emulator's launcher stopped responding once after the density reset.
+
