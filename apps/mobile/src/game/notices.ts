@@ -42,6 +42,10 @@ const TEXT = {
     "That day had already closed when your rest day reached the System, so it couldn't become a rest day. If its " +
     'check-in asks, say what happened.',
   pain_late: 'The exercise rests. That day had already closed when your report reached the System, so the day itself stayed as it was.',
+  same_level: 'That was already your pact.',
+  no_trial: 'There was no Trial of Stillness to finish, so nothing changed.',
+  trial_done: 'The Trial of Stillness was already complete.',
+  checkin_gone: "That check-in is more than 14 days old, so the note wasn't saved.",
 } as const;
 
 export type NoticeCode = keyof typeof TEXT;

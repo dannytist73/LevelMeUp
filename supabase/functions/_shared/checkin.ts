@@ -1,6 +1,7 @@
 // The check-in's answer (spec §3.7; M7a decisions 2–8): the change `levelmeup.adjust` writes, or why it is refused. Pure.
 // A protected answer resolves the check-in at once; "I just didn't" adds the recovery quest to the running day, and
-// `planAdvance` settles the miss when that day ends.
+// `planAdvance` settles the miss when that day ends. M7c: under a pact, the answer also carries what the pact sets off
+// (`_shared/pact.ts`).
 import {
   addRecovery, checkinOutcome, findTemplate, lighterMinutes, newLadder, painKey, recordPain, resolveCheckin, stepDown,
 } from '../../../packages/rules/src/index.ts';
@@ -8,6 +9,7 @@ import type { BuiltDay, QuestLibrary, RecoveryOption } from '../../../packages/r
 import type { AdjustCode, Change, Plan } from './adjust.ts';
 import { toDraft } from './drafts.ts';
 import type { CheckinEvent } from './events.ts';
+import { consequenceFor } from './pact.ts';
 import { ladderMap, streakState } from './state.ts';
 import type { Snapshot } from './state.ts';
 import { openDay, questsOf, todayBuilt, todayInput } from './today.ts';
@@ -70,5 +72,8 @@ export function planCheckin(s: Snapshot, event: CheckinEvent, { nowMs, library }
   change.recovery = toDraft(library, built.quests.find((q) => q.slot === 'recovery')!);
   checkin.recoveryDayId = Number(day.id);
   if (event.secondWind) change.ability = { id: 'second_wind', day: day.day_number };
+  // M7c decision 4: the pact's consequence, decided now and written with the answer.
+  const consequence = consequenceFor(s, pending, Number(day.id), nowMs);
+  if (consequence !== null) checkin.consequence = consequence;
   return { change };
 }

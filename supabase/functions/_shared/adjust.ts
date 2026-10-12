@@ -2,21 +2,22 @@
 // writes (migration 0008), or the reason it is refused. Pure: the rules decide, from the same snapshot the offers come
 // from (today.ts), and every reward in a replaced quest is drafted here, never taken from the phone. M7b: the game
 // settings, a rest day ahead, and a rest or pain report tapped while its day ran, accepted after the day ended (decisions
-// 2, 5, 6).
+// 2, 5, 6). M7c: the pact's level, the Trial and the note (`_shared/pact.ts`).
 import {
   LATE_SYNC_MS, abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout,
   ladderById, lighterMinutes, newLadder, painKey, painOption, planWorkout, plannedMoves, recordPain, restAllowed, resumeAfterPain, stepDown,
   swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  BuiltDay, CheckinAnswer, ClassId, Difficulty, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary, StreakState,
+  AccountabilityLevel, BuiltDay, CheckinAnswer, ClassId, Difficulty, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary, StreakState,
 } from '../../../packages/rules/src/index.ts';
 import type { Voice } from '../../../packages/content/src/index.ts';
 import { planCheckin } from './checkin.ts';
 import { toDraft } from './drafts.ts';
 import type { AdjustEvent, DayAbility, PainChoice } from './events.ts';
+import { planNote, planPact, planTrial } from './pact.ts';
 import { ladderMap, startPoints, statXp, toProfile } from './state.ts';
-import type { DayRow, InstanceDraft, InstanceRow, Snapshot } from './state.ts';
+import type { Consequence, DayRow, InstanceDraft, InstanceRow, Snapshot } from './state.ts';
 import { QUEST_SLOTS, canStepDown, completedSlots, openDay, questsOf, restDays, todayBuilt, todayInput } from './today.ts';
 
 /** Every reason an adjustment is refused; the phone has words for each (apps/mobile/src/game/notices.ts). */
@@ -24,7 +25,7 @@ export const ADJUST_CODES = [
   'not_found', 'day_closed', 'already_completed', 'not_swappable', 'no_swaps_left', 'not_an_option', 'already_hard_day',
   'already_protected', 'rest_limit', 'not_exercise', 'not_paused', 'not_too_hard', 'not_current',
   'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change', 'no_book', 'same_book', 'already_answered',
-  'no_lighter_plan', 'rest_late',
+  'no_lighter_plan', 'rest_late', 'same_level', 'no_trial', 'trial_done', 'checkin_gone',
 ] as const;
 export type AdjustCode = (typeof ADJUST_CODES)[number];
 
@@ -41,8 +42,8 @@ export type Change = {
   training?: { equipment: Equipment[]; programStyle: ProgramStyle };
   /** M6d: Scholar's Path (decision 12). */
   book?: { title: string | null; finished: boolean };
-  /** M7a: the check-in's answer (decisions 2–4); `outcome` only when it is resolved at once. */
-  checkin?: { id: number; answer: CheckinAnswer; recoveryDayId: number | null; outcome: 'protected' | null };
+  /** M7a: the check-in's answer (decisions 2–4); `outcome` only when it is resolved at once. M7c: the pact's consequence. */
+  checkin?: { id: number; answer: CheckinAnswer; recoveryDayId: number | null; outcome: 'protected' | null; consequence?: Consequence };
   /** M7a: the recovery quest, added to the day `day` names. */
   recovery?: InstanceDraft;
   /** M7a: the streak after a protected answer. */
@@ -57,6 +58,14 @@ export type Change = {
   settings?: { voice: Voice; boundaryMinutes: number; minutesPerDay: number; difficulty: Difficulty };
   /** M7b: the day number a rest day is planned for (decision 5): always tomorrow. */
   restDay?: number;
+  /** M7c: the pact's level (decision 3); SQL signs a raise now and keeps the time on a lowering. */
+  pact?: { level: AccountabilityLevel };
+  /** M7c: today's consequence eased by a lower pact (decision 3). */
+  consequence?: { checkinId: number; kind: 'shadow' | null };
+  /** M7c: the Trial's focus session done (decision 7). */
+  trial?: { checkinId: number };
+  /** M7c: the private note (decision 8); null clears it. */
+  note?: { checkinId: number; text: string | null };
 };
 
 /** `notice` (M7b decision 7): applied, with a word for the player (a pain report whose day couldn't change any more). */
@@ -287,6 +296,12 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
       if (minutes === null) return refuse('no_lighter_plan');
       return { change: { minutes, lighterPlanAt: true } };
     }
+    case 'accountability_set':
+      return planPact(s, event);
+    case 'trial':
+      return planTrial(s, event, nowMs);
+    case 'checkin_note':
+      return planNote(s, event);
   }
 }
 

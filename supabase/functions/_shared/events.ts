@@ -1,14 +1,14 @@
 // Phone events for `lmu-sync` (architecture §4.1). M3 handles complete, undo and rate; M6b the adjustments (swap, hard
 // day, rest, pain, resume, step down, class change, Stillness and Dawn Ritual); M6c the training setup; M6d the Scholar's
 // Path book; M6e the offline-built day and quests named by day and slot; M7a the check-in's answer and the lighter plan;
-// M7b the game settings and the tap time on a rest or pain report; the rest arrive with the milestones whose screens send
-// them, and until then are rejected without touching anything.
+// M7b the game settings and the tap time on a rest or pain report; M7c the pact, the Trial of Stillness and the check-in's
+// note. Anything else is rejected without touching anything.
 import {
-  CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, DIFFICULTIES, EQUIPMENT, MINUTES_OPTIONS, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone,
+  ACCOUNTABILITY_LEVELS, CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, DIFFICULTIES, EQUIPMENT, MINUTES_OPTIONS, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone,
   isWhyReason, questTimerDone, sessionSets,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  CheckinAnswer, ClassId, Difficulty, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
+  AccountabilityLevel, CheckinAnswer, ClassId, Difficulty, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
 } from '../../../packages/rules/src/index.ts';
 import { VOICES } from '../../../packages/content/src/index.ts';
 import type { Voice } from '../../../packages/content/src/index.ts';
@@ -62,6 +62,15 @@ export type LighterEvent = { id: string; type: 'lighter_plan'; accept: boolean }
 export type SettingsEvent = {
   id: string; type: 'settings'; voice: Voice; boundaryMinutes: number; minutesPerDay: number; difficulty: Difficulty;
 };
+/** M7c: the Accountability Pact's level (decision 3): a raise is signed when it arrives, a lowering is instant. */
+export type PactEvent = { id: string; type: 'accountability_set'; level: AccountabilityLevel };
+/** M7c: the Trial of Stillness's 10-minute focus session, finished (decision 7). */
+export type TrialEvent = { id: string; type: 'trial'; checkinId: number };
+/** M7c: the private "what got in the way?" note on a check-in (decision 8); null clears it. */
+export type NoteEvent = { id: string; type: 'checkin_note'; checkinId: number; note: string | null };
+export const MAX_NOTE = 500;
+/** Control characters other than a line break (a note may have several lines). */
+const NOTE_CONTROL = /[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/u;
 /**
  * M6e: a day the phone built offline (decision 4). The server reads the day number, when it was built, the zone and each
  * quest's slot, template, why-line and exercises. The window, budget, light flag and books are what the phone showed:
@@ -80,13 +89,13 @@ export type ProvisionalDayEvent = {
 };
 export type AdjustEvent =
   | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent
-  | BookEvent | CheckinEvent | LighterEvent | SettingsEvent;
+  | BookEvent | CheckinEvent | LighterEvent | SettingsEvent | PactEvent | TrialEvent | NoteEvent;
 export type PhoneEvent = CompleteEvent | UndoEvent | RateEvent | AdjustEvent | ProvisionalDayEvent;
 export type Rejected = { id: string | null; code: string };
 
 export const ADJUST_TYPES: readonly AdjustEvent['type'][] = [
   'swap', 'hard_day', 'plan_rest', 'pain', 'resume', 'step_down', 'class_change', 'ability', 'training', 'book', 'checkin',
-  'lighter_plan', 'settings',
+  'lighter_plan', 'settings', 'accountability_set', 'trial', 'checkin_note',
 ];
 export const isAdjust = (event: PhoneEvent): event is AdjustEvent => (ADJUST_TYPES as readonly string[]).includes(event.type);
 
@@ -238,6 +247,20 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
         id, type: 'settings', voice: raw.voice as Voice, boundaryMinutes: end as number, minutesPerDay: raw.minutesPerDay as number,
         difficulty: raw.difficulty as Difficulty,
       };
+    }
+    case 'accountability_set':
+      return ACCOUNTABILITY_LEVELS.includes(raw.level as AccountabilityLevel)
+        ? { id, type: 'accountability_set', level: raw.level as AccountabilityLevel }
+        : bad;
+    case 'trial':
+      return isId(raw.checkinId) ? { id, type: 'trial', checkinId: raw.checkinId } : bad;
+    case 'checkin_note': {
+      if (!isId(raw.checkinId)) return bad;
+      if (raw.note === null) return { id, type: 'checkin_note', checkinId: raw.checkinId, note: null };
+      if (typeof raw.note !== 'string') return bad;
+      const note = raw.note.replace(/\r\n?/g, '\n').trim();
+      if (note.length > MAX_NOTE || NOTE_CONTROL.test(note)) return bad;
+      return { id, type: 'checkin_note', checkinId: raw.checkinId, note: note === '' ? null : note };
     }
     case 'provisional_day': {
       if (!isDayNumber(raw.dayNumber) || raw.dayNumber < 2 || !isTime(raw.builtAt)) return bad;

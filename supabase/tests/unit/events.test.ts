@@ -33,7 +33,7 @@ describe('the sync body', () => {
       timeZone: 'UTC',
       events: [
         { id: id(1), type: 'complete', instanceId: 5, completedAt: start + MIN, payload: {} },
-        { id: id(2), type: 'accountability_set', level: 2 },
+        { id: id(2), type: 'grant_xp', amount: 9999 },
         { id: 'not-a-uuid', type: 'undo', instanceId: 5 },
         { id: id(3), type: 'rate', instanceId: 5, rating: 'meh' },
         { id: id(4), type: 'undo', instanceId: -1 },
@@ -369,5 +369,59 @@ describe('the settings and the tap time (M7b decisions 2, 5, 6)', () => {
     ]) {
       expect(one(bad)).toMatchObject({ events: [], rejected: [{ id: ID, code: 'bad_event' }] });
     }
+  });
+});
+
+
+describe('the pact, the Trial and the note (M7c)', () => {
+  const parse = (events: unknown[]) => {
+    const body = parseSyncBody({ timeZone: 'UTC', events });
+    if (isProblem(body)) throw new Error('unexpected problem');
+    return body;
+  };
+
+  it('a pact level 0, 1 or 2', () => {
+    const body = parse([
+      { id: id(1), type: 'accountability_set', level: 0 },
+      { id: id(2), type: 'accountability_set', level: 2 },
+      { id: id(3), type: 'accountability_set', level: 3 },
+      { id: id(4), type: 'accountability_set', level: '1' },
+    ]);
+    expect(body.events).toEqual([
+      { id: id(1), type: 'accountability_set', level: 0 },
+      { id: id(2), type: 'accountability_set', level: 2 },
+    ]);
+    expect(body.rejected.map((r) => r.code)).toEqual(['bad_event', 'bad_event']);
+  });
+
+  it('a Trial names its check-in', () => {
+    const body = parse([{ id: id(1), type: 'trial', checkinId: 7 }, { id: id(2), type: 'trial', checkinId: 0 }]);
+    expect(body.events).toEqual([{ id: id(1), type: 'trial', checkinId: 7 }]);
+    expect(body.rejected).toEqual([{ id: id(2), code: 'bad_event' }]);
+  });
+
+  it('a note: trimmed, line breaks kept, at most 500 characters, no other control characters; empty clears it', () => {
+    const body = parse([
+      { id: id(1), type: 'checkin_note', checkinId: 7, note: '  A late shift.\r\nThen the rain.  ' },
+      { id: id(2), type: 'checkin_note', checkinId: 7, note: '   ' },
+      { id: id(3), type: 'checkin_note', checkinId: 7, note: null },
+      { id: id(4), type: 'checkin_note', checkinId: 7, note: 'x'.repeat(501) },
+      { id: id(5), type: 'checkin_note', checkinId: 7, note: 'tab\there' },
+      { id: id(6), type: 'checkin_note', checkinId: 7 },
+    ]);
+    expect(body.events).toEqual([
+      { id: id(1), type: 'checkin_note', checkinId: 7, note: 'A late shift.\nThen the rain.' },
+      { id: id(2), type: 'checkin_note', checkinId: 7, note: null },
+      { id: id(3), type: 'checkin_note', checkinId: 7, note: null },
+    ]);
+    expect(body.rejected.map((r) => r.id)).toEqual([id(4), id(5), id(6)]);
+  });
+
+  it('are adjustments, stored without their id and type', () => {
+    const pact = { id: id(1), type: 'accountability_set' as const, level: 1 as const };
+    expect(isAdjust(pact)).toBe(true);
+    expect(adjustPayload(pact)).toEqual({ level: 1 });
+    expect(isAdjust({ id: id(2), type: 'trial', checkinId: 7 })).toBe(true);
+    expect(isAdjust({ id: id(3), type: 'checkin_note', checkinId: 7, note: null })).toBe(true);
   });
 });
