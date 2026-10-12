@@ -1,4 +1,5 @@
-// The root: fonts, the splash screen, the game store and when it syncs (launch, foreground, network back).
+// The root: fonts, the splash screen, the game store and when it syncs (launch, foreground, network back); M7d:
+// notification taps.
 import { useFonts } from 'expo-font';
 import * as Network from 'expo-network';
 import { Stack } from 'expo-router';
@@ -8,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { StoreApi } from 'zustand/vanilla';
+import { NoteTaps } from '../src/notify/NoteTaps.tsx';
 import { Celebration } from '../src/screens/Celebration.tsx';
 import { createAppStore } from '../src/state/appStore.ts';
 import { GameProvider } from '../src/state/store.ts';
@@ -79,6 +81,7 @@ export default function RootLayout() {
           <View style={{ flex: 1 }}>
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }} />
             <Celebration />
+            <NoteTaps />
           </View>
         </GameProvider>
       )}
