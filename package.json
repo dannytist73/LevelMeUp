@@ -23,6 +23,7 @@
     "deploy:functions": "node scripts/sb.ts functions deploy lmu-onboarding lmu-sync lmu-account-delete lmu-articles-tick --project-ref knlgpcwoaaygncmlnbsm --use-api",
     "lmu:password": "node scripts/lmu-service-password.ts",
     "articles": "node scripts/articles.ts",
+    "pilot": "node scripts/pilot.ts",
     "test:live": "npm -w supabase run test:live",
     "app": "npm -w @levelmeup/mobile run start",
     "check:bundle": "npm -w @levelmeup/mobile run check:bundle"
