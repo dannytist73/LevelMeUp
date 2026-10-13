@@ -22,3 +22,6 @@ apps/mobile/ios/
 
 # Quest art renders (M6a): only the picked set in art/quest/v1 is kept
 art/quest/renders/
+# Class art renders (M9a): only the picked set in art/class/v1 is kept
+art/class/renders/
+art/class/_set.jpg
