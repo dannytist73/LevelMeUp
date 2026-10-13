@@ -3139,3 +3139,8 @@ stops it." Wait for a clear yes.
   - A rewrite costs about $0.04, against about $0.25 and a night's wait for new research. Research that fails is
     still tried once more the next night.
   - Unit tests: 463 server tests, 2 new.
+
+- **The cron (Task 15, the owner's yes, 2026-10-13):** `cron on` at 08:28 UTC created pg_cron (in `pg_catalog`) and
+  pg_net (in `extensions`) and scheduled `lmu-articles-tick` every 30 minutes. The first run at 08:30 UTC succeeded;
+  pg_net's answer was 200 `{"ran":true,"queued":0,…,"budget":false,"errors":0}` (daytime: no night to queue). Nightly
+  articles now publish without the owner's review when they pass the checks.
