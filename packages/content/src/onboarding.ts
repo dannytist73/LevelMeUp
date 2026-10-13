@@ -178,6 +178,8 @@ export const ONBOARDING_TEXT = {
     storage:
       "This phone couldn't store a sign-in safely, so the System made nothing yet. Your answers are kept. Close the " +
       'app, open it again and try once more.',
+    // M9b decision 5: the server asks this app to update first.
+    update: 'This version of LevelMeUp is too old for the System. Install the newest one from the link you were sent; your answers are kept on this phone.',
     retry: 'Try again',
     today: 'Go to Today',
   },

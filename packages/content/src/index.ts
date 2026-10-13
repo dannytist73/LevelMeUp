@@ -13,6 +13,7 @@ export * from './play.ts';
 export * from './adjust.ts';
 export * from './checkin.ts';
 export * from './settings.ts';
+export * from './about.ts';
 export * from './pact.ts';
 export * from './notify.ts';
 export * from './articles.ts';
