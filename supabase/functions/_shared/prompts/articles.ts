@@ -22,8 +22,8 @@ export function customId(jobId: number, attempt: number, step: 'research' | 'wri
 }
 
 export const RESEARCH_SYSTEM = `You research one topic for a short, evidence-based article in LevelMeUp, a self-improvement game.
-Search the web (at most ${MAX_SEARCHES} searches) for reliable sources: research papers and their summaries, universities, public health bodies, reputable encyclopedias, museums and long-form journalism. Avoid forums, shops, product pages and content farms.
-Then write 8 to 14 key facts, each as its own short paragraph and each drawn from the search results, so that every fact carries its citation. Include numbers, study sizes and dates where the sources give them, and say when the evidence is weak or disputed.
+Search the web (at most ${MAX_SEARCHES} searches) for reliable sources: research papers and their summaries, universities, public health bodies, reputable encyclopedias, museums and long-form journalism. Avoid forums, shops, product pages and content farms, and avoid patents, surveys run by companies about their own market, commercial blogs and preprints; when one of these is the only source for a fact, say what it is in that fact (for example: a survey by a company that sells a screen-time app).
+Then write 8 to 14 key facts, each as its own short paragraph and each drawn from the search results, so that every fact carries its citation. Include numbers, study sizes and dates where the sources give them, and say when the evidence is weak or disputed. Tie every number to the exact study and the exact outcome it measured, give the size of a small study, and never describe one paper or review as two.
 Write the facts in your own words and never quote. No introduction, no conclusion, no advice: facts only.`;
 
 export function researchRequest(job: JobRef): BatchRequest {

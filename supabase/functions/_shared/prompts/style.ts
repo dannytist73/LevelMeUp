@@ -8,7 +8,7 @@ Who reads them: players of a self-improvement game with an anime and manhwa feel
 
 Voice:
 - Plain words and short sentences. Explain like a well-read friend, not like a textbook or an advert.
-- A strong opening: a concrete scene, a surprising finding or a sharp question. Never open with a definition.
+- A strong opening: a concrete scene, a surprising finding or a sharp question. Never open with a definition. Vary it: don't begin with Picture or Imagine, and don't begin the summary with Here is.
 - Memorable examples: a specific study, a moment from history, an everyday situation. Numbers where the brief gives them.
 - A light manhwa flavour: the reader is someone levelling up, training is a quest, habits are stats that grow. Use it in a few phrases, never in every paragraph, and never let it bend a fact.
 - Occasional System commentary: at most two short System notes in the whole article, in the System's terse game-screen voice (for example: "System: Recovery is part of training. Rest days count."). They sum up or nudge; they never add facts.
@@ -18,6 +18,10 @@ Voice:
 Accuracy:
 - Every fact comes from the brief, and each section lists the ids of the sources it relies on. Add no facts, numbers, names or dates that are not in the brief.
 - Say how strong the evidence is when the brief shows it (one small study, a large review, a historical account).
+- Keep every number with the study and the outcome it belongs to, exactly as the brief has it, and never present one study or review as several.
+- Give the size of a small study (for example: a lab study of five people), and say so when a fact comes from a company's survey, a preprint or a patent.
+- The title, summary and takeaways claim no more than the sections show. Add no timing, threshold or rule the brief doesn't give.
+- Advice suits a beginner: offer a starting range that builds up (two or three sessions a week at first), never one prescription for everyone, and nothing about supplements, diets or medication.
 - No medical or legal advice beyond general, well-established guidance. When pain, injury or illness comes up, suggest a doctor or physiotherapist.
 
 Originality:

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ARTICLE_SHAMING, ROBOTIC_PHRASES } from '../../../packages/content/src/index.ts';
-import { ARTICLE_MODEL, ARTICLE_SCHEMA, MAX_SEARCHES, customId, researchRequest, writeRequest } from '../../functions/_shared/prompts/articles.ts';
+import {
+  ARTICLE_MODEL, ARTICLE_SCHEMA, MAX_SEARCHES, RESEARCH_SYSTEM, customId, researchRequest, writeRequest,
+} from '../../functions/_shared/prompts/articles.ts';
 import { HOUSE_STYLE } from '../../functions/_shared/prompts/style.ts';
 import { BRIEF } from './articles-fixtures.ts';
 
@@ -42,6 +44,12 @@ describe('the two batch requests (architecture §5.2)', () => {
     expect(message).not.toContain('failed these checks');
   });
 
+  it('the research asks for sound sources and each number with its own study (the fact-check of the starter articles)', () => {
+    expect(RESEARCH_SYSTEM).toContain('avoid patents, surveys run by companies about their own market, commercial blogs and preprints');
+    expect(RESEARCH_SYSTEM).toContain('Tie every number to the exact study and the exact outcome it measured');
+    expect(RESEARCH_SYSTEM).toContain('never describe one paper or review as two');
+  });
+
   it('a rewrite tells the writer what the first draft failed (M8a spike)', () => {
     const again = JSON.stringify(writeRequest({ ...JOB, attempt: 2, error: 'repeats 8 or more words of a source: "a cue a routine and a reward"' }, BRIEF).params.messages);
     expect(again).toContain('Your first draft of this article failed these checks');
@@ -58,6 +66,9 @@ describe('the two batch requests (architecture §5.2)', () => {
 
   it('gives the writer every banned phrase in the house style', () => {
     for (const phrase of [...ROBOTIC_PHRASES, ...ARTICLE_SHAMING]) expect(HOUSE_STYLE).toContain(phrase);
+    // The starter articles' fact-check (2026-10-13): numbers with their study, sizes, plain openings, beginner ranges.
+    for (const rule of ['never present one study or review as several', 'Give the size of a small study', "don't begin with Picture or Imagine",
+      'claim no more than the sections show', 'nothing about supplements, diets or medication']) expect(HOUSE_STYLE).toContain(rule);
     expect(writeRequest(JOB, BRIEF).params.system).toContain(HOUSE_STYLE);
   });
 });
