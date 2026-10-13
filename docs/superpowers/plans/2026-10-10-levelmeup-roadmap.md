@@ -216,7 +216,9 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | `loadSnapshot` reads the whole published library on every call (four times a sync, `awardAchievements` included): once the library holds hundreds of articles, load it only where an article is chosen. |
 | Later | Every store refresh re-reads the held article bodies (at most about 32): reload them only after a sync. |
 | Later | Avoiding the same topic two days in a row works within the day's group only (decision 1); revisit with the pilot's data. |
-| Emulator | M8b rows 3–6 wait for published articles (the owner's review of the starter articles). |
+| Emulator | M8b row 4 (Uma's Chronicle on 2026-10-14), rows 5–6 with the next test character. |
+| Later | The copy check refuses a statistic phrase shared with a source ("a 26 to 30 percent lower risk of"): two starter articles failed on one. Queue those topics again, or let a run that is mostly numbers through. |
+| Later | A source-quality filter: the reader sees only titles, and the starter articles cited patents, a vendor survey, preprints and commercial blogs (the research instructions now ask to avoid or name them). |
 
 ## Spikes and where they run
 
