@@ -12,6 +12,7 @@ import { bodiesToSend } from '../_shared/reading.ts';
 import { authenticate } from '../_shared/session.ts';
 import { stateView } from '../_shared/state.ts';
 import { dayOffers } from '../_shared/today.ts';
+import { tooOld } from '../_shared/version.ts';
 
 /** Claude calls per player for the reveal, lifetime (architecture §8). */
 const AI_CAP = 3;
@@ -41,6 +42,9 @@ async function reveal(userId: string, choices: Choices): Promise<Reveal> {
 }
 
 Deno.serve(async (req) => {
+  // M9b decision 5: an app too old for this server updates first; nothing it sent is read.
+  const old = tooOld(req);
+  if (old !== null) return problemResponse(old);
   const player = await authenticate(req);
   if (isProblem(player)) return problemResponse(player);
   const body = await readJson(req);

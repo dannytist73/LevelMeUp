@@ -18,6 +18,7 @@ import { bodiesToSend, planInsight } from '../_shared/reading.ts';
 import { authenticate } from '../_shared/session.ts';
 import { achievementProgress, characterView, ladderMap, stateView } from '../_shared/state.ts';
 import { dayOffers, openDay } from '../_shared/today.ts';
+import { tooOld } from '../_shared/version.ts';
 import type { DayRow, InstanceRow, Snapshot } from '../_shared/state.ts';
 
 /** Tries at closing days or adjusting one when another write got there first (`lmu:conflict`). */
@@ -286,6 +287,9 @@ async function awardAchievements(userId: string): Promise<string[]> {
 }
 
 Deno.serve(async (req) => {
+  // M9b decision 5: an app too old for this server updates first; nothing it sent is read.
+  const old = tooOld(req);
+  if (old !== null) return problemResponse(old);
   const player = await authenticate(req);
   if (isProblem(player)) return problemResponse(player);
   const body = await readJson(req);
