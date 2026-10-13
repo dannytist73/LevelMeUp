@@ -8,6 +8,8 @@
 //   npm run articles -- review            write .reviews/articles.html with every article waiting for review
 //   npm run articles -- publish <id…>     publish reviewed articles
 //   npm run articles -- reject <id…>      keep reviewed articles out
+//   npm run articles -- correct <file>    apply the owner's corrections (a JSON list of {id, find, replace, why}) to
+//                                         articles waiting for review; nothing is written unless every one passes
 //   npm run articles -- spend             this month's Claude spend against the cap
 //   npm run articles -- cron on|off|status
 import { randomBytes } from 'node:crypto';
@@ -19,8 +21,11 @@ import type { ArticleCluster } from '../packages/content/src/index.ts';
 import { chooseTopics } from '../supabase/functions/_shared/articles/topics.ts';
 import { ESTIMATE_USD, MONTHLY_CAP_USD } from '../supabase/functions/_shared/costs.ts';
 import { PROJECT_REF } from './lib/guard.ts';
-import { CRON_OFF_SQL, TICK_JOB, VAULT_SECRET, cronOnSql, reviewHtml, sqlJson, vaultSql } from './lib/articles.ts';
-import type { ReviewArticle } from './lib/articles.ts';
+import {
+  CRON_OFF_SQL, TICK_JOB, VAULT_SECRET, applyCorrections, correctionSql, cronOnSql, parseCorrections, reviewHtml, sqlJson, vaultSql,
+} from './lib/articles.ts';
+import type { ReviewArticle, StoredArticle } from './lib/articles.ts';
+import type { Brief } from '../supabase/functions/_shared/articles/brief.ts';
 import { query, supabase } from './sb.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -110,6 +115,30 @@ function review(): void {
   console.log(`${articles.length} article(s) waiting: ${file}`);
 }
 
+/** The owner's corrections, checked like a written article against its job's research brief; all or nothing. */
+function correct(file: string | undefined): void {
+  if (file === undefined) throw new Error('name the corrections file: npm run articles -- correct <file.json>');
+  const fixes = parseCorrections(JSON.parse(readFileSync(file, 'utf8')));
+  if (typeof fixes === 'string') throw new Error(fixes);
+  const ids = [...new Set(fixes.map((f) => f.id))];
+  const rows = query<StoredArticle & { brief: Brief | null }>([`select a.id, a.title, a.summary, a.sections, a.takeaways, a.reflection_question, j.brief
+    from levelmeup.articles a join levelmeup.article_jobs j on j.id = a.job_id
+    where a.id in (${ids.map((id) => `'${id}'`).join(', ')}) and a.status = 'review'`]);
+  const missing = ids.filter((id) => !rows.some((r) => r.id === id));
+  if (missing.length > 0) throw new Error(`not waiting for review: ${missing.join(', ')}`);
+  const results = rows.map((row) => {
+    if (row.brief === null) return { row, problems: [`${row.id}: its research brief is gone, so it can't be checked`] } as const;
+    return { row, ...applyCorrections(row, fixes.filter((f) => f.id === row.id), row.brief) };
+  });
+  const problems = results.flatMap((r) => r.problems.map((p) => (p.startsWith(r.row.id) ? p : `${r.row.id}: ${p}`)));
+  if (problems.length > 0) throw new Error(`nothing was changed:\n  ${problems.join('\n  ')}`);
+  for (const r of results) {
+    if (!('article' in r)) continue;
+    const [done] = query<{ id: string }>([correctionSql(r.article, r.words, r.minutes)]);
+    console.log(`${done?.id ?? r.row.id + ' (no longer waiting: unchanged)'}: ${fixes.filter((f) => f.id === r.row.id).length} correction(s), ${r.words} words`);
+  }
+}
+
 function decide(ids: readonly string[], status: 'published' | 'rejected'): void {
   if (ids.length === 0 || ids.some((id) => !ARTICLE_ID.test(id))) throw new Error('name articles as article-<n>');
   const list = ids.map((id) => `'${id}'`).join(', ');
@@ -151,13 +180,14 @@ try {
     case 'setup': setup(); break;
     case 'tick': await tickNow(rest.includes('--night')); break;
     case 'evergreen': evergreen(Number(rest[0])); break;
+    case 'correct': correct(rest[0]); break;
     case 'jobs': jobs(); break;
     case 'review': review(); break;
     case 'publish': decide(rest, 'published'); break;
     case 'reject': decide(rest, 'rejected'); break;
     case 'spend': spend(); break;
     case 'cron': cron(rest[0]); break;
-    default: throw new Error('commands: setup, tick [--night], evergreen <n>, jobs, review, publish <id…>, reject <id…>, spend, cron on|off|status');
+    default: throw new Error('commands: setup, tick [--night], evergreen <n>, jobs, review, publish <id…>, reject <id…>, correct <file>, spend, cron on|off|status');
   }
 } catch (error) {
   console.error((error as Error).message);

@@ -1,4 +1,8 @@
 // Pure parts of the owner's article commands (scripts/articles.ts, M8a decisions 10–11), tested offline.
+import type { Brief } from '../../supabase/functions/_shared/articles/brief.ts';
+import { articleTexts, articleWords, checkArticle, readingMinutes } from '../../supabase/functions/_shared/articles/check.ts';
+import type { ArticleDraft, ArticleSection } from '../../supabase/functions/_shared/articles/check.ts';
+import { clip } from '../../supabase/functions/_shared/articles/text.ts';
 
 export const TICK_JOB = 'lmu-articles-tick';
 export const TICK_SCHEDULE = '*/30 * * * *';
@@ -86,4 +90,83 @@ export function reviewHtml(articles: readonly ReviewArticle[]): string {
 ${body}
 </body></html>
 `;
+}
+
+/** An owner's correction (2026-10-13, after the starter articles' fact-check): exact words in an article waiting for
+ * review, the words that replace them, and why. */
+export type Correction = { id: string; find: string; replace: string; why: string };
+
+/** An article's reader-facing fields as `levelmeup.articles` stores them. */
+export type StoredArticle = {
+  id: string; title: string; summary: string; sections: ArticleSection[]; takeaways: string[]; reflection_question: string;
+};
+
+const ARTICLE_ID = /^article-\d+$/;
+
+/** The corrections file: a list of {id, find, replace, why}; the reason it can't be read otherwise. */
+export function parseCorrections(value: unknown): Correction[] | string {
+  if (!Array.isArray(value) || value.length === 0) return 'the corrections must be a list with at least one entry';
+  const out: Correction[] = [];
+  for (const [i, c] of value.entries()) {
+    if (typeof c !== 'object' || c === null) return `entry ${i + 1} is not an object`;
+    const { id, find, replace, why } = c as Record<string, unknown>;
+    if (typeof id !== 'string' || !ARTICLE_ID.test(id)) return `entry ${i + 1}: name the article as article-<n>`;
+    if (typeof find !== 'string' || find.trim() === '') return `entry ${i + 1}: find must be some words of the article`;
+    if (typeof replace !== 'string') return `entry ${i + 1}: replace must be text (empty to remove the words)`;
+    if (typeof why !== 'string' || why.trim() === '') return `entry ${i + 1}: say why`;
+    out.push({ id, find, replace, why });
+  }
+  return out;
+}
+
+const toDraft = (a: StoredArticle): ArticleDraft => ({
+  title: a.title, summary: a.summary, sections: a.sections.map((s) => ({ ...s, paragraphs: [...s.paragraphs] })), takeaways: [...a.takeaways],
+  reflectionQuestion: a.reflection_question,
+});
+
+const occurrences = (text: string, find: string): number => text.split(find).length - 1;
+
+/**
+ * Applies the corrections to one article: each one's words must be found exactly once among the texts a reader sees.
+ * The result goes through the same checks a written article does (lengths, quotations, links, the lint, the words copied
+ * from the research brief), and its words and reading time are counted again.
+ */
+export function applyCorrections(
+  article: StoredArticle, fixes: readonly Correction[], brief: Brief,
+): { article: StoredArticle; words: number; minutes: number; problems: string[] } {
+  const draft = toDraft(article);
+  const problems: string[] = [];
+  for (const f of fixes) {
+    const n = articleTexts(draft).reduce((sum, t) => sum + occurrences(t, f.find), 0);
+    if (n !== 1) {
+      problems.push(`${article.id}: "${clip(f.find, 60)}" is found ${n} times (it must be found once)`);
+      continue;
+    }
+    const swap = (t: string): string => t.replace(f.find, () => f.replace);
+    draft.title = swap(draft.title);
+    draft.summary = swap(draft.summary);
+    draft.sections = draft.sections.map((s) => ({
+      ...s, heading: swap(s.heading), paragraphs: s.paragraphs.map(swap), systemNote: s.systemNote === null ? null : swap(s.systemNote),
+    }));
+    draft.takeaways = draft.takeaways.map(swap);
+    draft.reflectionQuestion = swap(draft.reflectionQuestion);
+  }
+  if (problems.length === 0) problems.push(...checkArticle(draft, brief));
+  const words = articleWords(draft);
+  return {
+    article: {
+      id: article.id, title: draft.title, summary: draft.summary, sections: draft.sections, takeaways: draft.takeaways,
+      reflection_question: draft.reflectionQuestion,
+    },
+    words,
+    minutes: readingMinutes(words),
+    problems,
+  };
+}
+
+/** Stores a corrected article, only while it still waits for review. */
+export function correctionSql(a: StoredArticle, words: number, minutes: number): string {
+  return `update levelmeup.articles set title = ${literal(a.title)}, summary = ${literal(a.summary)}, sections = ${sqlJson(a.sections)},
+  takeaways = ${sqlJson(a.takeaways)}, reflection_question = ${literal(a.reflection_question)}, words = ${words}, reading_minutes = ${minutes}
+  where id = ${literal(a.id)} and status = 'review' returning id`;
 }
