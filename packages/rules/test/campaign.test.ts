@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERSONAS, campaignPacing } from '../src/campaign.ts';
+import { PERSONAS, PERSONA_ESTIMATES, campaignPacing } from '../src/campaign.ts';
 import { FIXTURE } from './fixtures/library.ts';
 
 describe('the campaign simulation (real built days)', () => {
@@ -20,5 +20,14 @@ describe('the campaign simulation (real built days)', () => {
     const none = campaignPacing(FIXTURE, warrior, 0, { runs: 2, days: 10 });
     expect(none.levels[2]).toBe(null);
     expect(none.rankDay).toBe(null);
+  });
+
+  it("takes the starting estimates (M9b decision 7): the personas' by default, and a stronger main stat ranks up sooner", () => {
+    const plain = campaignPacing(FIXTURE, warrior, 1, { runs: 2, days: 120 });
+    expect(campaignPacing(FIXTURE, warrior, 1, { runs: 2, days: 120, estimates: () => PERSONA_ESTIMATES })).toEqual(plain);
+    const strong = campaignPacing(FIXTURE, warrior, 1, { runs: 2, days: 120, estimates: () => ({ ...PERSONA_ESTIMATES, strength: 8 }) });
+    expect(plain.rankDay).toBe(84); // measured 2026-10-13
+    expect(strong.rankDay!).toBeLessThan(plain.rankDay!);
+    expect(strong.levels).toEqual(plain.levels);
   });
 });
