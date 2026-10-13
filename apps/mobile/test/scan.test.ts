@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { findSecrets } from '../scripts/scan.ts';
+import { devMarkersIn, findSecrets } from '../scripts/scan.ts';
 
 // Key-shaped samples are assembled here at runtime, so no key-shaped string is ever stored in git (the repo's own
 // secrets test would rightly flag it).
@@ -38,5 +38,13 @@ describe('the app bundle scan (architecture §8)', () => {
 
   it('finds several, each once', () => {
     expect(findSecrets(`${anthropic} ${anthropic} ${supabaseSecret}`).map((h) => h.kind)).toEqual(['Anthropic key', 'Supabase secret key']);
+  });
+});
+
+describe('developer-only code in a release bundle (M9b decision 3)', () => {
+  it('names each developer marker it finds, and none in clean text', () => {
+    expect(devMarkersIn('var a="levelmeup-selfcheck.db";')).toEqual(['levelmeup-selfcheck.db']);
+    expect(devMarkersIn('"wall-clock parts in Manila" … "Warrior a, level 1, marked"')).toEqual(['wall-clock parts in Manila', 'level 1, marked']);
+    expect(devMarkersIn('Today, Character, Chronicle')).toEqual([]);
   });
 });

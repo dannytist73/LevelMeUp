@@ -33,3 +33,13 @@ export function findSecrets(text: string): Hit[] {
   }
   return [...hits.values()];
 }
+
+/**
+ * Strings only the developer screens hold (M9b decision 3): the self-check's database, one of the rules' Hermes time
+ * cases, and the portrait gallery's marked portrait. A release bundle holds none of them.
+ */
+export const DEV_MARKERS: readonly string[] = ['levelmeup-selfcheck.db', 'wall-clock parts in Manila', 'level 1, marked'];
+
+export function devMarkersIn(text: string): string[] {
+  return DEV_MARKERS.filter((marker) => text.includes(marker));
+}
