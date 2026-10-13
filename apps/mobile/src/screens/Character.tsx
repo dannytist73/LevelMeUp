@@ -1,6 +1,7 @@
 // Character (spec §1.3, board D4; M6d): the portrait frame, name, level and title, the stats with progress to their next
 // point, the class path, Scholar's Path for a Mage at level 10, the achievements, the vow, and the class change (M6b).
 import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
+import { figureFor, otherFigure } from '../art/portraits.ts';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scholarsPathOpen } from '../game/character.ts';
@@ -32,6 +33,8 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
   const vow = useGame((s) => s.vow);
   const status = useGame((s) => s.status);
   const lastSyncedAt = useGame((s) => s.lastSyncedAt);
+  const chosen = useGame((s) => s.portrait);
+  const setPortrait = useGame((s) => s.setPortrait);
   const stale = status === 'offline' || status === 'retrying';
 
   if (view === null) {
@@ -55,13 +58,16 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
   const lock = classLock(view, now());
   // M7c decision 9: the Shadow's mark while it holds the day.
   const mark = marked(shadowHold(view, now()));
+  const figure = figureFor(chosen, view.profile.programStyle);
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
         <Label>{T.label}</Label>
-        <Portrait classId={classId} marked={mark}
+        <Portrait classId={classId} level={level} figure={figure} marked={mark}
           label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
+        <Button label={T.switchPortrait} variant="secondary" onPress={() => void setPortrait(otherFigure(figure))}
+          style={{ alignSelf: 'center' }} />
         <Title>{view.profile.name}</Title>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <View style={{ paddingVertical: 3, paddingHorizontal: 10, backgroundColor: colors.paper, transform: [{ skewX: '-10deg' }] }}>

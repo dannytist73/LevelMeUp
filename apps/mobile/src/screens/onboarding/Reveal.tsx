@@ -1,14 +1,15 @@
 // O08 Character reveal (spec §1.1 beat 9, §4.2): the rules' character in the System's words, the stats labelled game
 // estimates. "Change class" and "Fix an assumption" run the analysis again (the server allows it until the first
-// action); the class portrait waits for M9's art (M5 plan, decision 15).
+// action). M9a: the class portrait, and Switch portrait (decisions 5, 8).
 import {
-  CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, PACT_TEXT, SLIP_SUGGESTIONS, STAT_NAMES, classStats, fillText, routineLine,
+  CHARACTER_TEXT, CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, PACT_TEXT, SLIP_SUGGESTIONS, STAT_NAMES, classStats, fillText, routineLine,
 } from '@levelmeup/content';
 import { CLASSES, STATS } from '@levelmeup/rules';
 import type { ClassId } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { figureFor, otherFigure } from '../../art/portraits.ts';
 import { pactName } from '../../game/pact.ts';
 import { STEP_PATH, asksMind } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
@@ -18,6 +19,7 @@ import { HalftoneHeader } from '../../ui/HalftoneHeader.tsx';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { NightCard } from '../../ui/NightCard.tsx';
 import { OptionCard } from '../../ui/OptionCard.tsx';
+import { Portrait } from '../../ui/Portrait.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
 import { Body, Caption, Display, Heading, Label, Small, Title } from '../../ui/Text.tsx';
@@ -32,6 +34,8 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
   const draft = useGame((s) => s.draft);
   const editDraft = useGame((s) => s.editDraft);
   const startCharacter = useGame((s) => s.startCharacter);
+  const chosen = useGame((s) => s.portrait);
+  const setPortrait = useGame((s) => s.setPortrait);
   const [mode, setMode] = useState<'reveal' | 'class' | 'fix'>('reveal');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -45,6 +49,7 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
     );
   }
   const { profile, character } = view;
+  const figure = figureFor(chosen, profile.programStyle);
 
   const changeClass = async (classId: ClassId) => {
     setMode('reveal');
@@ -103,6 +108,10 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
           <Display>{CLASS_NAMES[profile.classId].toUpperCase()}</Display>
           <Label tone="chalk">{classStats(CLASSES[profile.classId])}</Label>
         </View>
+        <Portrait classId={profile.classId} level={character.level} figure={figure}
+          label={fillText(CHARACTER_TEXT.portrait, { className: CLASS_NAMES[profile.classId], level: character.level })} />
+        <Button label={CHARACTER_TEXT.switchPortrait} variant="secondary" onPress={() => void setPortrait(otherFigure(figure))}
+          style={{ alignSelf: 'center' }} />
         <NarrationBox>{busy ? T.rewriting : reveal.narrative}</NarrationBox>
         {failure !== null && (
           <View accessibilityLiveRegion="polite">
