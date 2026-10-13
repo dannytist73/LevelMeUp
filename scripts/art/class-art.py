@@ -66,12 +66,25 @@ TIERS = {
         3: "Make them a master monk: flowing dark robes, palms pressed together at the chest, a serene vermilion aura with rising sparks, and a large vermilion sun circle behind them.",
     },
 }
-KEEP = ("Keep the same person: the same face, hair, skin tone and body, facing the viewer, waist-up. Keep the same bold "
+# "the same young adult face and age" and "the same dark clothes" came after the first edits aged two faces and turned a
+# jacket tan (seed 1); edits rendered before then keep their seed-1 names.
+KEEP = ("Keep the same person: the same young adult face and age, hair, skin tone and body, facing the viewer, waist-up, "
+        "in the same dark clothes unless told otherwise. Keep the same bold "
         "black ink lineart, flat cel shading and cream paper palette with one vermilion red accent. {change} Keep the "
         "picture free of any text, letters or numbers.")
 
 # Filled in after picking from the sheets: subject -> {tier: seed}; the Shadow is {"shadow": {1: seed}}.
-PICKS: dict[str, dict[int, int]] = {}
+PICKS: dict[str, dict[int, int]] = {
+    "warrior-a": {1: 11, 2: 1, 3: 1},
+    "warrior-b": {1: 44, 2: 2, 3: 1},
+    "mage-a": {1: 11, 2: 2, 3: 1},
+    "mage-b": {1: 11, 2: 1, 3: 1},
+    "rogue-a": {1: 22, 2: 2, 3: 1},
+    "rogue-b": {1: 22, 2: 2, 3: 2},
+    "monk-a": {1: 11, 2: 1, 3: 1},
+    "monk-b": {1: 11, 2: 2, 3: 1},
+    "shadow": {1: 22},
+}
 
 
 def zimage(prompt: str, size: tuple[int, int], seed: int, prefix: str) -> dict:
