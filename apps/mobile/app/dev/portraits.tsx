@@ -31,6 +31,9 @@ export default function Portraits() {
       )))}
       <SectionTitle title="The Shadow" />
       <Image accessibilityLabel="The Shadow" source={{ uri: SHADOW_ART_URL }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9 }} />
+      {/* The mark over a painted portrait (M7c decision 9), which a test character shows only under a pact. */}
+      <SectionTitle title="The Shadow's mark" />
+      <Portrait classId="warrior" level={1} figure="a" label="Warrior a, level 1, marked" marked />
     </ScreenScroll>
   );
 }
