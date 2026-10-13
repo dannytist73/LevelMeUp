@@ -14,7 +14,7 @@ functions and its settings; LevelMeUp never touches them (architecture §12). Th
 | `npm run db:test [-- <name>]` | Runs `tests/db/*.sql` on the live project, each inside a transaction that always rolls back (pgTAP is created inside it), then checks nothing was left behind |
 | `npm run check:functions` | `deno check` on the four functions |
 | `npm run deploy:functions` | Deploys `lmu-onboarding`, `lmu-sync`, `lmu-account-delete` and `lmu-articles-tick` by name |
-| `npm run test:live` | Calls the deployed functions with up to 12 temporary anonymous players and deletes them all at the end |
+| `npm run test:live` | Calls the deployed functions with temporary anonymous players (at most 13 a file) and deletes them all at the end; calls run in `ap-southeast-1`, as the phone's do (M9b) |
 | `npm run lmu:password` | Gives `lmu_service` a new random password and stores `LMU_DB_URL`; prints nothing secret (also for rotation) |
 | `npm run articles -- setup` | Makes the tick secret: `LMU_TICK_SECRET` for the function and its Vault copy `lmu_tick_secret` for the cron; prints nothing secret |
 | `npm run articles -- tick [--night]` | Runs one pipeline step now: it moves the jobs along but never queues a night's articles, so it spends only on jobs already queued; `--night` does what the cron does (and may queue the night's two) |
@@ -23,6 +23,7 @@ functions and its settings; LevelMeUp never touches them (architecture §12). Th
 | `npm run articles -- review` | Writes `.reviews/articles.html` (git-ignored) with every article waiting for review |
 | `npm run articles -- publish <id…>` / `reject <id…>` | Publishes reviewed articles, or keeps them out |
 | `npm run articles -- spend` | This month's Claude spend against the $25 cap |
+| `npm run pilot` | The pilot's totals, read only (M9b): players, choices, progress, days, quests, check-ins, the recovery quest and the lighter plan, events by type; no names, notes or ids (`scripts/lib/pilot.ts`) |
 | `npm run articles -- cron on\|off\|status` | Schedules `lmu-articles-tick` every 30 minutes (enabling pg_cron and pg_net), unschedules it, or shows its last runs |
 
 `.env.local` (git-ignored) holds the project URL and the public anon key for the live tests. Service-role and
@@ -67,6 +68,15 @@ model keys never leave Supabase.
 - Insight is the `insight` event: `lmu-sync` checks it against a fresh snapshot (`planInsight`), then
   `levelmeup.set_insight` (`0015`, `lmu_service` only) stores `{cluster, day}` on `character_state.insight`. It applies
   to the next day built and then lapses.
+
+## The pilot (M9b)
+
+- `_shared/version.ts`: `lmu-sync` and `lmu-onboarding` check the app's `x-lmu-app` header first, before the sign-in or the
+  body, and answer `426 update_required` below `MIN_APP_VERSION` (0.1.0, which serves every app; a missing or malformed
+  version counts as 0.1.0). Raise it, and deploy the functions, only when a server change would break older apps.
+  `lmu-account-delete` never checks: deleting a character always works.
+- The phone asks for the functions in `ap-southeast-1`, the database's region; the live tests do too, and
+  `tests/live/pilot.test.ts` times a sync both ways.
 
 ## How it fits together
 

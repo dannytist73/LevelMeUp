@@ -492,6 +492,9 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
 - Account deletion removes every row and the auth user.
 - No ad or tracking SDKs.
 
+*M9b: Settings → Your data and privacy says this in the app. Deleting a Google-saved character keeps its auth user
+(M7b), and the page says so; the owner removes it on request (`docs/pilot.md`).*
+
 ## 5. Acceptance criteria (the MVP is done when all of these are verified)
 
 **Onboarding**

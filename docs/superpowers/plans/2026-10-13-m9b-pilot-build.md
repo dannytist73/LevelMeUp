@@ -1800,3 +1800,58 @@ git commit -m "M9b docs: CLAUDE.md, READMEs, roadmap row 9b and carried items, s
   - `REPORT`, `reportProblem`, `personalColumns`.
   - `CampaignOptions.estimates`, `trainedEstimates`.
   - `DEV_MARKERS`, `devMarkersIn`.
+
+## As built
+
+- **Built 2026-10-13 (11:55–13:15 UTC)** on `m9b-pilot-build`: 23ac021 the words, ef25d8e pacing, b81b8d9 the server's
+  version check, 46caa1d the region and the version header (0.2.0), d0a3c26 the update card, 393c36f About and privacy,
+  0105631 the release bundle, b76b9ad the report, 7375a89 the live tests, 2292e44 the checklist and the guide, then the
+  review fixes (13497a5) and the live test's status (5a741b6).
+- **Tests:** rules 450 (from 449), content 1,108 (from 1,099), server unit 512 (from 502), app 803 in 52 suites (from
+  790 in 51); typecheck, `check:functions`, `check:portable` and `check:bundle` clean. Live: 49 of 49 after the fix
+  (the first full run 48 of 49, below).
+- **Deviations from the plan text:**
+  - Content grew by 3 more than planned: `portable.test.ts` checks each file in `src/`, and `about.ts` is a new one.
+  - The live timing test has its own 180 s limit (six syncs from Seoul outlast the live tests' 60 s), and each timed
+    fetch gives up after 25 s.
+  - A successful onboarding answers 201, not 200 (the plan's test said 200; the first live run failed on that line
+    only, after both 426 checks passed).
+  - The live tests hide console output: the medians were read with `--disableConsoleIntercept`.
+  - Checklist row 11 (a fresh onboarding on the pilot build) was added: no other row covered spec §5's onboarding.
+    Row 8 (Google) covers M5 rows G1 and G3; row 11 covers M5 rows 1–4 and 8.
+  - `about.ts`'s privacy lines changed after the review (below).
+- **Review (one reviewer, no Critical; two Important, both in the privacy text).** Fixed:
+  - Deleting a Google-saved character keeps its sign-in (`lmu-account-delete`, since M7b): the page now lists the email
+    with the System, says a Google sign-in stays and that the person who invited you removes it on request;
+    `docs/pilot.md` says how.
+  - "Sent once to Claude" was false: a redo writes the reveal again, up to the cap of three; the page says so.
+  - "Looks at totals only": the report also shows each character's progress without a name; the page and the guide
+    say so. The intro no longer says "shared" while naming Claude and Google; the reveal, books and the Pact are listed.
+  - The store test's "no offline day" proved nothing (no ended day): a second test ends the day first (a mutation
+    that builds the day fails it).
+  - `DEV_MARKERS` covered 2 of 11 screens: one ASCII marker for each, and a test that every screen (with its dev-only
+    imports) holds one and no shipped file does.
+  - The report guard missed function calls, rows as JSON, payloads and `select *`: refused now, more personal columns
+    are refused, and every query runs as `begin transaction read only; …; rollback` (tested live: the CLI returns the
+    select's rows, and a `create` inside is refused).
+  - A build without a version sent `0.0.0`, below every minimum: it now sends no header (counted as 0.1.0).
+  - A Google restore on a too-old app said "no connection": Awakening shows the update card.
+  - The update card is a polite live region; a live test deletes a player from an app below the minimum (200).
+  - `trainedEstimates` answers reading and focus only where the onboarding asks them: steady rank C now 114.5, 42.8,
+    103.1 and 58.3 (mean 79.7); levels moved by at most 0.6 days.
+  - Carried to the roadmap: `trainedStart`'s answers, `APP_HEADER` in two places, a check-in answer for days the
+    System refused the app (the guide says to send the APK before raising the minimum), the privacy page before the
+    onboarding (a hosted policy before launch).
+  - Checked and unchanged: the auth audit table is empty (read-only count), so IP addresses are only in Supabase's
+    request logs (7 days); "about a week" stands.
+- **Deploy (the owner's yes, "Yes to all", 2026-10-13):** `npm run deploy:functions` about 12:39 UTC, the four `lmu-`
+  functions; nothing else touched.
+- **Live:** `npm run test:live` 48 of 49 (only the 200/201 line), then `tests/live/pilot.test.ts` 3 of 3, twice. A sync,
+  median of 5 from the laptop: **1,015 ms in `ap-southeast-1`** against **11,151 ms in `ap-northeast-2`**.
+- **Report:** `npm run pilot` (read only) printed every table: 2 players (1 saved with Google), both Warriors; one
+  check-in ("I just didn't", recovered), one recovery quest cleared; no names, notes or ids.
+- **Build:** EAS `preview`, build `2d297063-81e6-4fac-a80c-ee5e49a0726b` (version 0.2.0, versionCode 2), the default
+  keystore `Yz-cL9wyc6` (the development build's).
+- **Emulator:** the APK installed over the development build (`adb install -r`, Success, Uma kept); the release rows
+  pass (checklist, "What the emulator found (M9b)"): no Developer button, the developer links open Today, the privacy
+  page at 2×, an offline cold start from the cache, Sync now in about 1.0 s.

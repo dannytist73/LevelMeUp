@@ -350,7 +350,7 @@ the phone (`lmu.notify`). No exact alarms: the library falls back to inexact one
 | Stage | Backend | App |
 |---|---|---|
 | Development | The live DNA Wedding project, `levelmeup` schema (owner's decision for M3, 2026-10-10; no Docker). Tests never leave data behind (§9) | EAS development-client APK on the Find X9 (EAS project `@dannytist.73/levelmeup`), pointed at the live project; Metro reaches it with `npm run app` (`--tunnel`) |
-| Pilot | DNA Wedding project, `levelmeup` schema (§12) | EAS preview APK shared with friends (sideloaded) |
+| Pilot | DNA Wedding project, `levelmeup` schema (§12). *M9b: functions pinned to `ap-southeast-1`; a minimum app version; `npm run pilot`.* | EAS preview APK shared with friends (sideloaded); `docs/pilot.md` |
 | Public launch (later) | Decide: stay in the shared project or move to LevelMeUp's own (§12); Turnstile; custom SMTP | Play closed test (12 testers × 14 days), privacy policy, data-safety form, a web page for account deletion |
 
 ## 11. Owner decisions (2026-10-10)

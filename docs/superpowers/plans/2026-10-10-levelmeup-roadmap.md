@@ -30,7 +30,7 @@ guesses). Only milestone 1's plan exists today.
 | 8a | **The article library** | The Batch API pipeline (`lmu-articles-tick`, research with web search → a brief from the citations → writing → code checks), the $25 monthly budget on every Claude call (the reveal's cost logged), migration 0014, the owner's `npm run articles` commands, the evergreen articles and their review, the cron (pg_cron + pg_net, with the owner's yes); spike 3. M8 split in two (M8a decision 1). **Built and deployed 2026-10-12/13** (0014, functions v15/v3); the spike and the starter articles 2026-10-12/13; **the cron on since 2026-10-13 08:28 UTC** (owner's yes); merges after M7d. | `2026-10-13-m8a-article-library.md` |
 | 8b | **Reading** | Each new day gets one unread published article (60 % from the player's goals and class; the evergreen library when nothing else), the phone caches a few for offline days, the reader and the takeaway quest, past readings in the Chronicle, the Mage's Insight (choose tomorrow's topic from 3). | **Built and deployed 2026-10-13** (0015, functions v17; branch `m8b-reading`). 18 articles published 2026-10-13 (article-9 and 17 starter articles, 12 of them after the owner's corrections); 2 starter topics failed the copy check. |
 | 9a | **Class art** | The painted class portraits (4 classes × a man and a woman × 3 tiers at levels 1–4, 5–9, 10 on; the same person edited forward with Qwen-Image-Edit) and the Shadow, in `lmu-art/class-v1`; Character, the reveal, the level-up at 5 and 10, and the Shadow's scene; "Switch portrait", kept on the phone. M9 split in two (M9a decision 1). **Built 2026-10-13; the art live in `lmu-art/class-v1` since about 10:12 UTC (the owner's yes, 25 of 25 byte-identical)**; no server change; merges after M8b. | `2026-10-13-m9a-class-art.md` |
-| 9b | **The pilot build** | The release build without the developer screens; `lmu-sync`'s speed; a minimum app version; Settings → About and privacy; the pacing re-run (experienced players modelled); a pilot report; the EAS preview APK and one Find X9 checklist. The backend is already live since M3. | later |
+| 9b | **The pilot build** | The release build without the developer screens; `lmu-sync`'s speed; a minimum app version; Settings → About and privacy; the pacing re-run (experienced players modelled); a pilot report; the EAS preview APK and one Find X9 checklist. The backend is already live since M3. **Built 2026-10-13 (branch `m9b-pilot-build`); the functions deployed about 12:39 UTC (the owner's yes); a sync takes 1.0 s pinned to Singapore against 11.2 s from Seoul (median of 5); the preview APK is EAS build `2d297063`**; no migration; merges after M9a. | `2026-10-13-m9b-pilot-build.md` |
 
 ## Carried forward from the M1 code review
 
@@ -77,7 +77,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | M6d | *(Done in M6d.)* Character and Chronicle are minimal in M4 (stats list, recent days list); the boards' portrait, class path, calendar and growth arrive with M6d. |
 | M7b | When the phone's guest sign-in is gone for good, Today explains it and offers "Start again as a new guest" behind a second, explicit tap (M4 re-review); the old character stays orphaned on the server. M7's Settings should offer the same, and saving to Google (M5) makes it rare. *(Done in M7b: Settings shows the start-again card.)* |
 | M7b | A guard behind the sign-in: if a new guest's session can't be read back from storage, stop and show it instead of signing in again on the next run. The emulator found exactly that loop (expo-crypto on Android, M4 device check); its cause is fixed, but nothing stops a different storage failure from repeating it. *(Done in M7b: the sign-in guard.)* |
-| M9b | The developer routes (`app/dev/`) are unreachable in release builds but still bundled, with the self-check's test cases; exclude them from the pilot build. `OutlinedTitle` draws one SVG line that shrinks to fit a narrow screen: keep it to short words (it's only in the kit today). Run M4 checklist rows 6–7 (offline) on the Find X9 with the preview build: a development build loads its code through the tunnel, so it can't open offline (they passed on the emulator). |
+| M9b | *(Done in M9b: the developer screens left out of release bundles, `check:bundle` proves it; rows 6–7 → M9b row 2.)* The developer routes (`app/dev/`) are unreachable in release builds but still bundled, with the self-check's test cases; exclude them from the pilot build. `OutlinedTitle` draws one SVG line that shrinks to fit a narrow screen: keep it to short words (it's only in the kit today). Run M4 checklist rows 6–7 (offline) on the Find X9 with the preview build: a development build loads its code through the tunnel, so it can't open offline (they passed on the emulator). |
 | Owner | *(Done 2026-10-11, owner's yes.)* Empty anonymous sign-ins from the M4 device check (before the sign-in fix): 21 deleted by exact id, all or nothing, after a backup to `.backups/2026-10-11-orphan-guests.json` (gitignored). Kept: the Find X9's current guest and one older browser sign-in that isn't LevelMeUp's. |
 | Before launch | `npm audit` (2026-10-11): 67 advisories, all in Expo SDK 57's toolchain (Jest, Metro, the Expo CLI, ngrok, config plugins); none fixable without a Jest 30 that jest-expo 57 doesn't support. Only `decode-uri-component` (via expo-router's query-string, moderate: slow parsing of malformed percent-encoded links) ships in the app. Re-run on the next Expo SDK. |
 
@@ -87,7 +87,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 |---|---|
 | M6b | *(M6d: the vow on Character, done.)* M6b: class change after onboarding (the analysis's "locked" message points there); check the lock before any Claude call (the M5 review saw a refused redo spend one of the player's three reveal calls; the app only sends a redo from the reveal, before the first action). |
 | M7c | *(Done in M7b: Settings changes the voice; the delete screen's Google note.)* *(Done in M7c: "Read the pact".)* The reveal's "Read the pact" link once the Pact screen exists. Settings changes the voice, as the Voice screen promises. Deleting a Google-linked account deletes all LevelMeUp data and keeps the shared sign-in (M3 decision); the delete screen says so. |
-| M9a, M9b | *(Done in M9a: the reveal's portrait.)* The class portrait on the reveal (the board's frame waits for the class art). Re-run `npm run pacing` (experienced players included) before the pilot; the experienced players' rank day isn't modelled yet ("most weeks" gives an estimate of 6, so the main stat starts at 8 and reaches rank C roughly 23 % sooner): model it, or accept it as intended. |
+| M9a, M9b | *(Done in M9a: the reveal's portrait. Done in M9b: experienced players modelled, rank C about 25 % sooner, accepted.)* The class portrait on the reveal (the board's frame waits for the class art). Re-run `npm run pacing` (experienced players included) before the pilot; the experienced players' rank day isn't modelled yet ("most weeks" gives an estimate of 6, so the main stat starts at 8 and reaches rank C roughly 23 % sooner): model it, or accept it as intended. |
 | Accepted (M5 review) | Android back from the first reveal returns to the last question; Continue there re-runs the analysis as a redo, the same as "Fix an assumption". A 30-minute sleep (e.g. 3:30–4:00) rounds the day boundary onto the wake time. |
 | Before launch | Google's sign-in page shows the shared project's address (`knlgpcwoaaygncmlnbsm.supabase.co`); a custom domain or LevelMeUp's own project changes that (decide with the move question, architecture §12). |
 
@@ -127,7 +127,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The Training and Rhythm notes say when workouts don't fit the minutes, a gentle start or an own plan, but not when the player's limits leave too few exercises (with all four limits and no equipment, no workout plans): check `planWorkout` at rung 0 and say so. Settings → Training's save guard is state only (a double tap could send two identical events, harmless), as M6b's Swap. |
 | M6e | *(Done in M6e.)* Offline-built days (`checkProvisionalDay`) must also check M6c's rule that a workout day trains no movement twice (`keptOutBy`), and the decision-7 rest after a workout. |
 | Later | Settings → Training's re-plan (`_shared/adjust.ts`) doesn't apply `keptOutBy`: a new plan could add a movement another quest of the day trains (rare: only when equipment or limits skip early program slots). Keep today's plan in that case, as when too few exercises fit. While a training change waits to sync, the workout can't be logged (the server re-plans first); re-planning on the phone would need `workoutsDone` in the state. |
-| M9b | Pacing after M6c (400 runs): every level target met (tightest: the Mage's struggling level 10 on day 47.8, maximum 48). The Warrior's steady pace reaches Strength rank C on day 151, a day past the 150 target, since a workout keeps the movements it trains out of its day (review); recorded, not tuned (the campaign test accepts that line). Check both against the pilot data. |
+| M9b | *(Re-run in M9b: unchanged; the Warrior's line stays accepted; `npm run pilot` shows progress against the targets.)* Pacing after M6c (400 runs): every level target met (tightest: the Mage's struggling level 10 on day 47.8, maximum 48). The Warrior's steady pace reaches Strength rank C on day 151, a day past the 150 target, since a workout keeps the movements it trains out of its day (review); recorded, not tuned (the campaign test accepts that line). Check both against the pilot data. |
 
 ## Carried forward from M6d
 
@@ -146,7 +146,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 |---|---|
 | M7a | *(Answered in M7a: no.)* A day closed on the phone offline may need a check-in (core not done): the phone shows it only after the sync. Days after the one offline day become away days; the check-in's "Emergency, travel, a brutal day" pauses them. A phone that was open but offline does not protect such days automatically: it could be used to skip days (decision 11). |
 | Later | Chains of offline days (decision 1), and swaps, a hard day, rest, abilities and gentle movement on an offline day (decision 8). |
-| M9b | How often the server rebuilt an offline day (`lmu-sync: an offline day was rebuilt` in the function logs) and why. |
+| M9b | *(Done in M9b: `npm run pilot` points to the logs.)* How often the server rebuilt an offline day (`lmu-sync: an offline day was rebuilt` in the function logs) and why. |
 | Later | The offline day appears only once the failed sync gives up (about 30 seconds with no network on the emulator); Today says "preparing" meanwhile. Building it when the day ends with no connection known (before the sync) would be quicker. |
 | Later | After a refused offline day (`clock_ahead`), each completion sent for it comes back `not_found` too: fold those notices into the one. If the outbox is split across batches between a `provisional_day` and its completions and that day has already ended, they arrive `day_closed` (rare). |
 | Later | A completion counted for another quest still counts toward Scholar's Path sessions when the quest in that slot is a reading quest (the finished-book count and the Character card). |
@@ -158,7 +158,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 |---|---|
 | M7b | The late-rest notice (a "Rest today" synced after its day ended) and a tap time on `plan_rest` and `pain`, as carried from M6b. Settings raises the daily minutes again after a lighter plan. *(Done in M7b.)* |
 | M7c | Consequences on an unrecovered "I just didn't" (`decideConsequence`, the opted-in levels), the "what got in the way?" note and the Shadow. *(Done in M7c.)* |
-| M9b | The check-in in the pilot: which answers players choose, how often the recovery quest is cleared, and how often the lighter plan is offered and taken. |
+| M9b | *(Done in M9b: the pilot report's Check-ins and recovery tables.)* The check-in in the pilot: which answers players choose, how often the recovery quest is cleared, and how often the lighter plan is offered and taken. |
 | Later | The lighter-plan offer counts a day check-in as one protected day, even when missed days right after it shared it (M7a review). |
 | Later | A check-in answered offline whose day ends before the sync takes effect a day later: the server applies it after closing that day (an injury's rest, a light day and fewer minutes then start with the day after). |
 | Later | Notices name a quest for `not_found` and an ability for `already_applied`; for a check-in answer (a check-in answered on another phone more than 14 days ago, or a recovery quest already added) the words don't fit. Board F3 lists the recovery quest first and board F1 heads the check-in with "DAY · date / STREAK n · PAUSED"; Today keeps slot order and the check-in screen starts with the question (M7a review). *(Done in M7c: the recovery quest first.)* |
@@ -182,7 +182,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 |---|---|
 | M7d | Level 2's second, sterner evening reminder (`checkin.consequence === 'trial'`, the Shadow's `evening` lines); the Pact's level 2 text then names it. *(Done in M7d.)* |
 | M9a | *(Done in M9a.)* The Shadow's painted art on its scene (board F2), and the mark on the painted portraits. |
-| M9b | `lmu-sync` takes 11-15 s per call in the live tests while the gateway answers in about 150 ms (the live run's time per test has grown since M6c): profile it (queries per request, connection set-up) before the pilot. |
+| M9b | *(Done in M9b: the functions ran in Seoul, the database is in Singapore; pinned, a sync takes 1.0 s.)* `lmu-sync` takes 11-15 s per call in the live tests while the gateway answers in about 150 ms (the live run's time per test has grown since M6c): profile it (queries per request, connection set-up) before the pilot. |
 | Later | A pact signed on the reveal is lost if the app closes before the onboarding ends (Settings has it). A raise from 1 to 2 gives the day in progress no consequence at all (decision 3). |
 | Later | A title with one long word breaks inside it at the largest display size ("The Accountability Pact" on a 320 dp screen); nothing is cut off. Hyphenation or a smaller title there. |
 | Emulator | M7c row 3 (the reveal's "Read the pact", signed there, sent at the end of the onboarding) with the next new test character, after Uma's checks. |
@@ -192,7 +192,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | Milestone | Item |
 |---|---|
-| M9b | The release build for the pilot carries `expo-notifications`; the Find X9 rows below are checked on it. |
+| M9b | *(Done in M9b: the preview APK; the Find X9 rows are in its section.)* The release build for the pilot carries `expo-notifications`; the Find X9 rows below are checked on it. |
 | Later | Notifications from the server (push), action buttons on a notification ("Snooze", "Open the quest"), and a per-minute time. |
 | Later | The days ahead are planned blind: a boundary change that is still arriving (M7b) can move a day's start, so a briefing planned for it may come a little early or late until the app is opened. |
 | Later | A "morning" briefing at a time just before the day ends (a late sleeper with an 08:00 day end and a 07:30 briefing) names the day that is ending: a hint on the screen, or naming the day that starts next (M7d review). |
@@ -230,6 +230,20 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | A portrait that couldn't load (offline the first time it was shown) keeps the emblem until the screen is opened afresh; Character is a tab, so until the app restarts. Retry after a sync if pilot players notice. |
 | Later | The developer Character preview's Switch portrait does nothing (its store is a stand-in). |
 | Emulator | M9a rows 5–6 with the next test character. |
+
+## Carried forward from M9b
+
+| Milestone | Item |
+|---|---|
+| Later | More speed if the pilot needs it: pipeline `loadSnapshot`'s reads and load it fewer times per sync (1.0 s today, about 90 sequential round trips). |
+| Before launch | A hosted privacy policy (and Google's verified publishing). The in-app page is reachable only from Settings, after the reveal's facts have gone to Claude. |
+| Later | Crash reports: none in the pilot (no tracking SDK); testers report problems to the owner. |
+| Later | A check-in answer for days the System refused the app (426): none of today's answers fits, so the pilot guide says to send the new APK before raising `MIN_APP_VERSION`. |
+| Later | `trainedStart` (M5) still answers reading and focus "high" for every persona; `trainedEstimates` follows the onboarding (review). |
+| Later | `APP_HEADER` is defined in both the app and the server; the app imports only types from `_shared`. |
+| Later | The live tests hide console output: run `tests/live/pilot.test.ts` with `--disableConsoleIntercept` to see the sync medians. |
+| Find X9 | The M9b section of the checklist (the owner), with the preview APK. |
+| Emulator | M9a rows 5–6 and M7c row 3, M7d rows 5–6, M8b rows 5–6 with the next test character. |
 
 ## Spikes and where they run
 

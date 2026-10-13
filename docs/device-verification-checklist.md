@@ -453,3 +453,24 @@ its data. Each row lists the earlier Find X9 rows it covers; those rows say "Cov
 Rows from earlier sections that wait for a character's progress (Stillness and Dawn Ritual at a Monk's level 5 and 10,
 Vanish at a Rogue's level 10, a step down after "Too hard" on a later day) stay in their sections and run on the pilot
 build when a character gets there.
+
+### What the emulator found (M9b, 2026-10-13)
+
+The preview APK (EAS build `2d297063`, version 0.2.0, versionCode 2) installed over the development build on the
+emulator with `adb install -r`: Success, the same signing key, and Uma's character kept (Day 3, level 2 Warrior).
+
+- Settings → About: "LevelMeUp is not medical advice.", "Version 0.2.0" and "Your data and privacy"; no Developer
+  button (row 1's release part).
+- `levelmeup://dev` and `levelmeup://dev/portraits` open Today (row 9).
+- Your data and privacy at font 2.0: every section wraps in full, nothing cut off, down to "Questions" (row 6's page).
+- Wi-Fi and mobile data off (`svc`, not airplane mode, so the time zone stays), the app force-stopped and opened:
+  Today from the phone with "Offline · will sync" and the core quest's picture from the cache; back online it synced
+  by itself within about 5 s (row 2's first half; nothing was logged offline, to keep Uma's day for M8b row 4).
+- Sync now: "Syncing…" showed for about 1.0 s (a screen recording at 20 frames a second), against 11–15 s before M9b
+  (row 3 on the emulator's network).
+- Before the APK, the development build through Metro still opened Developer, Portraits and Self-check (25 of 25), so
+  the stubs load the screens in development.
+
+The emulator now runs the release build. Rows that need the developer screens (M9a rows 5–6 in the gallery, the
+previews) need the development build again: EAS build `998b72c0` installs only as a downgrade (versionCode 1), so a
+new development build would be cleaner.

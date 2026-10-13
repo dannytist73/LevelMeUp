@@ -10,9 +10,10 @@ Expo SDK 57, React Native 0.86, expo-router. Android first, tested on the owner'
 | `npm run app` | Metro for the development build, through a tunnel (the router blocks phone-to-laptop LAN). |
 | `npm -w @levelmeup/mobile test` | Jest + React Native Testing Library (also part of the root `npm test`). |
 | `npm -w @levelmeup/mobile run typecheck` | TypeScript (also part of the root `npm run typecheck`). |
-| `npm run check:bundle` | Exports the Android JS bundle and fails if it holds a secret (architecture §8). |
+| `npm run check:bundle` | Exports the Android JS bundle and fails if it holds a secret (architecture §8) or developer-only code (M9b). |
 | `npm -w @levelmeup/mobile run fonts` | Rebuilds the Latin font subsets after a change to `src/theme/glyphs.ts`. |
 | `npx eas-cli@latest build --platform android --profile development` (in `apps/mobile`) | A new development build in the EAS cloud; needed only when a native module or `app.json` changes. |
+| `npx eas-cli@latest build --platform android --profile preview` (in `apps/mobile`) | The pilot APK (M9b): a release build with its own bundle, no developer screens. Raise `version` and `android.versionCode` in `app.json` first. |
 
 Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global eas-cli is too old for `eas.json`.
 
@@ -65,7 +66,9 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   before M6c see a one-time training note on Today (`lmu.training-notice`; making a character marks it seen). The
   cache dropped older states (version 5). **Run this bundle only against a server with the M6c and M6d deploys**: it
   reads the state's `calendar`, `growth`, `abilityLastUsed` and training setup, which an older server doesn't send.
-- `app/dev/` exists only in development builds: the account and "Save with Google", the outbox and notices, the
+- `app/dev/` exists only in development builds (M9b: each `app/dev/<screen>.tsx` is a one-line stub that loads
+  `src/dev/routes/<screen>.tsx` only when `__DEV__`, so a release bundle holds none of it; the self-check's device probes
+  are `src/dev/probes.ts`; `check:bundle` fails if developer code reaches a release bundle): the account and "Save with Google", the outbox and notices, the
   self-check (time zones on Hermes, AES, SQLite), the component kit, the workout preview (`app/dev/workout.tsx`: a
   workout planned on the phone for any equipment, program, rung and program day; nothing is sent) and the Character
   preview (`app/dev/character.tsx`: Character and Chronicle for a made-up level-10 Mage with a book, a title and two
@@ -107,5 +110,11 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   plan). Settings → Notifications is `app/notifications.tsx` (`src/screens/Notifications.tsx`); the settings stay on the
   phone (`lmu.notify`). The developer screen's Notifications (`app/dev/notify.tsx`) lists the plan and shows a copy of
   the first one in 10 seconds.
+- **The pilot build** (M9b): every call to the functions runs in `ap-southeast-1`, next to the database
+  (`FUNCTION_REGION` in `src/net/api.ts`; by default they ran nearest the phone, in Seoul, and each of a sync's database
+  round trips crossed the distance), and names the app's version in `x-lmu-app` (`APP_VERSION`, `src/appVersion.ts`,
+  from `app.json`'s `version`). A server answer `426 update_required` sets the store's `updateRequired`: Today and
+  Settings show `src/screens/UpdateNeeded.tsx`, the outbox is kept, and no offline day is built. Settings → About opens
+  Your data and privacy (`app/privacy.tsx`, `src/screens/Privacy.tsx`, the content's `PRIVACY_TEXT`).
 - Jest runs the real SQL on Node's built-in SQLite (`test/support/nodeSql.ts`); screen tests set the store's state
   directly (`test/support/store.ts`).

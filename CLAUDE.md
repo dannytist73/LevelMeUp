@@ -31,12 +31,18 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
   `npm run articles -- …` (M8a): the article pipeline's owner commands; `setup`, `tick`, `evergreen`,
   `publish`/`reject` and `cron on|off` change the live project or spend money, so they need the owner's yes. Claude
   calls go through `_shared/claude.ts` and `_shared/articles/batches.ts` only, and every one is reserved against the
-  monthly budget first.
+  monthly budget first. `npm run pilot` (M9b): the pilot's totals, read only. `MIN_APP_VERSION`
+  (`supabase/functions/_shared/version.ts`) is raised, and the functions deployed, only when a server change would
+  break older apps.
 - **The app** is `apps/mobile` (since M4; details in `apps/mobile/README.md`). `npm run app` starts Metro for the
   development build (`--tunnel`); `npm run check:bundle` fails if a secret is in the app bundle; EAS builds run in the
   cloud with `npx eas-cli@latest build --platform android --profile development` from `apps/mobile` (never Expo Go,
   never a bare `npx eas-cli`). The app ships only the publishable key (`src/config.ts`); never put another key there.
   Only `apps/mobile/src/notify/os.ts` imports `expo-notifications` (M7d); a new native module needs a new EAS build.
+  The pilot APK: `npx eas-cli@latest build --platform android --profile preview` (M9b). Developer screens live in
+  `src/dev/routes/` and load only in development builds (the `app/dev/` files are stubs); `check:bundle` fails if
+  developer code reaches a release bundle. Every call runs in `ap-southeast-1`, next to the database, and names the
+  app's version (`x-lmu-app`).
 
 ## 1. Think Before Coding
 
