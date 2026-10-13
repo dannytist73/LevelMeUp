@@ -12,7 +12,7 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { nodeSql } from './support/nodeSql.ts';
@@ -402,6 +402,38 @@ describe('the game store', () => {
     expect(store.getState().vow).toBe('I rise');
     await store.getState().saveVow('   ');
     expect(store.getState().vow).toBeNull();
+    store.getState().stop();
+  });
+
+  it('keeps the portrait figure on the phone and reads it at boot (M9a decision 5)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(PORTRAIT_KEY, 'b');
+    expect(store.getState().portrait).toBeNull();
+    await store.getState().boot();
+    expect(store.getState().portrait).toBe('b');
+    await store.getState().setPortrait('a');
+    expect(store.getState().portrait).toBe('a');
+    expect(kv.get(PORTRAIT_KEY)).toBe('a');
+    store.getState().stop();
+  });
+
+  it('reads an unreadable figure as no choice (M9a)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(PORTRAIT_KEY, 'zz');
+    await store.getState().boot();
+    expect(store.getState().portrait).toBeNull();
+    store.getState().stop();
+  });
+
+  it('forgets the figure with the character (M9a decision 5)', async () => {
+    const { store, local, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
+    await local.acknowledge([], [], SERVER, 1);
+    await store.getState().setPortrait('b');
+    await store.getState().startOver();
+    expect(kv.has(PORTRAIT_KEY)).toBe(false);
+    expect(store.getState().portrait).toBeNull();
     store.getState().stop();
   });
 

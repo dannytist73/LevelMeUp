@@ -16,6 +16,8 @@ import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 import { parseArtManifest } from '../art/manifest.ts';
 import type { ArtManifest } from '../art/manifest.ts';
+import { readFigure } from '../art/portraits.ts';
+import type { Figure } from '../art/portraits.ts';
 import type { Account, GoogleProblem, GoogleResult } from '../auth/google.ts';
 import type { SessionState } from '../auth/session.ts';
 import type { Blobs } from '../auth/sessionStorage.ts';
@@ -81,6 +83,8 @@ export const CHECKIN_RESULT_KEY = 'lmu.checkin-result';
 export const SHADOW_KEY = 'lmu.shadow-seen';
 /** M7c: the Trial's focus minutes so far, for one check-in (decision 7). */
 export const TRIAL_KEY = 'lmu.trial';
+/** M9a: the portrait's figure the player chose (decision 5). */
+export const PORTRAIT_KEY = 'lmu.portrait';
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
 export type Celebration = { kind: 'level'; level: number } | { kind: 'achievement'; id: string };
@@ -130,6 +134,8 @@ export type GameState = {
   permission: Permission;
   /** M7d: the notifications planned now (the developer screen lists them). */
   planned: readonly PlannedNote[];
+  /** M9a: the portrait's figure the player chose, kept on this phone (decision 5); null before a choice. */
+  portrait: Figure | null;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -140,6 +146,8 @@ export type GameState = {
   finishOnboarding: () => Promise<void>;
   /** The vow stays on the phone (owner decision 3, 2026-10-11); Character shows it (M6d). */
   saveVow: (text: string) => Promise<void>;
+  /** M9a: keeps the portrait's figure on this phone; shown at once, even if the phone can't store it. */
+  setPortrait: (figure: Figure) => Promise<void>;
   dismissTrainingNotice: () => Promise<void>;
   answerLater: (checkinId: number) => void;
   /** The app came back to the foreground: a check-in put off with "Later" shows again. */
@@ -361,10 +369,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(SHADOW_KEY);
       await deps.kv.removeItem(TRIAL_KEY);
       await deps.kv.removeItem(NOTIFY_KEY);
+      await deps.kv.removeItem(PORTRAIT_KEY);
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], account: await deps.account(),
+        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, account: await deps.account(),
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -452,9 +461,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       notify: DEFAULT_NOTIFY,
       permission: 'unknown',
       planned: [],
+      portrait: null,
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -464,6 +474,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(SHADOW_KEY).catch(() => null),
           deps.kv.getItem(NOTIFY_KEY).catch(() => null),
           deps.notes.permission().catch((): Permission => 'unknown'),
+          deps.kv.getItem(PORTRAIT_KEY).catch(() => null),
         ]);
         set({ notify: readNotify(notifyText), permission });
         notifyLoaded = true;
@@ -475,7 +486,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         set({
           draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
-          shadowSeen: readSeen(shadow),
+          shadowSeen: readSeen(shadow), portrait: readFigure(portraitText),
         });
         await scheduler.request();
       },
@@ -552,6 +563,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         const vow = text.trim();
         await deps.kv.setItem(VOW_KEY, vow);
         set({ vow: vow === '' ? null : vow });
+      },
+
+      setPortrait: async (figure) => {
+        set({ portrait: figure });
+        await deps.kv.setItem(PORTRAIT_KEY, figure).catch(() => {});
       },
 
       dismissTrainingNotice: async () => {
