@@ -29,7 +29,7 @@ describe('the pilot build (M9b)', () => {
     expect(await call('lmu-sync', player.token, { timeZone: 'Asia/Manila', events: [] }, old)).toEqual({ status: 426, body: { error: 'update_required' } });
     expect(await call('lmu-onboarding', player.token, ONBOARDING, old)).toEqual({ status: 426, body: { error: 'update_required' } });
     expect((await call('lmu-sync', player.token, { timeZone: 'Asia/Manila', events: [] })).status).toBe(404); // served: not_started
-    expect((await call('lmu-onboarding', player.token, ONBOARDING, { 'x-lmu-app': APP_VERSION })).status).toBe(200);
+    expect((await call('lmu-onboarding', player.token, ONBOARDING, { 'x-lmu-app': APP_VERSION })).status).toBe(201);
   });
 
   it('runs next to the database when asked: a sync answers from ap-southeast-1 in well under 3 s', async () => {
