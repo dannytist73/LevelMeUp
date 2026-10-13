@@ -83,6 +83,7 @@ export default function Developer() {
       <Button label="Offline day preview" variant="secondary" onPress={() => router.push('/dev/offline')} />
       <Button label="Check-in preview" variant="secondary" onPress={() => router.push('/dev/checkin')} />
       <Button label="Shadow preview" variant="secondary" onPress={() => router.push('/dev/shadow')} />
+      <Button label="Portraits" variant="secondary" onPress={() => router.push('/dev/portraits')} />
       <Button label="Notifications" variant="secondary" onPress={() => router.push('/dev/notify')} />
 
       {phase === 'ready' && (
