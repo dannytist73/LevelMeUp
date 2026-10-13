@@ -8,11 +8,12 @@ Start ComfyUI first (Windows Application Control blocks torchaudio, so use the n
 
 usage (with D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe):
   class-art.py render [SUBJECT ...] [--seeds 11 22 33]  -> art/class/renders/<subject>-1-<seed>.png (shadow-<seed>.png)
-  class-art.py grow [SUBJECT ...] [--seeds 1]           -> art/class/renders/<subject>-<2|3>-<seed>.png from PICKS' tier 1
+  class-art.py grow [SUBJECT ...] [--seeds 1] [--tiers 2 3] -> art/class/renders/<subject>-<2|3>-from<pick>-<seed>.png
+                                                        (from PICKS' tier 1, whose seed is in the name)
   class-art.py sheet [PATTERN]                          -> art/class/renders/_sheet-<page>.jpg (renders matching PATTERN)
   class-art.py pick                                     -> art/class/v1/<subject>-<tier>.webp, shadow.webp (from PICKS)
   class-art.py final                                    -> art/class/_set.jpg (the picked set, for the owner)
-Existing renders are skipped.
+Existing renders are skipped, so a changed prompt needs new seeds (or the old renders deleted).
 """
 import argparse, json, random, subprocess, sys, time, urllib.parse, urllib.request
 from pathlib import Path
@@ -34,7 +35,7 @@ DARK_STYLE = ("korean manhwa illustration, bold black ink, deep black and charco
 
 SUBJECTS = {
     "warrior-a": "an adult man in his twenties with short black hair and a determined look, athletic build, wearing a plain black t-shirt and white cloth hand wraps",
-    "warrior-b": "an adult woman in her twenties with a high black ponytail and a determined look, athletic build, wearing a black sports top under an open zip jacket and white cloth hand wraps",
+    "warrior-b": "an adult woman in her twenties with a high black ponytail and a determined look, athletic build, wearing a fitted black athletic t-shirt under an open zip jacket, both hands wrapped in white cloth hand wraps and raised as loose fists in front of her chest",
     "mage-a": "an adult man in his twenties with tousled dark hair and round glasses, a calm clever look, wearing a dark knit sweater over a collared shirt, holding a closed hardcover book against his chest",
     "mage-b": "an adult woman in her twenties with shoulder-length dark hair tucked behind one ear, a calm clever look, wearing a long cardigan over a turtleneck, holding a closed hardcover book against her chest",
     "rogue-a": "an adult man in his twenties with messy dark hair and sharp focused eyes, wearing a dark hooded jacket with the hood down and a dark scarf",
@@ -157,13 +158,18 @@ def render(subject: str, seed: int) -> Path:
     return queue_and_fetch(zimage(prompt, size, seed, f"lmu/class-{dest.stem}"), dest)
 
 
+def grown(subject: str, tier: int, picked: int, seed: int) -> Path:
+    """An edit names the tier-1 seed it grew from, so a changed pick never reuses an edit of another face (review)."""
+    return RENDERS / f"{subject}-{tier}-from{picked}-{seed}.png"
+
+
 def grow(subject: str, tier: int, seed: int) -> Path:
-    dest = RENDERS / f"{subject}-{tier}-{seed}.png"
-    if dest.exists():
-        return dest
     picked = PICKS.get(subject, {}).get(1)
     if picked is None:
         sys.exit(f"pick {subject}'s tier 1 first (PICKS)")
+    dest = grown(subject, tier, picked, seed)
+    if dest.exists():
+        return dest
     change = TIERS[subject.split("-")[0]][tier]
     return queue_and_fetch(qwen_edit(upload(RENDERS / f"{subject}-1-{picked}.png"), KEEP.format(change=change), seed, f"lmu/class-{dest.stem}"), dest)
 
@@ -197,7 +203,8 @@ def pick() -> None:
     missing_tiers = [f"{s} tier {t}" for s, tiers in expected.items() for t in tiers if t not in PICKS.get(s, {})]
     if missing_tiers:
         sys.exit(f"PICKS lacks: {', '.join(missing_tiers)}")
-    sources = {s: {t: RENDERS / (f"shadow-{PICKS[s][t]}.png" if s == "shadow" else f"{s}-{t}-{PICKS[s][t]}.png") for t in tiers}
+    sources = {s: {t: RENDERS / f"shadow-{PICKS[s][t]}.png" if s == "shadow"
+                   else RENDERS / f"{s}-1-{PICKS[s][1]}.png" if t == 1 else grown(s, t, PICKS[s][1], PICKS[s][t]) for t in tiers}
                for s, tiers in expected.items()}
     missing = [p.name for tiers in sources.values() for p in tiers.values() if not p.exists()]
     if missing:  # check before clearing anything: the committed set must survive a machine without the renders
@@ -229,6 +236,7 @@ def main() -> None:
     p.add_argument("command", choices=["render", "grow", "sheet", "pick", "final"])
     p.add_argument("subjects", nargs="*")
     p.add_argument("--seeds", nargs="+", type=int)
+    p.add_argument("--tiers", nargs="+", type=int, choices=[2, 3])
     a = p.parse_args()
     if a.command == "render":
         for subject in a.subjects or [*SUBJECTS, "shadow"]:
@@ -238,7 +246,9 @@ def main() -> None:
                 print(render(subject, seed), flush=True)
     elif a.command == "grow":
         for subject in a.subjects or list(SUBJECTS):
-            for tier in (2, 3):
+            if subject not in SUBJECTS:
+                sys.exit(f"unknown subject {subject} (the Shadow has one tier)")
+            for tier in a.tiers or [2, 3]:
                 for seed in a.seeds or [1]:
                     print(grow(subject, tier, seed), flush=True)
     elif a.command == "sheet":

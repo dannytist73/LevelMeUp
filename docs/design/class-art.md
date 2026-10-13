@@ -23,7 +23,7 @@ same person grows and the face moves at most once from the original. Portraits a
 | Subject | Tier 1 |
 |---|---|
 | `warrior-a` | a man with short black hair, a determined look, a black t-shirt and white hand wraps |
-| `warrior-b` | a woman with a high black ponytail, a black sports top under an open jacket, white hand wraps |
+| `warrior-b` | a woman with a high black ponytail, a fitted black t-shirt under an open jacket, wrapped fists raised (a "sports top" drew a crop top with the wraps out of frame) |
 | `mage-a` | a man with tousled dark hair and round glasses, a knit sweater, a closed hardcover book |
 | `mage-b` | a woman with shoulder-length dark hair, a long cardigan over a turtleneck, a closed hardcover book |
 | `rogue-a` | a man with messy dark hair and sharp eyes, a dark hooded jacket (hood down) and a scarf |
