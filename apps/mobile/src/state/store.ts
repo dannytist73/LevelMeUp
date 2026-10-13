@@ -87,7 +87,8 @@ export const TRIAL_KEY = 'lmu.trial';
 export const PORTRAIT_KEY = 'lmu.portrait';
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
-export type Celebration = { kind: 'level'; level: number } | { kind: 'achievement'; id: string };
+/** A level-up carries the level it came from: one sync can cross more than one (the portrait's tier, M9a review). */
+export type Celebration = { kind: 'level'; level: number; from: number } | { kind: 'achievement'; id: string };
 
 export type StartResult = { ok: true } | { ok: false; code: string };
 /** `found: 'unknown'`: signed in, but the sync that would find the character didn't finish (no connection). */
@@ -397,7 +398,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           confirmedLevel = after;
           const found: Celebration[] = [];
           // Only a level the server confirms (M3: an undo can take one back); nothing on a phone's first state.
-          if (before !== null && after !== null && after > before) found.push({ kind: 'level', level: after });
+          if (before !== null && after !== null && after > before) found.push({ kind: 'level', level: after, from: before });
           for (const id of outcome.newAchievements) found.push({ kind: 'achievement', id });
           if (found.length > 0) set({ celebrations: [...get().celebrations, ...found] });
           checkArt();

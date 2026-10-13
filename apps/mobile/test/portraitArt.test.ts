@@ -14,7 +14,9 @@ describe('the class portraits (M9a)', () => {
     expect(portraitUrl('warrior', 'a', 1)).toBe(`${PORTRAIT_BASE}/warrior-a-1.webp`);
     expect(portraitUrl('mage', 'b', 7)).toBe(`${PORTRAIT_BASE}/mage-b-2.webp`);
     expect(portraitUrl('monk', 'b', 10)).toBe(`${PORTRAIT_BASE}/monk-b-3.webp`);
-    expect([1, 2, 4, 5, 6, 9, 10, 11].filter(portraitChanges)).toEqual([5, 10]);
+    expect([1, 2, 4, 5, 6, 9, 10, 11].filter((level) => portraitChanges(level - 1, level))).toEqual([5, 10]);
+    // A sync can cross more than one level (offline days): 4 → 6 and 9 → 11 still change it (M9a review).
+    expect([portraitChanges(4, 6), portraitChanges(9, 11), portraitChanges(3, 12), portraitChanges(5, 9)]).toEqual([true, true, true, false]);
   });
 
   it("is the player's figure, or the program style's default (decision 5)", () => {

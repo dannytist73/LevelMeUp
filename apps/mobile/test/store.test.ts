@@ -415,6 +415,7 @@ describe('the game store', () => {
     await store.getState().setPortrait('a');
     expect(store.getState().portrait).toBe('a');
     expect(kv.get(PORTRAIT_KEY)).toBe('a');
+    expect(await local.pending(10)).toEqual([]); // cosmetic: nothing goes to the server (decision 5)
     store.getState().stop();
   });
 
@@ -639,7 +640,7 @@ describe('celebrations (M6a decision 8)', () => {
     await store.getState().boot();
     expect(store.getState().celebrations).toEqual([]);
     await store.getState().syncNow();
-    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level }]);
+    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level, from: SERVER.character.level }]);
     store.getState().dismissCelebration();
     expect(store.getState().celebrations).toEqual([]);
   });
@@ -655,7 +656,7 @@ describe('celebrations (M6a decision 8)', () => {
       return done;
     };
     await store.getState().syncNow();
-    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level }]);
+    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level, from: SERVER.character.level }]);
   });
 
   it('celebrates a level crossed between the analysis and its first sync (review)', async () => {
@@ -664,7 +665,7 @@ describe('celebrations (M6a decision 8)', () => {
     store.getState().editDraft(READY_DRAFT);
     expect(await store.getState().startCharacter()).toEqual({ ok: true }); // the analysis stores SERVER (level 1)
     await store.getState().syncNow();
-    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level }]);
+    expect(store.getState().celebrations).toEqual([{ kind: 'level', level: higher.character.level, from: SERVER.character.level }]);
   });
 
   it('queues the reply\'s new achievements', async () => {

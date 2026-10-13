@@ -21,9 +21,10 @@ export function portraitUrl(classId: ClassId, figure: Figure, level: number): st
   return `${PORTRAIT_BASE}/${classId}-${figure}-${portraitTier(level)}.webp`;
 }
 
-/** Reaching this level changes the portrait (levels 5 and 10; decision 8). */
-export function portraitChanges(level: number): boolean {
-  return level > 1 && portraitTier(level) !== portraitTier(level - 1);
+/** A level-up from `from` to `to` changes the portrait: it crosses level 5 or 10 (decision 8). One sync can cross more
+ * than one level, after offline days (review). */
+export function portraitChanges(from: number, to: number): boolean {
+  return portraitTier(to) !== portraitTier(from);
 }
 
 /** The player's choice, or before one the program style's: the Women's program shows `b`, anything else `a` (decision 5). */

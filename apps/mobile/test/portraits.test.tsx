@@ -17,6 +17,7 @@ describe('the painted portrait (M9a)', () => {
     await render(<Portrait classId="mage" level={6} figure="b" label="Mage portrait, level 6" />);
     expect(screen.getByLabelText('Mage portrait, level 6')).toBeTruthy();
     expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/mage-b-2.webp` });
+    expect(screen.queryByTestId('portrait-art')).toBeNull(); // hidden from screen readers: the frame's label says it (review)
     expect(screen.getByTestId('portrait-emblem', hidden)).toBeTruthy();
   });
 
@@ -33,6 +34,14 @@ describe('the painted portrait (M9a)', () => {
     await fireEvent(screen.getByTestId('portrait-art', hidden), 'error');
     await screen.rerender(<Portrait classId="monk" level={10} figure="a" label="Monk portrait, level 10" />);
     expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/monk-a-3.webp` });
+  });
+
+  it('tries a figure again after switching back to it (review)', async () => {
+    await render(<Portrait classId="monk" level={3} figure="a" label="Monk portrait, level 3" />);
+    await fireEvent(screen.getByTestId('portrait-art', hidden), 'error');
+    await screen.rerender(<Portrait classId="monk" level={3} figure="b" label="Monk portrait, level 3" />);
+    await screen.rerender(<Portrait classId="monk" level={3} figure="a" label="Monk portrait, level 3" />);
+    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/monk-a-1.webp` });
   });
 
   it("draws the Shadow's mark over the picture (M7c decision 9)", async () => {
@@ -79,19 +88,25 @@ describe('the level-up shows a new portrait at levels 5 and 10 (M9a decision 8)'
   const SERVER = serverState();
 
   it('at level 5: the tier-2 portrait and its line', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 5 }] }), <Celebration />));
+    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 5, from: 4 }] }), <Celebration />));
     expect(screen.getByLabelText('Warrior portrait, level 5')).toBeTruthy();
     expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-a-2.webp` });
     expect(screen.getByText(PLAY_TEXT.celebration.portrait)).toBeTruthy();
   });
 
   it('at level 10, with the chosen figure', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), portrait: 'b', celebrations: [{ kind: 'level', level: 10 }] }), <Celebration />));
+    await render(withStore(testStore({ view: project(SERVER, []), portrait: 'b', celebrations: [{ kind: 'level', level: 10, from: 9 }] }), <Celebration />));
     expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-b-3.webp` });
   });
 
+  it('a sync that crosses level 5 on the way to 6 still shows it (review)', async () => {
+    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 6, from: 4 }] }), <Celebration />));
+    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-a-2.webp` });
+    expect(screen.getByText(PLAY_TEXT.celebration.portrait)).toBeTruthy();
+  });
+
   it('other levels show no portrait', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 6 }] }), <Celebration />));
+    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 6, from: 5 }] }), <Celebration />));
     expect(screen.queryByTestId('portrait-art', hidden)).toBeNull();
     expect(screen.queryByText(PLAY_TEXT.celebration.portrait)).toBeNull();
   });

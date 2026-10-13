@@ -22,13 +22,22 @@ const LAYER = { position: 'absolute', left: 0, top: 0 } as const;
 
 export type PortraitProps = { classId: ClassId; level: number; figure: Figure; label: string; marked?: boolean };
 
+/** The painted picture, inside the frame's ink edge. Keyed by its address, so a new tier or figure, or a figure switched
+ * back to, is tried afresh after a failed load (review). */
+function Painting({ uri, w, h }: { uri: string; w: number; h: number }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <Image testID="portrait-art" source={{ uri }} onError={() => setFailed(true)} resizeMode="cover"
+      style={{ position: 'absolute', left: EDGE, top: EDGE, width: w - 2 * EDGE, height: h - 2 * EDGE }} />
+  );
+}
+
 export function Portrait({ classId, level, figure, label, marked = false }: PortraitProps) {
   const { width } = useWindowDimensions();
   const w = Math.min(260, width - 2 * space.gutter - 12);
   const h = Math.round(w * 1.04);
   const uri = portraitUrl(classId, figure, level);
-  // The address that failed, so a new tier or figure is tried again.
-  const [failed, setFailed] = useState<string | null>(null);
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label}
       style={{ alignSelf: 'center', transform: [{ rotate: '-2deg' }], borderWidth: 3, borderColor: colors.paper }}>
@@ -48,10 +57,7 @@ export function Portrait({ classId, level, figure, label, marked = false }: Port
             {classId === 'rogue' && <Circle cx="12" cy="20.5" r="1.5" />}
           </G>
         </Svg>
-        {failed !== uri && (
-          <Image testID="portrait-art" source={{ uri }} onError={() => setFailed(uri)} resizeMode="cover"
-            style={{ position: 'absolute', left: EDGE, top: EDGE, width: w - 2 * EDGE, height: h - 2 * EDGE }} />
-        )}
+        <Painting key={uri} uri={uri} w={w} h={h} />
         <Svg width={w} height={h} style={LAYER}>
           {marked && (
             // M7c decision 9: the Shadow's mark, a dark corner creeping in, edged in ember, until the recovery quest is cleared.

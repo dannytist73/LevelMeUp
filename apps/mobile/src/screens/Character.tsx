@@ -1,9 +1,9 @@
 // Character (spec §1.3, board D4; M6d): the portrait frame, name, level and title, the stats with progress to their next
 // point, the class path, Scholar's Path for a Mage at level 10, the achievements, the vow, and the class change (M6b).
 import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
-import { figureFor, otherFigure } from '../art/portraits.ts';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { figureFor, otherFigure } from '../art/portraits.ts';
 import { scholarsPathOpen } from '../game/character.ts';
 import { marked, shadowHold } from '../game/pact.ts';
 import { useGame } from '../state/store.ts';

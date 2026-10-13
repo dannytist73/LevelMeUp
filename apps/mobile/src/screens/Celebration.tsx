@@ -26,7 +26,7 @@ export function Celebration() {
 
   let body;
   if (next.kind === 'level') {
-    const shown = view !== null && portraitChanges(next.level) ? view.profile : null;
+    const shown = view !== null && portraitChanges(next.from, next.level) ? view.profile : null;
     body = (
       <>
         <Label tone="ember">{T.levelLabel}</Label>

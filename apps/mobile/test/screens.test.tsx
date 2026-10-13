@@ -366,12 +366,12 @@ describe('Celebration (M6a decision 8)', () => {
   });
 
   it('scrolls, so a long achievement at the largest text size is never cut off (review)', async () => {
-    await render(withStore(testStore({ celebrations: [{ kind: 'level', level: 4 }] }), <Celebration />));
+    await render(withStore(testStore({ celebrations: [{ kind: 'level', level: 4, from: 3 }] }), <Celebration />));
     expect(screen.getByTestId('celebration-scroll')).toBeTruthy();
   });
 
   it('shows a level-up, and Continue dismisses it', async () => {
-    const store = testStore({ celebrations: [{ kind: 'level', level: 7 }] });
+    const store = testStore({ celebrations: [{ kind: 'level', level: 7, from: 6 }] });
     await render(withStore(store, <Celebration />));
     expect(screen.getByText('LEVEL UP')).toBeTruthy();
     expect(screen.getByText('LV 7')).toBeTruthy();
@@ -381,7 +381,7 @@ describe('Celebration (M6a decision 8)', () => {
   });
 
   it('is a modal: the screen behind can\'t be touched or reached, and Back dismisses it (emulator check)', async () => {
-    const store = testStore({ celebrations: [{ kind: 'level', level: 3 }] });
+    const store = testStore({ celebrations: [{ kind: 'level', level: 3, from: 2 }] });
     await render(withStore(store, <Celebration />));
     const modal = screen.getByTestId('celebration');
     expect(modal.props.visible).toBe(true);
