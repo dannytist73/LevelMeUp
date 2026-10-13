@@ -3,6 +3,7 @@ import { ABOUT_TEXT, ONBOARDING_TEXT, PRIVACY_TEXT, UPDATE_TEXT } from '@levelme
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import { Analysis } from '../src/screens/onboarding/Analysis.tsx';
+import { Privacy } from '../src/screens/Privacy.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { serverState } from './support/fixtures.ts';
@@ -45,5 +46,17 @@ describe('About and privacy (M9b decision 6)', () => {
     expect(screen.getByText(ABOUT_TEXT.notMedical)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: PRIVACY_TEXT.open }));
     expect(onPrivacy).toHaveBeenCalled();
+  });
+
+  it('the privacy screen shows every section and line, and goes back', async () => {
+    const onBack = jest.fn();
+    await render(withStore(testStore(), <Privacy onBack={onBack} />));
+    expect(screen.getByText(PRIVACY_TEXT.title)).toBeTruthy();
+    for (const section of PRIVACY_TEXT.sections) {
+      expect(screen.getByText(section.title)).toBeTruthy();
+      for (const line of section.lines) expect(screen.getByText(line)).toBeTruthy();
+    }
+    await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+    expect(onBack).toHaveBeenCalled();
   });
 });

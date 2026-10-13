@@ -1,8 +1,8 @@
 // Settings (spec §1.3, S1 board): the account (a guest, or saved with Google since M5), sync status, the
 // not-medical-advice line and the version. M6c: Training under Game. M7b: Your game (voice, the day's end, minutes,
 // difficulty), Delete my character, and the sign-in-lost card. M7c: the Accountability Pact under Game. M7d: the
-// Notifications section (S1).
-import { ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, SETTINGS_TEXT } from '@levelmeup/content';
+// Notifications section (S1). M9b: About opens Your data and privacy; the update card in Sync.
+import { ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PRIVACY_TEXT, SETTINGS_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,8 @@ import { UpdateNeeded } from './UpdateNeeded.tsx';
 export type SettingsProps = {
   onBack: () => void; onDeveloper?: () => void; onTraining: () => void; onGame: () => void; onDelete: () => void; version: string;
   deviceZone: string; onPact?: () => void; onNotifications?: () => void;
+  /** M9b decision 6: About → Your data and privacy. */
+  onPrivacy?: () => void;
 };
 
 /** "7:30 AM", "Off", or "Off in your phone's settings" (S1 board's rows). */
@@ -31,7 +33,7 @@ function notifyLine(slot: { on: boolean; minutes: number }, permission: Permissi
   return permission === 'granted' && slot.on ? clockLabel(slot.minutes) : NOTIFY_TEXT.off;
 }
 
-export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, version, deviceZone, onPact, onNotifications }: SettingsProps) {
+export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, version, deviceZone, onPact, onNotifications, onPrivacy }: SettingsProps) {
   const view = useGame((s) => s.view);
   const notify = useGame((s) => s.notify);
   const permission = useGame((s) => s.permission);
@@ -133,8 +135,9 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
 
       <View style={{ gap: 12 }}>
         <SectionTitle title="About" />
-        <Small>LevelMeUp is not medical advice.</Small>
+        <Small>{ABOUT_TEXT.notMedical}</Small>
         <Meta>{`Version ${version}`}</Meta>
+        {onPrivacy !== undefined && <Button label={PRIVACY_TEXT.open} variant="secondary" onPress={onPrivacy} />}
       </View>
 
       {onDeveloper !== undefined && <Button label="Developer" variant="secondary" onPress={onDeveloper} />}

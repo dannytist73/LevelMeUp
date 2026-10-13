@@ -13,6 +13,7 @@ export default function SettingsRoute() {
       onDelete={() => router.push('/delete')}
       onPact={() => router.push('/pact')}
       onNotifications={() => router.push('/notifications')}
+      onPrivacy={() => router.push('/privacy')}
       version={APP_VERSION}
       deviceZone={deviceZone()}
     />
