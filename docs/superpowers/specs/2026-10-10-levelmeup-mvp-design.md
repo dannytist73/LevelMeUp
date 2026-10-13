@@ -63,7 +63,7 @@ the article → the day closes at the boundary → if the core quest was missed,
 Why not 5 tabs: the article is read from Today (one a day), so a Reading tab would be empty most of the time;
 achievements and history are both "looking back"; fewer tabs keep today's quests one tap away.
 
-*Built in M6d (2026-10-12):* Character shows a framed class emblem (the painted portraits come with M9), the name,
+*Built in M6d (2026-10-12):* Character shows a framed class emblem (the painted portraits since M9a), the name,
 level and title (the latest earned achievement that carries one), total XP and the level bar, each stat with a bar to
 its next point and "rank D at 10" when one point away, the class path (both abilities, when each unlocks, ready or
 "ready again in N days"; abilities whose screens come later say so), the achievements earned and how many are still
@@ -463,7 +463,7 @@ day through any 2 quests, §2.4), the next open asks "The day closed. What happe
   on the phone until a 10-minute focus session (LevelMeUp in front, the screen awake; leaving pauses it; the minutes
   are kept). The server never refuses a completion because of the seal. After 3 consequences in a rolling 7 days the
   Shadow steps back (its retreat line names the lighter plan only when the System offers one). Level 2's evening
-  reminder came with notifications (M7d, §4.4); the painted Shadow with the class art (M9).
+  reminder came with notifications (M7d, §4.4); the painted Shadow with the class art (M9a).
 
 ### 4.4 Notifications (local only in the MVP)
 

@@ -415,3 +415,17 @@ Emulator unless marked. The M7d development build (998b72c0) through Metro, no n
 | 4 | The Chronicle the next day: "Past readings" lists it with its date; opening it shows the takeaway. | Pending: the day after row 3 |
 | 5 | A Mage at level 5 or more: Insight under the reading card; choosing a topic shows "Tomorrow's reading: …"; the next day's article is from that topic. | Pending: needs a Mage test character at level 5 and published articles in several topics |
 | 6 | Airplane mode across the day boundary (M6e): the offline day has the next day's article and it opens; after reconnecting, the server keeps it. | Pending: with the new test character, once several articles are published |
+
+## M9a — Class art
+
+Emulator unless marked. The M7d development build (998b72c0) through Metro, no new build. Art: `lmu-art/class-v1`.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Developer → Portraits: all 24 portraits (each class, both figures, levels 1, 5, 10) and the Shadow load in their frames; at the largest font nothing overlaps. | Pass (emulator, 2026-10-13 10:15 UTC): all 24 and the Shadow loaded; at 2× text Character's Switch portrait grows and its label stays whole, nothing overlaps. Before the upload (09:15 UTC) the frame kept the emblem with Switch portrait under it. |
+| 2 | Character: the painted portrait of the test character's class and tier in the tilted frame; Switch portrait swaps the figure at once, and the choice is still there after the app restarts. | Pass: Uma (Warrior, level 2, not the Women's program) showed `warrior-a-1`; Switch portrait showed `warrior-b-1` at once, still there after a force-stop and restart. |
+| 3 | Airplane mode after row 2: Character still shows the painted portrait (the phone's cache). | Pass: airplane mode on, then a cold start; the portrait came from the cache. Toggling airplane mode let automatic time zone reset the emulator to GMT: restored to America/Caracas (Uma's), automatic time zone off. |
+| 4 | Developer → Shadow preview: the painted Shadow in the scene's 16:9 panel, the mark stamp and the Shadow's words below. | Pass: Developer → Shadow preview → Scene: the painted Shadow fills the 16:9 panel, "Claimed · Mon 12 Oct" and the Shadow's words below. |
+| 5 | A new test character: the reveal shows the class portrait under the class name; Switch portrait there carries to Character. | Pending: the next test character (after Uma's M8b row 4, 2026-10-14 08:00 UTC). |
+| 6 | A level-up to 5 (or 10): the new portrait and "Your portrait has changed." | Pending: a level-up to 5 in play (unit tests cover 5, 10 and a jump from 4 to 6). |
+| 7 | A pact holding the day (the Shadow's mark): the dark corner over the painted portrait. | Pass in the developer gallery (one marked portrait, added for this row): the corner edged in ember over the picture, the ink frame on top. No test character is under a pact; Character uses the same component. |

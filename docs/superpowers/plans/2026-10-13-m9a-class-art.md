@@ -1418,3 +1418,43 @@ M9a merges after M8b (merge order M5 → … → M8b → M9a), once the owner's 
     developer preview provide.
   - `PortraitProps` gains `level` and `figure`. Every caller (Character, Reveal, Celebration, the gallery, the tests) passes
     both.
+
+## As built
+
+- **Built 2026-10-13 (09:00–10:20 UTC)** on `m9a-class-art`: 6c3bc46 the script and brief, 468b61b content, aeacb3c
+  `portraits.ts`, 0343195 the store, 011d009 the portrait on Character and the reveal (Tasks 6 and 7 in one commit, so
+  the typecheck stays green), 4991a3a the level-up and the scene, 837e150 the gallery, then the review fixes (3e4a4fa,
+  bc967d0), the set (90b6125) and the gallery's marked portrait (0dc1e9b). Tests: content 1,099 (from 1,098), rules 449,
+  app 790 (from 771); typecheck and `check:bundle` clean.
+- **Renders:**
+  - **Z-Image:** 30 renders (24 tier-1 portraits, 3 Shadows, and 3 more for `warrior-b` after it was reworded: "a black
+    sports top" drew a crop top with the hand wraps out of frame).
+  - **Qwen-Image-Edit:** 22 edits (16 at seed 1, then 6 re-rolls at seed 2). Re-rolled: `mage-a` tier 2 (aged),
+    `rogue-a` tier 2 (the jacket turned tan), `rogue-b` tiers 2 and 3 (the face changed), `monk-b` tier 2 (aged),
+    `warrior-b` tier 2 (aged, the wraps turned black). Each re-roll went right after the keep-instruction gained "the
+    same young adult face and age" and "the same dark clothes".
+  - **Picks (tier 1 seed; tiers 2 and 3 edit seeds):** warrior-a 11 (1, 1), warrior-b 44 (2, 1), mage-a 11 (2, 1),
+    mage-b 11 (1, 1), rogue-a 22 (2, 1), rogue-b 22 (2, 2), monk-a 11 (1, 1), monk-b 11 (2, 1); the Shadow 22.
+  - **Files:** 25 WebP, 21–100 KB each, 1,210 KB in all.
+- **Deviations from the plan text:**
+  - `CHARACTER_TEXT`'s test imports `PLAY_TEXT` into the existing `play.ts` import instead of a second line.
+  - `warrior-b`'s subject was reworded (above), and the keep-instruction gained the age and the dark clothes.
+  - `class-art.py`: edits are named `<subject>-<tier>-from<pick>-<seed>.png`, `grow` takes `--tiers` and refuses unknown
+    subjects (review).
+  - `portraitChanges(from, to)` and the level celebration's `from` (review, below).
+  - The gallery shows one marked portrait, for checklist row 7.
+- **Review (one reviewer, no Critical).** Fixed:
+  - A sync that crossed level 5 or 10 on the way to a higher level (4 → 6 after offline days) showed no new portrait: the
+    level celebration carries the level it came from, and the portrait shows when the tier changed.
+  - A changed tier-1 pick could reuse edits grown from the old face: edits name their source seed.
+  - A figure switched back to after a failed load wasn't tried again: the picture is its own component, keyed by its
+    address.
+  - Tests that the picture is hidden from screen readers and that Switch portrait sends nothing; the import order in
+    Character.
+  - Carried to the roadmap: a failed first load keeps the emblem until the screen remounts; the developer preview's Switch
+    portrait does nothing.
+- **Upload (the owner's yes, 2026-10-13 about 10:12 UTC):** the dashboard in the owner's Brave (Claude in Chrome): the
+  folder `class-v1` in `lmu-art`, the 25 files through the page's file input. Every public file answered 200 and matched
+  its local SHA-256 (25 of 25). `v1`, `v2` and `v3` untouched.
+- **Emulator (the M7d development build through Metro, Uma):** rows 1–4 and 7 pass (row 7 in the gallery), rows 5–6
+  pending the next test character. Before the upload, Character kept the emblem with Switch portrait under it.

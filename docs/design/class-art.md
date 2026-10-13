@@ -38,3 +38,17 @@ same person grows and the face moves at most once from the original. Portraits a
 | Mage | a long dark coat, the book open with small glowing circles and lines, speed lines | a high-collared coat, rings of light rising from the open book, an aura |
 | Rogue | the hood up (face visible), a scarf, a vermilion glint in the eyes, speed lines | a long hooded coat, a thin smoky aura, a burst of ink |
 | Monk | a wrap-style training top with a cloth belt, a glow around the hands, soft rays | flowing robes, palms together, a serene aura, a vermilion sun circle |
+
+**Lessons (M9a, 2026-10-13).**
+
+- Name the garment plainly and put the props inside the frame. "A black sports top" drew a crop top with the hand wraps
+  below the edge in all three seeds; "a fitted black athletic t-shirt … wrapped fists raised in front of her chest" got
+  both right at once.
+- Qwen-Image-Edit ages faces and recolours clothes. Of the first 16 edits, three aged the face (one of them also turned
+  the white hand wraps black), two changed it, and one turned a dark jacket tan. Saying "the same young adult face and
+  age" and "the same dark clothes" in the keep-instruction fixed all six at the second seed.
+- Each edit names the tier-1 seed it grew from (`warrior-a-2-from11-1.png`), so a changed pick never reuses another face's
+  edit.
+- The edit comes back square (1024×1024, `FluxKontextImageScale`); `pick` covers 768×804, trimming about 18 px a side.
+- The women's figures render with finer lines and smaller in the frame than the men's, alike across the four classes. The
+  set reads as one; a later set could even the style.

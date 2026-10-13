@@ -100,13 +100,13 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
 | 5 Rhythm and effort | beats 5–6 | **Merged into one screen** (wake/sleep, minutes, difficulty) |
 | 6 When you slip | beat 7 | "Nothing turns on until you sign the Pact yourself" |
 | 7 Analysis | beat 8 | Auto-advances; at most 15 s, then the template reveal |
-| 8 Character reveal | beat 9 | Class, stats ("game estimates"), strength/growth, routine, Pact suggestion, change class, fix an assumption. *M5: the class portrait waits for M9's class art.* |
+| 8 Character reveal | beat 9 | Class, stats ("game estimates"), strength/growth, routine, Pact suggestion, change class, fix an assumption. *M5: the class portrait waits for M9's class art.* *M9a: the painted portrait.* |
 | 9 The vow | beat 10 | Optional, hold to swear, skippable |
 | 10 Save your character | §1.1, §1.5 | Google only in the pilot; "Not now · begin Day 1" |
 | Today | §1.2–1.3, §3 | Every quest card shows its "why"; exercise safety line and "I felt pain" |
 | Quest cleared | §2, §3.3 | Stat up, Discipline +5, streak, XP bar; Easy/Right/Too hard; undo |
 | Today's reading | §4.1 | Sources section, one-sentence takeaway claims +10 XP |
-| Character | §1.3, §2 | Stats with progress to the next point, ranks, class path, achievements, class change timer. *M6d: built; the portrait is a framed class emblem until M9's art.* |
+| Character | §1.3, §2 | Stats with progress to the next point, ranks, class path, achievements, class change timer. *M6d: built; the portrait is a framed class emblem until M9's art.* *M9a: the painted portrait.* |
 | Chronicle | §1.3, §2.4 | Calendar states, streak/best/shields, growth since day 1, past readings. *M6d: built; cells outside the month are blank; dates without a quest day (before day 1, after today) show their digit in ash (about 7:1 on the night); past readings wait for M8.* |
 | Missed-day check-in | §3.7 | Five answers with their outcomes; "Answer later" keeps the streak paused |
 | The Shadow (level 1) | §4.3 | Claims the day; optional private note; "Take back the day · 5 min" |
@@ -139,7 +139,8 @@ inside the card's pressable) and on the quest screen; the swap sheet and the cla
 screen.
 
 Built in M7c (2026-10-12): the Shadow box (`ShadowBox`: void, ember border, the "THE SHADOW" tab) and the "Shadow
-mark" tag (dashed ember); board F2 as a screen with a dark art panel and two ember eyes until M9 paints the Shadow;
+mark" tag (dashed ember); board F2 as a screen with a dark art panel and two ember eyes (since M9a under the painted Shadow, showing while it loads
+or when it can't);
 board F3's recovery quest first, the Shadow's line and a "Trial of Stillness" panel (ember border) above sealed side
 quests (quiet night cards with a "Sealed" chip that open the trial); board F4 as a dark timer screen (the clock, a
 progress bar, "End session"); board F5 with option cards, the inline preview, the rules on a paper slant panel and the
@@ -164,7 +165,7 @@ The boards are HTML/CSS. These effects need a native equivalent:
 
 ## 6. Content still to make
 
-Class portraits (four classes, changing with level) and the Shadow, from the Inkbound manhwa art pipeline; the
-achievement names and titles (the canvas uses placeholders such as "First Trial" and "The Steady"); the article
+Class portraits (four classes, a man and a woman each, three tiers by level) and the Shadow: made in M9a
+(`docs/design/class-art.md`, `lmu-art/class-v1`). The achievement names and titles (the canvas uses placeholders such as "First Trial" and "The Steady"); the article
 sources (placeholders on the reading board). The quest art set (M6a): 20 pictures, one per kind of quest, made with the
 same local pipeline (`docs/design/quest-art.md`, `scripts/art/quest-art.py`); more variants per kind later.
