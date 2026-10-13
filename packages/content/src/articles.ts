@@ -16,8 +16,15 @@ export const CLUSTER_NAMES: Readonly<Record<ArticleCluster, string>> = {
   history: 'History and decision-making',
 };
 
+// The first seeds of habits, psychology, movement and focus are ideas the owner's coaching lessons teach (2026-10-13,
+// the owner's choice; notes in docs/research/kaizen-videos.md): subjects only, researched against public sources like
+// every other seed, never the lessons' words, and the evidence wins where it disagrees.
 export const ARTICLE_TOPICS: Readonly<Record<ArticleCluster, readonly string[]>> = {
   habits: [
+    'The minimum session: doing something small on a bad day',
+    'The weekly review: planning the week and correcting course',
+    'Plan A and plan B for the days you usually slip',
+    'Process goals and outcome goals',
     'How habits form: cue, routine and reward',
     'Implementation intentions: deciding when and where',
     'Habit stacking: tying a new habit to an old one',
@@ -30,6 +37,9 @@ export const ARTICLE_TOPICS: Readonly<Record<ArticleCluster, readonly string[]>>
     'Tracking progress without obsessing over it',
   ],
   psychology: [
+    'The motivation dip after the first weeks, and what carries you through',
+    'Questioning limiting beliefs',
+    'Does telling others about your goals help?',
     'The progress principle: why small wins motivate',
     'Self-compassion and getting back on track',
     'Intrinsic and extrinsic motivation',
@@ -42,6 +52,12 @@ export const ARTICLE_TOPICS: Readonly<Record<ArticleCluster, readonly string[]>>
     'Why we procrastinate, and what helps',
   ],
   movement: [
+    'Rest between sets: how long to rest, and why',
+    'Deload weeks: planned easier training',
+    'Training three or four times a week for months, rather than in hard bursts',
+    'Adding steps gradually, about 1,000 a day at a time',
+    'Does lifting weights make women bulky?',
+    'Judging training progress by the trend over weeks, not one session',
     'What walking does for body and mind',
     'Progressive overload for beginners',
     'Why mobility matters as we age',
@@ -66,6 +82,10 @@ export const ARTICLE_TOPICS: Readonly<Record<ArticleCluster, readonly string[]>>
     'Keeping a steady wake-up time',
   ],
   focus: [
+    'Phone-free mornings and attention',
+    'Overstimulation and the dopamine detox idea: what the evidence says',
+    'Doing the important, low-stimulation work first',
+    'Doing fewer things well: focus by subtraction',
     'Attention residue and the cost of switching tasks',
     'Deep work: protecting long stretches of focus',
     'The Pomodoro technique and timed work blocks',
