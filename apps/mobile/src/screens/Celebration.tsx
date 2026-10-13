@@ -1,13 +1,16 @@
 // Level-ups and achievements (spec §2.3, §2.6; M6a decision 8): shown over every screen once the server confirms them,
 // one at a time, with speed lines and Continue. A modal, so the screen behind can't be tapped or reached by TalkBack, and
-// Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared").
-import { ACHIEVEMENTS, PLAY_TEXT, fillText } from '@levelmeup/content';
+// Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared"). M9a: at levels 5 and 10 the new
+// portrait (decision 8).
+import { ACHIEVEMENTS, CHARACTER_TEXT, CLASS_NAMES, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { figureFor, portraitChanges } from '../art/portraits.ts';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { Portrait } from '../ui/Portrait.tsx';
 import { SpeedLines } from '../ui/SpeedLines.tsx';
 import { Body, Display, Label, Small, Title } from '../ui/Text.tsx';
 
@@ -17,15 +20,23 @@ export function Celebration() {
   const insets = useSafeAreaInsets();
   const next = useGame((s) => s.celebrations[0] ?? null);
   const dismiss = useGame((s) => s.dismissCelebration);
+  const view = useGame((s) => s.view);
+  const chosen = useGame((s) => s.portrait);
   if (next === null) return null;
 
   let body;
   if (next.kind === 'level') {
+    const shown = view !== null && portraitChanges(next.level) ? view.profile : null;
     body = (
       <>
         <Label tone="ember">{T.levelLabel}</Label>
         <Display>{`LV ${next.level}`}</Display>
+        {shown !== null && (
+          <Portrait classId={shown.classId} level={next.level} figure={figureFor(chosen, shown.programStyle)}
+            label={fillText(CHARACTER_TEXT.portrait, { className: CLASS_NAMES[shown.classId], level: next.level })} />
+        )}
         <NarrationBox>{fillText(T.level, { level: next.level })}</NarrationBox>
+        {shown !== null && <Small>{T.portrait}</Small>}
       </>
     );
   } else {

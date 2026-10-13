@@ -1,12 +1,13 @@
 // The Shadow's scene (spec §4.3, board F2; M7c decision 5): after "I just didn't" under a pact, once. The Shadow claims
 // the day, a stamp names the day it took, the player may leave a private note, and "Take back the day" opens the
 // recovery quest; at level 2 the trial is one tap away. Paused (3 in 7 days): the Shadow steps back. Opening it marks it
-// shown. The painted Shadow arrives with M9; a dark panel holds its place.
+// shown. M9a: the painted Shadow, over the dark panel that shows while it loads or when it can't.
 import { SHADOW_TEXT, fillText, retreatLine, shadowLine } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SHADOW_ART_URL } from '../art/portraits.ts';
 import { shadowHold } from '../game/pact.ts';
 import { dateKeyLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
@@ -32,16 +33,22 @@ export type ShadowSceneProps = {
   now?: () => number;
 };
 
-/** Board F2's art panel until M9 paints the Shadow: the dark, and two ember eyes. */
+/** Board F2's art panel (M9a decision 7): the painted Shadow, 16:9 like the quest art, over the dark and two ember eyes that
+ * show while it loads, or when it can't (offline before it was first seen). */
 function ShadowArt() {
+  const [failed, setFailed] = useState(false);
   const eye = { width: 34, height: 7, backgroundColor: colors.vermilion };
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={T.art}
-      style={{ height: 150, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.line, backgroundColor: colors.halftone }}>
+      style={{ width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, borderColor: colors.line, backgroundColor: colors.halftone }}>
       <View style={{ flexDirection: 'row', gap: 22 }}>
         <View style={[eye, { transform: [{ rotate: '10deg' }] }]} />
         <View style={[eye, { transform: [{ rotate: '-10deg' }] }]} />
       </View>
+      {!failed && (
+        <Image testID="shadow-art" source={{ uri: SHADOW_ART_URL }} onError={() => setFailed(true)} resizeMode="cover"
+          style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }} />
+      )}
     </View>
   );
 }
