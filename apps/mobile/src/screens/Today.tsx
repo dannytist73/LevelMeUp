@@ -38,6 +38,8 @@ import { syncMark } from './syncLine.ts';
 export type TodayProps = {
   onSettings: () => void;
   onOpenQuest: (questId: number) => void;
+  /** M8b: a cleared reading's "Read again" opens the article itself (emulator check). */
+  onOpenReading?: (articleId: string) => void;
   onSwap: () => void;
   onPain: (questId: number) => void;
   onVanish: () => void;
@@ -57,7 +59,8 @@ const SECTION: Record<QuestView['slot'], string> = {
 };
 
 export function Today({
-  onSettings, onOpenQuest, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {}, now = Date.now,
+  onSettings, onOpenQuest, onOpenReading, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {},
+  now = Date.now,
 }: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
@@ -131,7 +134,16 @@ export function Today({
                   // M8b decision 5: the reading card, and the Mage's Insight under it (decision 8).
                   return (
                     <View key={q.id} style={{ gap: 14 }}>
-                      <ReadingCard quest={q} article={today!.article} waiting={view!.waiting.has(q.id)} onOpen={() => onOpenQuest(q.id)} />
+                      <ReadingCard
+                        quest={q}
+                        article={today!.article}
+                        waiting={view!.waiting.has(q.id)}
+                        onOpen={() => {
+                          const article = today!.article;
+                          if (q.completedAt !== null && article !== null && onOpenReading !== undefined) onOpenReading(article.id);
+                          else onOpenQuest(q.id);
+                        }}
+                      />
                       {view!.insight !== null && <InsightPanel insight={view!.insight} onChoose={(cluster) => void enqueue({ type: 'insight', cluster })} />}
                     </View>
                   );

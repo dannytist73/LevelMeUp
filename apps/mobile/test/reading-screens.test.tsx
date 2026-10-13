@@ -7,6 +7,7 @@ import { Chronicle } from '../src/screens/Chronicle.tsx';
 import { Reading } from '../src/screens/Reading.tsx';
 import { InsightPanel } from '../src/screens/reading/InsightPanel.tsx';
 import { ReadingCard } from '../src/screens/reading/ReadingCard.tsx';
+import { Today } from '../src/screens/Today.tsx';
 import { serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
@@ -30,6 +31,30 @@ describe("Today's reading card (board D1)", () => {
     expect(screen.queryByRole('button', { name: READING_TEXT.read })).toBeNull();
     await view.rerender(<ReadingCard quest={{ ...article, completedAt: '2026-10-10T13:00:00.000Z' }} article={SUMMARY} waiting={false} onOpen={jest.fn()} />);
     expect(screen.getByText('Cleared +10')).toBeTruthy();
+  });
+});
+
+describe("Today's reading card on Today", () => {
+  it('opens the quest to read and claim; once cleared, Read again opens the article itself (emulator check)', async () => {
+    const withArticle = (done: boolean): ServerState => ({
+      ...base,
+      today: {
+        ...base.today!, article: SUMMARY,
+        quests: base.today!.quests.map((q) => (q.slot === 'article' && done ? { ...q, completedAt: '2026-10-10T13:00:00.000Z' } : q)),
+      },
+    });
+    const onOpenQuest = jest.fn();
+    const onOpenReading = jest.fn();
+    const today = (server: ServerState) => withStore(testStore({ view: project(server, []) }), (
+      <Today onSettings={jest.fn()} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onSwap={jest.fn()} onPain={jest.fn()}
+        onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()} now={() => Date.UTC(2026, 9, 10, 13)} />
+    ));
+    const view = await render(today(withArticle(false)));
+    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.read }));
+    expect(onOpenQuest).toHaveBeenCalledWith(article.id);
+    await view.rerender(today(withArticle(true)));
+    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.readAgain }));
+    expect(onOpenReading).toHaveBeenCalledWith(SAMPLE_ARTICLE.id);
   });
 });
 

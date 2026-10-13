@@ -22,6 +22,7 @@ export default function TodayRoute() {
     <Today
       onSettings={() => router.push('/settings')}
       onOpenQuest={(id) => router.push(`/quest/${id}`)}
+      onOpenReading={(id) => router.push(`/reading/${id}`)}
       onSwap={() => router.push('/swap')}
       onPain={(id) => router.push(`/pain/${id}`)}
       onVanish={() => router.push('/vanish')}

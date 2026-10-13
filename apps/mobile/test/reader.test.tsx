@@ -63,6 +63,7 @@ describe('the reader (board D3, M8b decision 5)', () => {
     await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
     await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
     expect(screen.queryByRole('button', { name: PLAY_TEXT.cleared.easy })).toBeNull();
+    expect(screen.getByText("TODAY'S READING · DISCIPLINE AND HABITS")).toBeTruthy(); // not the slot twice
     await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.readAgain }));
     expect(onRead).toHaveBeenCalledWith(SAMPLE_ARTICLE.id);
   });

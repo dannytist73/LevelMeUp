@@ -3,8 +3,8 @@
 // M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag. M6c: a workout's log, and a way to change the
 // equipment or program.
 import {
-  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate, fillText,
-  questSummary, renderWhy, shadowLine,
+  ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate,
+  fillText, questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -137,7 +137,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   if (quest.completedAt !== null) {
     return (
       <Cleared
-        heading={`${slot} · ${template.name}`.toUpperCase()}
+        // The reading quest's name is its slot's: the topic says more (M8b emulator check).
+        heading={`${slot} · ${todaysArticle !== null ? CLUSTER_NAMES[todaysArticle.cluster] : template.name}`.toUpperCase()}
         line={todaysArticle !== null ? todaysArticle.title : summary}
         numbers={clearedSummary(before, { character: view.character, quests: today.quests }, quest.id)}
         rating={quest.rating}
