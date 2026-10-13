@@ -819,6 +819,15 @@ describe('a day built offline (M6e)', () => {
     expect(store.getState().pending).toHaveLength(1);
   });
 
+  it('an app too old for the server (M9b) builds no day either, though today has ended (review)', async () => {
+    const { store, local } = await setup([ok(SERVER), { ok: false, status: 426, code: 'update_required' }], { now: () => END + HOUR });
+    await store.getState().boot();
+    await store.getState().syncNow();
+    expect(store.getState()).toMatchObject({ updateRequired: true, pending: [] });
+    expect(store.getState().view!.offline).toBe(false);
+    expect(await local.pending(10)).toEqual([]);
+  });
+
   it('builds nothing while the day still runs', async () => {
     const { store } = await setup([ok(SERVER), offline]);
     await store.getState().boot();

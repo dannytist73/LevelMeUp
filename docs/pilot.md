@@ -26,14 +26,18 @@ phone loses the character.
 
 - **A new pilot build:** raise `version` and `android.versionCode` in `apps/mobile/app.json`, build with
   `npx eas-cli@latest build --platform android --profile preview` (from `apps/mobile`), and send the new link.
-- **When a server change would break older apps:** raise `MIN_APP_VERSION` in
-  `supabase/functions/_shared/version.ts` and deploy the functions. Older apps then say "too old" and keep everything
-  unsent until updated. Deleting a character always works.
+- **When a server change would break older apps:** send the new APK first and give everyone a few days to install
+  it, then raise `MIN_APP_VERSION` in `supabase/functions/_shared/version.ts` and deploy the functions. Older apps then
+  say "too old" and keep everything unsent until updated (the System accepts it for about two days). Deleting a
+  character always works. Why first: while an app is refused, days that end become a check-in after the update, and
+  none of its answers is "the app needed an update", so a player under a Pact could meet the Shadow for the System's
+  own refusal (M9b review).
 
 ## Watching the pilot
 
-- `npm run pilot`: totals only, read only. Players, choices, progress against the pacing targets, quests cleared and
-  rated, check-ins, the recovery quest and the lighter plan.
+- `npm run pilot`: totals, and each character's progress without a name or id, read only. Players, choices, progress
+  against the pacing targets, quests cleared and rated, check-ins, the recovery quest and the lighter plan. In a small
+  pilot a progress row can still point to a friend: read it as the game's pacing, not as anyone's diary.
 - Offline days the server rebuilt: dashboard → Edge Functions → lmu-sync → Logs, search "an offline day was rebuilt"
   (logs are kept 7 days).
 - Questions the pilot answers: which classes people pick (more portrait variants later), whether the Warrior's
@@ -53,11 +57,14 @@ phone loses the character.
 The app's Settings → Your data and privacy says what is kept and where. In short:
 - the server keeps the character and its play, in Singapore;
 - the safety answers are never kept;
-- Claude sees only the reveal's facts, once;
+- Claude sees only the reveal's facts, for the reveal and its corrections (at most three calls);
 - no ads or tracking;
-- deleting removes everything.
+- deleting removes the character and everything with it; a guest sign-in goes too, but a Google sign-in (email,
+  name, picture link) stays.
 
-You can see the database; look at totals (`npm run pilot`), not at players' notes.
+You can see the database; look at totals (`npm run pilot`), not at players' notes. When a friend who saved with
+Google asks to be removed completely: after they delete their character, Supabase dashboard → Authentication → Users,
+find their email, Delete user. Check it is theirs: the wedding's users are in the same list.
 
 ## The wedding day
 

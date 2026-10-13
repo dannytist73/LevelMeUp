@@ -70,4 +70,10 @@ describe('calling the server functions', () => {
       { name: 'lmu-account-delete', options: { body: { confirm: 'DELETE' }, timeout: 20_000, ...sent } },
     ]);
   });
+
+  it('a build without a version names none, so the server counts it as 0.1.0 (review)', async () => {
+    const { client, calls } = clientReturning(async () => ({ data: {}, error: null }));
+    await makeApi(client, null).deleteAccount();
+    expect(calls).toEqual([{ name: 'lmu-account-delete', options: { body: { confirm: 'DELETE' }, timeout: 20_000, region: 'ap-southeast-1', headers: {} } }]);
+  });
 });

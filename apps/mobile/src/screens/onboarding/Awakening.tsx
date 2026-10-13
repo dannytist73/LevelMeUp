@@ -13,6 +13,7 @@ import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
 import { TextField } from '../../ui/TextField.tsx';
 import { Heading, Label, Small } from '../../ui/Text.tsx';
+import { UpdateNeeded } from '../UpdateNeeded.tsx';
 import type { StepProps } from './QuestionFrame.tsx';
 
 const T = ONBOARDING_TEXT.awakening;
@@ -25,6 +26,8 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
   const signInWithGoogle = useGame((s) => s.signInWithGoogle);
   const finishOnboarding = useGame((s) => s.finishOnboarding);
   const phase = useGame((s) => s.phase);
+  // M9b review: a restore on an app too old for the System says so, not "no connection".
+  const updateRequired = useGame((s) => s.updateRequired);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   // Set by a Google restore that found the character, or couldn't look yet; cleared when the player moves on. This
@@ -71,7 +74,10 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
         }} />
         <Small>{T.note}</Small>
         {account.kind !== 'saved' && <Button label={T.restore} variant="secondary" disabled={busy} onPress={() => void restore()} />}
-        {note !== null && <View accessibilityLiveRegion="polite"><Small tone="chalk">{note}</Small></View>}
+        {updateRequired && <UpdateNeeded />}
+        {note !== null && !(updateRequired && note === T.restoreOffline) && (
+          <View accessibilityLiveRegion="polite"><Small tone="chalk">{note}</Small></View>
+        )}
       </View>
     </ScreenScroll>
   );

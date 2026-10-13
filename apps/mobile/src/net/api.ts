@@ -18,10 +18,11 @@ export const FUNCTION_REGION = FunctionRegion.ApSoutheast1;
 /** M9b decision 5: every call names the app's version, so the server can ask an old app to update. */
 export const APP_HEADER = 'x-lmu-app';
 
-export async function invoke<T>(client: SupabaseClient, name: FunctionName, body: unknown, appVersion: string): Promise<Call<T>> {
+export async function invoke<T>(client: SupabaseClient, name: FunctionName, body: unknown, appVersion: string | null): Promise<Call<T>> {
   try {
     const { data, error } = await client.functions.invoke(name, {
-      body: body as Record<string, unknown>, timeout: TIMEOUT_MS[name], region: FUNCTION_REGION, headers: { [APP_HEADER]: appVersion },
+      body: body as Record<string, unknown>, timeout: TIMEOUT_MS[name], region: FUNCTION_REGION,
+      headers: appVersion === null ? {} : { [APP_HEADER]: appVersion },
     });
     if (error === null) return { ok: true, body: data as T };
     if (error instanceof FunctionsHttpError) {
@@ -36,7 +37,7 @@ export async function invoke<T>(client: SupabaseClient, name: FunctionName, body
   }
 }
 
-export function makeApi(client: SupabaseClient, appVersion: string) {
+export function makeApi(client: SupabaseClient, appVersion: string | null) {
   return {
     sync: (body: { timeZone: string; events: readonly PhoneEvent[]; have?: readonly string[]; want?: readonly string[] }) =>
       invoke<SyncResponse>(client, 'lmu-sync', body, appVersion),

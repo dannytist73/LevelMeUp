@@ -35,10 +35,17 @@ export function findSecrets(text: string): Hit[] {
 }
 
 /**
- * Strings only the developer screens hold (M9b decision 3): the self-check's database, one of the rules' Hermes time
- * cases, and the portrait gallery's marked portrait. A release bundle holds none of them.
+ * Strings only the developer screens hold (M9b decision 3), at least one for each screen in `src/dev/routes/` (the
+ * self-check's through its probes and the rules' Hermes time cases, the reader sample's through its article); plain
+ * ASCII, since the scan reads the bundle as latin1. A release bundle holds none of them; `test/scan.test.ts` checks
+ * that every screen has one and no shipped file does.
  */
-export const DEV_MARKERS: readonly string[] = ['levelmeup-selfcheck.db', 'wall-clock parts in Manila', 'level 1, marked'];
+export const DEV_MARKERS: readonly string[] = [
+  'levelmeup-selfcheck.db', 'wall-clock parts in Manila', 'level 1, marked', 'Start a test character first.',
+  'A made-up check-in for yesterday', 'Nothing waiting.', 'Your trials are set. Clear the core quest',
+  'Planned: the copy shows in 10 seconds', '00000000-0000-4000-8000-0000000000ff', 'No day is cached yet: sync once',
+  'Workout preview', 'Why tiny wins change how you see yourself',
+];
 
 export function devMarkersIn(text: string): string[] {
   return DEV_MARKERS.filter((marker) => text.includes(marker));

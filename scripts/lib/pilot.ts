@@ -67,20 +67,30 @@ from levelmeup.checkins group by 1, 2, 3 order by 4 desc`,
 ];
 
 const WRITES = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|do|set|reset|vacuum|comment|lock|merge)\b/i;
-const PERSONAL = /\b(name|email|reveal|book|vow|raw_user_meta_data|identity_data|phone)\b/i;
+// A schema's function (levelmeup.delete_player(…)) or an admin one; the read-only transaction refuses a write anyway.
+const CALLS = /\b(levelmeup\.\w+|set_config|pg_\w+|dblink\w*|lo_\w+)\s*\(/i;
+// Personal fields, and whatever could carry them whole: rows as JSON, event payloads and results, `select *`.
+const PERSONAL = /\b(name|email|reveal|book|vow|raw_user_meta_data|identity_data|phone|result|row_to_json|to_jsonb?|jsonb?_agg|jsonb?_build_object)\b|(?<!count\()\*/i;
+const PAYLOAD = /\bpayload\b(?!\s*->>\s*'accept')/i;
 const NOTE_TEXT = /\bnote\b(?!\s+is\s+not\s+null)/i;
 
-/** Why a report query is not allowed, or null: one select, nothing written, nothing personal read. */
+/** Why a report query is not allowed, or null: one select, nothing written or called, nothing personal read. */
 export function reportProblem(sql: string): string | null {
   if (!/^\s*(select|with)\b/i.test(sql)) return 'not a select';
   if (sql.includes(';')) return 'more than one statement';
   if (WRITES.test(sql)) return 'writes';
-  if (PERSONAL.test(sql)) return 'reads something personal';
+  if (CALLS.test(sql)) return 'calls a function';
+  if (PERSONAL.test(sql) || PAYLOAD.test(sql)) return 'reads something personal';
   if (NOTE_TEXT.test(sql)) return 'reads a note';
   return null;
 }
 
-const PERSONAL_COLUMNS = new Set(['user_id', 'id', 'name', 'note', 'email']);
+/** The statement the runner sends: the query inside a read-only transaction, rolled back (review). */
+export function readOnly(sql: string): string {
+  return `begin transaction read only; ${sql}; rollback`;
+}
+
+const PERSONAL_COLUMNS = new Set(['user_id', 'id', 'name', 'note', 'email', 'payload', 'result', 'reveal', 'book']);
 
 /** The personal columns in a result, which the runner refuses to print. */
 export function personalColumns(rows: readonly Record<string, unknown>[]): string[] {

@@ -20,6 +20,13 @@ describe('About, privacy and the update card (M9b)', () => {
     }
   });
 
+  it('say how often Claude is sent the facts, and that deleting keeps a Google sign-in (review)', () => {
+    const privacy = strings(PRIVACY_TEXT).join(' ');
+    expect(privacy).toMatch(/at most three times/);
+    expect(privacy).toMatch(/A Google sign-in stays/);
+    expect(privacy).not.toMatch(/sent once/);
+  });
+
   it('say the person running the pilot sees totals, never names or notes', () => {
     expect(strings(PRIVACY_TEXT).join(' ')).toMatch(/totals.*never.*names or notes/);
   });

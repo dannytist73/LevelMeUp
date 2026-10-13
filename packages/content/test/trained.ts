@@ -13,7 +13,13 @@ export function trainedStart(persona: Persona): Record<string, LadderState> {
   return startingLadders(LIBRARY, profile, { goals: persona.goals, training: 'most', reading: 'high', focus: 'high' }, SEEDS);
 }
 
-/** Their onboarding estimates (M9b decision 7): most weeks, reading and focus high, so 6, 6, 6, 6 and Discipline 4. */
+/**
+ * Their onboarding estimates (M9b decision 7): training most weeks (Strength and Vitality 6), reading and focus high
+ * (6) where the onboarding asks them, as it does only for the Learn and Focus goals (review), and Discipline 4.
+ */
 export function trainedEstimates(persona: Persona): StatMap {
-  return onboardingEstimates({ goals: persona.goals, training: 'most', reading: 'high', focus: 'high' });
+  return onboardingEstimates({
+    goals: persona.goals, training: 'most',
+    reading: persona.goals.includes('learn') ? 'high' : null, focus: persona.goals.includes('focus') ? 'high' : null,
+  });
 }

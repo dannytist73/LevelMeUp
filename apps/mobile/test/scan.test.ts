@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { devMarkersIn, findSecrets } from '../scripts/scan.ts';
+import { DEV_MARKERS, devMarkersIn, findSecrets } from '../scripts/scan.ts';
 
 // Key-shaped samples are assembled here at runtime, so no key-shaped string is ever stored in git (the repo's own
 // secrets test would rightly flag it).
@@ -46,5 +46,31 @@ describe('developer-only code in a release bundle (M9b decision 3)', () => {
     expect(devMarkersIn('var a="levelmeup-selfcheck.db";')).toEqual(['levelmeup-selfcheck.db']);
     expect(devMarkersIn('"wall-clock parts in Manila" … "Warrior a, level 1, marked"')).toEqual(['wall-clock parts in Manila', 'level 1, marked']);
     expect(devMarkersIn('Today, Character, Chronicle')).toEqual([]);
+  });
+
+  it('every developer screen holds a marker (with the dev modules it imports), and no shipped file does (review)', () => {
+    const { readFileSync, readdirSync, statSync } = jest.requireActual<typeof import('node:fs')>('node:fs');
+    const { join } = jest.requireActual<typeof import('node:path')>('node:path');
+    const app = join(__dirname, '..');
+    const read = (path: string) => readFileSync(path, 'utf8');
+    const routes = join(app, 'src', 'dev', 'routes');
+    const unmarked = readdirSync(routes).filter((name) => {
+      const text = read(join(routes, name));
+      // The dev-only modules a screen imports (`../probes.ts`, `../../dev/selfcheck.ts`, …) ship with it, and the
+      // self-check brings the rules' Hermes time cases.
+      const imported = [...text.matchAll(/from '(?:\.\.\/\.\.\/dev|\.\.)\/(\w+)\.ts'/g)].map((m) => read(join(app, 'src', 'dev', `${m[1]}.ts`)));
+      const hermes = imported.some((t) => t.includes('hermes-cases')) ? [read(join(app, '..', '..', 'packages', 'rules', 'test', 'hermes-cases.ts'))] : [];
+      return devMarkersIn([text, ...imported, ...hermes].join(' ')).length === 0;
+    });
+    expect(unmarked).toEqual([]);
+    const shipped = (dir: string): string[] =>
+      readdirSync(dir).flatMap((n) => {
+        const path = join(dir, n);
+        if (statSync(path).isDirectory()) return n === 'dev' ? [] : shipped(path);
+        return /\.tsx?$/.test(n) ? [path] : [];
+      });
+    const roots = [join(app, 'src'), join(app, 'app'), join(app, '..', '..', 'packages', 'content', 'src'), join(app, '..', '..', 'packages', 'rules', 'src')];
+    expect(roots.flatMap(shipped).filter((file) => devMarkersIn(read(file)).length > 0)).toEqual([]);
+    expect(DEV_MARKERS.filter((marker) => !/^[ -~]+$/.test(marker))).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@ import { ABOUT_TEXT, ONBOARDING_TEXT, PRIVACY_TEXT, UPDATE_TEXT } from '@levelme
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import { Analysis } from '../src/screens/onboarding/Analysis.tsx';
+import { Awakening } from '../src/screens/onboarding/Awakening.tsx';
 import { Privacy } from '../src/screens/Privacy.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { Today } from '../src/screens/Today.tsx';
@@ -35,6 +36,28 @@ describe('the update card (M9b decision 5)', () => {
     const store = testStore({ startCharacter: jest.fn(async () => ({ ok: false as const, code: 'update_required' })) });
     await render(withStore(store, <Analysis onRevealed={jest.fn()} onToday={jest.fn()} minMs={0} />));
     expect(await screen.findByLabelText(`System: ${ONBOARDING_TEXT.analysis.update}`)).toBeTruthy();
+  });
+
+  it('a Google restore on a too-old app shows the card, not "no connection" (review)', async () => {
+    const store = testStore({ phase: 'not_started' });
+    store.setState({
+      signInWithGoogle: jest.fn(async () => {
+        store.setState({ updateRequired: true }); // the restore's sync was answered 426
+        return { ok: true as const, found: 'unknown' as const };
+      }),
+    });
+    await render(withStore(store, <Awakening onNavigate={jest.fn()} onRestored={jest.fn()} />));
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.awakening.restore }));
+    expect(screen.getByLabelText(`System: ${UPDATE_TEXT.line}`)).toBeTruthy();
+    expect(screen.queryByText(ONBOARDING_TEXT.awakening.restoreOffline)).toBeNull();
+  });
+
+  it('the card is a polite live region, so a screen reader hears it arrive (review)', async () => {
+    await render(withStore(testStore({ updateRequired: true }), settings()));
+    let node: ReturnType<typeof screen.getByLabelText> | null = screen.getByLabelText(`System: ${UPDATE_TEXT.line}`);
+    const regions: unknown[] = [];
+    for (; node !== null; node = node.parent) regions.push(node.props.accessibilityLiveRegion);
+    expect(regions).toContain('polite');
   });
 });
 

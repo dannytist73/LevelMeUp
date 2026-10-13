@@ -1,7 +1,8 @@
 // npm run pilot (M9b decision 8): the pilot's totals from the live project, read only. Who plays, what they chose, how
-// far they got, and how the fair-play rules are used. No names, notes or ids are read, and nothing is written.
+// far they got, and how the fair-play rules are used. No names, notes or ids are read, and nothing is written: each
+// query is checked (lib/pilot.ts) and runs in a read-only transaction that is rolled back.
 import { LEVEL_CURVE, PACING_TARGETS, levelForXp } from '../packages/rules/src/index.ts';
-import { REPORT, personalColumns, reportProblem } from './lib/pilot.ts';
+import { REPORT, personalColumns, readOnly, reportProblem } from './lib/pilot.ts';
 import { query } from './sb.ts';
 
 for (const { title, sql } of REPORT) {
@@ -11,7 +12,7 @@ for (const { title, sql } of REPORT) {
 
 console.log(`LevelMeUp pilot report, ${new Date().toISOString()} (read only)`);
 for (const { title, sql } of REPORT) {
-  const rows = query([sql]);
+  const rows = query([readOnly(sql)]);
   const personal = personalColumns(rows);
   if (personal.length > 0) throw new Error(`${title}: refused to print personal columns ${personal.join(', ')}`);
   console.log(`\n${title}`);
