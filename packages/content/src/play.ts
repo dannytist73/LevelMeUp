@@ -76,6 +76,8 @@ export const PLAY_TEXT = {
     level: 'Level {level}. The System marks your growth.',
     achievementLabel: 'ACHIEVEMENT',
     titleEarned: 'Title earned: {title}',
+    /** M9a decision 8: a level-up that changes the portrait's tier (levels 5 and 10). */
+    portrait: 'Your portrait has changed.',
     continue: 'Continue',
   },
 } as const;

@@ -6,6 +6,8 @@ import { ACHIEVEMENTS } from './achievements.ts';
 export const CHARACTER_TEXT = {
   label: 'Character',
   portrait: '{className} portrait, level {level}',
+  /** M9a decision 5: the reveal's and Character's button that swaps the portrait's figure. */
+  switchPortrait: 'Switch portrait',
   totalXp: '{total} XP total · {into} / {span} this level',
   next: 'Next: Level {level}',
   stats: {
