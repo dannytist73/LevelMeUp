@@ -401,3 +401,17 @@ the times the phone holds.
    lateness (row 12).
 7. Once, right after Allow under the user-fixed flag, the refused card showed only after the screen was opened again; a
    clean retry showed it within a second. Not reproduced.
+
+## M8b — Reading
+
+Emulator unless marked. The M7d development build (998b72c0) through Metro, no new build. Server: 0015 and functions v17
+(2026-10-13 07:19 UTC); article-9 (psychology, "The progress principle") published 07:19 UTC.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Developer → Reader sample: the board D3 layout; "Erdős" and "≈" show; sources open in the browser; at the largest font nothing is cut off. | Pass (emulator, Android 16, 2026-10-13): label, "6 MIN · WISDOM +10 XP", "DISCIPLINE AND HABITS", title, summary, sections with [1] / [1] [2], the System's box, the numbered takeaways, "To think about", "Your takeaway, one sentence", "Claim +10 XP" (disabled until a sentence), the sources "1. How are habits formed · example.org". "≈" and "Erdős" render (the phone's font for the missing glyphs). A source opened Chrome (its first-run screen), Back returned to the reader. Font 2.0: everything wraps, nothing cut off; font back to 1.0. |
+| 2 | Today, on a day without an article: the reading card says the reading waits; no Read. | Pass: Uma's day 2 (built before 0015) shows "Today's reading" with the quiet card "Today's reading opens once the daily articles arrive. Nothing is lost while it waits." and no button; it wraps at font 2.0. |
+| 3 | A new day after an article is published: the card shows its title and minutes; Read opens the reader; a takeaway claims +10 XP; "Quest cleared" without a rating; Read again. | Pending: Uma's day 3 (after 08:00 UTC, 13 Oct) |
+| 4 | The Chronicle the next day: "Past readings" lists it with its date; opening it shows the takeaway. | Pending: the day after row 3 |
+| 5 | A Mage at level 5 or more: Insight under the reading card; choosing a topic shows "Tomorrow's reading: …"; the next day's article is from that topic. | Pending: needs a Mage test character at level 5 and published articles in several topics |
+| 6 | Airplane mode across the day boundary (M6e): the offline day has the next day's article and it opens; after reconnecting, the server keeps it. | Pending: with the new test character, once several articles are published |
