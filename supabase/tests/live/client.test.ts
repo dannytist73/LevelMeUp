@@ -3,10 +3,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { afterAll, describe, expect, it } from 'vitest';
 import { makeApi } from '../../../apps/mobile/src/net/api.ts';
-import { ONBOARDING, PUBLISHABLE_KEY, URL_BASE, eventId } from './helpers.ts';
+import { APP_VERSION, ONBOARDING, PUBLISHABLE_KEY, URL_BASE, eventId } from './helpers.ts';
 
 const client = createClient(URL_BASE, PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-const api = makeApi(client);
+const api = makeApi(client, APP_VERSION);
 let deleted = false;
 
 afterAll(async () => {

@@ -15,6 +15,10 @@ export const URL_BASE = env.LMU_SUPABASE_URL!;
 export const ANON_KEY = env.LMU_SUPABASE_ANON_KEY!;
 /** The key the app ships with (M4): public by design, unlike the service role. */
 export const PUBLISHABLE_KEY = env.LMU_SUPABASE_PUBLISHABLE_KEY!;
+/** The app's version (apps/mobile/app.json), as the phone sends it (M9b decision 5). */
+export const APP_VERSION: string = JSON.parse(readFileSync(join(import.meta.dirname, '..', '..', '..', 'apps', 'mobile', 'app.json'), 'utf8')).expo.version;
+/** Next to the database, as the phone asks (M9b decision 2). */
+export const REGION = 'ap-southeast-1';
 const MAX_PLAYERS = 13;
 
 export type Player = { id: string; token: string };
@@ -36,8 +40,8 @@ export async function newPlayer(): Promise<Player> {
 
 export type Reply = { status: number; body: any };
 
-export async function call(fn: string, token: string | null, body: unknown = {}): Promise<Reply> {
-  const headers: Record<string, string> = { apikey: ANON_KEY, 'content-type': 'application/json' };
+export async function call(fn: string, token: string | null, body: unknown = {}, extra: Record<string, string> = {}): Promise<Reply> {
+  const headers: Record<string, string> = { apikey: ANON_KEY, 'content-type': 'application/json', 'x-region': REGION, ...extra };
   if (token !== null) headers.authorization = `Bearer ${token}`;
   const res = await fetch(`${URL_BASE}/functions/v1/${fn}`, { method: 'POST', headers, body: JSON.stringify(body) });
   const text = await res.text();

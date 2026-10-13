@@ -4,6 +4,7 @@ import * as Crypto from 'expo-crypto';
 import { getCalendars } from 'expo-localization';
 import kvStore from 'expo-sqlite/kv-store';
 import * as WebBrowser from 'expo-web-browser';
+import { APP_VERSION } from '../appVersion.ts';
 import { ART_MANIFEST_URL } from '../art/manifest.ts';
 import { freshSessionStore, sessionStore, supabase } from '../auth/client.ts';
 import { linkGoogle, readAccount, signInWithGoogle } from '../auth/google.ts';
@@ -32,7 +33,7 @@ export async function createAppStore() {
   await migrate(sql);
   return createGameStore({
     local: makeLocal(sql),
-    api: makeApi(supabase),
+    api: makeApi(supabase, APP_VERSION),
     ensureSession: (allowNewGuest) =>
       ensureSession(supabase, allowNewGuest, () => storageWorks(sessionStore, Crypto.randomUUID(), freshSessionStore())),
     sessionAlive: () => sessionAlive(supabase),

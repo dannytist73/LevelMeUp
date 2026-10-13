@@ -1,6 +1,6 @@
 // The app's calls to LevelMeUp's Edge Functions. No React Native imports: the live test suite runs this exact module in
 // Node against the deployed functions (supabase/tests/live/client.test.ts).
-import { FunctionsHttpError } from '@supabase/supabase-js';
+import { FunctionRegion, FunctionsHttpError } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DeleteResponse, OnboardingBody, OnboardingResponse, PhoneEvent, SyncResponse } from '../game/types.ts';
 
@@ -10,9 +10,19 @@ export type Call<T> = { ok: true; body: T } | { ok: false; status: number; code:
 const TIMEOUT_MS = { 'lmu-sync': 20_000, 'lmu-onboarding': 30_000, 'lmu-account-delete': 20_000 } as const;
 export type FunctionName = keyof typeof TIMEOUT_MS;
 
-export async function invoke<T>(client: SupabaseClient, name: FunctionName, body: unknown): Promise<Call<T>> {
+/**
+ * M9b decision 2: run next to the database (Singapore). By default the functions run nearest the phone (Seoul, from
+ * Manila), and each of a sync's ~90 database round trips then crosses that distance: 11–15 s a sync.
+ */
+export const FUNCTION_REGION = FunctionRegion.ApSoutheast1;
+/** M9b decision 5: every call names the app's version, so the server can ask an old app to update. */
+export const APP_HEADER = 'x-lmu-app';
+
+export async function invoke<T>(client: SupabaseClient, name: FunctionName, body: unknown, appVersion: string): Promise<Call<T>> {
   try {
-    const { data, error } = await client.functions.invoke(name, { body: body as Record<string, unknown>, timeout: TIMEOUT_MS[name] });
+    const { data, error } = await client.functions.invoke(name, {
+      body: body as Record<string, unknown>, timeout: TIMEOUT_MS[name], region: FUNCTION_REGION, headers: { [APP_HEADER]: appVersion },
+    });
     if (error === null) return { ok: true, body: data as T };
     if (error instanceof FunctionsHttpError) {
       const res = error.context as Response;
@@ -26,12 +36,12 @@ export async function invoke<T>(client: SupabaseClient, name: FunctionName, body
   }
 }
 
-export function makeApi(client: SupabaseClient) {
+export function makeApi(client: SupabaseClient, appVersion: string) {
   return {
     sync: (body: { timeZone: string; events: readonly PhoneEvent[]; have?: readonly string[]; want?: readonly string[] }) =>
-      invoke<SyncResponse>(client, 'lmu-sync', body),
-    onboarding: (body: OnboardingBody) => invoke<OnboardingResponse>(client, 'lmu-onboarding', body),
-    deleteAccount: () => invoke<DeleteResponse>(client, 'lmu-account-delete', { confirm: 'DELETE' }),
+      invoke<SyncResponse>(client, 'lmu-sync', body, appVersion),
+    onboarding: (body: OnboardingBody) => invoke<OnboardingResponse>(client, 'lmu-onboarding', body, appVersion),
+    deleteAccount: () => invoke<DeleteResponse>(client, 'lmu-account-delete', { confirm: 'DELETE' }, appVersion),
   };
 }
 
