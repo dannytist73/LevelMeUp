@@ -116,7 +116,8 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
         {failure !== null && (
           <View accessibilityLiveRegion="polite">
             <Small tone="chalk">
-              {failure === 'network' ? ONBOARDING_TEXT.analysis.offline : failure === 'locked' ? ONBOARDING_TEXT.analysis.locked : ONBOARDING_TEXT.analysis.failed}
+              {failure === 'network' ? ONBOARDING_TEXT.analysis.offline : failure === 'update_required' ? ONBOARDING_TEXT.analysis.update
+                : failure === 'locked' ? ONBOARDING_TEXT.analysis.locked : ONBOARDING_TEXT.analysis.failed}
             </Small>
           </View>
         )}

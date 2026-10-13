@@ -18,6 +18,7 @@ import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
 import { SignInLost } from './SignInLost.tsx';
 import { lastSynced, syncMark } from './syncLine.ts';
+import { UpdateNeeded } from './UpdateNeeded.tsx';
 
 export type SettingsProps = {
   onBack: () => void; onDeveloper?: () => void; onTraining: () => void; onGame: () => void; onDelete: () => void; version: string;
@@ -53,6 +54,7 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
   const waiting = useGame((s) => s.pending.length);
   const status = useGame((s) => s.status);
   const error = useGame((s) => s.error);
+  const updateRequired = useGame((s) => s.updateRequired);
   const syncNow = useGame((s) => s.syncNow);
   const zone = useGame((s) => s.view?.profile.timeZone) ?? deviceZone;
   const mark = syncMark(status);
@@ -119,6 +121,7 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
 
       <View style={{ gap: 12 }}>
         <SectionTitle title="Sync" />
+        {updateRequired && <UpdateNeeded />}
         <NightCard>
           <Body>{lastSynced(lastSyncedAt, zone)}</Body>
           <Meta>{`${waiting} waiting`}</Meta>

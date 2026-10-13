@@ -20,6 +20,7 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     notices: [],
     articles: {},
     signInLost: false,
+    updateRequired: false,
     error: null,
     draft: NEW_DRAFT,
     reveal: null,

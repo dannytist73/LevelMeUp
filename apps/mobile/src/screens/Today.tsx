@@ -34,6 +34,7 @@ import { InsightPanel } from './reading/InsightPanel.tsx';
 import { ReadingCard } from './reading/ReadingCard.tsx';
 import { SignInLost } from './SignInLost.tsx';
 import { syncMark } from './syncLine.ts';
+import { UpdateNeeded } from './UpdateNeeded.tsx';
 
 export type TodayProps = {
   onSettings: () => void;
@@ -72,6 +73,7 @@ export function Today({
   const dismissNotice = useGame((s) => s.dismissNotice);
   const enqueue = useGame((s) => s.enqueue);
   const signInLost = useGame((s) => s.signInLost);
+  const updateRequired = useGame((s) => s.updateRequired);
   const trainingNoticeSeen = useGame((s) => s.trainingNoticeSeen);
   const dismissTrainingNotice = useGame((s) => s.dismissTrainingNotice);
 
@@ -226,6 +228,7 @@ export function Today({
         )}
       </HalftoneHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
+        {updateRequired && <UpdateNeeded />}
         {view !== null && !trainingNoticeSeen && trainingUnset(view.profile) && (
           // Players from before M6c never chose a training setup: asked once (M6d decision 13).
           <View style={{ gap: 8 }}>

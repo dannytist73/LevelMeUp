@@ -37,7 +37,7 @@ export default function CheckinPreview() {
       lighterPlan: state.lighterPlan === null ? null : { ...state.lighterPlan, offered: true },
     }, []);
     return createStore(() => ({
-      phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, trainingNoticeSeen: true, lastSyncedAt: null,
+      phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null, shadowSeen: null,
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,

@@ -23,6 +23,8 @@ export type SyncOutcome =
   | { kind: 'offline' }
   | { kind: 'retry'; code: string }
   | { kind: 'failed'; status: number; code: string }
+  /** M9b decision 5: the server serves only newer apps; every event stays until the app is updated. */
+  | { kind: 'update_required' }
   /** Set by the store, not by syncOnce: this phone holds data but its sign-in is gone for good (no retry). */
   | { kind: 'sign_in_lost' }
   /** Set by the store, not by syncOnce: an empty phone with no sign-in, a new player (M5: no guest until the analysis). */
@@ -77,6 +79,7 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
         limit = Math.ceil(events.length / 2); // too big after all: send half and try again
         continue;
       }
+      if (call.status === 426) return { kind: 'update_required' };
       if (call.status === 404 && call.code === 'not_started') return { kind: 'not_started' };
       if (call.status === 401 && call.code === 'session_ended' && !(await deps.sessionAlive())) return { kind: 'session_ended' };
       if (call.status === 401 || call.status >= 500) return { kind: 'retry', code: call.code };

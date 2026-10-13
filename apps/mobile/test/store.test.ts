@@ -305,6 +305,22 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('an app too old for the server (M9b): the update card, nothing dropped, no offline day, cleared by a later sync', async () => {
+    let old = true;
+    const { store, local } = await setup([
+      async () => (old ? ({ ok: false, status: 426, code: 'update_required' } as const) : ok(SERVER)),
+    ]);
+    await store.getState().enqueue({ type: 'undo', instanceId: 1 });
+    await store.getState().syncNow();
+    expect(store.getState()).toMatchObject({ updateRequired: true, error: null, status: 'idle' });
+    expect(await local.pending(10)).toHaveLength(1);
+    expect(store.getState().view?.offline ?? false).toBe(false);
+    old = false;
+    await store.getState().syncNow();
+    expect(store.getState().updateRequired).toBe(false);
+    store.getState().stop();
+  });
+
   it('the analysis signs a guest in on an empty phone, then stores the character and the reveal', async () => {
     const session = guestSession();
     const { store, api, local, deps } = await setup([{ ok: false, status: 404, code: 'not_started' }], { ensureSession: session });

@@ -108,6 +108,8 @@ export type GameState = {
   fetchArticle: (id: string) => void;
   /** The phone holds data but its guest sign-in is gone for good: only the player can choose to start again. */
   signInLost: boolean;
+  /** M9b decision 5: the server asked this app to update; Today and Settings say so, and nothing is dropped. */
+  updateRequired: boolean;
   /** Shown on Settings: a sync the server refused as malformed (a bug). */
   error: string | null;
   /** The interview so far (M5). */
@@ -390,7 +392,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       switch (outcome.kind) {
         case 'synced': {
           const before = confirmedLevel;
-          await refresh({ phase: 'ready', status: 'idle', error: null });
+          await refresh({ phase: 'ready', status: 'idle', error: null, updateRequired: false });
           // Forget only what this run asked for or what arrived: one asked for meanwhile goes with the next run (review).
           for (const id of outcome.asked) wanted.delete(id);
           for (const id of [...wanted]) if (get().articles[id] !== undefined) wanted.delete(id);
@@ -431,6 +433,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         case 'sign_in_lost':
           set({ status: 'idle', signInLost: true });
           return;
+        case 'update_required':
+          set({ status: 'idle', updateRequired: true });
+          return;
         case 'failed':
           set({ status: 'idle', error: `The server refused a sync (${outcome.status} ${outcome.code}).` });
       }
@@ -448,6 +453,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       notices: [],
       articles: {},
       signInLost: false,
+      updateRequired: false,
       error: null,
       draft: NEW_DRAFT,
       reveal: null,
