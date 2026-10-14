@@ -12,7 +12,7 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, HAPTICS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, HAPTICS_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { setBuzzing } from '../src/ui/haptics.ts';
@@ -452,6 +452,22 @@ describe('the game store', () => {
     await store.getState().startOver();
     expect(kv.has(PORTRAIT_KEY)).toBe(false);
     expect(store.getState().portrait).toBeNull();
+    store.getState().stop();
+  });
+
+  it('keeps the last logged sets on the phone, merges new ones, reads them at boot, and forgets them with the character (M10c decision 7)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(LAST_SETS_KEY, JSON.stringify({ 'move:plank': [30] }));
+    await store.getState().boot();
+    expect(store.getState().lastSets).toEqual({ 'move:plank': [30] });
+    await store.getState().rememberSets({ 'move:goblet-squat': [12, 11] });
+    expect(store.getState().lastSets).toEqual({ 'move:plank': [30], 'move:goblet-squat': [12, 11] });
+    expect(JSON.parse(kv.get(LAST_SETS_KEY)!)).toEqual({ 'move:plank': [30], 'move:goblet-squat': [12, 11] });
+    expect(await local.pending(10)).toEqual([]); // kept on the phone: nothing goes to the server
+    await store.getState().startOver();
+    expect(kv.has(LAST_SETS_KEY)).toBe(false);
+    expect(store.getState().lastSets).toEqual({});
     store.getState().stop();
   });
 

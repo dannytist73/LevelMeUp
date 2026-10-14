@@ -1,13 +1,16 @@
 // Rep-log quests (spec §3.6, M6a decision 4): each set starts at the target and moves with − and +; sets can be added (up
-// to 20) or removed (down to 1). It logs what was done, even below the target (the honor system).
+// to 20) or removed (down to 1). It logs what was done, even below the target (the honor system). M10c: last time's sets
+// as a line, and a Done check on each set that starts the rest (decisions 7–8).
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import type { Condition } from '@levelmeup/rules';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { setsLine } from '../../quest/lastSets.ts';
 import { MAX_REPS, MAX_SETS, repUnit, repsPayload, repsValid, startingSets } from '../../quest/payload.ts';
 import { colors, fonts } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
+import { RestBar, SetDone, useRest } from './Rest.tsx';
 
 const T = PLAY_TEXT.reps;
 
@@ -19,17 +22,35 @@ export function Step({ text, label, onPress }: { text: string; label: string; on
   );
 }
 
-export function RepLog({ condition, disabled, onClaim }: { condition: Condition; disabled: boolean; onClaim: (payload: Record<string, unknown>) => void }) {
+export type RepLogProps = {
+  condition: Condition;
+  disabled: boolean;
+  onClaim: (payload: Record<string, unknown>) => void;
+  /** M10c: the sets of the last time this quest was logged on this phone, or null. */
+  last?: readonly number[] | null;
+  now?: () => number;
+};
+
+export function RepLog({ condition, disabled, onClaim, last = null, now = Date.now }: RepLogProps) {
   const [sets, setSets] = useState(() => startingSets(condition));
+  const [done, setDone] = useState<boolean[]>([]);
+  const rest = useRest(now);
   const unit = repUnit(condition);
   const change = (index: number, by: number) =>
     setSets((all) => all.map((n, i) => (i === index ? Math.max(0, Math.min(MAX_REPS, n + by)) : n)));
+  const toggle = (index: number) => {
+    const marking = done[index] !== true;
+    setDone((all) => Object.assign([...all], { [index]: marking }));
+    if (marking && index < sets.length - 1) rest.start();
+  };
   return (
     <View style={{ gap: 12 }}>
       <Caption>{fillText(T.unitLine, { unit })}</Caption>
+      {last !== null && <Small>{fillText(T.lastTime, { sets: setsLine(last) })}</Small>}
       {sets.map((n, i) => (
         <View key={i} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderWidth: 2, borderColor: colors.chalk }}>
-          <Label style={{ flexGrow: 1, paddingHorizontal: 12, paddingVertical: 8 }}>{fillText(T.set, { n: i + 1 })}</Label>
+          <SetDone n={i + 1} done={done[i] === true} onPress={() => toggle(i)} />
+          <Label style={{ flexGrow: 1, paddingRight: 12, paddingVertical: 8 }}>{fillText(T.set, { n: i + 1 })}</Label>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Step text="−" label={fillText(T.fewer, { n: i + 1 })} onPress={() => change(i, -1)} />
             <Heading accessibilityLabel={`${n} ${unit}`} style={{ minWidth: 56, textAlign: 'center' }}>{String(n)}</Heading>
@@ -37,6 +58,7 @@ export function RepLog({ condition, disabled, onClaim }: { condition: Condition;
           </View>
         </View>
       ))}
+      <RestBar rest={rest.rest} over={rest.over} now={now} onMore={rest.more} onSkip={rest.skip} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Button
           label={T.addSet}

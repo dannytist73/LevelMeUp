@@ -56,7 +56,6 @@ export const PLAY_TEXT = {
   /** M10c decision 8: the rest between sets, started by a set's Done. */
   rest: {
     done: 'Set {n} done',
-    undone: 'Set {n}, not done yet',
     label: 'Rest between sets',
     left: 'Rest {time}',
     more: '+15 s',

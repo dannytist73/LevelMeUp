@@ -34,6 +34,8 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY, readNotify } from '../notify/settings.ts';
 import type { NoteOs, NotifySettings, Permission, PlannedNote } from '../notify/types.ts';
 import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
 import type { Draft } from '../onboarding/flow.ts';
+import { readLastSets } from '../quest/lastSets.ts';
+import type { LastSets } from '../quest/lastSets.ts';
 import { parseTimers } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
 import { syncOnce } from '../sync/engine.ts';
@@ -88,6 +90,8 @@ export const TRIAL_KEY = 'lmu.trial';
 export const PORTRAIT_KEY = 'lmu.portrait';
 /** M10b: the Haptics switch, kept as 'on' or 'off' (spec decision 4); anything else, or nothing, counts as on. */
 export const HAPTICS_KEY = 'lmu.haptics';
+/** M10c decision 7: each exercise's and rep-log quest's last logged sets, kept on this phone. */
+export const LAST_SETS_KEY = 'lmu.lastSets';
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
 /** A level-up carries the level it came from: one sync can cross more than one (the portrait's tier, M9a review). */
@@ -144,6 +148,8 @@ export type GameState = {
   portrait: Figure | null;
   /** M10b: the Haptics switch (Settings → Game), kept on this phone; on unless turned off. */
   haptics: boolean;
+  /** M10c decision 7: the last logged sets, by exercise and rep-log quest, kept on this phone. */
+  lastSets: LastSets;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -158,6 +164,8 @@ export type GameState = {
   setPortrait: (figure: Figure) => Promise<void>;
   /** M10b: keeps the switch on the phone; it applies at once, even if the phone can't store it. */
   setHaptics: (on: boolean) => Promise<void>;
+  /** M10c: remembers logged sets (merged over what's kept); shown at once, even if the phone can't store them. */
+  rememberSets: (sets: Readonly<Record<string, readonly number[]>>) => Promise<void>;
   dismissTrainingNotice: () => Promise<void>;
   answerLater: (checkinId: number) => void;
   /** The app came back to the foreground: a check-in put off with "Later" shows again. */
@@ -380,11 +388,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(TRIAL_KEY);
       await deps.kv.removeItem(NOTIFY_KEY);
       await deps.kv.removeItem(PORTRAIT_KEY);
+      await deps.kv.removeItem(LAST_SETS_KEY); // M10c: the character's workouts, not the phone's
       // The Haptics switch stays: it is the phone's, not the character's (M10b plan decision 3).
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, account: await deps.account(),
+        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, account: await deps.account(),
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -478,9 +487,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       planned: [],
       portrait: null,
       haptics: true,
+      lastSets: {},
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -492,6 +502,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.notes.permission().catch((): Permission => 'unknown'),
           deps.kv.getItem(PORTRAIT_KEY).catch(() => null),
           deps.kv.getItem(HAPTICS_KEY).catch(() => null),
+          deps.kv.getItem(LAST_SETS_KEY).catch(() => null),
         ]);
         const haptics = hapticsText !== 'off';
         setBuzzing(haptics);
@@ -505,7 +516,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         set({
           draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
-          shadowSeen: readSeen(shadow), portrait: readFigure(portraitText),
+          shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText),
         });
         await scheduler.request();
       },
@@ -593,6 +604,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         setBuzzing(on);
         set({ haptics: on });
         await deps.kv.setItem(HAPTICS_KEY, on ? 'on' : 'off').catch(() => {});
+      },
+
+      rememberSets: async (sets) => {
+        const lastSets = { ...get().lastSets, ...sets };
+        set({ lastSets });
+        await deps.kv.setItem(LAST_SETS_KEY, JSON.stringify(lastSets)).catch(() => {});
       },
 
       dismissTrainingNotice: async () => {

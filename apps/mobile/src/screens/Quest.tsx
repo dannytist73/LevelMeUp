@@ -1,7 +1,7 @@
 // A quest, opened from Today (spec §3.1, §3.4, §3.6; M6a decisions 1–10): its picture, its words in the player's voice,
 // why it was picked, how to do it, the safety lines, and the panel that logs it. A cleared quest shows "Quest cleared".
 // M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag. M6c: a workout's log, and a way to change the
-// equipment or program.
+// equipment or program. M10c: a logged workout or rep log is remembered on this phone for next time (decision 7).
 import {
   ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate,
   fillText, questSummary, renderWhy, shadowLine,
@@ -16,6 +16,7 @@ import { isResting } from '../game/adjust.ts';
 import { findQuest } from '../game/offline.ts';
 import { sealedQuest, shadowHold } from '../game/pact.ts';
 import { clearedSummary } from '../quest/cleared.ts';
+import { questKey, sessionMemory } from '../quest/lastSets.ts';
 import type { Shot } from '../quest/cleared.ts';
 import { NEW_TIMER } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
@@ -66,6 +67,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const saveTimer = useGame((s) => s.saveTimer);
   const articles = useGame((s) => s.articles);
   const fetchArticle = useGame((s) => s.fetchArticle);
+  const lastSets = useGame((s) => s.lastSets);
+  const rememberSets = useGame((s) => s.rememberSets);
   const [before, setBefore] = useState<Shot | null>(null);
   const [timer, setTimer] = useState<TimerState>(NEW_TIMER);
   const [busy, setBusy] = useState(false);
@@ -173,6 +176,10 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
       setBefore({ character: view.character, quests: today.quests });
       await enqueue({ type: 'complete', instanceId: quest.id, completedAt: now(), rating: null, payload });
       if (quest.completion === 'timer') await saveTimer(quest.id, null).catch(() => {});
+      // M10c decision 7: next time starts from these sets.
+      const sets = Array.isArray(payload.sets) ? (payload.sets as number[]) : null;
+      if (sets !== null && quest.condition.kind === 'session') await rememberSets(sessionMemory(quest.condition.moves, sets)).catch(() => {});
+      else if (sets !== null && quest.completion === 'reps') await rememberSets({ [questKey(quest.templateId)]: sets }).catch(() => {});
     } finally {
       claiming.current = false;
       setBusy(false);
@@ -213,11 +220,12 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
       <View style={{ gap: 12 }}>
         {replanning && <NarrationBox>{PLAY_TEXT.workout.replanning}</NarrationBox>}
         <WorkoutLog key={JSON.stringify(quest.condition)} moves={quest.condition.moves} disabled={busy || replanning}
-          onClaim={(payload) => void claim(payload)} />
+          onClaim={(payload) => void claim(payload)} last={lastSets} now={now} />
       </View>
     );
   } else if (quest.completion === 'reps') {
-    panel = <RepLog condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)} />;
+    panel = <RepLog condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)}
+      last={lastSets[questKey(quest.templateId)] ?? null} now={now} />;
   } else if (quest.completion === 'text') {
     panel = <SentenceLog disabled={busy} onClaim={(payload) => void claim(payload)} />;
   } else {
