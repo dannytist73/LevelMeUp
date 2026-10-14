@@ -6,12 +6,14 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
+import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
-  FILL_MS, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
+  BURST_FROM, FILL_MS, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
   inkDrops,
 } from '../src/ui/motion.ts';
 import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
 import { SlamIn } from '../src/ui/SlamIn.tsx';
+import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { Thud } from '../src/ui/Thud.tsx';
 import { useCountUp, useGrowth } from '../src/ui/useMotion.ts';
 
@@ -122,5 +124,35 @@ describe('slam, thud and fade (M10a decision 3)', () => {
     expect(flat(screen.getByTestId('thud').props.style)).toEqual({ alignSelf: 'flex-start' });
     await render(<SlamIn style={{ alignSelf: 'stretch' }}><Text>wide</Text></SlamIn>);
     expect(flat(screen.getByTestId('slam-in').props.style).alignSelf).toBe('stretch');
+  });
+});
+
+describe('speed-line burst and the ink splash (M10a decision 3)', () => {
+  it('a burst starts small and clear; still lines have no motion at all', async () => {
+    await render(<SpeedLines burst />);
+    expect(flat(screen.getByTestId('speed-lines', hidden).props.style)).toMatchObject({ opacity: 0, transform: [{ scale: BURST_FROM }] });
+    await render(<SpeedLines />);
+    const still = flat(screen.getByTestId('speed-lines', hidden).props.style);
+    expect(still.transform).toBeUndefined();
+    expect(still.opacity).toBeUndefined();
+    await render(<SpeedLines burst reduceMotion />);
+    const fading = flat(screen.getByTestId('speed-lines', hidden).props.style);
+    expect(fading.transform).toBeUndefined();
+    expect(fading.opacity).toBe(0);
+  });
+
+  it('the splash has its drops, out of the way of touches and screen readers', async () => {
+    await render(<InkBurst count={12}><Text>stamp</Text></InkBurst>);
+    expect(screen.getAllByTestId('ink-drop', hidden)).toHaveLength(12);
+    expect(screen.getByTestId('ink-burst', hidden).props).toMatchObject({
+      pointerEvents: 'none', accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants',
+    });
+    expect(screen.getByText('stamp')).toBeTruthy();
+  });
+
+  it('with reduced motion there is no splash, only what it wraps', async () => {
+    await render(<InkBurst reduceMotion><Text>stamp</Text></InkBurst>);
+    expect(screen.queryAllByTestId('ink-drop', hidden)).toEqual([]);
+    expect(screen.getByText('stamp')).toBeTruthy();
   });
 });
