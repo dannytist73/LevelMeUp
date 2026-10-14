@@ -28,6 +28,7 @@ describe('"Quest cleared" (board D2, M6a decision 5)', () => {
     }
     expect(c.statUps.map((s) => s.stat)).toEqual(['strength']);
     expect(c.level).toEqual({ level: after.character.level, xpIntoLevel: after.character.xpIntoLevel, xpForLevel: after.character.xpForLevel });
+    expect(c.levelBefore).toEqual({ level: before.character.level, xpIntoLevel: before.character.xpIntoLevel, xpForLevel: before.character.xpForLevel });
   });
 
   it('counts Discipline for the core quest only', () => {
@@ -60,6 +61,7 @@ describe('"Quest cleared" (board D2, M6a decision 5)', () => {
     expect(c.streak).toBeNull();
     expect(c.discipline).toBe(true);
     expect(c.xp).toBe(xpOf(core));
+    expect(c.levelBefore).toBeNull();
   });
 });
 

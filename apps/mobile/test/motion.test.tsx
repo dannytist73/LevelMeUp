@@ -3,8 +3,10 @@
 // each piece starts, its reduced-motion path and its accessibility, not frames. Starting values are checked on the
 // pieces alone; on a screen, a re-render after mount would show the mock's end values, so screens check only that the
 // motion is there.
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
+import type { ClearedNumbers } from '../src/quest/cleared.ts';
+import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
@@ -181,5 +183,52 @@ describe('the XP bar (M10a decisions 3, 5, 7)', () => {
     await render(<XpBar value={87} max={130} level={6} from={at(6, 67)} label="reduced" reduceMotion />);
     expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
     expect(screen.queryByTestId('xp-flash')).toBeNull();
+  });
+});
+
+const NUMBERS: ClearedNumbers = {
+  xp: 20, statUps: [{ stat: 'strength', from: 11, to: 12, rank: 'D' }], discipline: true, streak: { from: 9, to: 10 },
+  level: { level: 6, xpIntoLevel: 87, xpForLevel: 130 }, levelBefore: { level: 6, xpIntoLevel: 67, xpForLevel: 130 }, recovered: false,
+};
+
+const cleared = (numbers: ClearedNumbers) => render(
+  <Cleared heading="CORE QUEST · KNEE PUSH-UPS" line="3 sets of 8" numbers={numbers} rating={null} dayOpen waiting={false}
+    onRate={jest.fn()} onUndo={jest.fn()} onContinue={jest.fn()} canStepDown={false} onStepDown={jest.fn()} onPain={null} />,
+);
+
+describe('Quest cleared moves (M10a decision 4)', () => {
+  it('the lines burst, the title slams, the stamp thuds in ink, the panel slams, the rank thuds', async () => {
+    await cleared(NUMBERS);
+    expect(flat(screen.getByTestId('speed-lines', hidden).props.style).transform).toBeDefined();
+    expect(screen.getAllByTestId('slam-in')).toHaveLength(2); // the title and the stats panel
+    expect(screen.getByTestId('xp-stamp-thud')).toBeTruthy();
+    expect(screen.getAllByTestId('ink-drop', hidden)).toHaveLength(12);
+    expect(screen.getByTestId('rank-thud')).toBeTruthy();
+    expect(screen.getByLabelText('+20 XP')).toBeTruthy();
+    expect(screen.getByLabelText('Rank D')).toBeTruthy();
+  });
+
+  it('the bar moves; the level line counts up and is heard at its end', async () => {
+    await cleared(NUMBERS);
+    expect(screen.getByTestId('xp-flash')).toBeTruthy(); // a moving bar (where it starts: Task 5's tests)
+    expect(screen.getByRole('progressbar', { name: 'Level 6 progress' }).props.accessibilityValue).toEqual({ min: 0, max: 130, now: 87 });
+    expect(screen.getByText('LV 6 · 67 / 130 XP')).toBeTruthy(); // the count's start (the mock never runs it)
+    expect(screen.getByLabelText('LV 6 · 87 / 130 XP')).toBeTruthy();
+  });
+
+  it('opened later (no before): no fill, no count', async () => {
+    await cleared({ ...NUMBERS, levelBefore: null });
+    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
+    expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
+  });
+
+  it('buttons work from the first frame: nothing waits for the motion', async () => {
+    const onContinue = jest.fn();
+    await render(
+      <Cleared heading="H" line="L" numbers={NUMBERS} rating={null} dayOpen waiting={false} onRate={jest.fn()} onUndo={jest.fn()}
+        onContinue={onContinue} canStepDown={false} onStepDown={jest.fn()} onPain={null} />,
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(onContinue).toHaveBeenCalled();
   });
 });

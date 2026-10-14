@@ -18,6 +18,8 @@ export type ClearedNumbers = {
    */
   streak: { from: number; to: number } | null;
   level: { level: number; xpIntoLevel: number; xpForLevel: number };
+  /** M10a: the level and XP before this completion, so the bar fills from there; null when opened later. */
+  levelBefore: { level: number; xpIntoLevel: number; xpForLevel: number } | null;
   /** The recovery quest: the day is taken back when today ends (M7a). */
   recovered: boolean;
 };
@@ -44,6 +46,7 @@ export function clearedSummary(before: Shot | null, after: Shot, questId: number
     discipline: quest.slot === 'core',
     streak: grew ? { from: current, to: current + 1 } : null,
     level: { level, xpIntoLevel, xpForLevel },
+    levelBefore: before === null ? null : { level: before.character.level, xpIntoLevel: before.character.xpIntoLevel, xpForLevel: before.character.xpForLevel },
     recovered: quest.slot === 'recovery',
   };
 }

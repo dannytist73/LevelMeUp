@@ -118,6 +118,7 @@ const NUMBERS: ClearedNumbers = {
   discipline: true,
   streak: { from: 9, to: 10 },
   level: { level: 6, xpIntoLevel: 87, xpForLevel: 130 },
+  levelBefore: null,
   recovered: false,
 };
 
