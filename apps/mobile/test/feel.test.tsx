@@ -1,5 +1,7 @@
 // M10b: what the player feels (spec decisions 2, 3, 6). The Jest setup mocks src/ui/haptics.ts, so `buzz` here is a
-// jest.fn that records each feel, and fake timers place each one in time.
+// jest.fn that records each feel, and fake timers place each one in time. A stamp's buzz waits on the animation clock
+// (`after`, emulator check), which this file runs on the fake timers: cancelling its shared value clears the wait, as
+// Reanimated calls a cancelled animation back with false. reducedMotion.test checks the real `after`.
 import { ACHIEVEMENTS, ONBOARDING_TEXT } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
@@ -12,11 +14,24 @@ import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { buzz } from '../src/ui/haptics.ts';
 import { HOLD_SETTLE_MS, HoldButton } from '../src/ui/HoldButton.tsx';
-import { MOMENTS, THUD_LAND_MS, THUD_SPRING } from '../src/ui/motion.ts';
+import { MOMENTS, THUD_LAND_MS, THUD_SPRING, after } from '../src/ui/motion.ts';
 import { Thud } from '../src/ui/Thud.tsx';
 import { DAY_TWO_NOW, READY_DRAFT, claimedState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 import { fingerDown, fingerUp, touchTaken } from './support/touch.ts';
+
+jest.mock('../src/ui/motion.ts', () => ({
+  ...jest.requireActual('../src/ui/motion.ts'),
+  after: jest.fn((ms: number, then: () => void) => ({ wait: setTimeout(then, ms) })),
+}));
+jest.mock('react-native-reanimated', () => ({
+  ...jest.requireActual('react-native-reanimated/mock'),
+  useReducedMotion: () => false,
+  cancelAnimation: jest.fn((shared: { value: unknown }) => {
+    const v = shared.value as { wait?: ReturnType<typeof setTimeout> } | null;
+    if (typeof v === 'object' && v !== null && v.wait !== undefined) clearTimeout(v.wait);
+  }),
+}));
 
 const felt = () => (buzz as jest.Mock).mock.calls.map((c) => c[0] as string);
 const wait = async (ms: number) => {
@@ -27,6 +42,7 @@ const wait = async (ms: number) => {
 
 beforeEach(() => {
   (buzz as jest.Mock).mockClear();
+  (after as jest.Mock).mockClear();
   jest.useFakeTimers();
 });
 afterEach(() => jest.useRealTimers());
@@ -39,6 +55,11 @@ describe('a thud buzzes as its stamp lands (M10b spec decision 6)', () => {
     const wd = w0 * Math.sqrt(1 - zeta ** 2);
     const land = ((Math.PI - Math.atan(wd / (zeta * w0))) / wd) * 1000;
     expect(Math.abs(land - THUD_LAND_MS)).toBeLessThan(10);
+  });
+
+  it('waits on the animation clock, its delay and the landing, as the stamp does (emulator check)', async () => {
+    await render(<Thud delay={220} haptic="stamp"><Text>+20</Text></Thud>);
+    expect((after as jest.Mock).mock.calls.map((c) => c[0])).toEqual([220 + THUD_LAND_MS]);
   });
 
   it('once, its delay and the landing after it appears', async () => {

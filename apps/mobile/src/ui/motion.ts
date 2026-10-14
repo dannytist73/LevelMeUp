@@ -1,8 +1,10 @@
 // M10a: the motion rule's numbers (visual spec §3; spec 2026-10-14-m10a-motion-design.md) and the pure parts of the
 // motion pieces. Every timing, spring, delay and sequence runs even when the phone asks for reduced motion
 // (`ReduceMotion.Never`, plan decision 1, review): each piece picks its own reduced path (a fade), so Reanimated must
-// not skip that fade to its end, nor a delay that staggers it. M10b: the living Shadow's numbers, and `forever` for its loops.
-import { Easing, ReduceMotion, withDelay, withRepeat } from 'react-native-reanimated';
+// not skip that fade to its end, nor a delay that staggers it. M10b: the living Shadow's numbers, `forever` for its loops,
+// and `after` for a buzz that lands with a stamp.
+import { Easing, ReduceMotion, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 export const SLAM_MS = 180;
 export const SLAM_PX = 16;
@@ -44,6 +46,19 @@ export function delayed(ms: number, animation: number): number {
 /** A loop that holds even when the phone asks for reduced motion (M10b, as `delayed`): the Shadow picks its own reduced path. */
 export function forever(animation: number, reverse: boolean): number {
   return withRepeat(animation, -1, reverse, undefined, ReduceMotion.Never);
+}
+
+/**
+ * Waits `ms` on the animation clock, then calls `then` on the JS thread; never once cancelled (Reanimated calls a
+ * cancelled animation back with `finished` false). M10b: a stamp's buzz waits on the clock its stamp moves on. A JS
+ * timer starts as the screen is made, before Android has drawn it and started the stamp, and came about 0.1 s early
+ * in the production bundle (emulator check).
+ */
+export function after(ms: number, then: () => void): number {
+  return delayed(ms, withTiming(1, { duration: 0, reduceMotion: ReduceMotion.Never }, (finished) => {
+    'worklet';
+    if (finished) scheduleOnRN(then);
+  }));
 }
 
 /** When each part of a moment starts, in ms from the screen opening (spec decision 4). */

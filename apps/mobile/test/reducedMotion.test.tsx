@@ -9,7 +9,7 @@ import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
-import { CREEP_TO } from '../src/ui/motion.ts';
+import { CREEP_TO, after } from '../src/ui/motion.ts';
 import { ShadowArt } from '../src/ui/ShadowArt.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { DAY_TWO_NOW, claimedState } from './support/fixtures.ts';
@@ -101,5 +101,26 @@ describe("the Shadow's creep (M10a decision 4; emulator check)", () => {
     expect(calls(withTiming).filter((c) => c[0] === CREEP_TO)).toEqual([]);
     await fireEvent(screen.getByTestId('shadow-art', hidden), 'load');
     expect(calls(withTiming).filter((c) => c[0] === CREEP_TO)).toHaveLength(1);
+  });
+});
+
+describe("a buzz's wait runs on the animation clock (M10b, emulator check)", () => {
+  it('waits on the animation clock, whatever the phone asks, then calls back on the JS thread, never once cancelled', async () => {
+    const then = jest.fn();
+    let finish: ((finished: boolean) => void) | undefined;
+    (withTiming as jest.Mock).mockImplementationOnce((to: number, _config: unknown, callback: (finished: boolean) => void) => {
+      finish = callback;
+      return to;
+    });
+    after(320, then);
+    expect(calls(withDelay).at(-1)?.[0]).toBe(320);
+    expect(calls(withDelay).at(-1)?.[2]).toBe(ReduceMotion.Never);
+    expect((calls(withTiming).at(-1)?.[1] as { reduceMotion?: unknown }).reduceMotion).toBe(ReduceMotion.Never);
+    finish!(false); // Reanimated calls a cancelled animation back with false: leaving the screen
+    await Promise.resolve();
+    expect(then).not.toHaveBeenCalled();
+    finish!(true);
+    await Promise.resolve(); // scheduleOnRN hands it to the JS thread
+    expect(then).toHaveBeenCalledTimes(1);
   });
 });

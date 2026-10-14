@@ -1,15 +1,15 @@
 // Stamps thud down (visual spec §3: scale 1.3 to 1) on a stiff spring that overshoots once. It wraps the stamp, so the
 // stamp keeps its own rotation. `still` shows the child as it is (Today's streak until it grows). With reduced motion,
-// a fade. M10b: `haptic` buzzes as the stamp lands (THUD_LAND_MS after its delay), the same with reduced motion, and
-// never for a still piece (spec decision 6).
+// a fade. M10b: `haptic` buzzes as the stamp lands (THUD_LAND_MS after its delay, on the animation clock), the same
+// with reduced motion, and never for a still piece (spec decision 6).
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { buzz } from './haptics.ts';
 import type { Feel } from './haptics.ts';
-import { FADE_MS, THUD_FADE_MS, THUD_FROM, THUD_LAND_MS, THUD_SPRING, delayed, timing } from './motion.ts';
+import { FADE_MS, THUD_FADE_MS, THUD_FROM, THUD_LAND_MS, THUD_SPRING, after, delayed, timing } from './motion.ts';
 import { useReduce } from './useMotion.ts';
 
 export function Thud({ children, delay = 0, still = false, style, testID = 'thud', reduceMotion, haptic }: {
@@ -25,16 +25,19 @@ export function Thud({ children, delay = 0, still = false, style, testID = 'thud
   const reduce = useReduce(reduceMotion);
   const scale = useSharedValue(THUD_FROM);
   const opacity = useSharedValue(0);
+  const landing = useSharedValue(0);
   useEffect(() => {
     if (still) return;
     opacity.value = delayed(delay, withTiming(1, timing(reduce ? FADE_MS : THUD_FADE_MS)));
     if (!reduce) scale.value = delayed(delay, withSpring(1, THUD_SPRING));
   }, [still, reduce, delay, opacity, scale]);
-  // Its own effect (plan decision 4): only these three restart it, and leaving the screen first cancels it.
+  // Its own effect (plan decision 4): only these three restart it, and leaving the screen first cancels it. The wait runs
+  // on the animation clock, so the buzz lands with the stamp however long the screen takes to draw (emulator check).
+  // `landing` stays out of the deps: it never changes on the phone, and Reanimated's Jest mock makes a new one each render.
   useEffect(() => {
     if (still || haptic === undefined) return;
-    const landing = setTimeout(() => buzz(haptic), delay + THUD_LAND_MS);
-    return () => clearTimeout(landing);
+    landing.value = after(delay + THUD_LAND_MS, () => buzz(haptic));
+    return () => cancelAnimation(landing);
   }, [still, haptic, delay]);
   const moving = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
   const fading = useAnimatedStyle(() => ({ opacity: opacity.value }));
