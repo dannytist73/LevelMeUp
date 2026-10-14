@@ -3,10 +3,13 @@
 // each piece starts, its reduced-motion path and its accessibility, not frames. Starting values are checked on the
 // pieces alone; on a screen, a re-render after mount would show the mock's end values, so screens check only that the
 // motion is there.
+import { render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
 import {
   FILL_MS, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, SLAM_MS, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments, inkDrops,
 } from '../src/ui/motion.ts';
-import type { BarPoint } from '../src/ui/motion.ts';
+import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
+import { useCountUp, useGrowth } from '../src/ui/useMotion.ts';
 
 const at = (level: number, value: number, max = 130): BarPoint => ({ level, value, max });
 
@@ -48,5 +51,36 @@ describe('the motion numbers (M10a decisions 3–5)', () => {
       MOMENTS.shadow.stamp + THUD_SETTLE_MS,
     ];
     expect(ends.filter((ms) => ms >= 2_000)).toEqual([]);
+  });
+});
+
+function Growth({ value }: { value: number | null }) {
+  return <Text>{`grew ${useGrowth(value)}`}</Text>;
+}
+
+function Count({ plan, to, reduce }: { plan: CountPlan | null; to: number; reduce?: boolean }) {
+  return <Text>{`n ${useCountUp(plan, to, reduce)}`}</Text>;
+}
+
+describe('the motion hooks (M10a)', () => {
+  it('counts only rises after the first value, so opening a screen never animates', async () => {
+    const view = await render(<Growth value={null} />);
+    await view.rerender(<Growth value={4} />);
+    expect(screen.getByText('grew 0')).toBeTruthy();
+    await view.rerender(<Growth value={5} />);
+    expect(screen.getByText('grew 1')).toBeTruthy();
+    await view.rerender(<Growth value={3} />);
+    expect(screen.getByText('grew 1')).toBeTruthy();
+    await view.rerender(<Growth value={4} />);
+    expect(screen.getByText('grew 2')).toBeTruthy();
+  });
+
+  it('a count starts at its plan (the phone counts up from there); with reduced motion or no plan, the end at once', async () => {
+    await render(<Count plan={{ from: 67, delay: 600, duration: FILL_MS }} to={87} />);
+    expect(screen.getByText('n 67')).toBeTruthy();
+    await render(<Count plan={{ from: 67, delay: 600, duration: FILL_MS }} to={87} reduce />);
+    expect(screen.getByText('n 87')).toBeTruthy();
+    await render(<Count plan={null} to={87} />);
+    expect(screen.getByText('n 87')).toBeTruthy();
   });
 });
