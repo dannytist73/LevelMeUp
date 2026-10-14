@@ -3,6 +3,9 @@
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 // Reanimated's mock lacks useReducedMotion; tests pass reduceMotion explicitly where it matters.
 jest.mock('react-native-reanimated', () => ({ ...require('react-native-reanimated/mock'), useReducedMotion: () => false }));
+// M10b (plan decision 2): no test sounds a haptic. Screens' buzzes are watched through this mock; test/haptics.test.ts
+// reaches the real module with jest.requireActual.
+jest.mock('../../src/ui/haptics.ts', () => ({ ...jest.requireActual('../../src/ui/haptics.ts'), buzz: jest.fn(), setBuzzing: jest.fn() }));
 
 const fail = (kind: string) => (...args: unknown[]) => {
   throw new Error(`console.${kind} during a test: ${args.map(String).join(' ')}`);
