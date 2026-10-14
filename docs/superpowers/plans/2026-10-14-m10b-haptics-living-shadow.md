@@ -1702,6 +1702,9 @@ verify").
 
 - **The development build:** EAS `6fa0bb39-7b49-4c08-9036-3d647f579513` (0.4.0, versionCode 4), installed over 998b72c0.
   Vera kept.
+- **The preview APK** (the owner's yes, 2026-10-15): EAS `c3633921-8c99-404c-a4e4-9bcc39cbbf56` (0.4.0, versionCode 4,
+  from a8688c1), https://expo.dev/artifacts/eas/eCz9h2pozxdRQADTQ5IEPIVVj6sXpQaGZS_qNc5jubs.apk. Not installed on the
+  emulator (it would replace the development build).
 - **Rows 1–9 pass.** Two of them only after a fix the unit tests couldn't see:
   - **Row 1:** the review's scroll fix, a 100 ms timer, still ticked. React Native holds a press's end back until 130 ms
     after it began, and RNTL's `fireEvent(…, 'pressIn')` skips that logic. Now Pressable's press delay, tested through

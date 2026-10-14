@@ -523,7 +523,9 @@ Rows 1–9 on the emulator with the development build `6fa0bb39` (0.4.0, version
 can't be felt, so each buzz is read from the development log (`adb logcat -v time -s ReactNativeJS:I`, lines
 `[haptic] …`) and from Android's own list of vibrations (`adb shell dumpsys vibrator_manager`, "Recent vibrations"),
 beside screen recordings stamped with the device clock (`screenrecord --bugreport`). Rows 10–15 on the Find X9 with
-the 0.4.0 preview APK (the owner). "Remove animations" as in M10a (restart the app after changing it).
+the 0.4.0 preview APK (the owner): EAS build `c3633921`,
+https://expo.dev/artifacts/eas/eCz9h2pozxdRQADTQ5IEPIVVj6sXpQaGZS_qNc5jubs.apk. "Remove animations" as in M10a (restart
+the app after changing it).
 
 | # | Check | Result |
 |---|---|---|
