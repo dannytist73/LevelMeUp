@@ -1,7 +1,8 @@
 // Developer screen (development builds only; M10a plan decision 7): the motion bench. Every piece replays on demand,
 // with a switch that forces reduced motion on the pieces. The moments open as the player sees them: Quest cleared here,
 // the level-up and the achievement in the real modal. Those follow the phone's own "Remove animations"; restart the app
-// after changing it, since Reanimated reads it at launch.
+// after changing it, since Reanimated reads it at launch. M10b: a Haptics section (each feel, a hold button) and a way to the
+// living Shadow.
 import { ACHIEVEMENTS } from '@levelmeup/content';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -9,10 +10,13 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ClearedNumbers } from '../../quest/cleared.ts';
 import { Cleared } from '../../screens/quest/Cleared.tsx';
-import { useGameStore } from '../../state/store.ts';
+import { useGame, useGameStore } from '../../state/store.ts';
 import { colors, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { FadeIn } from '../../ui/FadeIn.tsx';
+import { FEELS, buzz } from '../../ui/haptics.ts';
+import type { Feel } from '../../ui/haptics.ts';
+import { HoldButton } from '../../ui/HoldButton.tsx';
 import { InkBurst } from '../../ui/InkBurst.tsx';
 import { countPlan } from '../../ui/motion.ts';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
@@ -42,6 +46,7 @@ function Counted({ reduce }: { reduce: boolean }) {
 export default function MotionBench() {
   const insets = useSafeAreaInsets();
   const store = useGameStore();
+  const haptics = useGame((s) => s.haptics);
   const [replay, setReplay] = useState(0);
   const [reduce, setReduce] = useState(false);
   const [cleared, setCleared] = useState<ClearedNumbers | null>(null);
@@ -97,6 +102,18 @@ export default function MotionBench() {
       <Button label="Quest cleared, with a level-up" variant="secondary" onPress={() => setCleared(LEVELLED)} />
       <Button label="Level up to 5" variant="secondary" onPress={() => store.setState({ celebrations: [{ kind: 'level', level: 5, from: 4 }] })} />
       <Button label="An achievement" variant="secondary" onPress={() => store.setState({ celebrations: [{ kind: 'achievement', id: ACHIEVEMENTS[0]!.id }] })} />
+
+      <SectionTitle title="Haptics" />
+      <Small>
+        {haptics
+          ? 'Each button plays its feel; a development build logs it as [haptic] and the feel (adb logcat -s ReactNativeJS).'
+          : 'Haptics are off in Settings → Game, so these stay quiet.'}
+      </Small>
+      {(Object.keys(FEELS) as Feel[]).map((feel) => (
+        <Button key={feel} label={`Feel: ${feel}`} variant="secondary" onPress={() => buzz(feel)} />
+      ))}
+      <HoldButton label="Hold to feel" tapLabel="Tap to feel" confirmLabel="Feel the sworn click" onDone={() => {}} />
+      <Button label="The living Shadow (Shadow preview)" variant="secondary" onPress={() => router.push('/dev/shadow')} />
     </ScreenScroll>
   );
 }
