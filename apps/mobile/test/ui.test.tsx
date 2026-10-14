@@ -22,6 +22,7 @@ import { QuestArt } from '../src/ui/QuestArt.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { TextField } from '../src/ui/TextField.tsx';
 import { TimeStepper } from '../src/ui/TimeStepper.tsx';
+import { fingerDown, fingerUp } from './support/touch.ts';
 
 const flat = (style: unknown): Record<string, unknown> => (StyleSheet.flatten(style as never) ?? {}) as Record<string, unknown>;
 
@@ -319,12 +320,12 @@ describe('HoldButton', () => {
     const onDone = jest.fn();
     await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
     const button = screen.getByRole('button', { name: 'Hold to swear' });
-    await fireEvent(button, 'pressIn');
+    await fingerDown(button);
     await act(async () => { jest.advanceTimersByTime(1_000); });
-    await fireEvent(button, 'pressOut');
+    await fingerUp(button);
     await act(async () => { jest.advanceTimersByTime(3_000); });
     expect(onDone).not.toHaveBeenCalled();
-    await fireEvent(button, 'pressIn');
+    await fingerDown(button);
     await act(async () => { jest.advanceTimersByTime(HOLD_SETTLE_MS + 2_000 - 1); });
     expect(onDone).not.toHaveBeenCalled();
     await act(async () => { jest.advanceTimersByTime(1); });

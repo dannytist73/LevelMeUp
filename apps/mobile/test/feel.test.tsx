@@ -16,6 +16,7 @@ import { MOMENTS, THUD_LAND_MS, THUD_SPRING } from '../src/ui/motion.ts';
 import { Thud } from '../src/ui/Thud.tsx';
 import { DAY_TWO_NOW, READY_DRAFT, claimedState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+import { fingerDown, fingerUp, touchTaken } from './support/touch.ts';
 
 const felt = () => (buzz as jest.Mock).mock.calls.map((c) => c[0] as string);
 const wait = async (ms: number) => {
@@ -72,15 +73,15 @@ describe('the hold buttons (M10b spec decision 6)', () => {
     const onDone = jest.fn();
     await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
     const button = screen.getByRole('button', { name: 'Hold to swear' });
-    await fireEvent(button, 'pressIn');
+    await fingerDown(button);
     expect(felt()).toEqual([]);
     await wait(HOLD_SETTLE_MS);
     expect(felt()).toEqual(['tick']);
     await wait(1_000);
-    await fireEvent(button, 'pressOut');
+    await fingerUp(button);
     await wait(3_000);
     expect(felt()).toEqual(['tick']);
-    await fireEvent(button, 'pressIn');
+    await fingerDown(button);
     await wait(HOLD_SETTLE_MS + 2_000);
     expect(felt()).toEqual(['tick', 'tick', 'sworn']);
     expect(onDone).toHaveBeenCalledTimes(1);
@@ -92,11 +93,23 @@ describe('the hold buttons (M10b spec decision 6)', () => {
     const onDone = jest.fn();
     await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
     const button = screen.getByRole('button', { name: 'Hold to swear' });
-    await fireEvent(button, 'pressIn');
+    await fingerDown(button);
     await wait(HOLD_SETTLE_MS - 1);
-    await fireEvent(button, 'pressOut'); // the list takes the touch: React Native lets go of the press
+    await touchTaken(button); // the list takes the touch
     await wait(3_000);
     expect(felt()).toEqual([]);
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('a quick tap: one tick, nothing sworn (React Native starts a press that ends before it settles)', async () => {
+    const onDone = jest.fn();
+    await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
+    const button = screen.getByRole('button', { name: 'Hold to swear' });
+    await fingerDown(button);
+    await wait(40);
+    await fingerUp(button);
+    await wait(3_000);
+    expect(felt()).toEqual(['tick']);
     expect(onDone).not.toHaveBeenCalled();
   });
 

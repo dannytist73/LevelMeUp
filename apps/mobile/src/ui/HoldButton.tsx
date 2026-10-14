@@ -22,7 +22,9 @@ export type HoldButtonProps = {
 
 /**
  * The hold starts once the press has settled (M10b review), as Android's own tap timeout does in a scrolling list: a
- * scroll that starts on the button takes the touch before then, so it never ticks or starts the fill.
+ * scroll that starts on the button takes the touch before then, so it never ticks or starts the fill. It is Pressable's
+ * press delay: a timer of our own can't do it, because React Native holds a press's end back until 130 ms after it
+ * began, so a scroll's end came after the timer (emulator check).
  */
 export const HOLD_SETTLE_MS = 100;
 
@@ -50,16 +52,14 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
   }
 
   const start = () => {
+    buzz('tick');
+    // The fill is how long to keep holding, not decoration: it runs even with reduced motion on (M5 review).
+    fill.value = withTiming(1, { duration: holdMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
     timer.current = setTimeout(() => {
-      buzz('tick');
-      // The fill is how long to keep holding, not decoration: it runs even with reduced motion on (M5 review).
-      fill.value = withTiming(1, { duration: holdMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
-      timer.current = setTimeout(() => {
-        timer.current = null;
-        buzz('sworn');
-        onDone();
-      }, holdMs);
-    }, HOLD_SETTLE_MS);
+      timer.current = null;
+      buzz('sworn');
+      onDone();
+    }, holdMs);
   };
   const stop = () => {
     if (timer.current !== null) clearTimeout(timer.current);
@@ -74,6 +74,7 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
       disabled={disabled}
+      unstable_pressDelay={HOLD_SETTLE_MS}
       onPressIn={start}
       onPressOut={stop}
       style={{ minHeight: 56, paddingHorizontal: 16, justifyContent: 'center', borderWidth: 2, borderColor: colors.chalk, backgroundColor: colors.seal, opacity: disabled ? 0.45 : 1 }}
