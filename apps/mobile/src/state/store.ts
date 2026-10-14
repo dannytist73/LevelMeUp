@@ -707,8 +707,13 @@ export function GameProvider({ store, children }: { store: StoreApi<GameState>; 
   return createElement(GameContext.Provider, { value: store }, children);
 }
 
-export function useGame<T>(selector: (state: GameState) => T): T {
+/** The store itself, for the developer screens (M10a's motion bench queues a sample celebration). */
+export function useGameStore(): StoreApi<GameState> {
   const store = useContext(GameContext);
   if (store === null) throw new Error('useGame needs a GameProvider');
-  return useStore(store, selector);
+  return store;
+}
+
+export function useGame<T>(selector: (state: GameState) => T): T {
+  return useStore(useGameStore(), selector);
 }

@@ -77,6 +77,7 @@ export default function Developer() {
       <SectionTitle title="Checks" />
       <Button label="Self-check" variant="secondary" onPress={() => router.push('/dev/selfcheck')} />
       <Button label="Component kit" variant="secondary" onPress={() => router.push('/dev/kit')} />
+      <Button label="Motion bench" variant="secondary" onPress={() => router.push('/dev/motion')} />
       <Button label="Workout preview" variant="secondary" onPress={() => router.push('/dev/workout')} />
       <Button label="Reader sample" variant="secondary" onPress={() => router.push('/dev/reading')} />
       <Button label="Character preview" variant="secondary" onPress={() => router.push('/dev/character')} />
