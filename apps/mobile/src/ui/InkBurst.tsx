@@ -1,6 +1,6 @@
 // The ink splash (M10a; the video's confetti in the ink-panel look): drops fly out from behind the centre of what it
 // wraps and fade, once. Positions come from a fixed table (`inkDrops`). Decoration only: no touches, no screen reader.
-// With reduced motion it draws nothing.
+// With reduced motion, or `still` (a reopened Quest cleared), it draws nothing.
 import type { ReactNode } from 'react';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -27,14 +27,15 @@ function Drop({ drop, progress }: { drop: InkDrop; progress: SharedValue<number>
   );
 }
 
-export function InkBurst({ children, count = 12, radius = 80, delay = 0, reduceMotion }: {
+export function InkBurst({ children, count = 12, radius = 80, delay = 0, still = false, reduceMotion }: {
   children: ReactNode;
   count?: number;
   radius?: number;
   delay?: number;
+  still?: boolean;
   reduceMotion?: boolean;
 }) {
-  const reduce = useReduce(reduceMotion);
+  const reduce = useReduce(reduceMotion) || still;
   const progress = useSharedValue(0);
   // Worked out once: new drops on each render would restart every drop's animated style (review).
   const drops = useMemo(() => inkDrops(count, radius), [count, radius]);

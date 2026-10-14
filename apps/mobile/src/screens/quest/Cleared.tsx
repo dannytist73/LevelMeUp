@@ -2,7 +2,7 @@
 // the XP bar, an optional rating, Continue, and Undo while the day is open. M6b: after "Too hard", the offer to step the
 // exercise down a rung; "I felt pain" stays reachable. M10a: the moment moves (spec decision 4): the lines burst, the title
 // slams in, the XP stamp thuds in a splash of ink, the panel slams in and its rank stamps thud, then the bar fills from
-// where it was while the level line counts up.
+// where it was while the level line counts up. Reopened later (no before), it shows still (the owner, 2026-10-14).
 import { ADJUST_TEXT, PLAY_TEXT, READING_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
@@ -104,27 +104,29 @@ export function Cleared({
   const { level, xpIntoLevel, xpForLevel } = numbers.level;
   const shown: Rating = rating ?? 'right';
   const before = numbers.levelBefore === null ? null : point(numbers.levelBefore);
+  /** Just cleared on this screen: the moment plays. Reopened later, it shows still. */
+  const fresh = before !== null;
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, paddingHorizontal: space.gutter, gap: 22 }}>
       {/* The board's outlined title, shrunk to fit, and the stamp below the line rather than over the words: at the
           largest text size the stamp covered the heading and the title broke mid-word (emulator check, M6a). */}
       <View style={{ alignItems: 'center', gap: 10, paddingTop: 18 }}>
-        <SpeedLines burst />
+        <SpeedLines burst={fresh} />
         <Label style={{ textAlign: 'center' }}>{heading}</Label>
-        <SlamIn style={{ alignSelf: 'stretch' }}>
+        <SlamIn still={!fresh} style={{ alignSelf: 'stretch' }}>
           <View style={{ transform: [{ rotate: '-4deg' }] }}>
             <OutlinedTitle text={C.title} align="center" />
           </View>
         </SlamIn>
         <Small style={{ textAlign: 'center' }}>{line}</Small>
-        <InkBurst delay={M.stamp}>
-          <Thud delay={M.stamp} testID="xp-stamp-thud">
+        <InkBurst delay={M.stamp} still={!fresh}>
+          <Thud delay={M.stamp} still={!fresh} testID="xp-stamp-thud">
             <XpStamp xp={numbers.xp} size={86} rotate={12} />
           </Thud>
         </InkBurst>
       </View>
 
-      <SlamIn delay={M.panel}>
+      <SlamIn delay={M.panel} still={!fresh}>
         <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
           {numbers.statUps.map((up) => (
             <View key={up.stat} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: 2, borderColor: colors.ink }}>
@@ -132,7 +134,7 @@ export function Cleared({
                 <Label tone="sealText">{C.statUp}</Label>
                 <Heading tone="ink">{`${STAT_NAMES[up.stat].toUpperCase()} ${up.from} → ${up.to}`}</Heading>
               </View>
-              <Thud delay={M.rank} testID="rank-thud">
+              <Thud delay={M.rank} still={!fresh} testID="rank-thud">
                 <View
                   accessible
                   accessibilityLabel={`Rank ${up.rank}`}

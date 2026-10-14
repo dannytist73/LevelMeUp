@@ -241,6 +241,20 @@ describe('Quest cleared moves (M10a decision 4)', () => {
     expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
   });
 
+  it('reopened (no before), the moment stays still: no burst, no ink, nothing slams or thuds (the owner, 2026-10-14)', async () => {
+    await cleared({ ...NUMBERS, levelBefore: null });
+    const lines = flat(screen.getByTestId('speed-lines', hidden).props.style);
+    expect([lines.transform, lines.opacity]).toEqual([undefined, undefined]);
+    expect(screen.queryAllByTestId('ink-drop', hidden)).toEqual([]);
+    for (const id of ['slam-in', 'xp-stamp-thud', 'rank-thud']) {
+      for (const el of screen.getAllByTestId(id)) {
+        const style = flat(el.props.style);
+        expect([id, style.transform, style.opacity]).toEqual([id, undefined, undefined]);
+      }
+    }
+    expect(screen.getByLabelText('+20 XP')).toBeTruthy();
+  });
+
   it('buttons work from the first frame: nothing waits for the motion', async () => {
     const onContinue = jest.fn();
     await render(

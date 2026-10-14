@@ -1,17 +1,19 @@
 // Panels slam in (visual spec §3, about 180 ms); with the phone's reduce-motion setting, they fade instead. M10a: a
 // delay, so a moment can stagger its panels; a wrapper style, for layouts that stretch the panel; a fade that runs even
-// when the phone asks for reduced motion (plan decision 1).
+// when the phone asks for reduced motion (plan decision 1); `still` shows the panel as it is (a reopened Quest cleared).
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { FADE_MS, SLAM_MS, SLAM_PX, delayed, timing } from './motion.ts';
 import { useReduce } from './useMotion.ts';
 
-export function SlamIn({ children, delay = 0, style, reduceMotion }: {
+export function SlamIn({ children, delay = 0, still = false, style, reduceMotion }: {
   children: ReactNode;
   /** Milliseconds before it starts (M10a). */
   delay?: number;
+  still?: boolean;
   style?: StyleProp<ViewStyle>;
   /** Overrides the phone's setting (tests, the motion bench). */
   reduceMotion?: boolean;
@@ -19,13 +21,14 @@ export function SlamIn({ children, delay = 0, style, reduceMotion }: {
   const reduce = useReduce(reduceMotion);
   const progress = useSharedValue(0);
   useEffect(() => {
-    progress.value = delayed(delay, withTiming(1, timing(reduce ? FADE_MS : SLAM_MS)));
-  }, [progress, delay, reduce]);
+    if (!still) progress.value = delayed(delay, withTiming(1, timing(reduce ? FADE_MS : SLAM_MS)));
+  }, [still, progress, delay, reduce]);
   const moving = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [{ translateY: (1 - progress.value) * -SLAM_PX }, { scale: 1 + (1 - progress.value) * 0.04 }],
   }));
   const fading = useAnimatedStyle(() => ({ opacity: progress.value }));
+  if (still) return <View testID="slam-in" style={style}>{children}</View>;
   return (
     <Animated.View testID="slam-in" style={[style, reduce ? fading : moving]}>
       {children}
