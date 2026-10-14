@@ -4,7 +4,7 @@
 // says so and never asks again. The Shadow's reminder has no switch: it belongs to the Pact (decision 4).
 import { NOTIFY_TEXT, fillText } from '@levelmeup/content';
 import { useState } from 'react';
-import { AccessibilityInfo, Pressable, Switch, View } from 'react-native';
+import { AccessibilityInfo, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clockLabel } from '../lib/dates.ts';
 import { shadowClock } from '../notify/plan.ts';
@@ -16,6 +16,7 @@ import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
 import { TimeStepper } from '../ui/TimeStepper.tsx';
+import { Toggle } from '../ui/Toggle.tsx';
 
 const T = NOTIFY_TEXT;
 type Kind = 'briefing' | 'evening' | 'timers';
@@ -24,30 +25,6 @@ type Kind = 'briefing' | 'evening' | 'timers';
 function turned(s: NotifySettings, kind: Kind, on: boolean): NotifySettings {
   const next = kind === 'timers' ? { ...s, timers: on } : { ...s, [kind]: { ...s[kind], on } };
   return on ? { ...next, optedIn: true } : next;
-}
-
-type ToggleProps = { label: string; line: string; value: boolean; disabled: boolean; onChange: (on: boolean) => void };
-
-function Toggle({ label, line, value, disabled, onChange }: ToggleProps) {
-  return (
-    <View style={{ gap: 6 }}>
-      {/* The whole row is the switch: Android's own is 27 dp tall, under the 44 dp target (emulator, M7d row 10). */}
-      <Pressable
-        accessibilityRole="switch"
-        accessibilityLabel={label}
-        accessibilityState={{ checked: value, disabled }}
-        disabled={disabled}
-        onPress={() => onChange(!value)}
-        style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
-      >
-        <Body weight="bold" style={{ flexShrink: 1 }}>{label}</Body>
-        <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-          <Switch value={value} disabled={disabled} trackColor={{ false: colors.line, true: colors.ember }} thumbColor={colors.chalk} />
-        </View>
-      </Pressable>
-      <Small>{line}</Small>
-    </View>
-  );
 }
 
 export type NotificationsProps = { onBack: () => void; onOpenSettings: () => void };

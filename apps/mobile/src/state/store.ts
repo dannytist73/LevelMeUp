@@ -39,6 +39,7 @@ import type { TimerState } from '../quest/timer.ts';
 import { syncOnce } from '../sync/engine.ts';
 import type { Notice, SyncOutcome } from '../sync/engine.ts';
 import { makeScheduler } from '../sync/scheduler.ts';
+import { setBuzzing } from '../ui/haptics.ts';
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 export type NewEvent = DistributiveOmit<PhoneEvent, 'id'>;
@@ -85,6 +86,8 @@ export const SHADOW_KEY = 'lmu.shadow-seen';
 export const TRIAL_KEY = 'lmu.trial';
 /** M9a: the portrait's figure the player chose (decision 5). */
 export const PORTRAIT_KEY = 'lmu.portrait';
+/** M10b: the Haptics switch, kept as 'on' or 'off' (spec decision 4); anything else, or nothing, counts as on. */
+export const HAPTICS_KEY = 'lmu.haptics';
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
 /** A level-up carries the level it came from: one sync can cross more than one (the portrait's tier, M9a review). */
@@ -139,6 +142,8 @@ export type GameState = {
   planned: readonly PlannedNote[];
   /** M9a: the portrait's figure the player chose, kept on this phone (decision 5); null before a choice. */
   portrait: Figure | null;
+  /** M10b: the Haptics switch (Settings → Game), kept on this phone; on unless turned off. */
+  haptics: boolean;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -151,6 +156,8 @@ export type GameState = {
   saveVow: (text: string) => Promise<void>;
   /** M9a: keeps the portrait's figure on this phone; shown at once, even if the phone can't store it. */
   setPortrait: (figure: Figure) => Promise<void>;
+  /** M10b: keeps the switch on the phone; it applies at once, even if the phone can't store it. */
+  setHaptics: (on: boolean) => Promise<void>;
   dismissTrainingNotice: () => Promise<void>;
   answerLater: (checkinId: number) => void;
   /** The app came back to the foreground: a check-in put off with "Later" shows again. */
@@ -373,6 +380,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(TRIAL_KEY);
       await deps.kv.removeItem(NOTIFY_KEY);
       await deps.kv.removeItem(PORTRAIT_KEY);
+      // The Haptics switch stays: it is the phone's, not the character's (M10b plan decision 3).
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
@@ -469,9 +477,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       permission: 'unknown',
       planned: [],
       portrait: null,
+      haptics: true,
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -482,8 +491,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(NOTIFY_KEY).catch(() => null),
           deps.notes.permission().catch((): Permission => 'unknown'),
           deps.kv.getItem(PORTRAIT_KEY).catch(() => null),
+          deps.kv.getItem(HAPTICS_KEY).catch(() => null),
         ]);
-        set({ notify: readNotify(notifyText), permission });
+        const haptics = hapticsText !== 'off';
+        setBuzzing(haptics);
+        set({ notify: readNotify(notifyText), permission, haptics });
         notifyLoaded = true;
         await refresh();
         confirmedLevel = get().cached?.state.character.level ?? null;
@@ -575,6 +587,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       setPortrait: async (figure) => {
         set({ portrait: figure });
         await deps.kv.setItem(PORTRAIT_KEY, figure).catch(() => {});
+      },
+
+      setHaptics: async (on) => {
+        setBuzzing(on);
+        set({ haptics: on });
+        await deps.kv.setItem(HAPTICS_KEY, on ? 'on' : 'off').catch(() => {});
       },
 
       dismissTrainingNotice: async () => {

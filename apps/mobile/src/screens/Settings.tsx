@@ -1,7 +1,8 @@
 // Settings (spec §1.3, S1 board): the account (a guest, or saved with Google since M5), sync status, the
 // not-medical-advice line and the version. M6c: Training under Game. M7b: Your game (voice, the day's end, minutes,
 // difficulty), Delete my character, and the sign-in-lost card. M7c: the Accountability Pact under Game. M7d: the
-// Notifications section (S1). M9b: About opens Your data and privacy; the update card in Sync.
+// Notifications section (S1). M9b: About opens Your data and privacy; the update card in Sync. M10b: the Haptics switch
+// under Your game.
 import { ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PRIVACY_TEXT, SETTINGS_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -16,6 +17,7 @@ import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
+import { Toggle } from '../ui/Toggle.tsx';
 import { SignInLost } from './SignInLost.tsx';
 import { lastSynced, syncMark } from './syncLine.ts';
 import { UpdateNeeded } from './UpdateNeeded.tsx';
@@ -37,6 +39,8 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
   const view = useGame((s) => s.view);
   const notify = useGame((s) => s.notify);
   const permission = useGame((s) => s.permission);
+  const haptics = useGame((s) => s.haptics);
+  const setHaptics = useGame((s) => s.setHaptics);
   const slotLine = (slot: { on: boolean; minutes: number }) => notifyLine(slot, permission);
   const account = useGame((s) => s.account);
   const phase = useGame((s) => s.phase);
@@ -100,6 +104,8 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
       <View style={{ gap: 12 }}>
         <SectionTitle title="Game" />
         <Button label={SETTINGS_TEXT.game.open} variant="secondary" onPress={onGame} />
+        {/* M10b: kept on the phone and applied at once, so not inside Your game, whose Save goes to the server. */}
+        <Toggle label={SETTINGS_TEXT.haptics.label} line={SETTINGS_TEXT.haptics.line} value={haptics} onChange={(on) => void setHaptics(on)} />
         <Button label={ADJUST_TEXT.training.open} variant="secondary" onPress={onTraining} />
         {view !== null && onPact !== undefined && (
           <>

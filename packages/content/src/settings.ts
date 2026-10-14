@@ -1,5 +1,5 @@
 // Settings (spec §1.3; M7b): Your game (voice, the day's end, minutes, difficulty) and deleting the character. Plain
-// words; deleting says exactly what goes, and that a Google sign-in stays (M3 owner decision).
+// words; deleting says exactly what goes, and that a Google sign-in stays (M3 owner decision). M10b: the Haptics switch.
 
 export const SETTINGS_TEXT = {
   game: {
@@ -15,6 +15,10 @@ export const SETTINGS_TEXT = {
       'The voice changes at once. The rest applies from your next quest day; a big change to when your day ends arrives ' +
       'over a few days.',
     save: 'Save',
+  },
+  haptics: {
+    label: 'Haptics',
+    line: 'A click you can feel when a stamp lands or a vow is sworn.',
   },
   account: {
     delete: 'Delete my character',

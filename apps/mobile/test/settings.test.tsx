@@ -144,3 +144,26 @@ describe('Settings → Notifications section (M7d, S1 board)', () => {
     expect(screen.getByText(`${NOTIFY_TEXT.briefing} · ${NOTIFY_TEXT.blocked}`)).toBeTruthy();
   });
 });
+
+describe('Settings → Game → Haptics (M10b decision 4)', () => {
+  const settings = () => <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} version="0.4.0" deviceZone="Asia/Manila" />;
+
+  it('a switch under Your game, on by default, with its line; flipping it applies at once', async () => {
+    const store = testStore({ view: project(adjustState(), []) });
+    await render(withStore(store, settings()));
+    const toggle = screen.getByRole('switch', { name: SETTINGS_TEXT.haptics.label });
+    expect(toggle.props.accessibilityState).toMatchObject({ checked: true });
+    expect(screen.getByText(SETTINGS_TEXT.haptics.line)).toBeTruthy();
+    await fireEvent.press(toggle);
+    expect(store.getState().setHaptics).toHaveBeenCalledWith(false);
+  });
+
+  it('kept off, it shows off, and turns back on', async () => {
+    const store = testStore({ view: project(adjustState(), []), haptics: false });
+    await render(withStore(store, settings()));
+    const toggle = screen.getByRole('switch', { name: SETTINGS_TEXT.haptics.label });
+    expect(toggle.props.accessibilityState).toMatchObject({ checked: false });
+    await fireEvent.press(toggle);
+    expect(store.getState().setHaptics).toHaveBeenCalledWith(true);
+  });
+});

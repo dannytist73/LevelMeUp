@@ -12,9 +12,10 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, HAPTICS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
+import { setBuzzing } from '../src/ui/haptics.ts';
 import { nodeSql } from './support/nodeSql.ts';
 import { DAY_TWO_NOW, READY_DRAFT, REVEAL, adjustState, serverState } from './support/fixtures.ts';
 
@@ -451,6 +452,54 @@ describe('the game store', () => {
     await store.getState().startOver();
     expect(kv.has(PORTRAIT_KEY)).toBe(false);
     expect(store.getState().portrait).toBeNull();
+    store.getState().stop();
+  });
+
+  it('keeps the Haptics switch on the phone, applies it at once, and reads it at boot (M10b decision 4)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    expect(store.getState().haptics).toBe(true);
+    kv.set(HAPTICS_KEY, 'off');
+    await store.getState().boot();
+    expect(store.getState().haptics).toBe(false);
+    expect(setBuzzing).toHaveBeenLastCalledWith(false);
+    await store.getState().setHaptics(true);
+    expect(store.getState().haptics).toBe(true);
+    expect(setBuzzing).toHaveBeenLastCalledWith(true);
+    expect(kv.get(HAPTICS_KEY)).toBe('on');
+    expect(await local.pending(10)).toEqual([]); // the phone's: nothing goes to the server
+    store.getState().stop();
+  });
+
+  it('is on when nothing is kept, or the phone cannot read it (M10b decision 4)', async () => {
+    const { store, local, deps } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    (deps.kv.getItem as jest.Mock).mockImplementation(async (k: string) => {
+      if (k === HAPTICS_KEY) throw new Error('storage');
+      return null;
+    });
+    await store.getState().boot();
+    expect(store.getState().haptics).toBe(true);
+    expect(setBuzzing).toHaveBeenLastCalledWith(true);
+    store.getState().stop();
+  });
+
+  it('a switch the phone cannot store still applies (M10b decision 4)', async () => {
+    const { store, deps } = await setup([ok(SERVER)]);
+    (deps.kv.setItem as jest.Mock).mockRejectedValueOnce(new Error('storage'));
+    await store.getState().setHaptics(false);
+    expect(store.getState().haptics).toBe(false);
+    expect(setBuzzing).toHaveBeenLastCalledWith(false);
+    store.getState().stop();
+  });
+
+  it("deleting the character keeps the switch: it is the phone's (M10b plan decision 3)", async () => {
+    const { store, local, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
+    await local.acknowledge([], [], SERVER, 1);
+    await store.getState().setHaptics(false);
+    await store.getState().startOver();
+    expect(kv.get(HAPTICS_KEY)).toBe('off');
+    expect(store.getState().haptics).toBe(false);
     store.getState().stop();
   });
 
