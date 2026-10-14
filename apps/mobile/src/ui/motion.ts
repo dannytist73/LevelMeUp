@@ -17,6 +17,8 @@ export const RISE_PX = 12;
 export const BURST_MS = 400;
 export const BURST_FROM = 0.6;
 export const INK_MS = 600;
+/** The ink drops start this share of the radius out, just past the stamp's edge, so they show at once (emulator check). */
+export const INK_FROM = 0.6;
 export const FILL_MS = 700;
 export const WRAP_FILL_MS = 450;
 export const FLASH_MS = 120;
@@ -84,7 +86,7 @@ export type InkDrop = { dx: number; dy: number; size: number; tone: InkTone };
 
 const JITTER = [0, 0.31, -0.22, 0.17, -0.35, 0.08, 0.26, -0.12];
 const REACH = [1, 0.62, 0.84, 0.71, 0.93];
-const SIZES = [9, 5, 7, 3, 6, 4];
+const SIZES = [12, 7, 10, 5, 8, 6];
 const TONES: readonly InkTone[] = ['vermilion', 'chalk', 'seal'];
 
 /** The ink splash's drops (spec decision 3, plan decision 3): a fixed table, never random, so every run is the same. */

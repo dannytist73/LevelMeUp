@@ -7,16 +7,20 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { colors } from '../theme/tokens.ts';
-import { INK_MS, delayed, inkDrops, timing } from './motion.ts';
+import { INK_FROM, INK_MS, delayed, inkDrops, timing } from './motion.ts';
 import type { InkDrop } from './motion.ts';
 import { useReduce } from './useMotion.ts';
 
-function Drop({ drop, progress }: { drop: InkDrop; progress: SharedValue<number> }) {
+function Drop({ drop, start, progress }: { drop: InkDrop; start: number; progress: SharedValue<number> }) {
+  // From `start` out to the drop's own reach; whole for half the flight, then fading (emulator check: drops that started
+  // at the centre were hidden by the stamp until they had nearly faded).
+  const from = start / Math.hypot(drop.dx, drop.dy);
   const flying = useAnimatedStyle(() => {
     const p = progress.value;
+    const k = from + (1 - from) * p;
     return {
-      opacity: p === 0 ? 0 : p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85,
-      transform: [{ translateX: drop.dx * p }, { translateY: drop.dy * p }, { scale: 1 - 0.4 * p }],
+      opacity: p === 0 ? 0 : p < 0.1 ? p / 0.1 : p < 0.5 ? 1 : (1 - p) / 0.5,
+      transform: [{ translateX: drop.dx * k }, { translateY: drop.dy * k }, { scale: 1 - 0.4 * p }],
     };
   });
   return (
@@ -49,7 +53,7 @@ export function InkBurst({ children, count = 12, radius = 80, delay = 0, still =
           testID="ink-burst" pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
           style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}
         >
-          {drops.map((drop, i) => <Drop key={i} drop={drop} progress={progress} />)}
+          {drops.map((drop, i) => <Drop key={i} drop={drop} start={INK_FROM * radius} progress={progress} />)}
         </View>
       )}
       {children}

@@ -17,7 +17,7 @@ import { Today } from '../src/screens/Today.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
-  BURST_FROM, FILL_MS, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
+  BURST_FROM, FILL_MS, INK_FROM, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
   inkDrops,
 } from '../src/ui/motion.ts';
 import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
@@ -57,7 +57,7 @@ describe('the motion numbers (M10a decisions 3–5)', () => {
     expect(inkDrops(12, 80)).toEqual(drops);
     expect(inkDrops(16, 120)).toHaveLength(16);
     expect(drops.filter((d) => Math.hypot(d.dx, d.dy) > 80 + 1e-9 || Math.hypot(d.dx, d.dy) < 80 * 0.6)).toEqual([]);
-    expect(drops.filter((d) => d.size < 3 || d.size > 9)).toEqual([]);
+    expect(drops.filter((d) => d.size < 5 || d.size > 12)).toEqual([]);
     expect(new Set(drops.map((d) => d.tone))).toEqual(new Set(['vermilion', 'seal', 'chalk']));
   });
 
@@ -152,6 +152,14 @@ describe('speed-line burst and the ink splash (M10a decision 3)', () => {
     const fading = flat(screen.getByTestId('speed-lines', hidden).props.style);
     expect(fading.transform).toBeUndefined();
     expect(fading.opacity).toBe(0);
+  });
+
+  it("the drops start just past the stamp's edge, so they show from the first frame (emulator check)", async () => {
+    await render(<InkBurst count={12} radius={80}><Text>stamp</Text></InkBurst>);
+    for (const drop of screen.getAllByTestId('ink-drop', hidden)) {
+      const [x, y] = (flat(drop.props.style).transform as Record<string, number>[]).map((t) => t.translateX ?? t.translateY ?? 0);
+      expect(Math.hypot(x!, y!)).toBeCloseTo(INK_FROM * 80, 6);
+    }
   });
 
   it('the splash has its drops, out of the way of touches and screen readers', async () => {
