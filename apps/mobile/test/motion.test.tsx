@@ -3,13 +3,16 @@
 // each piece starts, its reduced-motion path and its accessibility, not frames. Starting values are checked on the
 // pieces alone; on a screen, a re-render after mount would show the mock's end values, so screens check only that the
 // motion is there.
-import { ACHIEVEMENTS, PLAY_TEXT } from '@levelmeup/content';
+import { ACHIEVEMENTS, ONBOARDING_TEXT, PLAY_TEXT } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 import { project } from '../src/game/project.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { Celebration } from '../src/screens/Celebration.tsx';
+import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
+import { Vow } from '../src/screens/onboarding/Vow.tsx';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
+import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
@@ -22,7 +25,7 @@ import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { Thud } from '../src/ui/Thud.tsx';
 import { useCountUp, useGrowth } from '../src/ui/useMotion.ts';
 import { XpBar } from '../src/ui/XpBar.tsx';
-import { serverState } from './support/fixtures.ts';
+import { DAY_TWO_NOW, READY_DRAFT, REVEAL, claimedState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const at = (level: number, value: number, max = 130): BarPoint => ({ level, value, max });
@@ -265,5 +268,34 @@ describe('level-ups and achievements move (M10a decision 4)', () => {
     await render(withStore(store, <Celebration />));
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(store.getState().dismissCelebration).toHaveBeenCalled();
+  });
+});
+
+describe('the reveal, the Shadow and the vow move (M10a decision 4)', () => {
+  it('the reveal: its lines burst once and the class panel slams in', async () => {
+    await render(withStore(testStore({ phase: 'not_started', draft: READY_DRAFT, reveal: REVEAL, view: project(serverState(), []) }),
+      <Reveal onAccept={() => {}} onFix={() => {}} />));
+    expect(flat(screen.getByTestId('speed-lines', hidden).props.style).transform).toBeDefined();
+    expect(screen.getAllByTestId('slam-in')).toHaveLength(1);
+  });
+
+  it('the Shadow: the painting creeps, the box slams in, the claimed stamp thuds', async () => {
+    await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
+      <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
+    expect(flat(screen.getByTestId('shadow-creep', hidden).props.style).transform).toBeDefined();
+    expect(screen.getByTestId('shadow-art', hidden)).toBeTruthy();
+    expect(screen.getAllByTestId('slam-in')).toHaveLength(1);
+    expect(screen.getByTestId('claimed-thud')).toBeTruthy();
+    expect(screen.getByText(/^Claimed · /)).toBeTruthy();
+  });
+
+  it('the vow: "Sworn" thuds when it appears', async () => {
+    await render(withStore(testStore({ phase: 'ready', draft: READY_DRAFT }), <Vow onDone={jest.fn()} screenReader />));
+    expect(screen.queryByTestId('sworn-thud')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.edit }));
+    await fireEvent.changeText(screen.getByLabelText(ONBOARDING_TEXT.vow.edit), 'I will rise.');
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.tap }));
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.confirm }));
+    expect(await screen.findByTestId('sworn-thud')).toBeTruthy();
   });
 });

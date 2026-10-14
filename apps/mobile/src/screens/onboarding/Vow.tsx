@@ -13,6 +13,7 @@ import { SlantPanel } from '../../ui/SlantPanel.tsx';
 import { MarkStamp } from '../../ui/Stamp.tsx';
 import { TextField } from '../../ui/TextField.tsx';
 import { Caption, Heading, Label } from '../../ui/Text.tsx';
+import { Thud } from '../../ui/Thud.tsx';
 
 const T = ONBOARDING_TEXT.vow;
 export const VOW_MAX = 120;
@@ -42,7 +43,7 @@ export function Vow({ onDone, screenReader }: { onDone: () => void; /** Tests on
       </SlantPanel>
       {sworn ? (
         <>
-          <MarkStamp text={T.sworn} />
+          <Thud testID="sworn-thud" style={{ alignSelf: 'flex-start' }}><MarkStamp text={T.sworn} /></Thud>
           <Button label={T.next} onPress={onDone} />
         </>
       ) : (

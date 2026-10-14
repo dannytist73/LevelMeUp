@@ -1,6 +1,7 @@
 // O08 Character reveal (spec §1.1 beat 9, §4.2): the rules' character in the System's words, the stats labelled game
 // estimates. "Change class" and "Fix an assumption" run the analysis again (the server allows it until the first
-// action). M9a: the class portrait, and Switch portrait (decisions 5, 8).
+// action). M9a: the class portrait, and Switch portrait (decisions 5, 8). M10a: the lines burst once and the class panel
+// slams in.
 import {
   CHARACTER_TEXT, CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, PACT_TEXT, SLIP_SUGGESTIONS, STAT_NAMES, classStats, fillText, routineLine,
 } from '@levelmeup/content';
@@ -16,11 +17,13 @@ import { useGame } from '../../state/store.ts';
 import { space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { HalftoneHeader } from '../../ui/HalftoneHeader.tsx';
+import { MOMENTS } from '../../ui/motion.ts';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { NightCard } from '../../ui/NightCard.tsx';
 import { OptionCard } from '../../ui/OptionCard.tsx';
 import { Portrait } from '../../ui/Portrait.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
+import { SlamIn } from '../../ui/SlamIn.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
 import { Body, Caption, Display, Heading, Label, Small, Title } from '../../ui/Text.tsx';
 
@@ -103,11 +106,13 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
   } else {
     body = (
       <>
-        <View style={{ gap: 4 }}>
-          <Label>{T.classLabel}</Label>
-          <Display>{CLASS_NAMES[profile.classId].toUpperCase()}</Display>
-          <Label tone="chalk">{classStats(CLASSES[profile.classId])}</Label>
-        </View>
+        <SlamIn delay={MOMENTS.reveal.panel}>
+          <View style={{ gap: 4 }}>
+            <Label>{T.classLabel}</Label>
+            <Display>{CLASS_NAMES[profile.classId].toUpperCase()}</Display>
+            <Label tone="chalk">{classStats(CLASSES[profile.classId])}</Label>
+          </View>
+        </SlamIn>
         <Portrait classId={profile.classId} level={character.level} figure={figure}
           label={fillText(CHARACTER_TEXT.portrait, { className: CLASS_NAMES[profile.classId], level: character.level })} />
         <Button label={CHARACTER_TEXT.switchPortrait} variant="secondary" onPress={() => void setPortrait(otherFigure(figure))}
@@ -167,7 +172,7 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
-        <SpeedLines />
+        <SpeedLines burst />
         <Label tone="ember">{T.title}</Label>
         <Title>{profile.name}</Title>
       </HalftoneHeader>
