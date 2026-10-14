@@ -5,7 +5,7 @@
 // the calls that start it.
 import { ACHIEVEMENTS, ONBOARDING_TEXT, PLAY_TEXT } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { StyleSheet, Text } from 'react-native';
+import { AppState, StyleSheet, Text } from 'react-native';
 import { project } from '../src/game/project.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { Celebration } from '../src/screens/Celebration.tsx';
@@ -17,15 +17,15 @@ import { Today } from '../src/screens/Today.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
-  BURST_FROM, FILL_MS, INK_FROM, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
-  inkDrops,
+  BURST_FROM, EMBERS, FILL_MS, GLOW_SHARE, INK_FROM, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
+  inkDrops, SHADOW_EYES,
 } from '../src/ui/motion.ts';
 import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
 import * as motion from '../src/ui/motion.ts';
 import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { Thud } from '../src/ui/Thud.tsx';
-import { useCountUp, useGrowth } from '../src/ui/useMotion.ts';
+import { useAppActive, useCountUp, useGrowth } from '../src/ui/useMotion.ts';
 import { XpBar } from '../src/ui/XpBar.tsx';
 import { DAY_TWO_NOW, READY_DRAFT, REVEAL, claimedState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -369,5 +369,40 @@ describe('Today moves only when something changes (M10a decision 7)', () => {
     const more = { ...view, character: { ...view.character, xpIntoLevel: view.character.xpIntoLevel + 5 } };
     await act(async () => store.setState({ view: more }));
     expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ }).props.accessibilityValue.now).toBe(view.character.xpIntoLevel + 5);
+  });
+});
+
+describe("the living Shadow's numbers (M10b spec decision 7)", () => {
+  it('the glows sit on the painted eyes, whole inside the frame', () => {
+    expect(SHADOW_EYES).toEqual([{ x: 0.488, y: 0.227 }, { x: 0.533, y: 0.227 }]); // measured from shadow.webp, 960 × 540
+    for (const eye of SHADOW_EYES) {
+      expect(eye.x - GLOW_SHARE / 2).toBeGreaterThan(0);
+      expect(eye.x + GLOW_SHARE / 2).toBeLessThan(1);
+      expect(eye.y - (GLOW_SHARE / 2) * (16 / 9)).toBeGreaterThan(0); // the glow is square; the frame 16:9
+    }
+  });
+
+  it('ten embers from a fixed table, starting in its lower half, small and slow', () => {
+    expect(EMBERS).toHaveLength(10);
+    expect(EMBERS.filter((e) => e.y < 0.5 || e.y >= 1 || e.x <= 0 || e.x >= 1)).toEqual([]);
+    expect(EMBERS.filter((e) => e.size < 3 || e.size > 5 || e.rise < 30 || e.rise > 70 || e.ms < 3_000 || e.ms > 5_000)).toEqual([]);
+  });
+});
+
+function Front() {
+  return <Text>{useAppActive() ? 'front' : 'away'}</Text>;
+}
+
+describe('useAppActive (M10b plan decision 8)', () => {
+  it('in front on opening, away in the background, in front again on return', async () => {
+    const listen = AppState.addEventListener as jest.Mock;
+    listen.mockClear();
+    await render(<Front />);
+    expect(screen.getByText('front')).toBeTruthy();
+    const change = listen.mock.calls.at(-1)![1] as (state: string) => void;
+    await act(async () => change('background'));
+    expect(screen.getByText('away')).toBeTruthy();
+    await act(async () => change('active'));
+    expect(screen.getByText('front')).toBeTruthy();
   });
 });

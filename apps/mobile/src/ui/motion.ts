@@ -1,8 +1,8 @@
 // M10a: the motion rule's numbers (visual spec §3; spec 2026-10-14-m10a-motion-design.md) and the pure parts of the
 // motion pieces. Every timing, spring, delay and sequence runs even when the phone asks for reduced motion
 // (`ReduceMotion.Never`, plan decision 1, review): each piece picks its own reduced path (a fade), so Reanimated must
-// not skip that fade to its end, nor a delay that staggers it.
-import { Easing, ReduceMotion, withDelay } from 'react-native-reanimated';
+// not skip that fade to its end, nor a delay that staggers it. M10b: the living Shadow's numbers, and `forever` for its loops.
+import { Easing, ReduceMotion, withDelay, withRepeat } from 'react-native-reanimated';
 
 export const SLAM_MS = 180;
 export const SLAM_PX = 16;
@@ -39,6 +39,11 @@ export function timing(duration: number, easing = Easing.out(Easing.cubic)) {
  */
 export function delayed(ms: number, animation: number): number {
   return withDelay(ms, animation, ReduceMotion.Never);
+}
+
+/** A loop that holds even when the phone asks for reduced motion (M10b, as `delayed`): the Shadow picks its own reduced path. */
+export function forever(animation: number, reverse: boolean): number {
+  return withRepeat(animation, -1, reverse, undefined, ReduceMotion.Never);
 }
 
 /** When each part of a moment starts, in ms from the screen opening (spec decision 4). */
@@ -99,3 +104,33 @@ export function inkDrops(count: number, radius: number): InkDrop[] {
     return { dx: Math.cos(angle) * reach, dy: Math.sin(angle) * reach, size: SIZES[i % SIZES.length]!, tone: TONES[i % TONES.length]! };
   });
 }
+
+/** M10b (spec decision 7): the living Shadow. Where the painted eyes are, as shares of the frame (measured from
+ * shadow.webp, 960 × 540), and the glow's width as a share of the frame's. */
+export type ShadowEye = { x: number; y: number };
+export const SHADOW_EYES: readonly ShadowEye[] = [{ x: 0.488, y: 0.227 }, { x: 0.533, y: 0.227 }];
+export const GLOW_SHARE = 0.09;
+/** The eyes' pulse: opacity from PULSE_FROM to PULSE_TO and back, PULSE_MS each way (a 3-second breath). */
+export const PULSE_MS = 1_500;
+export const PULSE_FROM = 0.3;
+export const PULSE_TO = 0.85;
+/** The painting's breath after the creep: 1.5 % larger and back, BREATH_MS each way. */
+export const BREATH_MS = 2_500;
+export const BREATH_TO = 1.015;
+
+export type Ember = { x: number; y: number; rise: number; drift: number; size: number; ms: number; delay: number; tone: 'ember' | 'vermilion' };
+
+/** The Shadow's embers: a fixed table, never random (like the ink drops), each starting in its lower half and rising
+ * `rise` dp over `ms`, drifting `drift` dp sideways, after `delay`. */
+export const EMBERS: readonly Ember[] = [
+  { x: 0.40, y: 0.78, rise: 52, drift: 4, size: 4, ms: 4_200, delay: 0, tone: 'ember' },
+  { x: 0.58, y: 0.66, rise: 38, drift: -5, size: 3, ms: 3_400, delay: 600, tone: 'vermilion' },
+  { x: 0.46, y: 0.90, rise: 66, drift: -3, size: 5, ms: 4_800, delay: 1_300, tone: 'ember' },
+  { x: 0.63, y: 0.84, rise: 44, drift: 6, size: 3, ms: 3_800, delay: 300, tone: 'vermilion' },
+  { x: 0.37, y: 0.62, rise: 30, drift: 3, size: 3, ms: 3_000, delay: 2_100, tone: 'ember' },
+  { x: 0.52, y: 0.74, rise: 58, drift: -6, size: 4, ms: 4_500, delay: 900, tone: 'vermilion' },
+  { x: 0.66, y: 0.70, rise: 34, drift: -4, size: 3, ms: 3_200, delay: 2_700, tone: 'ember' },
+  { x: 0.43, y: 0.68, rise: 46, drift: 5, size: 4, ms: 3_900, delay: 1_800, tone: 'vermilion' },
+  { x: 0.55, y: 0.93, rise: 70, drift: 2, size: 5, ms: 5_000, delay: 2_400, tone: 'ember' },
+  { x: 0.61, y: 0.60, rise: 32, drift: -2, size: 3, ms: 3_600, delay: 1_500, tone: 'vermilion' },
+];
