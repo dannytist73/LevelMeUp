@@ -87,7 +87,10 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
   level-ups and quest cleared. With reduced motion on, fades only. *M10a: built (`src/ui/motion.ts` and the pieces beside
   it; spec 2026-10-14-m10a-motion-design.md).* *M10b: the one loop is the Shadow's scene while it's open (its eyes,
   embers and breath); haptics land with the reward stamps and the hold buttons (spec
-  2026-10-14-m10b-haptics-living-shadow-design.md).*
+  2026-10-14-m10b-haptics-living-shadow-design.md).* *M10c (clarity, the owner kept this look): each screen's one main
+  action is filled, places are rows with a chevron (`RowLink`), rare actions are underlined links (`LinkButton`);
+  Today ends the open core quest in a seal-red Begin bar and shows cleared quests as slim quiet rows (plan
+  2026-10-15-m10c-clarity.md).*
 
 ## 4. Screens
 

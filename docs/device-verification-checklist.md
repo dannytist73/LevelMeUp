@@ -560,3 +560,42 @@ the app after changing it).
   level 2 (her side quest "A good thing" and today's reading cleared, the achievement "First Page"); restarted on
   2026-10-15 (it had run out of memory); GMT; animation scales 1; font 1.0. Another emulator (`kai_test`, not
   LevelMeUp's) was started alongside it during the checks, so commands named `emulator-5554`.
+
+## M10c — Clarity
+
+Rows 1–14 on the emulator with the development build `d49722ad` (0.5.0, versionCode 5; Claude, 2026-10-15), installed
+over `6fa0bb39` with Vera kept. Read with uiautomator, screenshots and Android's own logs (`[haptic] …`,
+`dumpsys vibrator_manager`, the widget worker's lines). To see open quests on a cleared day, Vera's core quest and one
+side quest were undone and cleared again (her day ends as it was: four of four). Rows 15–18 on the Find X9 with the
+0.5.0 preview APK (the owner), when there is one.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Today's header: the day at title size, no "Next: Lv", shields as the icon and the number (read as "n of 2 shields"). | Pass (2026-10-15). |
+| 2 | An open core quest ends in a BEGIN bar, on the first screen; tapping it opens the quest. | Pass after a fix: on a 1080 × 2400 screen BEGIN sat below the fold, behind the tab bar. The card's picture is now a 2:1 crop on Today (16:9 on the quest screen) and the why is one quiet line, not a dashed box; BEGIN is then fully on the first screen, the whole figure in the picture. Tapping it opened the quest. |
+| 3 | A cleared core quest is a slim paper row; the streak counts today with "today counts". | Pass: the row with its time and "Cleared +10"; the streak read 1 · today counts while the server's count was 0 (her two side quests had made the day count). The tick when the streak first grows wasn't seen: the day already counted (unit tests cover it). |
+| 4 | With the core quest cleared, the next open quest is marked NEXT. | Pass (neck and shoulder rolls, undone to test). |
+| 5 | Every quest cleared: the "Day n cleared" panel (XP today, when the next day starts); cleared rows quiet. | Pass: "Day 1 cleared · +40 XP today · The next day starts at 04:00". The cleared reading was still a full card with a big Read again button: now a slim card with Read again as a link. |
+| 6 | Change today opens and closes in place; on a day that already counts it offers Rest tomorrow, never Rest today; the hard day's confirm and Not now work. | Pass: Swap · 1 left, Hard day, Rest tomorrow; the hard day's text and Not now (nothing sent). |
+| 7 | A check-off quest clears with a hold on Today; a tap alone doesn't. | Pass: a tap logged one `tick` and left it open; a 1.4 s hold logged `tick`, then `sworn` 0.82 s later, and cleared it. |
+| 8 | A set's Done starts the rest, as long as the quest's words say; +15 s and Skip; a click and "Rest over" at zero; the last set starts none; the next time the reps show "Last time". | Pass after a fix: the rep log's steps say "Rest about a minute between sets" and the timer ran two minutes (the workouts' figure). Rep logs now rest a minute, workouts two. Then: Rest 0:47 after 13 s; the click (constant 16) exactly 60 s after the tick; "Rest over"; no rest after set 2; after logging and undoing, "Last time: 10 · 10". A workout quest wasn't on Vera's day (unit tests cover it). |
+| 9 | Settings: rows with chevrons, Daily plan's line, Delete my character last under "Your character"; at font 2.0 nothing is cut off. | Pass, at 1.0 and 2.0 (Today's slim rows wrap too). Font back to 1.0. |
+| 10 | Character: the round button on the portrait's corner switches it; ranks as lines; the class change as a row. | Pass (switched and back). |
+| 11 | The Chronicle's tiles match Today; growth shows only stats that grew. | Pass: Streak 1, Best 1; "1 level gained, 4 quests cleared, no new rungs yet." and no +0 row. |
+| 12 | Quest cleared: "Logged by mistake? Undo" as a link, and it still undoes. | Pass (twice). |
+| 13 | The widget: in the launcher's picker with its preview; added; shows the day, streak, core quest and count; follows a change in the app; a tap opens the app; draws itself with the app closed. | Pass after a fix: its first draw failed ("Symbol(react.fragment) is not a function": the library can't draw React fragments); now arrays with keys, and a test walks the tree. Then: "DAY 1 · 1-day streak · Day cleared · 4 of 4 cleared"; an undo in the app turned it to "Wall push-ups" (ember, the core quest done) and "3 of 4 cleared", the hold back to 4 of 4; a tap opened the app. Removed and added again with the app stopped, its own task drew it from the kept snapshot (the first draws during the add hit "width and height must be > 0" before the launcher sized it; a later one drew). In a development build that task loads its code from Metro on port 8081, so it needs Metro there; the preview APK carries its own. Not on the device: "A new day is ready" after the day ends (hours away) and the blank widget after a deletion (never on Vera): unit tests. |
+| 14 | Reduced motion: nothing new moves. | By design, not run: M10c adds no animation (the hold's fill is how long to keep holding, as M5 decided; the rest counts down as text). |
+| 15 | Find X9: install 0.5.0 over 0.4.0; the character is there; About says 0.5.0. Today on the Find X9's screen: BEGIN on the first screen. | |
+| 16 | Find X9: add the widget; it shows the day and follows a cleared quest; after the day ends it says a new day is ready, and opening the app brings it back. | |
+| 17 | Find X9: a check-off quest cleared with a hold (the click felt); a rep log's rest (a minute) and its click. | |
+| 18 | Find X9, ColorOS: the widget still draws after a restart of the phone (launchers differ). | |
+
+### What the emulator found (M10c, 2026-10-15)
+
+- **Three fixes the unit tests couldn't see:** BEGIN below the fold (the card now fits), the rest's length against
+  the quest's own words (a minute for rep logs), and the widget library's fragments (arrays now, and a test).
+- **Two polish changes from looking:** the cleared reading card made slim; the widget drops "CORE QUEST" over "Day
+  cleared".
+- **The emulator now:** the development build `d49722ad` (0.5.0, versionCode 5); Vera at level 2, day 1 four of four
+  (her core quest and neck rolls cleared again at 21:47 and 21:58 emulator time); the LevelMeUp widget on the home
+  screen; font 1.0; Metro on 8082 (development).

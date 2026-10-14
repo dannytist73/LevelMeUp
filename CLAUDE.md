@@ -39,7 +39,8 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
   cloud with `npx eas-cli@latest build --platform android --profile development` from `apps/mobile` (never Expo Go,
   never a bare `npx eas-cli`). The app ships only the publishable key (`src/config.ts`); never put another key there.
   Only `apps/mobile/src/notify/os.ts` imports `expo-notifications` (M7d) and only `apps/mobile/src/ui/haptics.ts`
-  imports `expo-haptics` (M10b); a new native module needs a new EAS build.
+  imports `expo-haptics` (M10b), and only `apps/mobile/src/widget/` imports `react-native-android-widget` (M10c, the
+  home-screen widget; the app's entry is `apps/mobile/index.ts`); a new native module needs a new EAS build.
   The pilot APK: `npx eas-cli@latest build --platform android --profile preview` (M9b). Developer screens live in
   `src/dev/routes/` and load only in development builds (the `app/dev/` files are stubs); `check:bundle` fails if
   developer code reaches a release bundle. Every call runs in `ap-southeast-1`, next to the database, and names the

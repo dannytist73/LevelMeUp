@@ -33,6 +33,7 @@ guesses). Only milestone 1's plan exists today.
 | 9b | **The pilot build** | The release build without the developer screens; `lmu-sync`'s speed; a minimum app version; Settings → About and privacy; the pacing re-run (experienced players modelled); a pilot report; the EAS preview APK and one Find X9 checklist. The backend is already live since M3. **Built 2026-10-13 (branch `m9b-pilot-build`); the functions deployed about 12:39 UTC (the owner's yes); a sync takes 1.0 s pinned to Singapore against 11.2 s from Seoul (median of 5); the preview APK is EAS build `2d297063`**; no migration; merges after M9a. | `2026-10-13-m9b-pilot-build.md` |
 | 10a | **Motion** | The visual spec's motion rule built with what's installed (Reanimated, react-native-svg): panels slam in, stamps thud, speed lines burst on the reveal, level-ups and quest cleared, an ink splash, the XP bar fills and counts; the Shadow's creep; Today moves only on a change; fades only with reduced motion; a developer motion bench; version 0.3.0. No server change. **Built 2026-10-14 (branch `m10a-motion`); reviewed; emulator rows 1–10 pass, 11 partly; the preview APK is EAS build `38704cd8`**; merges after M9b. | `2026-10-14-m10a-motion.md` |
 | 10b | **Haptics and a living Shadow** | expo-haptics (the one new native module) through `src/ui/haptics.ts`: a firm click as Quest cleared's XP stamp lands, a tick for the rank stamps, a double click on a level-up, a click for achievements, a tick for the streak, and the vow's and pact's hold; nothing for a miss; a Haptics switch in Settings → Game (on, kept on the phone). The Shadow lives in code over its painting (glowing eyes, rising embers, a breath), stopped in the background, still with reduced motion; Rive and a video loop turned down (owner, 2026-10-14). Version 0.4.0. No server change. **Built 2026-10-15 (branch `m10b-haptics`); reviewed; emulator rows 1–9 pass after two fixes (a stamp's buzz waits on the animation clock; the hold settles with Pressable's press delay); the preview APK is EAS build `c3633921`**; merges after M10a. | `2026-10-14-m10b-haptics-living-shadow.md` |
+| 10c | **Clarity** | The owner kept the Ink Panel look and asked for the review's improvements (2026-10-15): Today says what to do next (a Begin bar, the next quest marked) and quietens what's done (slim cleared rows, the cleared day's panel); the streak counts today as soon as it counts; notices one at a time; the day's options under "Change today"; no rest today on a day that already counts; Settings, Character and the Chronicle as rows and quiet lines; check-off quests cleared with a hold on Today; workouts that remember last time and time the rest; a home-screen widget (`react-native-android-widget`, the one new native module). Version 0.5.0. No server change. **Built 2026-10-15 (branch `m10c-clarity`, from `m10b-haptics`); emulator rows 1–13 pass with the development build `d49722ad`, three after a fix (BEGIN on the first screen, the rest as long as the quest says, no fragments in the widget)**; merges after M10b. | `2026-10-15-m10c-clarity.md` |
 
 **Merged 2026-10-14:** M5 through M10a are on `main` (the owner's choice; a fast-forward to `bf0220a`, with every test,
 the typecheck and the checks passing on `main`). The "merges after" notes above are history.
@@ -270,6 +271,16 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The level-up's second click follows the first on a JS timer: 151 ms apart on the emulator (designed 120). Fine unless the Find X9 says otherwise. |
 | Emulator | Vera's waiting rows, still: M7d row 6 (her next timer quest), M8b rows 5–6 (a Mage at level 5; the day boundary), M9a row 6 (a level-up to 5 in play). Vera is level 2 now. |
 | Tests | RNTL's `fireEvent(el, 'pressIn')` calls the handler directly and skips React Native's press logic (Pressable's press delay, the 130 ms minimum press): press timing is tested with `test/support/touch.ts`. A buzz's timing on the animation clock is the emulator's to check; feel.test runs `after` on fake timers. |
+
+## Carried forward from M10c
+
+| When | Item |
+|---|---|
+| Later | The server still accepts a rest today on a day that already counts (the phone no longer offers it): refuse it there too, with the next functions deploy. |
+| Later | The rest between sets is in the app only: a notification when it ends, if players leave the app during rests. |
+| Later | Workout memory is kept on the phone: a restored character on a new phone starts without it. |
+| Find X9 | The M10c rows 15–18 (the owner), with the 0.5.0 preview APK when there is one: BEGIN on the first screen, the widget (and after the day ends, and after a restart on ColorOS), a hold and a rest felt. |
+| Dev | In a development build the widget's own task loads its code from Metro on port 8081: run Metro there to see it draw with the app closed. |
 
 ## Spikes and where they run
 

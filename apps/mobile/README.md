@@ -78,6 +78,17 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   settled (100 ms, so a scroll never starts a hold) and clicks as it fires. A development build logs each buzz
   (`[haptic] …`); the Jest setup mocks the file. `src/ui/ShadowArt.tsx` is the Shadow's living painting (its numbers in
   `motion.ts`), stopped by `useAppActive` in the background.
+- **Clarity** (M10c): `src/game/today.ts` says whether today already counts for the streak (`shownStreak`, used by
+  Today, the Chronicle and the widget), the next quest, whether the day is cleared and which quests a hold on Today can
+  clear (check-off quests, 0.8 s, `QUICK_CLEAR_MS`). `src/ui/RowLink.tsx` is a row that opens a place (another screen,
+  or more of this one in place); `src/ui/LinkButton.tsx` a quiet text action. Workouts and rep logs remember last time
+  on the phone (`lmu.lastSets`, `src/quest/lastSets.ts`) and a set's Done starts the rest, as long as the quest says (a minute for a rep log, two for a workout)
+  (`src/quest/rest.ts`, `src/screens/quest/Rest.tsx`).
+- **The home-screen widget** (M10c): `src/widget/` is the only code that imports `react-native-android-widget`. The app
+  keeps a snapshot (`lmu.widget`, `src/widget/snapshot.ts`) and redraws the widget when it changes
+  (`src/widget/publish.tsx`, from `app/_layout.tsx`); Android runs `src/widget/taskHandler.tsx` (registered in
+  `index.ts`, the app's entry) when the widget is added, resized and every 30 minutes. The widget's fonts and size are
+  in `app.json`'s plugin entry; its picker preview is `assets/widget/preview.png`.
 - `app/dev/` exists only in development builds (M9b: each `app/dev/<screen>.tsx` is a one-line stub that loads
   `src/dev/routes/<screen>.tsx` only when `__DEV__`, so a release bundle holds none of it; the self-check's device probes
   are `src/dev/probes.ts`; `check:bundle` fails if developer code reaches a release bundle): the account and "Save with Google", the outbox and notices, the
