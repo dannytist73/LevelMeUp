@@ -66,6 +66,11 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   before M6c see a one-time training note on Today (`lmu.training-notice`; making a character marks it seen). The
   cache dropped older states (version 5). **Run this bundle only against a server with the M6c and M6d deploys**: it
   reads the state's `calendar`, `growth`, `abilityLastUsed` and training setup, which an older server doesn't send.
+- **Motion** (M10a): the pieces in `src/ui/` (`SlamIn`, `Thud`, `FadeIn`, `InkBurst`, `SpeedLines`' `burst`, the moving
+  `XpBar` and `useCountUp`), with their numbers in `src/ui/motion.ts` and hooks in `src/ui/useMotion.ts`; each has one
+  reduced-motion path (a fade, or nothing). The moments compose them with `MOMENTS`' delays: Quest cleared, the
+  level-up and achievement modal, the reveal, the Shadow, the vow and Today (which moves only on a change). Developer →
+  Motion bench replays them.
 - `app/dev/` exists only in development builds (M9b: each `app/dev/<screen>.tsx` is a one-line stub that loads
   `src/dev/routes/<screen>.tsx` only when `__DEV__`, so a release bundle holds none of it; the self-check's device probes
   are `src/dev/probes.ts`; `check:bundle` fails if developer code reaches a release bundle): the account and "Save with Google", the outbox and notices, the

@@ -474,3 +474,28 @@ emulator with `adb install -r`: Success, the same signing key, and Uma's charact
 The emulator now runs the release build. Rows that need the developer screens (M9a rows 5–6 in the gallery, the
 previews) need the development build again: EAS build `998b72c0` installs only as a downgrade (versionCode 1), so a
 new development build would be cleaner.
+
+## M10a — Motion
+
+Rows 1–11 on the emulator with the development build (Claude), rows 12–15 on the Find X9 with the 0.3.0 preview APK (the
+owner). "Remove animations": Settings → Accessibility → Remove animations (on the emulator:
+`adb shell settings put global transition_animation_scale 0`, and `window_animation_scale`, `animator_duration_scale`).
+Reanimated reads it at launch: force-stop and reopen LevelMeUp after changing it.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Developer → Motion bench → Pieces: the panel slams in; the three stamps thud (the middle one in a splash of ink); the lines burst; the first bar fills 40 → 87 as the count runs; the second fills to the end, flashes, and fills 0 → 30; the last line rises. Replay plays them all again. | |
+| 2 | The bench with "Reduced motion: on": every piece only fades, no ink, both bars and the count at their end values at once. | |
+| 3 | Bench → Quest cleared: lines burst and the title slams in; at about 0.2 s the stamp thuds in ink; the panel slams in and the rank stamp thuds; the bar fills 67 → 87 with the count. Continue, pressed mid-moment, works at once. | |
+| 4 | Bench → Quest cleared, with a level-up: the bar fills to the end, flashes, fills from empty; the line reads LV 7 and counts from 0. | |
+| 5 | Bench → Level up to 5: lines burst, LEVEL UP slams in, LV 5 thuds in a bigger splash, the portrait rises (with a character), the System's line slams in. Bench → An achievement: the lines stay still, the label slams in, the name thuds, its words fade in. Each one replays when opened again. | |
+| 6 | "Remove animations" on (app restarted): rows 3–5 only fade; no ink, no flash, the bar and the count at their end values. Set back to 1 afterwards. | |
+| 7 | A new test character: the reveal's lines burst once and the class panel slams in; the vow's "Sworn" thuds. | |
+| 8 | A real quest cleared: the moment as row 3. Back on Today the bar already shows the new XP, and opening Today again replays nothing. | |
+| 9 | The Shadow's scene (when a test character has one): the painting creeps closer over about four seconds, once; the box slams in; the claimed stamp thuds. | |
+| 10 | Largest font and display size: on Quest cleared and the level-up, nothing is cut off once the stamps settle; the title fits. | |
+| 11 | TalkBack on Quest cleared: the bar reads the new value, and the level line its final number, even mid-count. | |
+| 12 | Find X9: install the 0.3.0 APK over 0.2.0; the character is still there; Settings → About shows Version 0.3.0. | |
+| 13 | Find X9: clear a quest. The moment feels smooth at 120 Hz and not slow; buttons react during it. | |
+| 14 | Find X9: the next level-up (when it comes) as row 5. When a morning sync raises the streak while Today is open, the flame thuds once. | |
+| 15 | Find X9: "Remove animations" on and the app reopened: only fades. | |

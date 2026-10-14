@@ -31,6 +31,8 @@ guesses). Only milestone 1's plan exists today.
 | 8b | **Reading** | Each new day gets one unread published article (60 % from the player's goals and class; the evergreen library when nothing else), the phone caches a few for offline days, the reader and the takeaway quest, past readings in the Chronicle, the Mage's Insight (choose tomorrow's topic from 3). | **Built and deployed 2026-10-13** (0015, functions v17; branch `m8b-reading`). 18 articles published 2026-10-13 (article-9 and 17 starter articles, 12 of them after the owner's corrections); 2 starter topics failed the copy check. |
 | 9a | **Class art** | The painted class portraits (4 classes × a man and a woman × 3 tiers at levels 1–4, 5–9, 10 on; the same person edited forward with Qwen-Image-Edit) and the Shadow, in `lmu-art/class-v1`; Character, the reveal, the level-up at 5 and 10, and the Shadow's scene; "Switch portrait", kept on the phone. M9 split in two (M9a decision 1). **Built 2026-10-13; the art live in `lmu-art/class-v1` since about 10:12 UTC (the owner's yes, 25 of 25 byte-identical)**; no server change; merges after M8b. | `2026-10-13-m9a-class-art.md` |
 | 9b | **The pilot build** | The release build without the developer screens; `lmu-sync`'s speed; a minimum app version; Settings → About and privacy; the pacing re-run (experienced players modelled); a pilot report; the EAS preview APK and one Find X9 checklist. The backend is already live since M3. **Built 2026-10-13 (branch `m9b-pilot-build`); the functions deployed about 12:39 UTC (the owner's yes); a sync takes 1.0 s pinned to Singapore against 11.2 s from Seoul (median of 5); the preview APK is EAS build `2d297063`**; no migration; merges after M9a. | `2026-10-13-m9b-pilot-build.md` |
+| 10a | **Motion** | The visual spec's motion rule built with what's installed (Reanimated, react-native-svg): panels slam in, stamps thud, speed lines burst on the reveal, level-ups and quest cleared, an ink splash, the XP bar fills and counts; the Shadow's creep; Today moves only on a change; fades only with reduced motion; a developer motion bench; version 0.3.0. No server change. | `2026-10-14-m10a-motion.md` |
+| 10b | **Haptics and a living Shadow** | Proposed, not specced: expo-haptics and a Rive Shadow, new native modules (the owner's approval, one new development build and pilot APK). | — |
 
 ## Carried forward from the M1 code review
 
@@ -244,6 +246,15 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The live tests hide console output: run `tests/live/pilot.test.ts` with `--disableConsoleIntercept` to see the sync medians. |
 | Find X9 | The M9b section of the checklist (the owner), with the preview APK. |
 | Emulator | M9a rows 5–6 and M7c row 3, M7d rows 5–6, M8b rows 5–6 with the next test character. |
+
+## Carried forward from M10a
+
+| When | Item |
+|---|---|
+| Later | A count already running starts over if the XP changes while Quest cleared is open (a sync with the server's own figure): it waits 600 ms again from the old number while the bar fills on. Rare and cosmetic; count on from the shown number with no delay (review). |
+| Later | A change while the bar is still filling jumps it forward: the next fill starts from the last target, not where the bar is. Cosmetic (review). |
+| Emulator | The ink drops sit behind what is drawn after them (the stats panel under the XP stamp; the portrait and the System's line under LV n): rows 3 and 5 say whether that reads as intended (review). |
+| Tests | Reanimated's Jest mock makes a fresh shared value at each render, so an effect with a shared value in its deps runs again on every re-render in a test (never on the phone): test a restart by the view's identity, not by the calls that start it. |
 
 ## Spikes and where they run
 

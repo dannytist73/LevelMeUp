@@ -84,7 +84,8 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
   buttons and inputs with labels. Hold-to-confirm buttons (vow, Pact) offer a tap-then-confirm path when a screen
   reader is on.
 - **Motion:** panels slam in (about 180 ms); stamps thud down (scale 1.3 to 1); speed lines only on the reveal,
-  level-ups and quest cleared. With reduced motion on, fades only.
+  level-ups and quest cleared. With reduced motion on, fades only. *M10a: built (`src/ui/motion.ts` and the pieces beside
+  it; spec 2026-10-14-m10a-motion-design.md).*
 
 ## 4. Screens
 
@@ -161,7 +162,7 @@ The boards are HTML/CSS. These effects need a native equivalent:
 | Outlined display text (multiple `text-shadow`s) | react-native-svg text with an ink stroke under the fill, plus the vermilion offset copy; Skia only if this falls short |
 | Rotated stamps | Plain `transform: rotate` |
 | Fonts | expo-font with the Latin-subset files |
-| Reduced motion | Reanimated's `useReducedMotion()` switches every animation to a fade |
+| Reduced motion | Reanimated's `useReducedMotion()` switches every animation to a fade *M10a: each piece picks its own reduced path; their timings use `ReduceMotion.Never`, so the fade itself still runs.* |
 
 ## 6. Content still to make
 
