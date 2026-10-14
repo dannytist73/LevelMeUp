@@ -478,7 +478,7 @@ new development build would be cleaner.
 ## M10a — Motion
 
 Rows 1–11 on the emulator with the development build (Claude), rows 12–15 on the Find X9 with the 0.3.0 preview APK (the
-owner). "Remove animations": Settings → Accessibility → Remove animations (on the emulator:
+owner): EAS build `38704cd8`, https://expo.dev/artifacts/eas/yYxOmdvQcXFf9da6UWG4gQTkSpcMh-5ECAnGmD1mLmE.apk. "Remove animations": Settings → Accessibility → Remove animations (on the emulator:
 `adb shell settings put global transition_animation_scale 0`, and `window_animation_scale`, `animator_duration_scale`).
 Reanimated reads it at launch: force-stop and reopen LevelMeUp after changing it.
 

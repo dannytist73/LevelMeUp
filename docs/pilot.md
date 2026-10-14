@@ -15,6 +15,10 @@ DNA Wedding project (architecture §10, §12).
    install.
 3. A new build installs over the old one and keeps the character.
 
+The current build: **0.3.0** (M10a, motion), EAS build `38704cd8`, APK
+https://expo.dev/artifacts/eas/yYxOmdvQcXFf9da6UWG4gQTkSpcMh-5ECAnGmD1mLmE.apk (2026-10-14). The
+previous one, 0.2.0 (M9b), was EAS build `2d297063`.
+
 ## Saving with Google
 
 Google sign-in is "In testing" (Google Cloud project LevelMeUp, `levelmeup-511307`, under the owner's second Google
