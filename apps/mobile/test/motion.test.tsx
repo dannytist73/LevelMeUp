@@ -4,14 +4,20 @@
 // pieces alone; on a screen, a re-render after mount would show the mock's end values, so screens check only that the
 // motion is there.
 import { render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { FadeIn } from '../src/ui/FadeIn.tsx';
 import {
-  FILL_MS, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, SLAM_MS, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments, inkDrops,
+  FILL_MS, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
+  inkDrops,
 } from '../src/ui/motion.ts';
 import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
+import { SlamIn } from '../src/ui/SlamIn.tsx';
+import { Thud } from '../src/ui/Thud.tsx';
 import { useCountUp, useGrowth } from '../src/ui/useMotion.ts';
 
 const at = (level: number, value: number, max = 130): BarPoint => ({ level, value, max });
+const flat = (style: unknown): Record<string, unknown> => (StyleSheet.flatten(style as never) ?? {}) as Record<string, unknown>;
+const hidden = { includeHiddenElements: true } as const;
 
 describe('the motion numbers (M10a decisions 3–5)', () => {
   it('fills up within a level once, wraps once across a level, and never animates a drop', () => {
@@ -82,5 +88,39 @@ describe('the motion hooks (M10a)', () => {
     expect(screen.getByText('n 87')).toBeTruthy();
     await render(<Count plan={null} to={87} />);
     expect(screen.getByText('n 87')).toBeTruthy();
+  });
+});
+
+describe('slam, thud and fade (M10a decision 3)', () => {
+  it('moving, each starts where its motion begins', async () => {
+    await render(
+      <>
+        <SlamIn><Text>slam</Text></SlamIn>
+        <Thud><Text>thud</Text></Thud>
+        <FadeIn rise><Text>fade</Text></FadeIn>
+      </>,
+    );
+    expect(flat(screen.getByTestId('slam-in').props.style)).toEqual({ opacity: 0, transform: [{ translateY: -SLAM_PX }, { scale: 1.04 }] });
+    expect(flat(screen.getByTestId('thud').props.style)).toEqual({ opacity: 0, transform: [{ scale: THUD_FROM }] });
+    expect(flat(screen.getByTestId('fade-in').props.style)).toEqual({ opacity: 0, transform: [{ translateY: RISE_PX }] });
+  });
+
+  it('with reduced motion, each only fades', async () => {
+    await render(
+      <>
+        <SlamIn reduceMotion delay={100}><Text>slam</Text></SlamIn>
+        <Thud reduceMotion><Text>thud</Text></Thud>
+        <FadeIn reduceMotion rise><Text>fade</Text></FadeIn>
+      </>,
+    );
+    for (const id of ['slam-in', 'thud', 'fade-in']) expect(flat(screen.getByTestId(id).props.style)).toEqual({ opacity: 0 });
+    expect(screen.getByText('thud')).toBeTruthy();
+  });
+
+  it('a still thud shows its child as it is; a wrapper style is kept', async () => {
+    await render(<Thud still style={{ alignSelf: 'flex-start' }}><Text>still</Text></Thud>);
+    expect(flat(screen.getByTestId('thud').props.style)).toEqual({ alignSelf: 'flex-start' });
+    await render(<SlamIn style={{ alignSelf: 'stretch' }}><Text>wide</Text></SlamIn>);
+    expect(flat(screen.getByTestId('slam-in').props.style).alignSelf).toBe('stretch');
   });
 });
