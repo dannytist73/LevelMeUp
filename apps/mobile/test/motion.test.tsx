@@ -21,6 +21,7 @@ import {
   inkDrops,
 } from '../src/ui/motion.ts';
 import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
+import * as motion from '../src/ui/motion.ts';
 import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { Thud } from '../src/ui/Thud.tsx';
@@ -160,6 +161,15 @@ describe('speed-line burst and the ink splash (M10a decision 3)', () => {
       pointerEvents: 'none', accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants',
     });
     expect(screen.getByText('stamp')).toBeTruthy();
+  });
+
+  it('works its drops out once, so a re-render (the count ticking) never restarts their motion (review)', async () => {
+    const drops = jest.spyOn(motion, 'inkDrops');
+    const view = await render(<InkBurst count={12}><Text>stamp</Text></InkBurst>);
+    await view.rerender(<InkBurst count={12}><Text>stamp</Text></InkBurst>);
+    await view.rerender(<InkBurst count={12}><Text>stamp</Text></InkBurst>);
+    expect(drops).toHaveBeenCalledTimes(1);
+    drops.mockRestore();
   });
 
   it('with reduced motion there is no splash, only what it wraps', async () => {

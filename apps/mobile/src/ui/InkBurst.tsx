@@ -2,7 +2,7 @@
 // wraps and fade, once. Positions come from a fixed table (`inkDrops`). Decoration only: no touches, no screen reader.
 // With reduced motion it draws nothing.
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
@@ -38,6 +38,8 @@ export function InkBurst({ children, count = 12, radius = 80, delay = 0, style, 
 }) {
   const reduce = useReduce(reduceMotion);
   const progress = useSharedValue(0);
+  // Worked out once: new drops on each render would restart every drop's animated style (review).
+  const drops = useMemo(() => inkDrops(count, radius), [count, radius]);
   useEffect(() => {
     if (!reduce) progress.value = withDelay(delay, withTiming(1, timing(INK_MS, Easing.out(Easing.quad))));
   }, [reduce, delay, progress]);
@@ -48,7 +50,7 @@ export function InkBurst({ children, count = 12, radius = 80, delay = 0, style, 
           testID="ink-burst" pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
           style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}
         >
-          {inkDrops(count, radius).map((drop, i) => <Drop key={i} drop={drop} progress={progress} />)}
+          {drops.map((drop, i) => <Drop key={i} drop={drop} progress={progress} />)}
         </View>
       )}
       {children}

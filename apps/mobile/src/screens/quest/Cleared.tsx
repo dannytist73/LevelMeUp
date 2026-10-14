@@ -64,6 +64,18 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** The level line counts up with the bar (M10a), in its own component so each number re-renders only this line (review). */
+function LevelLine({ numbers }: { numbers: ClearedNumbers }) {
+  const { level, xpIntoLevel, xpForLevel } = numbers.level;
+  const before = numbers.levelBefore === null ? null : point(numbers.levelBefore);
+  const into = useCountUp(countPlan(before, point(numbers.level), M.bar), xpIntoLevel);
+  return (
+    <Caption tone="inkMuted" accessibilityLabel={fillText(C.levelLine, { level, into: xpIntoLevel, for: xpForLevel })}>
+      {fillText(C.levelLine, { level, into, for: xpForLevel })}
+    </Caption>
+  );
+}
+
 function RateButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
     <Pressable
@@ -92,7 +104,6 @@ export function Cleared({
   const { level, xpIntoLevel, xpForLevel } = numbers.level;
   const shown: Rating = rating ?? 'right';
   const before = numbers.levelBefore === null ? null : point(numbers.levelBefore);
-  const into = useCountUp(countPlan(before, point(numbers.level), M.bar), xpIntoLevel);
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, paddingHorizontal: space.gutter, gap: 22 }}>
       {/* The board's outlined title, shrunk to fit, and the stamp below the line rather than over the words: at the
@@ -138,9 +149,7 @@ export function Cleared({
           <View style={{ gap: 6 }}>
             <XpBar on="paper" value={xpIntoLevel} max={xpForLevel} level={level} from={before} delay={M.bar} label={`Level ${level} progress`} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 }}>
-              <Caption tone="inkMuted" accessibilityLabel={fillText(C.levelLine, { level, into: xpIntoLevel, for: xpForLevel })}>
-                {fillText(C.levelLine, { level, into, for: xpForLevel })}
-              </Caption>
+              <LevelLine numbers={numbers} />
               <Caption tone="inkMuted">{fillText(C.toNext, { xp: xpForLevel - xpIntoLevel, next: level + 1 })}</Caption>
             </View>
           </View>
