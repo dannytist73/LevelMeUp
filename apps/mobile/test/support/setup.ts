@@ -6,6 +6,18 @@ jest.mock('react-native-reanimated', () => ({ ...require('react-native-reanimate
 // M10b (plan decision 2): no test sounds a haptic. Screens' buzzes are watched through this mock; test/haptics.test.ts
 // reaches the real module with jest.requireActual.
 jest.mock('../../src/ui/haptics.ts', () => ({ ...jest.requireActual('../../src/ui/haptics.ts'), buzz: jest.fn(), setBuzzing: jest.fn() }));
+// M10c: the home-screen widget library is native; its primitives draw as plain views and text here.
+jest.mock('react-native-android-widget', () => {
+  const { createElement } = require('react');
+  const { Text, View } = require('react-native');
+  return {
+    FlexWidget: ({ children, accessibilityLabel }: { children?: unknown; accessibilityLabel?: string }) =>
+      createElement(View, { accessibilityLabel, testID: 'flex-widget' }, children),
+    TextWidget: ({ text, style }: { text: string; style?: { color?: string } }) => createElement(Text, { style: { color: style?.color } }, text),
+    requestWidgetUpdate: jest.fn(async () => {}),
+    registerWidgetTaskHandler: jest.fn(),
+  };
+});
 
 const fail = (kind: string) => (...args: unknown[]) => {
   throw new Error(`console.${kind} during a test: ${args.map(String).join(' ')}`);

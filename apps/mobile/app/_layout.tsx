@@ -1,5 +1,5 @@
 // The root: fonts, the splash screen, the game store and when it syncs (launch, foreground, network back); M7d:
-// notification taps.
+// notification taps. M10c: the home-screen widget follows the game.
 import { useFonts } from 'expo-font';
 import * as Network from 'expo-network';
 import { Stack } from 'expo-router';
@@ -16,6 +16,7 @@ import { GameProvider } from '../src/state/store.ts';
 import type { GameState } from '../src/state/store.ts';
 import { colors, space } from '../src/theme/tokens.ts';
 import { NarrationBox } from '../src/ui/NarrationBox.tsx';
+import { publishWidget } from '../src/widget/publish.tsx';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -56,9 +57,16 @@ export default function RootLayout() {
     const network = Network.addNetworkStateListener((state) => {
       if (state.isInternetReachable === true) void store.getState().syncNow();
     });
+    // M10c decision 9: a changed day redraws the widget; a character that goes (the view gone after one) clears it. Not
+    // at launch, before the phone's records are read: the widget keeps what it showed.
+    const widget = store.subscribe((now, before) => {
+      if (now.view !== before.view && (now.view !== null || before.view !== null)) void publishWidget(now.view);
+    });
+    if (store.getState().view !== null) void publishWidget(store.getState().view);
     return () => {
       foreground.remove();
       network.remove();
+      widget();
     };
   }, [store]);
 

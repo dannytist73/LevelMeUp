@@ -2,7 +2,7 @@
   "expo": {
     "name": "LevelMeUp",
     "slug": "levelmeup",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "levelmeup",
@@ -38,11 +38,34 @@
           "icon": "./assets/notification-icon.png",
           "color": "#F0765E"
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./assets/fonts/BlackHanSans-Latin.ttf",
+            "./assets/fonts/GothicA1-Regular-Latin.ttf",
+            "./assets/fonts/GothicA1-Bold-Latin.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Today",
+              "label": "LevelMeUp",
+              "description": "Today's quest and your streak",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "previewImage": "./assets/widget/preview.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
       ]
     ],
     "android": {
       "package": "com.dannytist.levelmeup",
-      "versionCode": 4,
+      "versionCode": 5,
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#0E0E10",
