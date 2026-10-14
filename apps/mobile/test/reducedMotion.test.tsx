@@ -3,13 +3,14 @@
 // sequence at once). The moments follow the phone's "Remove animations" (`useReducedMotion`), which this file switches.
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
-import { ReduceMotion, useReducedMotion, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import { ReduceMotion, useReducedMotion, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { project } from '../src/game/project.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { CREEP_TO } from '../src/ui/motion.ts';
+import { ShadowArt } from '../src/ui/ShadowArt.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { DAY_TWO_NOW, claimedState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -20,6 +21,7 @@ jest.mock('react-native-reanimated', () => {
     ...base,
     useReducedMotion: jest.fn(() => false),
     withDelay: jest.fn(base.withDelay),
+    withRepeat: jest.fn(base.withRepeat),
     withSequence: jest.fn(base.withSequence),
     withSpring: jest.fn(base.withSpring),
     withTiming: jest.fn(base.withTiming),
@@ -42,17 +44,19 @@ const cleared = (numbers: ClearedNumbers) => render(
 );
 
 beforeEach(() => {
-  for (const fn of [withDelay, withSequence, withSpring, withTiming]) (fn as jest.Mock).mockClear();
+  for (const fn of [withDelay, withRepeat, withSequence, withSpring, withTiming]) (fn as jest.Mock).mockClear();
 });
 afterEach(() => {
   (useReducedMotion as jest.Mock).mockImplementation(() => false);
 });
 
-describe('the phone\'s setting never cuts a piece short (M10a decision 1, review)', () => {
+describe('the phone\'s setting never cuts a piece short (M10a decision 1, review; M10b)', () => {
   it('every delay, sequence, timing and spring runs on the piece\'s own choice', async () => {
     await cleared(LEVELLED); // a slam with a delay, thuds, the ink, a bar across a level, the count
     await render(<FadeIn rise delay={100}><></></FadeIn>);
     await render(<SpeedLines burst />);
+    await render(<ShadowArt />); // M10b: the living Shadow's loops
+    await fireEvent(screen.getByTestId('shadow-art', hidden), 'load');
     expect(calls(withDelay).length).toBeGreaterThan(5);
     expect(calls(withSequence).length).toBeGreaterThan(0);
     expect(calls(withSpring).length).toBeGreaterThan(0);
@@ -60,6 +64,8 @@ describe('the phone\'s setting never cuts a piece short (M10a decision 1, review
     expect(calls(withSequence).filter((c) => c[0] !== ReduceMotion.Never)).toEqual([]);
     expect(calls(withTiming).filter((c) => (c[1] as { reduceMotion?: unknown }).reduceMotion !== ReduceMotion.Never)).toEqual([]);
     expect(calls(withSpring).filter((c) => (c[1] as { reduceMotion?: unknown }).reduceMotion !== ReduceMotion.Never)).toEqual([]);
+    expect(calls(withRepeat).length).toBeGreaterThan(0);
+    expect(calls(withRepeat).filter((c) => c[4] !== ReduceMotion.Never)).toEqual([]);
   });
 });
 

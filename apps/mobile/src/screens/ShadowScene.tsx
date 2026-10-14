@@ -2,28 +2,27 @@
 // the day, a stamp names the day it took, the player may leave a private note, and "Take back the day" opens the
 // recovery quest; at level 2 the trial is one tap away. Paused (3 in 7 days): the Shadow steps back. Opening it marks it
 // shown. M9a: the painted Shadow, over the dark panel that shows while it loads or when it can't. M10a: the painting creeps
-// closer, the box slams in, the claimed stamp thuds.
+// closer, the box slams in, the claimed stamp thuds. M10b: the painting lives (src/ui/ShadowArt.tsx); the claimed stamp
+// stays quiet (spec decision 3).
 import { SHADOW_TEXT, fillText, retreatLine, shadowLine } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SHADOW_ART_URL } from '../art/portraits.ts';
 import { shadowHold } from '../game/pact.ts';
 import { dateKeyLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
-import { CREEP_MS, CREEP_TO, MOMENTS, timing } from '../ui/motion.ts';
+import { MOMENTS } from '../ui/motion.ts';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { ShadowArt } from '../ui/ShadowArt.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { SlamIn } from '../ui/SlamIn.tsx';
 import { MarkStamp } from '../ui/Stamp.tsx';
 import { TextField } from '../ui/TextField.tsx';
 import { Body, Label, Small } from '../ui/Text.tsx';
 import { Thud } from '../ui/Thud.tsx';
-import { useReduce } from '../ui/useMotion.ts';
 
 const T = SHADOW_TEXT;
 /** Control characters other than a line break: the System refuses them in a note, so a pasted tab becomes a space. */
@@ -38,37 +37,6 @@ export type ShadowSceneProps = {
   onPact: () => void;
   now?: () => number;
 };
-
-/** Board F2's art panel (M9a decision 7): the painted Shadow, 16:9 like the quest art, over the dark and two ember eyes that
- * show while it loads, or when it can't (offline before it was first seen). M10a: the painting creeps closer over four
- * seconds, once, from when it has loaded (a slow first download would otherwise hide it; emulator check); with reduced
- * motion it stays still. */
-function ShadowArt() {
-  const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const reduce = useReduce();
-  const scale = useSharedValue(1);
-  useEffect(() => {
-    if (loaded && !reduce) scale.value = withTiming(CREEP_TO, timing(CREEP_MS, Easing.inOut(Easing.quad)));
-  }, [loaded, reduce, scale]);
-  const creeping = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const eye = { width: 34, height: 7, backgroundColor: colors.vermilion };
-  return (
-    <View accessible accessibilityRole="image" accessibilityLabel={T.art}
-      style={{ width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, borderColor: colors.line, backgroundColor: colors.halftone }}>
-      <View style={{ flexDirection: 'row', gap: 22 }}>
-        <View style={[eye, { transform: [{ rotate: '10deg' }] }]} />
-        <View style={[eye, { transform: [{ rotate: '-10deg' }] }]} />
-      </View>
-      {!failed && (
-        <Animated.View testID="shadow-creep" pointerEvents="none" style={[StyleSheet.absoluteFill, reduce ? null : creeping]}>
-          <Image testID="shadow-art" source={{ uri: SHADOW_ART_URL }} onLoad={() => setLoaded(true)} onError={() => setFailed(true)} resizeMode="cover"
-            style={{ width: '100%', height: '100%' }} />
-        </Animated.View>
-      )}
-    </View>
-  );
-}
 
 export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.now }: ShadowSceneProps) {
   const insets = useSafeAreaInsets();
