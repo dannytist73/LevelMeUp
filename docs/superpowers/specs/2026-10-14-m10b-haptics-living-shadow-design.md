@@ -1,6 +1,6 @@
 # M10b — Haptics and a living Shadow — Design
 
-**Date:** 2026-10-14 · **Status:** draft for the owner's review
+**Date:** 2026-10-14 · **Status:** approved by the owner 2026-10-14 ("spec approved, write the plan")
 **Branch:** `m10b-haptics` (from `main` 3eb0c44, after M5–M10a were merged)
 **Implements:** roadmap row 10b ("Haptics and a living Shadow"), as decided with the owner on 2026-10-14. It replaces
 the roadmap's first idea (a Rive Shadow) with code over the existing painting.
@@ -185,7 +185,7 @@ The owner chose these on 2026-10-14. The details are Claude's recommendations, r
   - **"Remove animations" on** still buzzes at the same times. M10a's `reducedMotion.test.tsx` contract ("every timing,
     spring, delay and sequence runs with `ReduceMotion.Never`") extends to `withRepeat` and the Shadow.
   - **The living Shadow:**
-    - nothing loops before the painting's `load`;
+    - before the painting's `load`, only the stand-in's eyes pulse; the glows, embers and breath wait for it;
     - nothing is drawn with reduced motion;
     - the ember table is fixed and inside the frame;
     - the overlays are hidden from accessibility;
