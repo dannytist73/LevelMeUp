@@ -114,7 +114,7 @@ describe('the quest screen remembers what was logged', () => {
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.workout.log }));
     const quest = server.today!.quests.find((q) => q.id === 200)!;
     if (quest.condition.kind !== 'session') throw new Error('expected a workout');
-    const sent = (enqueue.mock.calls.at(-1)![0] as { payload: { sets: number[] } }).payload.sets;
+    const sent = (enqueue.mock.calls.at(-1)![0] as unknown as { payload: { sets: number[] } }).payload.sets;
     expect(store.getState().rememberSets).toHaveBeenCalledWith(sessionMemory(quest.condition.moves, sent));
     expect(questKey('push-1')).toBe('quest:push-1');
   });
