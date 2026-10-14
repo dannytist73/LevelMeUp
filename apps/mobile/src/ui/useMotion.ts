@@ -1,9 +1,9 @@
 // M10a: the hooks behind the motion pieces. `useReduce` reads the phone's "Remove animations" (Reanimated reads it once,
 // at launch) unless a test or the motion bench overrides it.
 import { useEffect, useRef, useState } from 'react';
-import { cancelAnimation, useAnimatedReaction, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { cancelAnimation, useAnimatedReaction, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { timing } from './motion.ts';
+import { delayed, timing } from './motion.ts';
 import type { CountPlan } from './motion.ts';
 
 export function useReduce(override?: boolean): boolean {
@@ -45,7 +45,7 @@ export function useCountUp(plan: CountPlan | null, to: number, reduceMotion?: bo
     if (from === null || reduce) return;
     cancelAnimation(n);
     n.value = from;
-    n.value = withDelay(delay, withTiming(to, timing(duration)));
+    n.value = delayed(delay, withTiming(to, timing(duration)));
   }, [from, delay, duration, to, reduce, n]);
   // Not counting, the end comes straight from the props: no state update, so no extra render.
   return from === null || reduce ? to : shown;

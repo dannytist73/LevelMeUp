@@ -5,9 +5,9 @@
 // motion. Its accessibility value is always the new one. Without a level it never moves (stat bars, timers, the trial).
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { colors } from '../theme/tokens.ts';
-import { FILL_MS, FLASH_MS, REFILL_MS, WRAP_FILL_MS, fillFraction, fillSegments, timing } from './motion.ts';
+import { FILL_MS, FLASH_MS, REFILL_MS, WRAP_FILL_MS, delayed, fillFraction, fillSegments, timing } from './motion.ts';
 import type { BarPoint } from './motion.ts';
 import { useReduce } from './useMotion.ts';
 
@@ -71,16 +71,17 @@ function MovingBar({ value, max, label, on = 'night', level, from, delay, reduce
     }
     fill.value = steps[0]!.from;
     if (steps.length === 1) {
-      fill.value = withDelay(wait, withTiming(steps[0]!.to, timing(FILL_MS)));
+      fill.value = delayed(wait, withTiming(steps[0]!.to, timing(FILL_MS)));
       return;
     }
-    fill.value = withDelay(wait, withSequence(
+    fill.value = delayed(wait, withSequence(
+      ReduceMotion.Never,
       withTiming(1, timing(WRAP_FILL_MS)),
       withTiming(1, timing(FLASH_MS)), // holds at full while it flashes
       withTiming(0, timing(0)),
       withTiming(steps[1]!.to, timing(REFILL_MS)),
     ));
-    flash.value = withDelay(wait + WRAP_FILL_MS, withSequence(withTiming(1, timing(FLASH_MS / 2)), withTiming(0, timing(FLASH_MS / 2))));
+    flash.value = delayed(wait + WRAP_FILL_MS, withSequence(ReduceMotion.Never, withTiming(1, timing(FLASH_MS / 2)), withTiming(0, timing(FLASH_MS / 2))));
   }, [level, value, max, reduce, delay, fill, flash]);
   const width = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
   const flashing = useAnimatedStyle(() => ({ opacity: flash.value }));

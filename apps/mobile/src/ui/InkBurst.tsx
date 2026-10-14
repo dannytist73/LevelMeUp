@@ -5,10 +5,10 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { colors } from '../theme/tokens.ts';
-import { INK_MS, inkDrops, timing } from './motion.ts';
+import { INK_MS, delayed, inkDrops, timing } from './motion.ts';
 import type { InkDrop } from './motion.ts';
 import { useReduce } from './useMotion.ts';
 
@@ -41,7 +41,7 @@ export function InkBurst({ children, count = 12, radius = 80, delay = 0, style, 
   // Worked out once: new drops on each render would restart every drop's animated style (review).
   const drops = useMemo(() => inkDrops(count, radius), [count, radius]);
   useEffect(() => {
-    if (!reduce) progress.value = withDelay(delay, withTiming(1, timing(INK_MS, Easing.out(Easing.quad))));
+    if (!reduce) progress.value = delayed(delay, withTiming(1, timing(INK_MS, Easing.out(Easing.quad))));
   }, [reduce, delay, progress]);
   return (
     <View style={style}>

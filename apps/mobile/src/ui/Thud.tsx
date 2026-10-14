@@ -5,8 +5,8 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import { FADE_MS, THUD_FADE_MS, THUD_FROM, THUD_SPRING, timing } from './motion.ts';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { FADE_MS, THUD_FADE_MS, THUD_FROM, THUD_SPRING, delayed, timing } from './motion.ts';
 import { useReduce } from './useMotion.ts';
 
 export function Thud({ children, delay = 0, still = false, style, testID = 'thud', reduceMotion }: {
@@ -22,8 +22,8 @@ export function Thud({ children, delay = 0, still = false, style, testID = 'thud
   const opacity = useSharedValue(0);
   useEffect(() => {
     if (still) return;
-    opacity.value = withDelay(delay, withTiming(1, timing(reduce ? FADE_MS : THUD_FADE_MS)));
-    if (!reduce) scale.value = withDelay(delay, withSpring(1, THUD_SPRING));
+    opacity.value = delayed(delay, withTiming(1, timing(reduce ? FADE_MS : THUD_FADE_MS)));
+    if (!reduce) scale.value = delayed(delay, withSpring(1, THUD_SPRING));
   }, [still, reduce, delay, opacity, scale]);
   const moving = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
   const fading = useAnimatedStyle(() => ({ opacity: opacity.value }));

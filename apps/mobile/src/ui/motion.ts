@@ -1,7 +1,8 @@
 // M10a: the motion rule's numbers (visual spec §3; spec 2026-10-14-m10a-motion-design.md) and the pure parts of the
-// motion pieces. Every timing runs even when the phone asks for reduced motion (`ReduceMotion.Never`, plan decision 1):
-// each piece picks its own reduced path (a fade), so Reanimated must not skip that fade to its end.
-import { Easing, ReduceMotion } from 'react-native-reanimated';
+// motion pieces. Every timing, spring, delay and sequence runs even when the phone asks for reduced motion
+// (`ReduceMotion.Never`, plan decision 1, review): each piece picks its own reduced path (a fade), so Reanimated must
+// not skip that fade to its end, nor a delay that staggers it.
+import { Easing, ReduceMotion, withDelay } from 'react-native-reanimated';
 
 export const SLAM_MS = 180;
 export const SLAM_PX = 16;
@@ -26,6 +27,14 @@ export const CREEP_TO = 1.06;
 /** A timing config that always runs (plan decision 1); ease-out unless told otherwise. */
 export function timing(duration: number, easing = Easing.out(Easing.cubic)) {
   return { duration, easing, reduceMotion: ReduceMotion.Never };
+}
+
+/**
+ * A delay that holds even when the phone asks for reduced motion (plan decision 1, review): Reanimated's default skips
+ * it, which would start every staggered fade at once.
+ */
+export function delayed(ms: number, animation: number): number {
+  return withDelay(ms, animation, ReduceMotion.Never);
 }
 
 /** When each part of a moment starts, in ms from the screen opening (spec decision 4). */
