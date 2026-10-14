@@ -12,6 +12,8 @@ export const THUD_FADE_MS = 80;
 /** Settles in about 270 ms, overshooting once to about 0.97. */
 export const THUD_SPRING = { damping: 18, mass: 0.6, stiffness: 400, reduceMotion: ReduceMotion.Never } as const;
 export const THUD_SETTLE_MS = 300;
+/** When the thud's spring first reaches full size, about 0.1 s in (from THUD_SPRING): the stamp's buzz lands then (M10b). */
+export const THUD_LAND_MS = 100;
 export const RISE_MS = 300;
 export const RISE_PX = 12;
 export const BURST_MS = 400;

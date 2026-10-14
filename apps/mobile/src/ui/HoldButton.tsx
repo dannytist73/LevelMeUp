@@ -1,10 +1,12 @@
 // Hold to swear (visual spec §3): a commitment button that fills while held and fires after `holdMs`; letting go early
 // cancels. With a screen reader on, holding isn't practical, so a tap shows a Confirm button instead.
+// M10b: a tick when the hold starts, the sworn click as it fires (spec decision 6); nothing when let go early.
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, Text } from 'react-native';
 import Animated, { Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, fonts } from '../theme/tokens.ts';
 import { Button } from './Button.tsx';
+import { buzz } from './haptics.ts';
 
 export type HoldButtonProps = {
   label: string;
@@ -36,15 +38,17 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
 
   if (readerOn) {
     return confirming
-      ? <Button label={confirmLabel} variant="commitment" disabled={disabled} onPress={onDone} />
+      ? <Button label={confirmLabel} variant="commitment" disabled={disabled} onPress={() => { buzz('sworn'); onDone(); }} />
       : <Button label={tapLabel} variant="commitment" disabled={disabled} onPress={() => setConfirming(true)} />;
   }
 
   const start = () => {
+    buzz('tick');
     // The fill is how long to keep holding, not decoration: it runs even with reduced motion on (M5 review).
     fill.value = withTiming(1, { duration: holdMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
     timer.current = setTimeout(() => {
       timer.current = null;
+      buzz('sworn');
       onDone();
     }, holdMs);
   };
