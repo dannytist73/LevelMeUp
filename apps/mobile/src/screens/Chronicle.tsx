@@ -1,9 +1,11 @@
 // Chronicle (spec §1.3–1.4, board D5; M6d): the streak, best and shields as tiles; the month calendar of real dates
-// (decisions 3–4); growth since day 1 (decision 5). M8b: the past readings (decision 7).
+// (decisions 3–4); growth since day 1 (decision 5). M8b: the past readings (decision 7). M10c: the tiles count today once
+// it counts (as Today does); growth leads with its line and shows only the stats that grew.
 import { CHRONICLE_TEXT, STAT_NAMES, fillText, growthLine } from '@levelmeup/content';
 import { MAX_SHIELDS, STATS } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { shownStreak } from '../game/today.ts';
 import type { ServerState } from '../game/types.ts';
 import { todayMark } from '../lib/calendar.ts';
 import { dateKeyLabel } from '../lib/dates.ts';
@@ -37,11 +39,14 @@ function Tile({ value, label, of }: { value: number; label: string; of?: string 
 }
 
 function Growth({ growth }: { growth: ServerState['growth'] }) {
+  const grew = STATS.filter((s) => growth.stats[s] > 0);
   return (
     <NightCard>
       <Heading>{growth.since === null ? C.growthTitle : fillText(C.since, { date: dateKeyLabel(growth.since) })}</Heading>
+      <Small>{growthLine({ levels: growth.levels, quests: growth.questsCleared, rungs: growth.newRungs })}</Small>
+      {grew.length > 0 && (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {STATS.map((s) => (
+        {grew.map((s) => (
           <View
             key={s}
             accessible
@@ -53,7 +58,7 @@ function Growth({ growth }: { growth: ServerState['growth'] }) {
           </View>
         ))}
       </View>
-      <Small>{growthLine({ levels: growth.levels, quests: growth.questsCleared, rungs: growth.newRungs })}</Small>
+      )}
     </NightCard>
   );
 }
@@ -65,6 +70,7 @@ export function Chronicle({ onOpenReading = () => {} }: { onOpenReading?: (id: s
   const lastSyncedAt = useGame((s) => s.lastSyncedAt);
   const stale = status === 'offline' || status === 'retrying';
   const streak = view?.character.streak;
+  const shown = view == null ? null : shownStreak(view);
   const today = view?.calendar.find((d) => d.mark === 'open')?.date ?? null;
 
   return (
@@ -73,8 +79,8 @@ export function Chronicle({ onOpenReading = () => {} }: { onOpenReading?: (id: s
         <Label>{C.label}</Label>
         {streak !== undefined && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <Tile value={streak.current} label={C.streak} />
-            <Tile value={streak.best} label={C.best} />
+            <Tile value={shown!.current} label={C.streak} />
+            <Tile value={shown!.best} label={C.best} />
             <Tile value={streak.shields} label={C.shields} of={fillText(C.shieldsOf, { max: MAX_SHIELDS })} />
           </View>
         )}

@@ -2,8 +2,11 @@
 // not-medical-advice line and the version. M6c: Training under Game. M7b: Your game (voice, the day's end, minutes,
 // difficulty), Delete my character, and the sign-in-lost card. M7c: the Accountability Pact under Game. M7d: the
 // Notifications section (S1). M9b: About opens Your data and privacy; the update card in Sync. M10b: the Haptics switch
-// under Your game.
-import { ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PRIVACY_TEXT, SETTINGS_TEXT } from '@levelmeup/content';
+// under Your game. M10c: places are rows with what's set now (Daily plan, Training, the Pact, Notifications, privacy);
+// Delete my character moves to the end, under its own heading.
+import {
+  ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PRIVACY_TEXT, SETTINGS_TEXT, VOICE_NAMES, fillText,
+} from '@levelmeup/content';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +17,7 @@ import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
+import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
@@ -98,18 +102,23 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
           )}
         </NightCard>
         {signInLost && <SignInLost />}
-        {phase === 'ready' && !signInLost && <Button label={SETTINGS_TEXT.account.delete} variant="secondary" onPress={onDelete} />}
       </View>
 
       <View style={{ gap: 12 }}>
         <SectionTitle title="Game" />
-        <Button label={SETTINGS_TEXT.game.open} variant="secondary" onPress={onGame} />
+        <RowLink
+          label={SETTINGS_TEXT.game.open}
+          line={view === null ? undefined : fillText(SETTINGS_TEXT.game.row, {
+            voice: VOICE_NAMES[view.profile.voice], time: clockLabel(view.profile.boundaryMinutes), minutes: view.profile.minutesPerDay,
+          })}
+          onPress={onGame}
+        />
         {/* M10b: kept on the phone and applied at once, so not inside Your game, whose Save goes to the server. */}
         <Toggle label={SETTINGS_TEXT.haptics.label} line={SETTINGS_TEXT.haptics.line} value={haptics} onChange={(on) => void setHaptics(on)} />
-        <Button label={ADJUST_TEXT.training.open} variant="secondary" onPress={onTraining} />
+        <RowLink label={ADJUST_TEXT.training.open} onPress={onTraining} />
         {view !== null && onPact !== undefined && (
           <>
-            <Button label={`${PACT_TEXT.settings} · ${pactName(view.profile.accountabilityLevel)}`} variant="secondary" onPress={onPact} />
+            <RowLink label={PACT_TEXT.settings} line={pactName(view.profile.accountabilityLevel)} onPress={onPact} />
             {pactStartsNext(view) && <Small>{PACT_TEXT.startsNext}</Small>}
           </>
         )}
@@ -118,12 +127,12 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
       {onNotifications !== undefined && (
         <View style={{ gap: 12 }}>
           <SectionTitle title={NOTIFY_TEXT.section} />
-          <NightCard>
-            <Body>{`${NOTIFY_TEXT.briefing} · ${slotLine(notify.briefing)}`}</Body>
-            <Body>{`${NOTIFY_TEXT.evening} · ${slotLine(notify.evening)}`}</Body>
-            <Meta>{NOTIFY_TEXT.eveningNote}</Meta>
-          </NightCard>
-          <Button label={NOTIFY_TEXT.open} variant="secondary" onPress={onNotifications} />
+          <RowLink
+            label={NOTIFY_TEXT.open}
+            line={`${NOTIFY_TEXT.briefing} · ${slotLine(notify.briefing)}\n${NOTIFY_TEXT.evening} · ${slotLine(notify.evening)}`}
+            onPress={onNotifications}
+          />
+          <Meta>{NOTIFY_TEXT.eveningNote}</Meta>
         </View>
       )}
 
@@ -143,10 +152,17 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
         <SectionTitle title="About" />
         <Small>{ABOUT_TEXT.notMedical}</Small>
         <Meta>{`Version ${version}`}</Meta>
-        {onPrivacy !== undefined && <Button label={PRIVACY_TEXT.open} variant="secondary" onPress={onPrivacy} />}
+        {onPrivacy !== undefined && <RowLink label={PRIVACY_TEXT.open} onPress={onPrivacy} />}
       </View>
 
-      {onDeveloper !== undefined && <Button label="Developer" variant="secondary" onPress={onDeveloper} />}
+      {phase === 'ready' && !signInLost && (
+        <View style={{ gap: 12 }}>
+          <SectionTitle title={SETTINGS_TEXT.account.section} />
+          <Button label={SETTINGS_TEXT.account.delete} variant="secondary" onPress={onDelete} />
+        </View>
+      )}
+
+      {onDeveloper !== undefined && <RowLink label="Developer" onPress={onDeveloper} />}
     </ScreenScroll>
   );
 }

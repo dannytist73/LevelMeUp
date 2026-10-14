@@ -91,7 +91,8 @@ describe('the Accountability Pact (board F5)', () => {
     const signed = adjustState({ profile: profileRow(undefined, { accountability_level: 1, accountability_enabled_at: new Date(DAY_TWO_NOW) }) });
     await render(withStore(testStore({ view: project(signed, []) }),
       <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} onPact={onPact} version="0.1.0" deviceZone="Asia/Manila" />));
-    await fireEvent.press(screen.getByRole('button', { name: `${PACT_TEXT.settings} · ${PACT_TEXT.names[1]}` }));
+    // M10c: a row, its level as its line.
+    await fireEvent.press(screen.getByRole('button', { name: `${PACT_TEXT.settings}. ${PACT_TEXT.names[1]}` }));
     expect(onPact).toHaveBeenCalled();
     expect(screen.getByText(PACT_TEXT.startsNext)).toBeTruthy();
   });

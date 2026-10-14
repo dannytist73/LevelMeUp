@@ -12,7 +12,8 @@ export const CHARACTER_TEXT = {
   next: 'Next: Level {level}',
   stats: {
     title: 'Stats',
-    lead: 'Bars show progress to the next point.',
+    /** M10c: the rank as a quiet line beside the points (Quest cleared stamps a new one). */
+    rank: 'Rank {rank}',
     toNext: '{xp} XP to {next}',
     rankAt: 'rank {rank} at {at}',
     discipline: 'grows only from showing up',

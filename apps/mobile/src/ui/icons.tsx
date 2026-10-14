@@ -2,7 +2,10 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { colors } from '../theme/tokens.ts';
 
-export type IconName = 'settings' | 'flame' | 'shield' | 'sun' | 'user' | 'calendar' | 'chevronLeft' | 'chevronRight';
+export type IconName =
+  | 'settings' | 'flame' | 'shield' | 'sun' | 'user' | 'calendar' | 'chevronLeft' | 'chevronRight'
+  // M10c: rows that open in place, the portrait's switch, a set done.
+  | 'chevronDown' | 'chevronUp' | 'switch' | 'check';
 
 const GEAR =
   'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z';
@@ -28,6 +31,14 @@ function shapes(name: IconName) {
       return [<Path key="p" d="M15 18l-6-6 6-6" />];
     case 'chevronRight':
       return [<Path key="p" d="M9 18l6-6-6-6" />];
+    case 'chevronDown':
+      return [<Path key="p" d="M6 9l6 6 6-6" />];
+    case 'chevronUp':
+      return [<Path key="p" d="M18 15l-6-6-6 6" />];
+    case 'switch':
+      return [<Path key="p" d="M4 8h13l-3-3M20 16H7l3 3" />];
+    case 'check':
+      return [<Path key="p" d="M5 12l5 5 9-10" />];
   }
 }
 

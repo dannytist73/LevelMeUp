@@ -66,7 +66,8 @@ describe('Today', () => {
     expect(screen.getByText(/^LV \d+ Warrior$/)).toBeTruthy();
     expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ })).toBeTruthy();
     expect(screen.getByText('day streak')).toBeTruthy();
-    expect(screen.getByText('of 2 shields')).toBeTruthy();
+    // M10c: shields as the icon and the number; the label still says it in full.
+    expect(screen.getByLabelText('0 of 2 shields')).toBeTruthy();
   });
 
   it('shows the core quest in the player\'s voice, with its target, why, safety line and XP stamp', async () => {
@@ -85,13 +86,13 @@ describe('Today', () => {
     expect(screen.getByText(authoredTemplate(side2.templateId).voice.system.title)).toBeTruthy();
     expect(screen.getAllByText(`+${xpOf(side2)} XP`).length).toBeGreaterThan(0);
     expect(screen.getByText(`${STAT_NAMES[side1.stat]} · cleared 21:00`)).toBeTruthy();
-    expect(screen.getByLabelText(`Cleared +${xpOf(side1)}`)).toBeTruthy();
+    expect(screen.getByText(`Cleared +${xpOf(side1)}`)).toBeTruthy(); // M10c: a quiet line, not a stamp
   });
 
   it('marks a quest whose change the server hasn\'t confirmed', async () => {
     await renderToday({ view: project(SERVER, [completeEvent(core.id)]) });
     expect(screen.getByText('Will sync')).toBeTruthy();
-    expect(screen.getAllByLabelText(`Cleared +${xpOf(core)}`)).toHaveLength(2); // the core quest and side quest 1
+    expect(screen.getAllByText(`Cleared +${xpOf(core)}`)).toHaveLength(2); // the core quest and side quest 1
   });
 
   it('offline: the cached quests stay, with a quiet "will sync" mark and no error wording', async () => {
@@ -174,7 +175,7 @@ describe('Character (M6d)', () => {
       expect(screen.getByText(STAT_NAMES[stat])).toBeTruthy();
       expect(screen.getByLabelText(`${STAT_NAMES[stat]} progress to the next point`)).toBeTruthy();
     }
-    expect(screen.getAllByLabelText(/^Rank [EDCBAS]$/)).toHaveLength(5);
+    expect(screen.getAllByText(/^Rank [EDCBAS]$/)).toHaveLength(5); // M10c: a quiet line beside the points
     expect(screen.getByText(/grows only from showing up$/)).toBeTruthy();
   });
 
@@ -404,6 +405,8 @@ it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core
   await render(withStore(testStore({ view: project(adjustState(), []) }),
     <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={onPain} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
       now={() => DAY_TWO_NOW} />));
+  // M10c decision 3: the options open from "Change today"; the pain button stays in sight.
+  await fireEvent.press(screen.getByRole('button', { name: 'Change today' }));
   expect(screen.getByRole('button', { name: 'Swap · 1 left' })).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
   expect(onPain).toHaveBeenCalledWith(200);
@@ -422,7 +425,8 @@ it('Character offers a class change, and says when the next one opens (M6b)', as
   const changed = adjustState({ profile: profileRow(undefined, { class_changed_at: new Date(DAY_TWO_NOW - 3 * DAY_MS) }) });
   await render(withStore(testStore({ view: project(changed, []) }), <Character onChangeClass={onChangeClass} onOpenBook={jest.fn()} now={() => DAY_TWO_NOW} />));
   expect(screen.getByText(/Your next class change opens on/)).toBeTruthy();
-  await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.classChange.open }));
+  // M10c: a row, the class and its lock as its line.
+  await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${ADJUST_TEXT.classChange.open}\. Class: Warrior · Your next class change opens on`) }));
   expect(onChangeClass).toHaveBeenCalled();
 });
 

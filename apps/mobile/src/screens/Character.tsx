@@ -1,20 +1,22 @@
 // Character (spec §1.3, board D4; M6d): the portrait frame, name, level and title, the stats with progress to their next
 // point, the class path, Scholar's Path for a Mage at level 10, the achievements, the vow, and the class change (M6b).
+// M10c: Switch portrait is a round button on the portrait's corner; the class change is a row.
 import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { figureFor, otherFigure } from '../art/portraits.ts';
 import { scholarsPathOpen } from '../game/character.ts';
 import { marked, shadowHold } from '../game/pact.ts';
 import { useGame } from '../state/store.ts';
 import { colors, space } from '../theme/tokens.ts';
-import { Button } from '../ui/Button.tsx';
 import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
+import { Icon } from '../ui/icons.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { Portrait } from '../ui/Portrait.tsx';
+import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Caption, Heading, Label, Title } from '../ui/Text.tsx';
+import { Body, Caption, Label, Title } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
 import { Achievements } from './character/Achievements.tsx';
 import { ClassPath } from './character/ClassPath.tsx';
@@ -64,10 +66,17 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
         <Label>{T.label}</Label>
-        <Portrait classId={classId} level={level} figure={figure} marked={mark}
-          label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
-        <Button label={T.switchPortrait} variant="secondary" onPress={() => void setPortrait(otherFigure(figure))}
-          style={{ alignSelf: 'center' }} />
+        <View style={{ alignSelf: 'center' }}>
+          <Portrait classId={classId} level={level} figure={figure} marked={mark}
+            label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
+          <Pressable accessibilityRole="button" accessibilityLabel={T.switchPortrait} onPress={() => void setPortrait(otherFigure(figure))}
+            style={({ pressed }) => ({
+              position: 'absolute', right: -10, bottom: -10, width: 52, height: 52, borderRadius: 26, alignItems: 'center',
+              justifyContent: 'center', backgroundColor: pressed ? colors.ashLight : colors.paper, borderWidth: 3, borderColor: colors.ink,
+            })}>
+            <Icon name="switch" size={24} color={colors.ink} />
+          </Pressable>
+        </View>
         <Title>{view.profile.name}</Title>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <View style={{ paddingVertical: 3, paddingHorizontal: 10, backgroundColor: colors.paper, transform: [{ skewX: '-10deg' }] }}>
@@ -94,14 +103,9 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
             <Body>{`“${vow}”`}</Body>
           </NightCard>
         )}
-        <NightCard>
-          <View style={{ gap: 8 }}>
-            <Label tone="chalk">{ADJUST_TEXT.classChange.label}</Label>
-            <Heading>{className}</Heading>
-            {lock !== null && <Caption>{lockLine(lock, timeZone)}</Caption>}
-            <Button label={ADJUST_TEXT.classChange.open} variant="secondary" onPress={onChangeClass} />
-          </View>
-        </NightCard>
+        <RowLink label={ADJUST_TEXT.classChange.open}
+          line={lock === null ? `${ADJUST_TEXT.classChange.label}: ${className}` : `${ADJUST_TEXT.classChange.label}: ${className} · ${lockLine(lock, timeZone)}`}
+          onPress={onChangeClass} />
         {stale && <Caption>{lastSynced(lastSyncedAt, timeZone)}</Caption>}
       </View>
     </ScreenScroll>

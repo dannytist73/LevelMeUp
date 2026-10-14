@@ -101,10 +101,28 @@ describe('Settings → Account and Game (M7b)', () => {
     const onGame = jest.fn();
     const onDelete = jest.fn();
     await render(withStore(testStore({ view: project(adjustState(), []) }), settings(onGame, onDelete)));
-    await fireEvent.press(screen.getByRole('button', { name: G.open }));
+    // M10c: Daily plan is a row with what's set now as its line.
+    await fireEvent.press(screen.getByRole('button', { name: /^Daily plan\. \w+ voice · day ends .+ · \d+ min a day$/ }));
     expect(onGame).toHaveBeenCalled();
     await fireEvent.press(screen.getByRole('button', { name: SETTINGS_TEXT.account.delete }));
     expect(onDelete).toHaveBeenCalled();
+  });
+
+  it('puts Delete my character last, under its own heading, after About (M10c)', async () => {
+    await render(withStore(testStore({ view: project(adjustState(), []) }), settings()));
+    const textsOf = (node: unknown): string[] => {
+      if (typeof node === 'string') return [node.toLowerCase()];
+      if (Array.isArray(node)) return node.flatMap(textsOf);
+      if (node !== null && typeof node === 'object' && 'children' in node) return textsOf((node as { children: unknown }).children ?? []);
+      return [];
+    };
+    const texts = textsOf(screen.toJSON());
+    const about = texts.indexOf('about');
+    const section = texts.indexOf(SETTINGS_TEXT.account.section.toLowerCase());
+    const del = texts.indexOf(SETTINGS_TEXT.account.delete.toLowerCase());
+    expect(about).toBeGreaterThanOrEqual(0);
+    expect(section).toBeGreaterThan(about);
+    expect(del).toBeGreaterThan(section);
   });
 
   it('with the sign-in gone for good: the start-again card, and no delete (decision 4)', async () => {
@@ -125,10 +143,13 @@ describe('Settings → Notifications section (M7d, S1 board)', () => {
     return onNotifications;
   };
 
+  // M10c: both lines are the Notifications row's line.
+  const has = (text: string) => screen.getByText(new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
   it('shows the briefing and the evening reminder, and opens the notifications', async () => {
     const onNotifications = await show('granted');
-    expect(screen.getByText(`${NOTIFY_TEXT.briefing} · 7:30 AM`)).toBeTruthy();
-    expect(screen.getByText(`${NOTIFY_TEXT.evening} · ${NOTIFY_TEXT.off}`)).toBeTruthy();
+    expect(has(`${NOTIFY_TEXT.briefing} · 7:30 AM`)).toBeTruthy();
+    expect(has(`${NOTIFY_TEXT.evening} · ${NOTIFY_TEXT.off}`)).toBeTruthy();
     expect(screen.getByText(NOTIFY_TEXT.eveningNote)).toBeTruthy();
     await fireEvent.press(screen.getByText(NOTIFY_TEXT.open));
     expect(onNotifications).toHaveBeenCalled();
@@ -136,12 +157,12 @@ describe('Settings → Notifications section (M7d, S1 board)', () => {
 
   it('says Off until the phone allows them', async () => {
     await show('ask');
-    expect(screen.getByText(`${NOTIFY_TEXT.briefing} · ${NOTIFY_TEXT.off}`)).toBeTruthy();
+    expect(has(`${NOTIFY_TEXT.briefing} · ${NOTIFY_TEXT.off}`)).toBeTruthy();
   });
 
   it("names the phone's settings once they turned notifications off", async () => {
     await show('denied');
-    expect(screen.getByText(`${NOTIFY_TEXT.briefing} · ${NOTIFY_TEXT.blocked}`)).toBeTruthy();
+    expect(has(`${NOTIFY_TEXT.briefing} · ${NOTIFY_TEXT.blocked}`)).toBeTruthy();
   });
 });
 

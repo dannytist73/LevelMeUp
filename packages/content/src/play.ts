@@ -36,11 +36,14 @@ export const PLAY_TEXT = {
     unitLine: 'Each set in {unit}.',
     units: { reps: 'reps', repsPerSide: 'reps per side', seconds: 'seconds', secondsPerSide: 'seconds per side' },
     note: 'Log what you did. Less than the target still counts.',
+    /** M10c decision 7: the sets of the last time this quest was logged on this phone. */
+    lastTime: 'Last time: {sets}',
   },
   workout: {
     exercise: 'Exercise {n} of {total}',
     rest: 'Rest about 2 minutes between sets.',
-    note: 'Each set starts at the bottom of the range. Log what you did; less still counts.',
+    note: 'Each set starts where you left it last time, or at the bottom of the range. Log what you did; less still counts.',
+    lastTime: 'Last time: {sets}',
     set: 'Set {n}',
     fewer: '{name}, set {n}, one less',
     more: '{name}, set {n}, one more',
@@ -49,6 +52,17 @@ export const PLAY_TEXT = {
     log: 'Log workout',
     change: 'Change equipment or program',
     replanning: 'Your new training setup is on its way. Log this workout once it syncs.',
+  },
+  /** M10c decision 8: the rest between sets, started by a set's Done. */
+  rest: {
+    done: 'Set {n} done',
+    undone: 'Set {n}, not done yet',
+    label: 'Rest between sets',
+    left: 'Rest {time}',
+    more: '+15 s',
+    moreLabel: 'Rest 15 seconds longer',
+    skip: 'Skip',
+    over: 'Rest over. Next set when you are ready.',
   },
   sentence: {
     label: 'One sentence',
@@ -80,6 +94,26 @@ export const PLAY_TEXT = {
     portrait: 'Your portrait has changed.',
     continue: 'Continue',
   },
+} as const;
+
+/** M10c: Today's own words: the streak note, the core quest's Begin, the next quest, the cleared day, the day's options,
+ * the notices' count and quick clear. */
+export const TODAY_TEXT = {
+  streak: 'day streak',
+  counts: 'today counts',
+  shields: '{n} of {max} shields',
+  begin: 'Begin',
+  next: 'Next',
+  cleared: 'Cleared +{xp}',
+  clearedAt: '{stat} · cleared {time}',
+  dayCleared: 'Day {day} cleared',
+  earned: '+{xp} XP today',
+  nextDay: 'The next day starts at {time}.',
+  change: 'Change today',
+  notices: '{n} of {total}',
+  hold: 'Hold to clear · +{xp} XP',
+  holdTap: 'Clear it',
+  holdConfirm: 'Yes, mark it cleared',
 } as const;
 
 /** Fills `{name}` placeholders. A missing value is a bug, so it throws. */

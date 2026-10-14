@@ -10,6 +10,7 @@ export * from './shadow.ts';
 export * from './onboarding.ts';
 export * from './art.ts';
 export * from './play.ts';
+export * from './widget.ts';
 export * from './adjust.ts';
 export * from './checkin.ts';
 export * from './settings.ts';

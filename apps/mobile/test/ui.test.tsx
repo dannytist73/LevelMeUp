@@ -22,6 +22,8 @@ import { QuestArt } from '../src/ui/QuestArt.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { TextField } from '../src/ui/TextField.tsx';
 import { TimeStepper } from '../src/ui/TimeStepper.tsx';
+import { LinkButton } from '../src/ui/LinkButton.tsx';
+import { RowLink } from '../src/ui/RowLink.tsx';
 import { fingerDown, fingerUp } from './support/touch.ts';
 
 const flat = (style: unknown): Record<string, unknown> => (StyleSheet.flatten(style as never) ?? {}) as Record<string, unknown>;
@@ -375,5 +377,39 @@ describe('XpBar on paper', () => {
     expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On paper' }).props.style).borderColor).toBe(colors.ink);
     await render(<XpBar value={1} max={2} label="On night" />);
     expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On night' }).props.style).borderColor).toBe(colors.chalk);
+  });
+});
+
+describe('RowLink and LinkButton (M10c decision 5)', () => {
+  it('a row names where it goes and what is there, is at least 56 high, and opens on press', async () => {
+    const onPress = jest.fn();
+    await render(<RowLink label="Daily plan" line="Mentor · ends 4:00 AM · 25 min" onPress={onPress} />);
+    const row = screen.getByRole('button', { name: 'Daily plan. Mentor · ends 4:00 AM · 25 min' });
+    expect(flat(row.props.style).minHeight).toBeGreaterThanOrEqual(56);
+    expect(screen.getByTestId('icon-chevronRight', { includeHiddenElements: true })).toBeTruthy();
+    await fireEvent.press(row);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('a row that opens in place says whether it is open and turns its chevron', async () => {
+    await render(<RowLink label="Change today" open={false} onPress={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Change today' }).props.accessibilityState).toEqual({ expanded: false });
+    expect(screen.getByTestId('icon-chevronDown', { includeHiddenElements: true })).toBeTruthy();
+    await render(<RowLink label="Change today" open onPress={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Change today' }).props.accessibilityState).toEqual({ expanded: true });
+    expect(screen.getByTestId('icon-chevronUp', { includeHiddenElements: true })).toBeTruthy();
+  });
+
+  it('a link button is underlined text, at least 48 high, and does nothing when disabled', async () => {
+    const onPress = jest.fn();
+    await render(<LinkButton label="Logged by mistake? Undo" onPress={onPress} />);
+    const link = screen.getByRole('button', { name: 'Logged by mistake? Undo' });
+    expect(flat(link.props.style).minHeight).toBeGreaterThanOrEqual(48);
+    expect(flat(screen.getByText('Logged by mistake? Undo').props.style).textDecorationLine).toBe('underline');
+    await fireEvent.press(link);
+    expect(onPress).toHaveBeenCalledTimes(1);
+    await render(<LinkButton label="Off" disabled onPress={onPress} />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Off' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });

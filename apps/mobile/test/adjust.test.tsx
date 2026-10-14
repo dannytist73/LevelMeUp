@@ -1,5 +1,5 @@
 import {
-  ABILITY_LINES, ADJUST_TEXT, EQUIPMENT_NAMES, LIGHTER_TEXT, ONBOARDING_TEXT, PLAY_TEXT, authoredTemplate, fillText,
+  ABILITY_LINES, ADJUST_TEXT, EQUIPMENT_NAMES, LIGHTER_TEXT, ONBOARDING_TEXT, PLAY_TEXT, TODAY_TEXT, authoredTemplate, fillText,
 } from '@levelmeup/content';
 import { DAY_MS, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -27,11 +27,14 @@ const now = () => DAY_TWO_NOW;
 const shown = (state: ServerState = adjustState()) => project(state, []);
 const actions = (view = shown(), enqueue = jest.fn(async () => {}), onSwap = jest.fn(), onVanish = jest.fn()) =>
   <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />;
+/** M10c decision 3: the day's options open from one row. */
+const openOptions = () => fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.change }));
 
 describe("Today's adjustments (M6b)", () => {
   it('rest offers today and tomorrow, each within the limit; tomorrow is sent as such (M7b decision 5)', async () => {
     const enqueue = jest.fn(async () => {});
     await render(actions(shown(), enqueue));
+    await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
     expect(screen.getByRole('button', { name: A.rest.confirm })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: A.rest.tomorrow }));
@@ -41,7 +44,10 @@ describe("Today's adjustments (M6b)", () => {
   it('a rest day today can still plan tomorrow', async () => {
     const view = shown();
     await render(actions({ ...view, today: { ...view.today!, protection: 'planned_rest' } }));
-    await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
+    await openOptions();
+    // M10c: today can't rest again, so the button says what it offers.
+    expect(screen.queryByRole('button', { name: A.day.rest })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: A.rest.tomorrow }));
     expect(screen.queryByRole('button', { name: A.rest.confirm })).toBeNull();
     expect(screen.getByRole('button', { name: A.rest.tomorrow })).toBeTruthy();
   });
@@ -49,6 +55,7 @@ describe("Today's adjustments (M6b)", () => {
   it('with neither today nor tomorrow left, no rest button', async () => {
     const view = shown();
     await render(actions({ ...view, today: { ...view.today!, protection: 'planned_rest', restTomorrow: false } }));
+    await openOptions();
     expect(screen.queryByRole('button', { name: A.day.rest })).toBeNull();
   });
 
@@ -61,6 +68,7 @@ describe("Today's adjustments (M6b)", () => {
     const enqueue = jest.fn(async () => {});
     const onSwap = jest.fn();
     await render(actions(shown(), enqueue, onSwap));
+    await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: 'Swap · 1 left' }));
     expect(onSwap).toHaveBeenCalled();
     await fireEvent.press(screen.getByRole('button', { name: A.day.hardDay }));
@@ -76,6 +84,7 @@ describe("Today's adjustments (M6b)", () => {
     const enqueue = jest.fn(async () => {});
     const view = shown();
     await render(actions({ ...view, today: { ...view.today!, restAllowed: false, restTomorrow: false } }, enqueue));
+    await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
     expect(screen.getByText(A.rest.limit)).toBeTruthy();
     expect(screen.queryByRole('button', { name: A.rest.confirm })).toBeNull();
@@ -89,11 +98,13 @@ describe("Today's adjustments (M6b)", () => {
     const view = shown();
     const limited = { ...view, today: { ...view.today!, restAllowed: false, restTomorrow: false } };
     await render(actions({ ...limited, lighterPlan: { from: 25, to: 15, offered: false } }, enqueue));
+    await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
     expect(screen.getByText(A.rest.limit)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: fillText(LIGHTER_TEXT.restLimit, { from: 25, to: 15 }) }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'lighter_plan', accept: true });
     await render(actions({ ...limited, lighterPlan: null }, enqueue));
+    await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
     expect(screen.queryByRole('button', { name: /^Lighten the plan/ })).toBeNull();
   });
@@ -101,6 +112,7 @@ describe("Today's adjustments (M6b)", () => {
   it('hides what the day no longer allows: no swap left, already a hard day, already protected (and tomorrow planned, M7b)', async () => {
     const tomorrowPlanned = { character: characterRow({ rest_day: 3 }) };
     await render(actions(shown(adjustState(tomorrowPlanned, { swaps_used: 1, hard_day: true, protection: 'planned_rest' }))));
+    expect(screen.queryByRole('button', { name: TODAY_TEXT.change })).toBeNull();
     expect(screen.queryByRole('button', { name: /Swap ·/ })).toBeNull();
     expect(screen.queryByRole('button', { name: A.day.hardDay })).toBeNull();
     expect(screen.queryByRole('button', { name: A.day.rest })).toBeNull();
@@ -110,6 +122,7 @@ describe("Today's adjustments (M6b)", () => {
     const enqueue = jest.fn(async () => {});
     const monk = shown(adjustState({ profile: profileRow(undefined, { class_id: 'monk' }), character: characterRow({ xp_vitality: 240 }) }));
     const view = await render(actions(monk, enqueue));
+    await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: 'Stillness' }));
     expect(screen.getByText(A.abilities.stillness)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Use Stillness' }));
@@ -119,6 +132,32 @@ describe("Today's adjustments (M6b)", () => {
     await view.rerender(actions(rogue, enqueue, jest.fn(), onVanish));
     await fireEvent.press(screen.getByRole('button', { name: A.day.vanish }));
     expect(onVanish).toHaveBeenCalled();
+  });
+
+  it('the options start folded under "Change today", which says whether it is open (M10c decision 3)', async () => {
+    await render(actions());
+    const row = screen.getByRole('button', { name: TODAY_TEXT.change });
+    expect(row.props.accessibilityState).toEqual({ expanded: false });
+    expect(screen.queryByRole('button', { name: A.day.hardDay })).toBeNull();
+    await fireEvent.press(row);
+    expect(screen.getByRole('button', { name: TODAY_TEXT.change }).props.accessibilityState).toEqual({ expanded: true });
+    expect(screen.getByRole('button', { name: A.day.hardDay })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.change }));
+    expect(screen.queryByRole('button', { name: A.day.hardDay })).toBeNull();
+  });
+
+  it('a day that already counts is offered only a rest tomorrow (M10c decision 4)', async () => {
+    const enqueue = jest.fn(async () => {});
+    const counted = shown(adjustState({}, {}));
+    const today = counted.today!;
+    const done = { ...counted, today: { ...today, quests: today.quests.map((q) => (q.slot === 'core' ? { ...q, completedAt: '2026-10-11T00:00:00.000Z' } : q)) } };
+    await render(actions(done, enqueue));
+    await openOptions();
+    expect(screen.queryByRole('button', { name: A.day.rest })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: A.rest.tomorrow }));
+    expect(screen.queryByRole('button', { name: A.rest.confirm })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: A.rest.tomorrow }));
+    expect(enqueue).toHaveBeenLastCalledWith({ type: 'plan_rest', dayId: 2, tomorrow: true });
   });
 
   it('the banners say what kind of day it is; a resting exercise offers Resume', async () => {

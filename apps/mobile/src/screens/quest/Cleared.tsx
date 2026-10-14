@@ -14,6 +14,7 @@ import type { ClearedNumbers } from '../../quest/cleared.ts';
 import { colors, fonts, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { InkBurst } from '../../ui/InkBurst.tsx';
+import { LinkButton } from '../../ui/LinkButton.tsx';
 import { MOMENTS, countPlan } from '../../ui/motion.ts';
 import type { BarPoint } from '../../ui/motion.ts';
 import { OutlinedTitle } from '../../ui/OutlinedTitle.tsx';
@@ -193,7 +194,8 @@ export function Cleared({
 
       <Button label={C.continue} onPress={onContinue} />
       {onReadAgain !== undefined && <Button label={READING_TEXT.readAgain} variant="secondary" onPress={onReadAgain} />}
-      {dayOpen && <Button label={C.undo} variant="secondary" onPress={onUndo} />}
+      {/* M10c: a quiet link, so it never competes with Continue. */}
+      {dayOpen && <LinkButton label={C.undo} onPress={onUndo} />}
       {dayOpen && onPain !== null && <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} />}
       {waiting && <Caption>{PLAY_TEXT.quest.willSync}</Caption>}
     </ScreenScroll>

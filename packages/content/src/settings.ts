@@ -3,7 +3,9 @@
 
 export const SETTINGS_TEXT = {
   game: {
-    open: 'Voice, rhythm and minutes',
+    /** M10c: the row in Settings, with what's set now as its line. */
+    open: 'Daily plan',
+    row: '{voice} voice · day ends {time} · {minutes} min a day',
     title: 'Your game',
     line: 'How the System speaks to you, when your quest day ends, and how much each day asks of you.',
     voice: 'Voice',
@@ -21,6 +23,8 @@ export const SETTINGS_TEXT = {
     line: 'A click you can feel when a stamp lands or a vow is sworn.',
   },
   account: {
+    /** M10c: the last section of Settings, after About. */
+    section: 'Your character',
     delete: 'Delete my character',
   },
   delete: {
