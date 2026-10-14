@@ -567,7 +567,8 @@ Rows 1–14 on the emulator with the development build `d49722ad` (0.5.0, versio
 over `6fa0bb39` with Vera kept. Read with uiautomator, screenshots and Android's own logs (`[haptic] …`,
 `dumpsys vibrator_manager`, the widget worker's lines). To see open quests on a cleared day, Vera's core quest and one
 side quest were undone and cleared again (her day ends as it was: four of four). Rows 15–18 on the Find X9 with the
-0.5.0 preview APK (the owner), when there is one.
+0.5.0 preview APK (the owner): EAS build `ae75658a`,
+https://expo.dev/artifacts/eas/VUjDOueOOEvQXR4OeYY0-QUyhvulA8syxswcwHGotfc.apk.
 
 | # | Check | Result |
 |---|---|---|

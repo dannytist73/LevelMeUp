@@ -15,9 +15,9 @@ DNA Wedding project (architecture §10, §12).
    install.
 3. A new build installs over the old one and keeps the character.
 
-The current build: **0.4.0** (M10b, haptics and a living Shadow), EAS build `c3633921`, APK
-https://expo.dev/artifacts/eas/eCz9h2pozxdRQADTQ5IEPIVVj6sXpQaGZS_qNc5jubs.apk (2026-10-15). The
-previous ones: 0.3.0 (M10a), EAS build `38704cd8`; 0.2.0 (M9b), EAS build `2d297063`.
+The current build: **0.5.0** (M10c, clarity and the home-screen widget), EAS build `ae75658a`, APK
+https://expo.dev/artifacts/eas/VUjDOueOOEvQXR4OeYY0-QUyhvulA8syxswcwHGotfc.apk (2026-10-15). The previous ones: 0.4.0 (M10b), EAS build
+`c3633921`; 0.3.0 (M10a), EAS build `38704cd8`; 0.2.0 (M9b), EAS build `2d297063`.
 
 ## Saving with Google
 
