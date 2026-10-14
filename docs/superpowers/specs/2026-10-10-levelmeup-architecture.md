@@ -54,7 +54,7 @@ the relative paths still resolve (M2).
 |---|---|---|
 | Framework | Expo SDK 57, React Native 0.86, React 19.2, TypeScript | Current stable (30 Jun 2026); proven on the Find X9 |
 | Navigation | expo-router (3 tabs + stacks for onboarding, quest detail, settings) | Same as MAINARC |
-| Animation | Reanimated 4 + react-native-svg; Skia only if Phase 4 needs glow/particles | UI-thread animation, reduced-motion path |
+| Animation | Reanimated 4 + react-native-svg; Skia only if Phase 4 needs glow/particles. *M10b: expo-haptics for haptics, imported only by `src/ui/haptics.ts`.* | UI-thread animation, reduced-motion path |
 | Local data | expo-sqlite, two plain tables (`cache`, `outbox`) | Offline cache and outbox; no ORM for two JSON tables (M4; MAINARC also dropped drizzle-kit's migrator) |
 | State | Zustand | Same as MAINARC |
 | Supabase | @supabase/supabase-js with the project's publishable key; the session sealed with AES-256-GCM (expo-crypto), the key in expo-secure-store, sealed values in expo-sqlite's key-value store | Official SDK; SecureStore alone holds about 2 KB, less than a session with a linked Google account |

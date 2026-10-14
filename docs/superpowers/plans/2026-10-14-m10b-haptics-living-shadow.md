@@ -1648,3 +1648,69 @@ git commit -m "M10b docs: the checklist's M10b section, roadmap row 10b, the vis
   - **Test ids:** `eye-glow`, `ember`, `shadow-life`, `shadow-eyes`, with M10a's `shadow-art` and `shadow-creep` kept.
 
   Each is defined before a later task uses it.
+
+---
+
+## As built (2026-10-15)
+
+Built inline on `m10b-haptics` (from `main` at 3eb0c44), as M10a was (the owner: "Go with inline, but make sure to
+verify").
+
+**Commits:**
+
+- 5dacd4c spec; daa5162 plan.
+- ef56ef7 expo-haptics and `src/ui/haptics.ts` (Task 1).
+- 129bd1d Thud buzzes as its stamp lands; the hold buttons tick and click (Task 2).
+- 1b4478f the moments buzz; nothing for a miss (Task 3).
+- fee0baf the Haptics switch in Settings → Game; the shared `Toggle` (Task 4).
+- 267a79b the living Shadow's numbers, `forever`, `useAppActive` (Task 5); ae27b65 the Shadow lives (Task 6).
+- 6d50980 the motion bench's Haptics section (Task 7); b5c6edf version 0.4.0, versionCode 4 (Task 8).
+- 6596305 the review's two Important findings (Task 9); 896b2b2 its three Minor findings, at the owner's word.
+- fb5d3cf and 86f0055: two fixes from the emulator (Task 10).
+
+**Tests:** app 886 in 57 suites (839 before M10b); content 1108; rules 450; server unit 512. The typecheck,
+`check:functions`, the portable checks and `check:bundle` (no secrets, no developer code) pass.
+
+**Deviations from this plan:**
+
+- Cleared's and Celebration's header comments got their M10b line as a line of its own, not appended.
+- The glows are placed by their top-left corner, not centred with negative percentage margins: Yoga reads a placed
+  view's percentage top margin against its parent's height, so the plan's margins put them about 7 dp low (review).
+- **The hold button waits 100 ms for the press to settle** (`HOLD_SETTLE_MS`, Pressable's `unstable_pressDelay`), so a
+  scroll that starts on it never ticks or fills (the review's Minor 5). A quick tap still ticks once.
+- **A stamp's buzz waits on the animation clock** (`after` in `motion.ts`), not a JS timer (plan decision 5's
+  `setTimeout`). THUD_LAND_MS is unchanged.
+- Today takes `shown` (the route's `useIsFocused`) and `useGrowth` takes it too. Cleared chooses its ticking rank stamp
+  once (`useState`). Neither was in the plan (the review's Minor 3 and 4).
+- `test/support/touch.ts` touches through React Native's own press logic; the hold tests use it.
+
+**The review** (Task 9, `superpowers:requesting-code-review`):
+
+- **Important 1:** the pulse and the breath came back smaller after each trip to the background: a back-and-forth
+  `withRepeat` swings between where it starts and its end, and a cancelled loop restarted from where it stopped. Each
+  now stops at its start (6596305).
+- **Important 2:** the glows sat about 7 dp below the painted eyes (Yoga and percentage margins, above) (6596305).
+- **Minor 3:** Today's streak could tick while Today was hidden under another tab or screen. A rise while hidden is now
+  taken quietly, never played late (896b2b2).
+- **Minor 4:** a sync that reordered the stat-ups could move the rank tick or play it twice. The ticking stamp is chosen
+  once (896b2b2).
+- **Minor 5:** a scroll that started on a hold button ticked. Fixed with the press delay (896b2b2 tried a timer of its
+  own; fb5d3cf).
+- **Test gaps:** closed in 6596305.
+
+**The emulator** (Task 10; the checklist's M10b section has each row):
+
+- **The development build:** EAS `6fa0bb39-7b49-4c08-9036-3d647f579513` (0.4.0, versionCode 4), installed over 998b72c0.
+  Vera kept.
+- **Rows 1–9 pass.** Two of them only after a fix the unit tests couldn't see:
+  - **Row 1:** the review's scroll fix, a 100 ms timer, still ticked. React Native holds a press's end back until 130 ms
+    after it began, and RNTL's `fireEvent(…, 'pressIn')` skips that logic. Now Pressable's press delay, tested through
+    real touches (fb5d3cf).
+  - **Rows 2 and 5:** in the production bundle every reward buzz led its stamp by 0.1–0.12 s. The JS timer started as the
+    screen was made, about 0.1 s before Android drew it and started the stamp. The buzz now waits on the animation
+    clock; the achievement's click then landed within about 15 ms of its name (86f0055).
+- **How it was read:** Android's vibration list (`dumpsys vibrator_manager`) records each buzz with its haptic constant
+  and start time, in the production bundle too. Screen recordings stamped with the device clock (`screenrecord
+  --bugreport`) place a buzz to within about 50 ms.
+- **The emulator had to be restarted:** it had run out of memory (1 GB swapped), and frame stats read 99.7 % janky for
+  any screen. Afterwards the Shadow scene ran 60 s at 2.31 % janky.

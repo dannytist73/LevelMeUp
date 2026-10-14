@@ -71,6 +71,13 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   reduced-motion path (a fade, or nothing). The moments compose them with `MOMENTS`' delays: Quest cleared, the
   level-up and achievement modal, the reveal, the Shadow, the vow and Today (which moves only on a change). Developer →
   Motion bench replays them.
+- **Haptics and the living Shadow** (M10b): `src/ui/haptics.ts` is the only file that imports expo-haptics. Its `buzz`
+  plays a feel (`stamp`, `tick`, `level`, `sworn`) on Android's own haptic engine when Settings → Game → Haptics is on
+  (`lmu.haptics`, on by default). `Thud`'s `haptic` buzzes as a stamp lands (waiting on the animation clock with `motion.ts`'s `after`, not a JS
+  timer, which ran ahead of a screen still being drawn); `HoldButton` ticks once the press has
+  settled (100 ms, so a scroll never starts a hold) and clicks as it fires. A development build logs each buzz
+  (`[haptic] …`); the Jest setup mocks the file. `src/ui/ShadowArt.tsx` is the Shadow's living painting (its numbers in
+  `motion.ts`), stopped by `useAppActive` in the background.
 - `app/dev/` exists only in development builds (M9b: each `app/dev/<screen>.tsx` is a one-line stub that loads
   `src/dev/routes/<screen>.tsx` only when `__DEV__`, so a release bundle holds none of it; the self-check's device probes
   are `src/dev/probes.ts`; `check:bundle` fails if developer code reaches a release bundle): the account and "Save with Google", the outbox and notices, the

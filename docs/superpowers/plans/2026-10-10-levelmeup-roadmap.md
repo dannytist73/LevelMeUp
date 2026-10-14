@@ -32,7 +32,7 @@ guesses). Only milestone 1's plan exists today.
 | 9a | **Class art** | The painted class portraits (4 classes × a man and a woman × 3 tiers at levels 1–4, 5–9, 10 on; the same person edited forward with Qwen-Image-Edit) and the Shadow, in `lmu-art/class-v1`; Character, the reveal, the level-up at 5 and 10, and the Shadow's scene; "Switch portrait", kept on the phone. M9 split in two (M9a decision 1). **Built 2026-10-13; the art live in `lmu-art/class-v1` since about 10:12 UTC (the owner's yes, 25 of 25 byte-identical)**; no server change; merges after M8b. | `2026-10-13-m9a-class-art.md` |
 | 9b | **The pilot build** | The release build without the developer screens; `lmu-sync`'s speed; a minimum app version; Settings → About and privacy; the pacing re-run (experienced players modelled); a pilot report; the EAS preview APK and one Find X9 checklist. The backend is already live since M3. **Built 2026-10-13 (branch `m9b-pilot-build`); the functions deployed about 12:39 UTC (the owner's yes); a sync takes 1.0 s pinned to Singapore against 11.2 s from Seoul (median of 5); the preview APK is EAS build `2d297063`**; no migration; merges after M9a. | `2026-10-13-m9b-pilot-build.md` |
 | 10a | **Motion** | The visual spec's motion rule built with what's installed (Reanimated, react-native-svg): panels slam in, stamps thud, speed lines burst on the reveal, level-ups and quest cleared, an ink splash, the XP bar fills and counts; the Shadow's creep; Today moves only on a change; fades only with reduced motion; a developer motion bench; version 0.3.0. No server change. **Built 2026-10-14 (branch `m10a-motion`); reviewed; emulator rows 1–10 pass, 11 partly; the preview APK is EAS build `38704cd8`**; merges after M9b. | `2026-10-14-m10a-motion.md` |
-| 10b | **Haptics and a living Shadow** | Proposed, not specced: expo-haptics and a Rive Shadow, new native modules (the owner's approval, one new development build and pilot APK). | — |
+| 10b | **Haptics and a living Shadow** | expo-haptics (the one new native module) through `src/ui/haptics.ts`: a firm click as Quest cleared's XP stamp lands, a tick for the rank stamps, a double click on a level-up, a click for achievements, a tick for the streak, and the vow's and pact's hold; nothing for a miss; a Haptics switch in Settings → Game (on, kept on the phone). The Shadow lives in code over its painting (glowing eyes, rising embers, a breath), stopped in the background, still with reduced motion; Rive and a video loop turned down (owner, 2026-10-14). Version 0.4.0. No server change. **Built 2026-10-15 (branch `m10b-haptics`); reviewed; emulator rows 1–9 pass after two fixes (a stamp's buzz waits on the animation clock; the hold settles with Pressable's press delay)**; merges after M10a. | `2026-10-14-m10b-haptics-living-shadow.md` |
 
 **Merged 2026-10-14:** M5 through M10a are on `main` (the owner's choice; a fast-forward to `bf0220a`, with every test,
 the typecheck and the checks passing on `main`). The "merges after" notes above are history.
@@ -260,6 +260,16 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 | Later | The level-up and achievement modal's content shifts down about 17 dp on its first frame (emulator, M10a; it predates the motion, which now mostly hides it). |
 | Emulator | Vera's waiting rows: M7d row 6 (her next timer quest), M8b rows 5–6 (a Mage at level 5; the day boundary), M9a row 6 (a level-up to 5 in play). |
 | Tests | Reanimated's Jest mock makes a fresh shared value at each render, so an effect with a shared value in its deps runs again on every re-render in a test (never on the phone): test a restart by the view's identity, not by the calls that start it. |
+
+## Carried forward from M10b
+
+| When | Item |
+|---|---|
+| Find X9 | The M10b rows 10–15 (the owner), with the 0.4.0 preview APK; the M10a rows 12–15 and row 11's TalkBack still wait there too. Row 11 is the real check of a buzz's timing: the emulator places it to within about 50 ms. |
+| Later | Today's XP bar fills when a sync changes the XP even while another tab or screen is in front (M10a), so that fill can play unseen; the streak's flare and tick no longer do (M10b review). Cosmetic. |
+| Later | The level-up's second click follows the first on a JS timer: 151 ms apart on the emulator (designed 120). Fine unless the Find X9 says otherwise. |
+| Emulator | Vera's waiting rows, still: M7d row 6 (her next timer quest), M8b rows 5–6 (a Mage at level 5; the day boundary), M9a row 6 (a level-up to 5 in play). Vera is level 2 now. |
+| Tests | RNTL's `fireEvent(el, 'pressIn')` calls the handler directly and skips React Native's press logic (Pressable's press delay, the 130 ms minimum press): press timing is tested with `test/support/touch.ts`. A buzz's timing on the animation clock is the emulator's to check; feel.test runs `after` on fake timers. |
 
 ## Spikes and where they run
 

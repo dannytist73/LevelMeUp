@@ -85,7 +85,9 @@ night/ash). Calendar states differ in shape and lightness, not hue alone.
   reader is on.
 - **Motion:** panels slam in (about 180 ms); stamps thud down (scale 1.3 to 1); speed lines only on the reveal,
   level-ups and quest cleared. With reduced motion on, fades only. *M10a: built (`src/ui/motion.ts` and the pieces beside
-  it; spec 2026-10-14-m10a-motion-design.md).*
+  it; spec 2026-10-14-m10a-motion-design.md).* *M10b: the one loop is the Shadow's scene while it's open (its eyes,
+  embers and breath); haptics land with the reward stamps and the hold buttons (spec
+  2026-10-14-m10b-haptics-living-shadow-design.md).*
 
 ## 4. Screens
 

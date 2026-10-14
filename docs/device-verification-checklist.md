@@ -516,3 +516,45 @@ Reanimated reads it at launch: force-stop and reopen LevelMeUp after changing it
   switched in, the Shadow pact from day 2, the evening reminder at 8:00 PM and timer alerts on); GMT; animation scales
   1; font 1.0; density 420. Expo's floating Tools button sits over the Settings gear: it was turned off in the
   developer menu.
+
+## M10b — Haptics and a living Shadow
+
+Rows 1–9 on the emulator with the development build `6fa0bb39` (0.4.0, versionCode 4; Claude, 2026-10-15). The emulator
+can't be felt, so each buzz is read from the development log (`adb logcat -v time -s ReactNativeJS:I`, lines
+`[haptic] …`) and from Android's own list of vibrations (`adb shell dumpsys vibrator_manager`, "Recent vibrations"),
+beside screen recordings stamped with the device clock (`screenrecord --bugreport`). Rows 10–15 on the Find X9 with
+the 0.4.0 preview APK (the owner). "Remove animations" as in M10a (restart the app after changing it).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Developer → Motion bench → Haptics: each Feel button logs its feel once; the hold button logs `tick` once the press settles (0.1 s) and `sworn` two seconds later, and only `tick` when let go early. A swipe that starts on the hold button and scrolls the list: nothing. | Pass (2026-10-15) after a fix: each Feel button logged its feel once; a still hold (`input motionevent` down, 2.8 s, up) logged `tick`, then `sworn` 2.06 s later; let go at 0.8 s, only `tick`; a quick tap, one `tick`; two swipes that started on the button and moved the list, nothing. The first fix for the review's scroll finding (a 100 ms timer of the button's own) still ticked: React Native holds a press's end back until 130 ms after it began, so the scroll's end came after the timer. Pressable's own press delay never starts a press that a scroll takes (fb5d3cf). |
+| 2 | Bench → Quest cleared: `stamp` as the XP stamp lands and one `tick` as the rank stamp lands, in the recording. Bench → Level up to 5: `level` as "LV 5" lands. An achievement: `stamp` as its name lands. | Pass after a fix: each moment logs its feels once, in that order. In the development build the buzzes played before the screen was even drawn (its slow first frame, M10a). In the production bundle (row 5) every click still led its stamp by 0.1–0.12 s: the wait was a JS timer, started as the screen was made, before Android drew it and started the stamp. The buzz now waits on the animation clock with the stamp (86f0055): the achievement's click then landed within about 15 ms of its name; the XP stamp's about 60 ms before the landing in the recording, which lags the screen by 2–4 frames and skipped the stamp's fall. The level-up's double click: 151 ms apart (designed 120). |
+| 3 | Settings → Game: "Haptics" under "Voice, rhythm and minutes", on. Off: rows 1–2 log nothing; still off after a force-stop and reopen; on again. At font 2.0 the row wraps, nothing is cut off, and the switch's row (its label and switch, 48 dp) flips it. | Pass (2026-10-15): there, on. Off: the four Feel buttons, a full hold and Quest cleared logged nothing and Android played nothing; still off after a force-stop and reopen; on again. At font 2.0 the line wraps to two lines, nothing cut off; the label row flips it, as in M7d (the line beneath isn't part of it). Font back to 1.0. |
+| 4 | "Remove animations" on: row 2's buzzes still come. | Pass (2026-10-15; the three scales at 0, the app restarted): Quest cleared logged `stamp` then `tick` and only faded; the level-up `level`; the achievement `stamp`. Scales back to 1. |
+| 5 | Vera's real quest cleared: `stamp` (and `tick` when a stat rises). The cleared quest reopened: nothing. | Pass (2026-10-15, production bundle): her side quest "A good thing": a click (Confirm) as the stamp landed, then her level-up to 2: the double click. No `tick`: this quest raised no stat, so no rank stamp. Today's reading: a click, then the achievement "First Page": a click. Reopened: still, and nothing played. |
+| 6 | Developer → Shadow preview → Scene: the stand-in's eyes pulse until the painting shows; then the glows sit on the painted eyes and pulse (about 3 s), embers rise and fade in the lower half, and after the 4-second creep the painting breathes. | Pass (2026-10-15): screenshots: the glows centred on the painted eyes, dim to bright and back; the embers in a new place each time, in the lower half; the breath measured as a 1.4–1.5 % swing in the painting's scale (each shot matched against a reference). Offline, with the image cache cleared, the stand-in's eyes pulsed (their red 118 → 213 → 118). |
+| 7 | The scene, then Home and back three times (10 s, 3 s, 3 s): it carries on, the eyes still pulse fully and the breath is still full (review). Open for 60 s: `dumpsys gfxinfo` janky frames under 5 %. | Pass (2026-10-15): the breath 0.9940–1.0080 before the trips and 0.9940–1.0090 after; the glow's brightness 53–66 before and after. 60 s open: 3,544 frames, 2.31 % janky. In the development bundle (the Shadow preview is developer-only), with another emulator running alongside. A first reading of 99.7 % janky was the emulator itself (2.5 GB with 1 GB swapped out; scrolling was as slow): restarted, scrolling 1.67 %. |
+| 8 | "Remove animations" on: the scene is still: no glows, embers or breath, and the stand-in's eyes don't pulse. | Pass (2026-10-15): two frames in 9 s of recording (screenrecord writes a frame only when the screen changes); no glows or embers. |
+| 9 | `adb shell dumpsys vibrator_manager` after row 1: record whether the emulator lists the haptics. | Pass (2026-10-15): it lists each one (usage TOUCH, LevelMeUp, `performHapticFeedback`): `stamp` is constant 16 (Confirm, played as a click), `tick` 4 (Clock tick, a texture tick), `sworn` 0 (Long press, a heavy click), `level` 0 then 16. The production bundle has no log, so rows 2 and 5 were timed from this list. |
+| 10 | Find X9: install the 0.4.0 APK over 0.3.0; the character is still there; Settings → About shows Version 0.4.0. | |
+| 11 | Find X9: clear a quest. A firm click as the XP stamp lands and a light tick as the rank stamp lands, in time with what you see. Reopened: nothing. | |
+| 12 | Find X9: the next level-up or achievement (when it comes): a stronger double click as "LV n" lands, a firm click as an achievement's name lands, felt although they show over everything (review). When a sync raises the streak while Today is open: one light tick; never while another tab or screen is in front. | |
+| 13 | Find X9: Settings → Game → Haptics off: a quest cleared is silent; on again. With the phone's own touch feedback off (Settings → Sound & vibration → Vibration & haptics), silent too, with the app's switch on. | |
+| 14 | Find X9: the pact's hold button (when the pact can be raised): press for a moment and let go: one light tick, nothing signed. Start a scroll on it: nothing. | |
+| 15 | Find X9: the Shadow's scene, when it comes: the eyes glow, the embers rise, it breathes, smoothly at 120 Hz; left open a minute, the phone doesn't warm noticeably. | |
+
+### What the emulator found (M10b, 2026-10-15)
+
+- **Two fixes the unit tests couldn't see:**
+  - the hold button's scroll guard: React Native's 130 ms minimum press beat a timer of our own; the tests now touch
+    through React Native's own press logic (`test/support/touch.ts`) (fb5d3cf);
+  - the reward buzzes led their stamps by about 0.1 s in the production bundle; they now wait on the animation clock
+    (`after` in `motion.ts`) (86f0055).
+- **How the buzzes were read:** the development log, Android's vibration list (which also works in the production
+  bundle and gives each buzz's start to the millisecond), and recordings stamped with the device clock. The recordings
+  lag the screen by a few frames, so they place a buzz to within about 50 ms, not better: row 11 on the Find X9 is the
+  real check.
+- **The emulator now:** the development build `6fa0bb39` (0.4.0, versionCode 4) installed over 998b72c0; **Vera** at
+  level 2 (her side quest "A good thing" and today's reading cleared, the achievement "First Page"); restarted on
+  2026-10-15 (it had run out of memory); GMT; animation scales 1; font 1.0. Another emulator (`kai_test`, not
+  LevelMeUp's) was started alongside it during the checks, so commands named `emulator-5554`.
