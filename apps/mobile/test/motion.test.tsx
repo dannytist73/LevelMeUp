@@ -3,9 +3,12 @@
 // each piece starts, its reduced-motion path and its accessibility, not frames. Starting values are checked on the
 // pieces alone; on a screen, a re-render after mount would show the mock's end values, so screens check only that the
 // motion is there.
+import { ACHIEVEMENTS, PLAY_TEXT } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
+import { project } from '../src/game/project.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
+import { Celebration } from '../src/screens/Celebration.tsx';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
@@ -19,6 +22,8 @@ import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { Thud } from '../src/ui/Thud.tsx';
 import { useCountUp, useGrowth } from '../src/ui/useMotion.ts';
 import { XpBar } from '../src/ui/XpBar.tsx';
+import { serverState } from './support/fixtures.ts';
+import { testStore, withStore } from './support/store.ts';
 
 const at = (level: number, value: number, max = 130): BarPoint => ({ level, value, max });
 const flat = (style: unknown): Record<string, unknown> => (StyleSheet.flatten(style as never) ?? {}) as Record<string, unknown>;
@@ -230,5 +235,35 @@ describe('Quest cleared moves (M10a decision 4)', () => {
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(onContinue).toHaveBeenCalled();
+  });
+});
+
+describe('level-ups and achievements move (M10a decision 4)', () => {
+  it('a level-up: bursting lines, a thud in a bigger splash, the portrait rising, the line slamming in', async () => {
+    await render(withStore(testStore({ view: project(serverState(), []), celebrations: [{ kind: 'level', level: 5, from: 4 }] }), <Celebration />));
+    expect(flat(screen.getByTestId('speed-lines', hidden).props.style).transform).toBeDefined();
+    expect(screen.getByTestId('level-thud')).toBeTruthy();
+    expect(screen.getByText('LV 5')).toBeTruthy();
+    expect(screen.getAllByTestId('ink-drop', hidden)).toHaveLength(16);
+    expect(screen.getAllByTestId('fade-in')).toHaveLength(2); // the portrait and its line
+    expect(screen.getAllByTestId('slam-in')).toHaveLength(2); // LEVEL UP and the System's line
+    expect(screen.getByText(PLAY_TEXT.celebration.portrait)).toBeTruthy();
+  });
+
+  it('an achievement: still lines, no splash; its name thuds and its words fade in', async () => {
+    const titled = ACHIEVEMENTS.find((a) => a.title !== null)!;
+    await render(withStore(testStore({ celebrations: [{ kind: 'achievement', id: titled.id }] }), <Celebration />));
+    expect(flat(screen.getByTestId('speed-lines', hidden).props.style).transform).toBeUndefined();
+    expect(screen.queryAllByTestId('ink-drop', hidden)).toEqual([]);
+    expect(screen.getByTestId('achievement-thud')).toBeTruthy();
+    expect(screen.getAllByTestId('fade-in')).toHaveLength(2); // the description and the title earned
+    expect(screen.getByText(titled.name)).toBeTruthy();
+  });
+
+  it('Continue works from the first frame', async () => {
+    const store = testStore({ celebrations: [{ kind: 'level', level: 7, from: 6 }] });
+    await render(withStore(store, <Celebration />));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(store.getState().dismissCelebration).toHaveBeenCalled();
   });
 });
