@@ -1,6 +1,7 @@
 // Hold to swear (visual spec §3): a commitment button that fills while held and fires after `holdMs`; letting go early
 // cancels. With a screen reader on, holding isn't practical, so a tap shows a Confirm button instead.
-// M10b: a tick when the hold starts, the sworn click as it fires (spec decision 6); nothing when let go early.
+// M10b: a tick when the hold starts, the sworn click as it fires (spec decision 6); nothing when let go early, and nothing
+// for a scroll that starts on the button (the hold waits for the press to settle; review).
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, Text } from 'react-native';
 import Animated, { Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -18,6 +19,12 @@ export type HoldButtonProps = {
   /** Overrides the phone's setting (tests, the kit). */
   screenReader?: boolean;
 };
+
+/**
+ * The hold starts once the press has settled (M10b review), as Android's own tap timeout does in a scrolling list: a
+ * scroll that starts on the button takes the touch before then, so it never ticks or starts the fill.
+ */
+export const HOLD_SETTLE_MS = 100;
 
 export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_000, disabled = false, screenReader }: HoldButtonProps) {
   const [readerOn, setReaderOn] = useState(screenReader ?? false);
@@ -43,14 +50,16 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
   }
 
   const start = () => {
-    buzz('tick');
-    // The fill is how long to keep holding, not decoration: it runs even with reduced motion on (M5 review).
-    fill.value = withTiming(1, { duration: holdMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
     timer.current = setTimeout(() => {
-      timer.current = null;
-      buzz('sworn');
-      onDone();
-    }, holdMs);
+      buzz('tick');
+      // The fill is how long to keep holding, not decoration: it runs even with reduced motion on (M5 review).
+      fill.value = withTiming(1, { duration: holdMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        buzz('sworn');
+        onDone();
+      }, holdMs);
+    }, HOLD_SETTLE_MS);
   };
   const stop = () => {
     if (timer.current !== null) clearTimeout(timer.current);

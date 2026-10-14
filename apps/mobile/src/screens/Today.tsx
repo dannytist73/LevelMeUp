@@ -54,6 +54,8 @@ export type TodayProps = {
   onShadow?: () => void;
   /** The Trial of Stillness's focus session (M7c decision 7). */
   onTrial?: () => void;
+  /** Whether Today is in front: the route passes its focus (M10b review). */
+  shown?: boolean;
   now?: () => number;
 };
 
@@ -63,13 +65,14 @@ const SECTION: Record<QuestView['slot'], string> = {
 
 export function Today({
   onSettings, onOpenQuest, onOpenReading, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {},
-  now = Date.now,
+  shown = true, now = Date.now,
 }: TodayProps) {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
-  // M10a decision 7: the streak's flame thuds when a sync raises it while Today is shown, never on opening.
-  const streakGrew = useGrowth(view?.character.streak.current ?? null);
+  // M10a decision 7: the streak's flame thuds when a sync raises it while Today is shown, never on opening. M10b review:
+  // "shown" is in front, not just mounted under another tab or screen, where its tick would play unseen.
+  const streakGrew = useGrowth(view?.character.streak.current ?? null, shown);
   const art = useGame((s) => s.art);
   const status = useGame((s) => s.status);
   const notices = useGame((s) => s.notices);

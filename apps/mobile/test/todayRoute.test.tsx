@@ -1,14 +1,15 @@
-import { render } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { act, render } from '@testing-library/react-native';
+import { router, useIsFocused } from 'expo-router';
 import TodayRoute from '../app/(tabs)/index.tsx';
 import { project } from '../src/game/project.ts';
-import { DAY_TWO_NOW, claimedState } from './support/fixtures.ts';
+import { buzz } from '../src/ui/haptics.ts';
+import { DAY_TWO_NOW, claimedState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
-// The route's focus effect runs as an effect here: Today is always in focus.
+// The route's focus effect runs as an effect here: Today is in focus unless a test says otherwise.
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual('react');
-  return { router: { push: jest.fn() }, useFocusEffect: (effect: () => void) => useEffect(effect, [effect]) };
+  return { router: { push: jest.fn() }, useFocusEffect: (effect: () => void) => useEffect(effect, [effect]), useIsFocused: jest.fn(() => true) };
 });
 
 describe("Today opens the Shadow's scene by itself, once (M7c decision 5)", () => {
@@ -30,5 +31,29 @@ describe("Today opens the Shadow's scene by itself, once (M7c decision 5)", () =
     jest.spyOn(Date, 'now').mockReturnValue(Date.parse(view.today!.endsAt!));
     await render(withStore(testStore({ view }), <TodayRoute />));
     expect(router.push).not.toHaveBeenCalled();
+  });
+});
+
+describe("Today's focus reaches the streak's tick (M10b review)", () => {
+  beforeEach(() => {
+    (buzz as jest.Mock).mockClear();
+    jest.useFakeTimers({ now: Date.UTC(2026, 9, 10, 13) }); // day 1 runs 12:00–20:00 UTC
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    (useIsFocused as jest.Mock).mockReturnValue(true);
+  });
+
+  it.each([[true, ['tick']], [false, []]])('in focus %s, a streak that grows buzzes %j', async (focused, felt) => {
+    (useIsFocused as jest.Mock).mockReturnValue(focused);
+    const view = project(serverState(), []);
+    const store = testStore({ view });
+    await render(withStore(store, <TodayRoute />));
+    const grown = { ...view, character: { ...view.character, streak: { ...view.character.streak, current: view.character.streak.current + 1 } } };
+    await act(async () => store.setState({ view: grown }));
+    await act(async () => {
+      jest.advanceTimersByTime(2_000);
+    });
+    expect((buzz as jest.Mock).mock.calls.map((c) => c[0])).toEqual(felt);
   });
 });

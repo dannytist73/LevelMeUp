@@ -11,7 +11,7 @@ import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { buzz } from '../src/ui/haptics.ts';
-import { HoldButton } from '../src/ui/HoldButton.tsx';
+import { HOLD_SETTLE_MS, HoldButton } from '../src/ui/HoldButton.tsx';
 import { MOMENTS, THUD_LAND_MS, THUD_SPRING } from '../src/ui/motion.ts';
 import { Thud } from '../src/ui/Thud.tsx';
 import { DAY_TWO_NOW, READY_DRAFT, claimedState, serverState } from './support/fixtures.ts';
@@ -73,17 +73,31 @@ describe('the hold buttons (M10b spec decision 6)', () => {
     await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
     const button = screen.getByRole('button', { name: 'Hold to swear' });
     await fireEvent(button, 'pressIn');
+    expect(felt()).toEqual([]);
+    await wait(HOLD_SETTLE_MS);
     expect(felt()).toEqual(['tick']);
     await wait(1_000);
     await fireEvent(button, 'pressOut');
     await wait(3_000);
     expect(felt()).toEqual(['tick']);
     await fireEvent(button, 'pressIn');
-    await wait(2_000);
+    await wait(HOLD_SETTLE_MS + 2_000);
     expect(felt()).toEqual(['tick', 'tick', 'sworn']);
     expect(onDone).toHaveBeenCalledTimes(1);
     // The click comes first, so it lands with the moment rather than after the next screen's work.
     expect((buzz as jest.Mock).mock.invocationCallOrder.at(-1)!).toBeLessThan(onDone.mock.invocationCallOrder[0]!);
+  });
+
+  it('a scroll that starts on the button takes the touch before the hold settles: no tick, no hold (review)', async () => {
+    const onDone = jest.fn();
+    await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
+    const button = screen.getByRole('button', { name: 'Hold to swear' });
+    await fireEvent(button, 'pressIn');
+    await wait(HOLD_SETTLE_MS - 1);
+    await fireEvent(button, 'pressOut'); // the list takes the touch: React Native lets go of the press
+    await wait(3_000);
+    expect(felt()).toEqual([]);
+    expect(onDone).not.toHaveBeenCalled();
   });
 
   it('with a screen reader: the sworn click on Confirm (TalkBack speaks the first tap)', async () => {
@@ -101,10 +115,17 @@ const TWO_UPS: ClearedNumbers = {
   discipline: true, streak: { from: 9, to: 10 },
   level: { level: 6, xpIntoLevel: 87, xpForLevel: 130 }, levelBefore: { level: 6, xpIntoLevel: 67, xpForLevel: 130 }, recovered: false,
 };
-const cleared = (numbers: ClearedNumbers) => render(
+const clearedScreen = (numbers: ClearedNumbers) => (
   <Cleared heading="CORE QUEST · KNEE PUSH-UPS" line="3 sets of 8" numbers={numbers} rating={null} dayOpen waiting={false}
-    onRate={jest.fn()} onUndo={jest.fn()} onContinue={jest.fn()} canStepDown={false} onStepDown={jest.fn()} onPain={null} />,
+    onRate={jest.fn()} onUndo={jest.fn()} onContinue={jest.fn()} canStepDown={false} onStepDown={jest.fn()} onPain={null} />
 );
+const cleared = (numbers: ClearedNumbers) => render(clearedScreen(numbers));
+const TODAY_NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
+const today = (store: ReturnType<typeof testStore>, shown?: boolean) => withStore(store,
+  <Today shown={shown} onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
+    onTraining={jest.fn()} onCheckin={jest.fn()} now={() => TODAY_NOW} />);
+const streakUp = (view: ReturnType<typeof project>) =>
+  ({ ...view, character: { ...view.character, streak: { ...view.character.streak, current: view.character.streak.current + 1 } } });
 
 describe('the moments buzz on rewards (M10b spec decision 2)', () => {
   it('Quest cleared: the firm click as the XP stamp lands, then one tick for the rank stamps', async () => {
@@ -115,6 +136,18 @@ describe('the moments buzz on rewards (M10b spec decision 2)', () => {
     expect(felt()).toEqual(['stamp', 'tick']);
     await wait(2_000);
     expect(felt()).toEqual(['stamp', 'tick']); // two rank stamps land together: one tick
+  });
+
+  it('a sync that changes the stat-ups never moves the rank tick, nor plays it again (review)', async () => {
+    const swapped = { ...TWO_UPS, statUps: [...TWO_UPS.statUps].reverse() };
+    const screenNow = await cleared(TWO_UPS);
+    await wait(MOMENTS.cleared.stamp + THUD_LAND_MS);
+    await screenNow.rerender(clearedScreen(swapped)); // before the rank stamps land
+    await wait(MOMENTS.cleared.rank - MOMENTS.cleared.stamp);
+    expect(felt()).toEqual(['stamp', 'tick']); // on time
+    await screenNow.rerender(clearedScreen(TWO_UPS)); // and after
+    await wait(2_000);
+    expect(felt()).toEqual(['stamp', 'tick']);
   });
 
   it('a quest cleared reopened (no before) shows still and stays quiet', async () => {
@@ -140,18 +173,25 @@ describe('the moments buzz on rewards (M10b spec decision 2)', () => {
   });
 
   it('Today: a tick when the streak grows, never on opening', async () => {
-    const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
     const view = project(serverState(), []);
     const store = testStore({ view });
-    await render(withStore(store,
-      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-        onCheckin={jest.fn()} now={() => NOW} />));
+    await render(today(store));
     await wait(1_000);
     expect(felt()).toEqual([]);
-    const grown = { ...view, character: { ...view.character, streak: { ...view.character.streak, current: view.character.streak.current + 1 } } };
-    await act(async () => store.setState({ view: grown }));
+    await act(async () => store.setState({ view: streakUp(view) }));
     await wait(THUD_LAND_MS);
     expect(felt()).toEqual(['tick']);
+  });
+
+  it('Today under another tab or screen: a streak that grows there stays quiet, then and on return (review)', async () => {
+    const view = project(serverState(), []);
+    const store = testStore({ view });
+    const shown = await render(today(store, false));
+    await act(async () => store.setState({ view: streakUp(view) }));
+    await wait(2_000);
+    await shown.rerender(today(store, true));
+    await wait(2_000);
+    expect(felt()).toEqual([]);
   });
 });
 

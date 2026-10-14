@@ -12,14 +12,17 @@ export function useReduce(override?: boolean): boolean {
   return override ?? phone;
 }
 
-/** How many times `value` has risen since the first value: 0 until it does, so opening a screen never animates. */
-export function useGrowth(value: number | null): number {
+/**
+ * How many times `value` has risen since the first value: 0 until it does, so opening a screen never animates. A rise
+ * while the screen is hidden (`shown` false) is taken quietly: it never plays unseen, nor late on return (M10b review).
+ */
+export function useGrowth(value: number | null, shown = true): number {
   const last = useRef(value);
   const [grown, setGrown] = useState(0);
   useEffect(() => {
-    if (value !== null && last.current !== null && value > last.current) setGrown((n) => n + 1);
+    if (shown && value !== null && last.current !== null && value > last.current) setGrown((n) => n + 1);
     last.current = value;
-  }, [value]);
+  }, [value, shown]);
   return grown;
 }
 

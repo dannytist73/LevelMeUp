@@ -107,6 +107,8 @@ export function Cleared({
   const before = numbers.levelBefore === null ? null : point(numbers.levelBefore);
   /** Just cleared on this screen: the moment plays. Reopened later, it shows still. */
   const fresh = before !== null;
+  /** M10b: the rank stamp that ticks, chosen once, so a sync that changes the stat-ups never moves the tick (review). */
+  const [ticking] = useState(() => numbers.statUps[0]?.stat ?? null);
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, paddingHorizontal: space.gutter, gap: 22 }}>
       {/* The board's outlined title, shrunk to fit, and the stamp below the line rather than over the words: at the
@@ -129,14 +131,14 @@ export function Cleared({
 
       <SlamIn delay={M.panel} still={!fresh}>
         <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-          {numbers.statUps.map((up, i) => (
+          {numbers.statUps.map((up) => (
             <View key={up.stat} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: 2, borderColor: colors.ink }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Label tone="sealText">{C.statUp}</Label>
                 <Heading tone="ink">{`${STAT_NAMES[up.stat].toUpperCase()} ${up.from} → ${up.to}`}</Heading>
               </View>
               {/* M10b: the rank stamps land together, so only the first one ticks. */}
-              <Thud delay={M.rank} still={!fresh} haptic={i === 0 ? 'tick' : undefined} testID="rank-thud">
+              <Thud delay={M.rank} still={!fresh} haptic={up.stat === ticking ? 'tick' : undefined} testID="rank-thud">
                 <View
                   accessible
                   accessibilityLabel={`Rank ${up.rank}`}

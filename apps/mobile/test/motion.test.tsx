@@ -75,8 +75,8 @@ describe('the motion numbers (M10a decisions 3–5)', () => {
   });
 });
 
-function Growth({ value }: { value: number | null }) {
-  return <Text>{`grew ${useGrowth(value)}`}</Text>;
+function Growth({ value, shown }: { value: number | null; shown?: boolean }) {
+  return <Text>{`grew ${useGrowth(value, shown)}`}</Text>;
 }
 
 function Count({ plan, to, reduce }: { plan: CountPlan | null; to: number; reduce?: boolean }) {
@@ -94,6 +94,16 @@ describe('the motion hooks (M10a)', () => {
     expect(screen.getByText('grew 1')).toBeTruthy();
     await view.rerender(<Growth value={4} />);
     expect(screen.getByText('grew 2')).toBeTruthy();
+  });
+
+  it('a rise while the screen is hidden is taken quietly: it never plays unseen, nor late on return (M10b review)', async () => {
+    const view = await render(<Growth value={4} />);
+    await view.rerender(<Growth value={5} shown={false} />);
+    expect(screen.getByText('grew 0')).toBeTruthy();
+    await view.rerender(<Growth value={5} />);
+    expect(screen.getByText('grew 0')).toBeTruthy();
+    await view.rerender(<Growth value={6} />);
+    expect(screen.getByText('grew 1')).toBeTruthy();
   });
 
   it('a count starts at its plan (the phone counts up from there); with reduced motion or no plan, the end at once', async () => {

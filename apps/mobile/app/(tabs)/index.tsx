@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useRef } from 'react';
 import { shadowDue } from '../../src/game/pact.ts';
 import { Today } from '../../src/screens/Today.tsx';
@@ -10,6 +10,8 @@ export default function TodayRoute() {
   const view = useGame((s) => s.view);
   const seen = useGame((s) => s.shadowSeen);
   const pushed = useRef<number | null>(null);
+  // M10b review: the streak's flare and tick play only while Today is in front.
+  const shown = useIsFocused();
   useFocusEffect(
     useCallback(() => {
       const due = view === null ? null : shadowDue(view, seen, Date.now());
@@ -30,6 +32,7 @@ export default function TodayRoute() {
       onCheckin={() => router.push('/checkin')}
       onShadow={() => router.push('/shadow')}
       onTrial={() => router.push('/trial')}
+      shown={shown}
     />
   );
 }

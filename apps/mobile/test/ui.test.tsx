@@ -15,7 +15,7 @@ import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { SlantPanel, slantPoints } from '../src/ui/SlantPanel.tsx';
 import { MarkStamp, XpStamp, clampRotation } from '../src/ui/Stamp.tsx';
 import { XpBar, fillFraction } from '../src/ui/XpBar.tsx';
-import { HoldButton } from '../src/ui/HoldButton.tsx';
+import { HOLD_SETTLE_MS, HoldButton } from '../src/ui/HoldButton.tsx';
 import { OptionCard } from '../src/ui/OptionCard.tsx';
 import { ProgressSegments } from '../src/ui/ProgressSegments.tsx';
 import { QuestArt } from '../src/ui/QuestArt.tsx';
@@ -315,7 +315,7 @@ describe('HoldButton', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
-  it('fires after a two-second hold; letting go early cancels', async () => {
+  it('fires after a two-second hold, once the press has settled; letting go early cancels', async () => {
     const onDone = jest.fn();
     await render(<HoldButton label="Hold to swear" tapLabel="Swear" confirmLabel="Confirm the vow" onDone={onDone} screenReader={false} />);
     const button = screen.getByRole('button', { name: 'Hold to swear' });
@@ -325,7 +325,9 @@ describe('HoldButton', () => {
     await act(async () => { jest.advanceTimersByTime(3_000); });
     expect(onDone).not.toHaveBeenCalled();
     await fireEvent(button, 'pressIn');
-    await act(async () => { jest.advanceTimersByTime(2_000); });
+    await act(async () => { jest.advanceTimersByTime(HOLD_SETTLE_MS + 2_000 - 1); });
+    expect(onDone).not.toHaveBeenCalled();
+    await act(async () => { jest.advanceTimersByTime(1); });
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
