@@ -16,6 +16,7 @@ import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { Thud } from '../src/ui/Thud.tsx';
 import { useCountUp, useGrowth } from '../src/ui/useMotion.ts';
+import { XpBar } from '../src/ui/XpBar.tsx';
 
 const at = (level: number, value: number, max = 130): BarPoint => ({ level, value, max });
 const flat = (style: unknown): Record<string, unknown> => (StyleSheet.flatten(style as never) ?? {}) as Record<string, unknown>;
@@ -154,5 +155,31 @@ describe('speed-line burst and the ink splash (M10a decision 3)', () => {
     await render(<InkBurst reduceMotion><Text>stamp</Text></InkBurst>);
     expect(screen.queryAllByTestId('ink-drop', hidden)).toEqual([]);
     expect(screen.getByText('stamp')).toBeTruthy();
+  });
+});
+
+describe('the XP bar (M10a decisions 3, 5, 7)', () => {
+  it('without a level it never moves (stat bars, timers, the trial)', async () => {
+    await render(<XpBar value={62} max={130} label="still" />);
+    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(62 / 130) * 100}%`);
+    expect(screen.queryByTestId('xp-flash')).toBeNull();
+  });
+
+  it('with a level, it starts where it was, and says the new value at once', async () => {
+    await render(<XpBar value={87} max={130} level={6} from={at(6, 67)} label="moving" />);
+    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(67 / 130) * 100}%`);
+    expect(screen.getByRole('progressbar', { name: 'moving' }).props.accessibilityValue).toEqual({ min: 0, max: 130, now: 87 });
+    expect(screen.getByTestId('xp-flash')).toBeTruthy();
+  });
+
+  it('opened without a "from", it shows the value: Today opening never moves the bar', async () => {
+    await render(<XpBar value={87} max={130} level={6} label="opened" />);
+    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
+  });
+
+  it('with reduced motion, the new value at once and no flash', async () => {
+    await render(<XpBar value={87} max={130} level={6} from={at(6, 67)} label="reduced" reduceMotion />);
+    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
+    expect(screen.queryByTestId('xp-flash')).toBeNull();
   });
 });
