@@ -4,7 +4,7 @@
 // pieces alone; on a screen, a re-render after mount would show the mock's end values, so screens check only that the
 // motion is there.
 import { ACHIEVEMENTS, ONBOARDING_TEXT, PLAY_TEXT } from '@levelmeup/content';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 import { project } from '../src/game/project.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
@@ -13,6 +13,7 @@ import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
 import { Vow } from '../src/screens/onboarding/Vow.tsx';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
+import { Today } from '../src/screens/Today.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
@@ -297,5 +298,33 @@ describe('the reveal, the Shadow and the vow move (M10a decision 4)', () => {
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.tap }));
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.confirm }));
     expect(await screen.findByTestId('sworn-thud')).toBeTruthy();
+  });
+});
+
+describe('Today moves only when something changes (M10a decision 7)', () => {
+  const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
+  const today = (store: ReturnType<typeof testStore>) => render(withStore(store,
+    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
+      onCheckin={jest.fn()} now={() => NOW} />));
+
+  it("the streak is still on opening and thuds once it grows (drops never count: useGrowth's test)", async () => {
+    const view = project(serverState(), []);
+    const store = testStore({ view });
+    await today(store);
+    const thud = () => flat(screen.getByTestId('streak-thud').props.style).transform;
+    expect(thud()).toBeUndefined();
+    const streak = (current: number) => ({ ...view, character: { ...view.character, streak: { ...view.character.streak, current } } });
+    await act(async () => store.setState({ view: streak(view.character.streak.current + 1) }));
+    expect(thud()).toBeDefined();
+  });
+
+  it('the XP bar is a moving one, and says a synced value at once', async () => {
+    const view = project(serverState(), []);
+    const store = testStore({ view });
+    await today(store);
+    expect(screen.getByTestId('xp-flash')).toBeTruthy();
+    const more = { ...view, character: { ...view.character, xpIntoLevel: view.character.xpIntoLevel + 5 } };
+    await act(async () => store.setState({ view: more }));
+    expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ }).props.accessibilityValue.now).toBe(view.character.xpIntoLevel + 5);
   });
 });

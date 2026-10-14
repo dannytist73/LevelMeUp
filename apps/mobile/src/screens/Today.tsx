@@ -26,6 +26,8 @@ import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { ShadowMark } from '../ui/ShadowMark.tsx';
 import { Body, Caption, Display, Heading, Label, Small } from '../ui/Text.tsx';
+import { Thud } from '../ui/Thud.tsx';
+import { useGrowth } from '../ui/useMotion.ts';
 import { XpBar } from '../ui/XpBar.tsx';
 import { CheckinNotes } from './CheckinNotes.tsx';
 import { DayActions, DayBanners, PausedExercises } from './DayActions.tsx';
@@ -66,6 +68,8 @@ export function Today({
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
+  // M10a decision 7: the streak's flame thuds when a sync raises it while Today is shown, never on opening.
+  const streakGrew = useGrowth(view?.character.streak.current ?? null);
   const art = useGame((s) => s.art);
   const status = useGame((s) => s.status);
   const notices = useGame((s) => s.notices);
@@ -204,7 +208,7 @@ export function Today({
               </View>
             </View>
             <View style={{ gap: 6 }}>
-              <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} label={`Level ${view.character.level} progress`} />
+              <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} level={view.character.level} label={`Level ${view.character.level} progress`} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                 <Caption>{`${view.character.xpIntoLevel} / ${view.character.xpForLevel} XP`}</Caption>
                 <Caption>{`Next: Lv ${view.character.level + 1}`}</Caption>
@@ -212,8 +216,10 @@ export function Today({
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-                <Icon name="flame" size={18} color={colors.ember} />
-                <Heading tone="ember">{String(view.character.streak.current)}</Heading>
+                <Thud key={streakGrew} still={streakGrew === 0} testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Icon name="flame" size={18} color={colors.ember} />
+                  <Heading tone="ember">{String(view.character.streak.current)}</Heading>
+                </Thud>
                 <Small tone="chalk" style={{ flexShrink: 1 }}>{note === null ? 'day streak' : `day streak · ${note}`}</Small>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
