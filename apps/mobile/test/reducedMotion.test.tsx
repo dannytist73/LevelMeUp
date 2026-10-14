@@ -1,7 +1,7 @@
 // M10a plan decision 1 and the review: each piece picks its own reduced path, so no timing, spring, delay or sequence
 // may follow the phone's setting on its own (Reanimated's default jumps a fade to its end, skips a delay, and ends a
 // sequence at once). The moments follow the phone's "Remove animations" (`useReducedMotion`), which this file switches.
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { ReduceMotion, useReducedMotion, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { project } from '../src/game/project.ts';
@@ -9,6 +9,7 @@ import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
+import { CREEP_TO } from '../src/ui/motion.ts';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { DAY_TWO_NOW, claimedState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -77,11 +78,22 @@ describe('"Remove animations" on: the moments only fade (M10a decision 3)', () =
     expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
   });
 
-  it('the Shadow\'s painting stays still', async () => {
+  it("the Shadow's painting stays still, even once it has loaded", async () => {
     (useReducedMotion as jest.Mock).mockImplementation(() => true);
     await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
       <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
+    await fireEvent(screen.getByTestId('shadow-art', hidden), 'load');
     expect(flat(screen.getByTestId('shadow-creep', hidden).props.style).transform).toBeUndefined();
-    expect(screen.getByTestId('shadow-art', hidden)).toBeTruthy();
+    expect(calls(withTiming).filter((c) => c[0] === CREEP_TO)).toEqual([]);
+  });
+});
+
+describe("the Shadow's creep (M10a decision 4; emulator check)", () => {
+  it('waits for the painting: on a slow first download it would be over before the painting shows', async () => {
+    await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
+      <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
+    expect(calls(withTiming).filter((c) => c[0] === CREEP_TO)).toEqual([]);
+    await fireEvent(screen.getByTestId('shadow-art', hidden), 'load');
+    expect(calls(withTiming).filter((c) => c[0] === CREEP_TO)).toHaveLength(1);
   });
 });
