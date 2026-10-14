@@ -1,6 +1,6 @@
-// The rest between sets (M10c decision 8): a set's Done check starts it; the bar counts down with "+15 s" and Skip; at
-// zero a click and "Rest over". In the app only (no notification), counted from timestamps. The checks never change
-// what's logged.
+// The rest between sets (M10c decision 8): a set's Done check starts it, as long as the quest's words say (a minute for
+// a rep log, two for a workout); the bar counts down with "+15 s" and Skip; at zero a click and "Rest over". In the app
+// only (no notification), counted from timestamps. The checks never change what's logged.
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -14,7 +14,7 @@ import { Heading, Small } from '../../ui/Text.tsx';
 
 const T = PLAY_TEXT.rest;
 
-export function useRest(now: () => number) {
+export function useRest(now: () => number, ms: number) {
   const [rest, setRest] = useState<Rest>(null);
   const [over, setOver] = useState(false);
   const [, redraw] = useState(0);
@@ -37,7 +37,7 @@ export function useRest(now: () => number) {
     over,
     start: () => {
       setOver(false);
-      setRest(startRest(now()));
+      setRest(startRest(now(), ms));
     },
     more: () => setRest((r) => moreRest(r, now())),
     skip: () => {

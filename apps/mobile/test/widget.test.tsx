@@ -2,6 +2,7 @@
 // keeps it in step. The library itself is mocked in the Jest setup (its primitives draw as views and text).
 import { WIDGET_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
 import { render, screen } from '@testing-library/react-native';
+import { Fragment } from 'react';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { project } from '../src/game/project.ts';
@@ -43,7 +44,7 @@ describe('the lines, by when it is drawn', () => {
   });
 
   it('every quest cleared: "Day cleared"; the core quest cleared alone shows its title, in ember', () => {
-    expect(widgetLines({ ...SNAP, done: 4, coreCleared: true }, 1_000)).toMatchObject({ title: WIDGET_TEXT.dayCleared, cleared: true });
+    expect(widgetLines({ ...SNAP, done: 4, coreCleared: true }, 1_000)).toMatchObject({ label: null, title: WIDGET_TEXT.dayCleared, cleared: true });
     expect(widgetLines({ ...SNAP, coreCleared: true }, 1_000)).toMatchObject({ title: 'Wall push-ups', cleared: true });
   });
 
@@ -60,6 +61,21 @@ describe('the widget and its task', () => {
     for (const text of ['DAY 6', '5-day streak', WIDGET_TEXT.core, 'Wall push-ups', fillText(WIDGET_TEXT.progress, { done: 1, total: 4 })]) {
       expect(screen.getByText(text)).toBeTruthy();
     }
+  });
+
+  it("holds only the library's primitives: no fragments, which its tree builder can't draw (emulator check)", () => {
+    const types: unknown[] = [];
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (node === null || typeof node !== 'object' || !('type' in node)) return;
+      const element = node as { type: unknown; props: { children?: unknown } };
+      types.push(element.type);
+      walk(element.props.children);
+    };
+    for (const [snap, now] of [[SNAP, 1_000], [SNAP, 3_000], [null, 0]] as const) walk(TodayWidget({ snap, now }));
+    expect(types.length).toBeGreaterThan(5);
+    expect(types.every((t) => typeof t === 'function')).toBe(true);
+    expect(types).not.toContain(Fragment);
   });
 
   it('the task draws from the kept snapshot when added, updated or resized; not when deleted or tapped', async () => {

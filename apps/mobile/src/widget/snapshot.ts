@@ -51,7 +51,8 @@ export function readSnapshot(raw: string | null): WidgetSnapshot | null {
 export type WidgetLines =
   | { kind: 'none'; line: string }
   | { kind: 'stale'; line: string; hint: string }
-  | { kind: 'day'; day: string; streak: string; label: string; title: string; progress: string; cleared: boolean };
+  /** `label` is null on a cleared day: "Day cleared" needs no "CORE QUEST" over it (emulator check). */
+  | { kind: 'day'; day: string; streak: string; label: string | null; title: string; progress: string; cleared: boolean };
 
 export function widgetLines(snap: WidgetSnapshot | null, now: number): WidgetLines {
   if (snap === null) return { kind: 'none', line: WIDGET_TEXT.none };
@@ -61,7 +62,7 @@ export function widgetLines(snap: WidgetSnapshot | null, now: number): WidgetLin
     kind: 'day',
     day: fillText(WIDGET_TEXT.day, { day: snap.day }),
     streak: fillText(WIDGET_TEXT.streak, { n: snap.streak }),
-    label: WIDGET_TEXT.core,
+    label: allDone || snap.core === null ? null : WIDGET_TEXT.core,
     title: allDone ? WIDGET_TEXT.dayCleared : (snap.core ?? WIDGET_TEXT.dayCleared),
     progress: fillText(WIDGET_TEXT.progress, { done: snap.done, total: snap.total }),
     cleared: allDone || snap.coreCleared,

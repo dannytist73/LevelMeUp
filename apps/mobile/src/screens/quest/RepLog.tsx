@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { setsLine } from '../../quest/lastSets.ts';
 import { MAX_REPS, MAX_SETS, repUnit, repsPayload, repsValid, startingSets } from '../../quest/payload.ts';
+import { REPS_REST_MS } from '../../quest/rest.ts';
 import { colors, fonts } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
@@ -34,7 +35,7 @@ export type RepLogProps = {
 export function RepLog({ condition, disabled, onClaim, last = null, now = Date.now }: RepLogProps) {
   const [sets, setSets] = useState(() => startingSets(condition));
   const [done, setDone] = useState<boolean[]>([]);
-  const rest = useRest(now);
+  const rest = useRest(now, REPS_REST_MS);
   const unit = repUnit(condition);
   const change = (index: number, by: number) =>
     setSets((all) => all.map((n, i) => (i === index ? Math.max(0, Math.min(MAX_REPS, n + by)) : n)));

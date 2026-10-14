@@ -10,6 +10,7 @@ import { View } from 'react-native';
 import { moveKey, setsLine, startFromLast } from '../../quest/lastSets.ts';
 import type { LastSets } from '../../quest/lastSets.ts';
 import { MAX_REPS, moveUnit, sessionPayload, sessionValid } from '../../quest/payload.ts';
+import { WORKOUT_REST_MS } from '../../quest/rest.ts';
 import { colors } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Body, Heading, Label, Small } from '../../ui/Text.tsx';
@@ -33,7 +34,7 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
   const [open, setOpen] = useState<number | null>(0);
   /** The exercise whose set started the rest: the bar shows under it, where the player is. */
   const [restMove, setRestMove] = useState(0);
-  const rest = useRest(now);
+  const rest = useRest(now, WORKOUT_REST_MS);
   const change = (m: number, s: number, by: number) =>
     setSets((all) => all.map((row, i) => (i !== m ? row : row.map((n, j) => (j === s ? Math.max(0, Math.min(MAX_REPS, n + by)) : n)))));
   const toggle = (m: number, s: number) => {

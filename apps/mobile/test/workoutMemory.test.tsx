@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent } from '../src/game/types.ts';
 import { moveKey, questKey, readLastSets, sessionMemory, setsLine, startFromLast } from '../src/quest/lastSets.ts';
-import { REST_MORE_MS, REST_MS, moreRest, restClock, restLeft, startRest } from '../src/quest/rest.ts';
+import { REPS_REST_MS, REST_MORE_MS, WORKOUT_REST_MS, moreRest, restClock, restLeft, startRest } from '../src/quest/rest.ts';
 import { Quest } from '../src/screens/Quest.tsx';
 import { RepLog } from '../src/screens/quest/RepLog.tsx';
 import { WorkoutLog } from '../src/screens/quest/WorkoutLog.tsx';
@@ -40,14 +40,17 @@ describe('last sets (decision 7)', () => {
 });
 
 describe('the rest (decision 8)', () => {
-  it('runs two minutes, takes 15 seconds more, and reads as a clock', () => {
-    const rest = startRest(1_000);
+  it("runs as long as the quest's words say, takes 15 seconds more, and reads as a clock", () => {
+    expect(REPS_REST_MS).toBe(60_000); // "Rest about a minute between sets" (the strength ladders)
+    expect(WORKOUT_REST_MS).toBe(120_000); // "Rest about 2 minutes between sets" (the workouts)
+    const REST_MS = WORKOUT_REST_MS;
+    const rest = startRest(1_000, REST_MS);
     expect(restLeft(rest, 1_000)).toBe(REST_MS);
     expect(restLeft(moreRest(rest, 1_000), 1_000)).toBe(REST_MS + REST_MORE_MS);
     expect(restLeft(moreRest(rest, 1_000 + REST_MS + 5_000), 1_000 + REST_MS + 5_000)).toBe(REST_MORE_MS); // after it ended
     expect(restLeft(rest, 1_000 + REST_MS + 1)).toBe(0);
     expect(restLeft(null, 0)).toBe(0);
-    expect(restClock(REST_MS)).toBe('2:00');
+    expect(restClock(WORKOUT_REST_MS)).toBe('2:00');
     expect(restClock(105_000)).toBe('1:45');
     expect(restClock(1)).toBe('0:01');
   });
@@ -72,16 +75,16 @@ describe('the rest (decision 8)', () => {
       const first = screen.getByRole('checkbox', { name: fillText(R.done, { n: 1 }) });
       await fireEvent.press(first);
       expect(screen.getByRole('checkbox', { name: fillText(R.done, { n: 1 }) }).props.accessibilityState).toEqual({ checked: true });
-      expect(screen.getByText(fillText(R.left, { time: '2:00' }))).toBeTruthy();
+      expect(screen.getByText(fillText(R.left, { time: '1:00' }))).toBeTruthy(); // a rep log: about a minute
       await pass(15_000);
-      expect(screen.getByText(fillText(R.left, { time: '1:45' }))).toBeTruthy();
+      expect(screen.getByText(fillText(R.left, { time: '0:45' }))).toBeTruthy();
       await fireEvent.press(screen.getByRole('button', { name: R.moreLabel }));
-      expect(screen.getByText(fillText(R.left, { time: '2:00' }))).toBeTruthy();
+      expect(screen.getByText(fillText(R.left, { time: '1:00' }))).toBeTruthy();
       await fireEvent.press(screen.getByRole('button', { name: R.skip }));
       expect(screen.queryByText(/^Rest \d/)).toBeNull();
       await fireEvent.press(screen.getByRole('checkbox', { name: fillText(R.done, { n: 1 }) })); // unticked: no rest
       await fireEvent.press(screen.getByRole('checkbox', { name: fillText(R.done, { n: 1 }) })); // ticked again: a rest
-      await pass(REST_MS + 500);
+      await pass(REPS_REST_MS + 500);
       expect(buzz).toHaveBeenCalledWith('stamp');
       expect(buzz).toHaveBeenCalledTimes(1);
       expect(screen.getByText(R.over)).toBeTruthy();

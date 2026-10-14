@@ -49,6 +49,9 @@ export type QuestCardProps = {
   onQuickClear?: () => void;
 };
 
+/** M10c: the core card's picture is a wider crop than the quest screen's 16:9 (emulator: Begin fell below the fold). */
+export const TODAY_ART_RATIO = 2;
+
 /** M10c: how long the hold to clear a quest from Today lasts: quick, but never a brushed tap. */
 export const QUICK_CLEAR_MS = 800;
 
@@ -115,7 +118,7 @@ export function QuestCard({
           <SlamIn>
             <View style={{ marginRight: 6 }}>
               <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-                <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative />
+                <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} />
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 56 }}>
                   <Chip label={stat} on="paper" />
                   <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
@@ -127,10 +130,8 @@ export function QuestCard({
                   <Body tone="inkSoft" weight="medium">{summary}</Body>
                   {quest.book !== null && <Small tone="inkSoft">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
                 </View>
-                <View style={{ gap: 3, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink }}>
-                  <Label tone="sealText">Why this quest</Label>
-                  <Small tone="inkSoft">{why}</Small>
-                </View>
+                {/* M10c: the why as one quiet line (the quest screen keeps its box), so Begin stays on the first screen. */}
+                <Small tone="inkSoft">{why}</Small>
                 {template.exercise !== null && <Small tone="inkMuted">{EXERCISE_SAFETY_LINE}</Small>}
                 {waiting && <WillSync on="paper" />}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, backgroundColor: colors.seal }}>

@@ -7,7 +7,11 @@ import { colors } from '../theme/tokens.ts';
 import { SpeedLines } from './SpeedLines.tsx';
 import { Heading } from './Text.tsx';
 
-export function QuestArt({ uri, label, fallback, decorative = false }: { uri: string | null; label: string; fallback: string; decorative?: boolean }) {
+export function QuestArt({ uri, label, fallback, decorative = false, ratio = 16 / 9 }: {
+  uri: string | null; label: string; fallback: string; decorative?: boolean;
+  /** Width over height; M10c: Today's core card shows a wider crop, so its Begin bar stays on the first screen. */
+  ratio?: number;
+}) {
   const [failed, setFailed] = useState<string | null>(null);
   const showPicture = uri !== null && failed !== uri;
   return (
@@ -17,7 +21,7 @@ export function QuestArt({ uri, label, fallback, decorative = false }: { uri: st
       accessibilityLabel={decorative ? undefined : label}
       importantForAccessibility={decorative ? 'no-hide-descendants' : 'auto'}
       accessibilityElementsHidden={decorative}
-      style={{ width: '100%', aspectRatio: 16 / 9, borderWidth: 2, borderColor: colors.ink, backgroundColor: colors.halftone, overflow: 'hidden' }}
+      style={{ width: '100%', aspectRatio: ratio, borderWidth: 2, borderColor: colors.ink, backgroundColor: colors.halftone, overflow: 'hidden' }}
     >
       {showPicture ? (
         <Image testID="quest-art" source={{ uri }} onError={() => setFailed(uri)} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
