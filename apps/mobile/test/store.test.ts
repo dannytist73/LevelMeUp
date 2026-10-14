@@ -456,6 +456,7 @@ describe('the game store', () => {
   });
 
   it('keeps the Haptics switch on the phone, applies it at once, and reads it at boot (M10b decision 4)', async () => {
+    (setBuzzing as jest.Mock).mockClear(); // a jest.fn keeps its calls from earlier tests (review)
     const { store, local, kv } = await setup([ok(SERVER)]);
     await local.acknowledge([], [], SERVER, 1);
     expect(store.getState().haptics).toBe(true);
@@ -472,6 +473,7 @@ describe('the game store', () => {
   });
 
   it('is on when nothing is kept, or the phone cannot read it (M10b decision 4)', async () => {
+    (setBuzzing as jest.Mock).mockClear();
     const { store, local, deps } = await setup([ok(SERVER)]);
     await local.acknowledge([], [], SERVER, 1);
     (deps.kv.getItem as jest.Mock).mockImplementation(async (k: string) => {
@@ -480,16 +482,18 @@ describe('the game store', () => {
     });
     await store.getState().boot();
     expect(store.getState().haptics).toBe(true);
+    expect(setBuzzing).toHaveBeenCalledTimes(1);
     expect(setBuzzing).toHaveBeenLastCalledWith(true);
     store.getState().stop();
   });
 
   it('a switch the phone cannot store still applies (M10b decision 4)', async () => {
+    (setBuzzing as jest.Mock).mockClear();
     const { store, deps } = await setup([ok(SERVER)]);
     (deps.kv.setItem as jest.Mock).mockRejectedValueOnce(new Error('storage'));
     await store.getState().setHaptics(false);
     expect(store.getState().haptics).toBe(false);
-    expect(setBuzzing).toHaveBeenLastCalledWith(false);
+    expect(setBuzzing).toHaveBeenCalledWith(false);
     store.getState().stop();
   });
 

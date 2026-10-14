@@ -22,12 +22,14 @@ const T = SHADOW_TEXT;
 /** A soft red glow over one painted eye; both share the pulse. */
 function Glow({ eye, id, pulse }: { eye: ShadowEye; id: string; pulse: SharedValue<number> }) {
   const glowing = useAnimatedStyle(() => ({ opacity: pulse.value }));
-  const share = GLOW_SHARE * 100;
+  // Placed by its corner: a percentage width is of the frame's width but a percentage top of its height (and Yoga reads a
+  // placed view's top margin against the height too; review), so the square's half side is GLOW_SHARE / 2 across and
+  // that times 16/9 down the 16:9 frame.
+  const corner = { left: `${(eye.x - GLOW_SHARE / 2) * 100}%`, top: `${(eye.y - (GLOW_SHARE / 2) * (16 / 9)) * 100}%` } as const;
   return (
     <Animated.View
       testID="eye-glow"
-      // Percentage margins are of the frame's width on both axes, so the square glow is centred on the eye.
-      style={[{ position: 'absolute', left: `${eye.x * 100}%`, top: `${eye.y * 100}%`, width: `${share}%`, aspectRatio: 1, marginLeft: `${-share / 2}%`, marginTop: `${-share / 2}%` }, glowing]}
+      style={[{ position: 'absolute', ...corner, width: `${GLOW_SHARE * 100}%`, aspectRatio: 1 }, glowing]}
     >
       <Svg width="100%" height="100%" viewBox="0 0 100 100">
         <Defs>
@@ -83,16 +85,24 @@ export function ShadowArt() {
     if (loaded && !reduce) creep.value = withTiming(CREEP_TO, timing(CREEP_MS, Easing.inOut(Easing.quad)));
   }, [loaded, reduce, creep]);
   // The breath follows the creep; in the background it stops, and on return it waits its turn again (plan decision 9).
+  // A back-and-forth loop swings between where it starts and its end, so each stops at its start: otherwise the breath
+  // and the pulse would come back smaller after every trip to the background (review).
   useEffect(() => {
     if (!living) return;
     breath.value = delayed(CREEP_MS, forever(withTiming(BREATH_TO, timing(BREATH_MS, Easing.inOut(Easing.sin))), true));
-    return () => cancelAnimation(breath);
+    return () => {
+      cancelAnimation(breath);
+      breath.value = 1;
+    };
   }, [living, breath]);
   // The eyes pulse from the first frame: the stand-in's while the painting loads, the painted ones' glows once it has.
   useEffect(() => {
     if (reduce || !active) return;
     pulse.value = forever(withTiming(PULSE_TO, timing(PULSE_MS, Easing.inOut(Easing.sin))), true);
-    return () => cancelAnimation(pulse);
+    return () => {
+      cancelAnimation(pulse);
+      pulse.value = PULSE_FROM;
+    };
   }, [reduce, active, pulse]);
   const moving = useAnimatedStyle(() => ({ transform: [{ scale: creep.value * breath.value }] }));
   const smouldering = useAnimatedStyle(() => ({ opacity: Math.min(1, pulse.value + 0.15) }));

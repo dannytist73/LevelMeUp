@@ -127,11 +127,15 @@ describe('the moments buzz on rewards (M10b spec decision 2)', () => {
     await render(withStore(testStore({ view: project(serverState(), []), celebrations: [{ kind: 'level', level: 5, from: 4 }] }), <Celebration />));
     await wait(MOMENTS.level.number + THUD_LAND_MS);
     expect(felt()).toEqual(['level']);
+    await wait(2_000);
+    expect(felt()).toEqual(['level']);
   });
 
   it('an achievement: the firm click as its name lands', async () => {
     await render(withStore(testStore({ celebrations: [{ kind: 'achievement', id: ACHIEVEMENTS[0]!.id }] }), <Celebration />));
     await wait(MOMENTS.achievement.name + THUD_LAND_MS);
+    expect(felt()).toEqual(['stamp']);
+    await wait(2_000);
     expect(felt()).toEqual(['stamp']);
   });
 
