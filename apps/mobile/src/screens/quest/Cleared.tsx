@@ -3,6 +3,7 @@
 // exercise down a rung; "I felt pain" stays reachable. M10a: the moment moves (spec decision 4): the lines burst, the title
 // slams in, the XP stamp thuds in a splash of ink, the panel slams in and its rank stamps thud, then the bar fills from
 // where it was while the level line counts up. Reopened later (no before), it shows still (the owner, 2026-10-14).
+// M10b: a firm click as the XP stamp lands, one tick for the rank stamps (spec decision 2).
 import { ADJUST_TEXT, PLAY_TEXT, READING_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
@@ -120,7 +121,7 @@ export function Cleared({
         </SlamIn>
         <Small style={{ textAlign: 'center' }}>{line}</Small>
         <InkBurst delay={M.stamp} still={!fresh}>
-          <Thud delay={M.stamp} still={!fresh} testID="xp-stamp-thud">
+          <Thud delay={M.stamp} still={!fresh} haptic="stamp" testID="xp-stamp-thud">
             <XpStamp xp={numbers.xp} size={86} rotate={12} />
           </Thud>
         </InkBurst>
@@ -128,13 +129,14 @@ export function Cleared({
 
       <SlamIn delay={M.panel} still={!fresh}>
         <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-          {numbers.statUps.map((up) => (
+          {numbers.statUps.map((up, i) => (
             <View key={up.stat} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: 2, borderColor: colors.ink }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Label tone="sealText">{C.statUp}</Label>
                 <Heading tone="ink">{`${STAT_NAMES[up.stat].toUpperCase()} ${up.from} → ${up.to}`}</Heading>
               </View>
-              <Thud delay={M.rank} still={!fresh} testID="rank-thud">
+              {/* M10b: the rank stamps land together, so only the first one ticks. */}
+              <Thud delay={M.rank} still={!fresh} haptic={i === 0 ? 'tick' : undefined} testID="rank-thud">
                 <View
                   accessible
                   accessibilityLabel={`Rank ${up.rank}`}

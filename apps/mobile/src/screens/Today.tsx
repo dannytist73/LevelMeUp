@@ -2,7 +2,7 @@
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
 // quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx); M7a the check-in (CheckinNotes.tsx). M8b: today's
 // reading card and the Mage's Insight. M7c: after "I just didn't" under a pact, the Shadow's mark and box, the recovery quest first, and
-// at level 2 the Trial above the sealed side quests (board F3).
+// at level 2 the Trial above the sealed side quests (board F3). M10b: the streak's flare ticks (spec decision 2).
 import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SHADOW_TEXT, artKey, authoredTemplate, shadowLine } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
 import { Pressable, View } from 'react-native';
@@ -216,7 +216,7 @@ export function Today({
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-                <Thud key={streakGrew} still={streakGrew === 0} testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Thud key={streakGrew} still={streakGrew === 0} haptic="tick" testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Icon name="flame" size={18} color={colors.ember} />
                   <Heading tone="ember">{String(view.character.streak.current)}</Heading>
                 </Thud>

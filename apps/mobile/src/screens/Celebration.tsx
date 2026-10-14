@@ -2,6 +2,7 @@
 // one at a time, with speed lines and Continue. A modal, so the screen behind can't be tapped or reached by TalkBack, and
 // Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared"). M9a: at levels 5 and 10 the new
 // portrait (decision 8). M10a: each moves (spec decision 4) and is keyed, so the next one plays afresh (plan decision 6).
+// M10b: the double click as "LV n" lands, the firm click as an achievement's name lands.
 import { ACHIEVEMENTS, CHARACTER_TEXT, CLASS_NAMES, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,7 +38,7 @@ export function Celebration() {
       <>
         <SlamIn delay={M.label}><Label tone="ember">{T.levelLabel}</Label></SlamIn>
         <InkBurst count={16} radius={120} delay={M.number}>
-          <Thud delay={M.number} testID="level-thud"><Display>{`LV ${next.level}`}</Display></Thud>
+          <Thud delay={M.number} haptic="level" testID="level-thud"><Display>{`LV ${next.level}`}</Display></Thud>
         </InkBurst>
         {shown !== null && (
           <FadeIn rise delay={M.portrait}>
@@ -55,7 +56,7 @@ export function Celebration() {
     body = (
       <>
         <SlamIn><Label tone="ember">{T.achievementLabel}</Label></SlamIn>
-        <Thud delay={M.name} testID="achievement-thud"><Title style={{ textAlign: 'center' }}>{achievement?.name ?? next.id}</Title></Thud>
+        <Thud delay={M.name} haptic="stamp" testID="achievement-thud"><Title style={{ textAlign: 'center' }}>{achievement?.name ?? next.id}</Title></Thud>
         {achievement !== undefined && <FadeIn delay={M.rest}><Body style={{ textAlign: 'center' }}>{achievement.description}</Body></FadeIn>}
         {achievement !== undefined && achievement.title !== null && <FadeIn delay={M.rest}><Small>{fillText(T.titleEarned, { title: achievement.title })}</Small></FadeIn>}
       </>
