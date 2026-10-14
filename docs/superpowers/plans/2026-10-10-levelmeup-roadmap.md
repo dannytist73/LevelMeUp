@@ -34,6 +34,9 @@ guesses). Only milestone 1's plan exists today.
 | 10a | **Motion** | The visual spec's motion rule built with what's installed (Reanimated, react-native-svg): panels slam in, stamps thud, speed lines burst on the reveal, level-ups and quest cleared, an ink splash, the XP bar fills and counts; the Shadow's creep; Today moves only on a change; fades only with reduced motion; a developer motion bench; version 0.3.0. No server change. **Built 2026-10-14 (branch `m10a-motion`); reviewed; emulator rows 1–10 pass, 11 partly; the preview APK is EAS build `38704cd8`**; merges after M9b. | `2026-10-14-m10a-motion.md` |
 | 10b | **Haptics and a living Shadow** | Proposed, not specced: expo-haptics and a Rive Shadow, new native modules (the owner's approval, one new development build and pilot APK). | — |
 
+**Merged 2026-10-14:** M5 through M10a are on `main` (the owner's choice; a fast-forward to `bf0220a`, with every test,
+the typecheck and the checks passing on `main`). The "merges after" notes above are history.
+
 ## Carried forward from the M1 code review
 
 Open items the M1 rules can't settle alone; each later plan picks up its own.
