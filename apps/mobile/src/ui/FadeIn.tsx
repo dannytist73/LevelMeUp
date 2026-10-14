@@ -2,16 +2,14 @@
 // `rise` also lifts it 12 px. With reduced motion, the fade alone.
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { FADE_MS, RISE_MS, RISE_PX, delayed, timing } from './motion.ts';
 import { useReduce } from './useMotion.ts';
 
-export function FadeIn({ children, delay = 0, rise = false, style, reduceMotion }: {
+export function FadeIn({ children, delay = 0, rise = false, reduceMotion }: {
   children: ReactNode;
   delay?: number;
   rise?: boolean;
-  style?: StyleProp<ViewStyle>;
   reduceMotion?: boolean;
 }) {
   const reduce = useReduce(reduceMotion);
@@ -22,7 +20,7 @@ export function FadeIn({ children, delay = 0, rise = false, style, reduceMotion 
   const rising = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: (1 - progress.value) * RISE_PX }] }));
   const fading = useAnimatedStyle(() => ({ opacity: progress.value }));
   return (
-    <Animated.View testID="fade-in" style={[style, rise && !reduce ? rising : fading]}>
+    <Animated.View testID="fade-in" style={rise && !reduce ? rising : fading}>
       {children}
     </Animated.View>
   );

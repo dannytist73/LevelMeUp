@@ -1,8 +1,8 @@
-// M10a: the motion rule (visual spec §3; spec 2026-10-14-m10a-motion-design.md). Reanimated's Jest mock computes each
-// animated style at each render from the shared values, and jumps every animation to its end: these tests check where
-// each piece starts, its reduced-motion path and its accessibility, not frames. Starting values are checked on the
-// pieces alone; on a screen, a re-render after mount would show the mock's end values, so screens check only that the
-// motion is there.
+// M10a: the motion rule (visual spec §3; spec 2026-10-14-m10a-motion-design.md). Reanimated's Jest mock makes a fresh
+// shared value at each render and computes each animated style from it, so every render shows where a piece starts;
+// an animation jumps to its end without a render. These tests check where each piece starts, its reduced-motion path
+// and its accessibility, not frames; screens check that the motion is there, and that a piece starts again is seen in
+// the calls that start it.
 import { ACHIEVEMENTS, ONBOARDING_TEXT, PLAY_TEXT } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
@@ -272,6 +272,17 @@ describe('level-ups and achievements move (M10a decision 4)', () => {
     expect(screen.getByTestId('achievement-thud')).toBeTruthy();
     expect(screen.getAllByTestId('fade-in')).toHaveLength(2); // the description and the title earned
     expect(screen.getByText(titled.name)).toBeTruthy();
+  });
+
+  it("the next one in the queue plays afresh: the modal's content is keyed (plan decision 6, review)", async () => {
+    const [a, b] = ACHIEVEMENTS;
+    const store = testStore({ celebrations: [{ kind: 'achievement', id: a!.id }, { kind: 'achievement', id: b!.id }] });
+    await render(withStore(store, <Celebration />));
+    const first = screen.getByTestId('achievement-thud');
+    await act(async () => store.setState({ celebrations: [{ kind: 'achievement', id: b!.id }] }));
+    expect(screen.getByText(b!.name)).toBeTruthy();
+    // A new view, not the finished one re-rendered: on the phone its motion starts again.
+    expect(screen.getByTestId('achievement-thud')).not.toBe(first);
   });
 
   it('Continue works from the first frame', async () => {

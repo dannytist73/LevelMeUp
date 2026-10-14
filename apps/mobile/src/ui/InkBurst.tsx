@@ -4,7 +4,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { colors } from '../theme/tokens.ts';
@@ -28,12 +27,11 @@ function Drop({ drop, progress }: { drop: InkDrop; progress: SharedValue<number>
   );
 }
 
-export function InkBurst({ children, count = 12, radius = 80, delay = 0, style, reduceMotion }: {
+export function InkBurst({ children, count = 12, radius = 80, delay = 0, reduceMotion }: {
   children: ReactNode;
   count?: number;
   radius?: number;
   delay?: number;
-  style?: StyleProp<ViewStyle>;
   reduceMotion?: boolean;
 }) {
   const reduce = useReduce(reduceMotion);
@@ -44,7 +42,7 @@ export function InkBurst({ children, count = 12, radius = 80, delay = 0, style, 
     if (!reduce) progress.value = delayed(delay, withTiming(1, timing(INK_MS, Easing.out(Easing.quad))));
   }, [reduce, delay, progress]);
   return (
-    <View style={style}>
+    <View>
       {!reduce && (
         <View
           testID="ink-burst" pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
