@@ -2,7 +2,7 @@
   "expo": {
     "name": "LevelMeUp",
     "slug": "levelmeup",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "levelmeup",
@@ -65,7 +65,7 @@
     ],
     "android": {
       "package": "com.dannytist.levelmeup",
-      "versionCode": 5,
+      "versionCode": 6,
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#0E0E10",

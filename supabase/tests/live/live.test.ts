@@ -99,6 +99,12 @@ describe('a player from onboarding to a cleared quest', () => {
     expect(quest(again.body.state, 'core')).toMatchObject({ rating: 'easy' });
   });
 
+  it('with the core quest cleared, the day counts: no rest today, nor the offer of one; a rest tomorrow stays offered (audit Phase 0)', async () => {
+    const rest = await sync(a, [{ id: eventId(), type: 'plan_rest', dayId: state.today.id }]);
+    expect(rest.body.results[0]).toMatchObject({ ok: false, code: 'day_counts' });
+    expect(rest.body.state.today).toMatchObject({ protection: null, restAllowed: false, restTomorrow: true });
+  });
+
   it('a batch applies the good events and reports each bad one', async () => {
     const side1 = quest(state, 'side1');
     const side2 = quest(state, 'side2');
