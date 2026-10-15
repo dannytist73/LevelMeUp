@@ -41,6 +41,10 @@ the typecheck and the checks passing on `main`). The "merges after" notes above 
 **Merged 2026-10-15:** M10b and M10c are on `main` (the owner's choice; a fast-forward to `35e993d`, with every test,
 the typecheck, the portable and functions checks and the bundle scan passing on `main`).
 
+**Merged 2026-10-15:** the "Add a set" fix (branch `fix-add-a-set`, the shared Button's label fills the button) is on
+`main` (the owner's yes; a fast-forward to `d8e4e29`, every test and check passing on `main`). It reaches phones with the
+next preview APK (the checklist's "Fix: Add a set" row 3).
+
 ## Carried forward from the M1 code review
 
 Open items the M1 rules can't settle alone; each later plan picks up its own.
