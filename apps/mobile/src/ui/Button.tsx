@@ -1,5 +1,7 @@
 // Buttons (visual spec §2): primary is paper on the night and ink on paper; commitment is seal red with white text
 // (accept class, swear, sign, claim); secondary is a 2 px outline. At least 48 high; the label wraps instead of cutting.
+// The label fills the button's width: a label box only as wide as its words lost its last word on Android when the text
+// view was reused from another screen ("Add a set" showed "Add a", 2026-10-15).
 import { Pressable, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { colors, fonts, type as scale } from '../theme/tokens.ts';
@@ -48,6 +50,7 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
       <Text
         maxFontSizeMultiplier={scale.label.maxScale}
         style={{
+          alignSelf: 'stretch',
           color: look.fg,
           textAlign: 'center',
           ...(display

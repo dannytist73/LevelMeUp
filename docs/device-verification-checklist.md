@@ -600,3 +600,20 @@ https://expo.dev/artifacts/eas/VUjDOueOOEvQXR4OeYY0-QUyhvulA8syxswcwHGotfc.apk.
 - **The emulator now:** the development build `d49722ad` (0.5.0, versionCode 5); Vera at level 2, day 1 four of four
   (her core quest and neck rolls cleared again at 21:47 and 21:58 emulator time); the LevelMeUp widget on the home
   screen; font 1.0; Metro on 8082 (development).
+
+## Fix: "Add a set" cut to "Add a" (branch `fix-add-a-set`, 2026-10-15)
+
+Seen while filming the promo on the 0.5.0 preview APK. Every reopening of a rep-log quest showed "Add a" (the first
+opening after the app started was whole), in the development build too. Android reuses text views, and a label box only
+as wide as its words had a third of a pixel to spare; "Add a set" starts with an "A" whose glyph reaches left of its
+start. The shared Button's label now fills the button's width. Rows 1–2 on the emulator with the development build
+`d49722ad` (Claude), row 3 with the next preview APK (the owner).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | A rep-log quest opened four times from Today: "Add a set" and "Remove the last set" whole each time; Back, I felt pain, LOG IT and Swap this quest unchanged. | Pass (2026-10-15): before the fix "Add a" on every reopening, in the 0.5.0 preview APK and the development build alike. |
+| 2 | The same at font 2.0. | Pass: both labels whole (button labels are capped at their scale), the notes wrap. |
+| 3 | Find X9, the next preview APK: open a rep-log quest, go back, open it again; "Add a set" whole. | |
+
+- **The emulator now:** the development build `d49722ad`; Vera on day 2 with nothing logged today; font **2.0** (the
+  emulator closed before it was set back to 1.0: set it back on the next start).
