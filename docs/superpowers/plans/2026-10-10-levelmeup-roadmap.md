@@ -283,11 +283,24 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | When | Item |
 |---|---|
-| Later | The server still accepts a rest today on a day that already counts (the phone no longer offers it): refuse it there too, with the next functions deploy. |
+| Built | The server still accepts a rest today on a day that already counts (the phone no longer offers it): refuse it there too, with the next functions deploy. **Built 2026-10-15** in the audit's Phase 0 (`day_counts`, branch `phase0-safety-nets`); live with the next functions deploy (the owner's yes). |
 | Later | The rest between sets is in the app only: a notification when it ends, if players leave the app during rests. |
 | Later | Workout memory is kept on the phone: a restored character on a new phone starts without it. |
 | Find X9 | The M10c rows 15–18 (the owner), with the 0.5.0 preview APK (EAS build `ae75658a`): BEGIN on the first screen, the widget (and after the day ends, and after a restart on ColorOS), a hold and a rest felt. |
 | Dev | In a development build the widget's own task loads its code from Metro on port 8081: run Metro there to see it draw with the app closed. |
+
+## The app audit's Phase 0 (2026-10-15)
+
+`docs/2026-10-15-app-audit.md` section 5. The code is backed up in the private GitHub repo `dannytist73/LevelMeUp`
+(the owner's yes, 2026-10-15). Built on branch `phase0-safety-nets`: a motion piece can't stay hidden (`useSettle`), a
+screen that fails shows Crashed with Try again (the root's `ErrorBoundary`), one event that always fails is refused
+alone (`server_error`, `_shared/failures.ts`), and the server refuses a rest on a day that counts (`day_counts`).
+
+| When | Item |
+|---|---|
+| Owner | The functions deploy (rows 3-4 of the checklist's Phase 0 section), and the next preview APK (rows 5-6). |
+| Later | Crash reports leave the phone: today an error is only in the phone's log. Sentry's free tier, or a small error event to the server, would need the owner's yes. |
+| Later | CI on GitHub (test, typecheck, the portable and bundle checks on each push): free minutes on a private repo, the owner's yes. |
 
 ## Spikes and where they run
 

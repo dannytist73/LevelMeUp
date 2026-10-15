@@ -17,7 +17,7 @@ import { Today } from '../src/screens/Today.tsx';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
-  BURST_FROM, EMBERS, FILL_MS, GLOW_SHARE, INK_FROM, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
+  BURST_FROM, EMBERS, FILL_MS, GLOW_SHARE, INK_FROM, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SETTLE_MS, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
   inkDrops, SHADOW_EYES,
 } from '../src/ui/motion.ts';
 import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
@@ -25,7 +25,7 @@ import * as motion from '../src/ui/motion.ts';
 import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { SpeedLines } from '../src/ui/SpeedLines.tsx';
 import { Thud } from '../src/ui/Thud.tsx';
-import { useAppActive, useCountUp, useGrowth } from '../src/ui/useMotion.ts';
+import { useAppActive, useCountUp, useGrowth, useSettle } from '../src/ui/useMotion.ts';
 import { XpBar } from '../src/ui/XpBar.tsx';
 import { DAY_TWO_NOW, READY_DRAFT, REVEAL, claimedState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -116,6 +116,11 @@ describe('the motion hooks (M10a)', () => {
   });
 });
 
+function Settles({ ms, active = true, settle }: { ms: number; active?: boolean; settle: () => void }) {
+  useSettle(ms, active, settle);
+  return null;
+}
+
 describe('slam, thud and fade (M10a decision 3)', () => {
   it('moving, each starts where its motion begins', async () => {
     await render(
@@ -140,6 +145,31 @@ describe('slam, thud and fade (M10a decision 3)', () => {
     );
     for (const id of ['slam-in', 'thud', 'fade-in']) expect(flat(screen.getByTestId(id).props.style)).toEqual({ opacity: 0 });
     expect(screen.getByText('thud')).toBeTruthy();
+  });
+
+  it('once the motion is surely over, a piece is told to settle where it ends: never early, never still, never after leaving (audit 2026-10-15)', async () => {
+    // Each piece then sets its shared values to the motion's end, so an animation that never ran can't leave it hidden. That
+    // part is checked on the emulator (a slam-in that never starts shows its card); Reanimated's Jest mock can't show it.
+    jest.useFakeTimers();
+    try {
+      const settle = jest.fn();
+      const still = jest.fn();
+      const gone = jest.fn();
+      await render(<Settles ms={100 + SLAM_MS} settle={settle} />);
+      await act(async () => { jest.advanceTimersByTime(100 + SLAM_MS + SETTLE_MS - 1); });
+      expect(settle).not.toHaveBeenCalled();
+      await act(async () => { jest.advanceTimersByTime(1); });
+      expect(settle).toHaveBeenCalledTimes(1);
+      await render(<Settles ms={SLAM_MS} active={false} settle={still} />);
+      const left = await render(<Settles ms={SLAM_MS} settle={gone} />);
+      await act(async () => { left.unmount(); });
+      await act(async () => { jest.advanceTimersByTime(10_000); });
+      expect(still).not.toHaveBeenCalled();
+      expect(gone).not.toHaveBeenCalled();
+      expect(settle).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('a still thud shows its child as it is; a wrapper style is kept', async () => {

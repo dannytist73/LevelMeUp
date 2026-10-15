@@ -1,5 +1,5 @@
 // The root: fonts, the splash screen, the game store and when it syncs (launch, foreground, network back); M7d:
-// notification taps. M10c: the home-screen widget follows the game.
+// notification taps. M10c: the home-screen widget follows the game. A screen that fails shows Crashed (audit 2026-10-15).
 import { useFonts } from 'expo-font';
 import * as Network from 'expo-network';
 import { Stack } from 'expo-router';
@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { StoreApi } from 'zustand/vanilla';
 import { NoteTaps } from '../src/notify/NoteTaps.tsx';
 import { Celebration } from '../src/screens/Celebration.tsx';
+import { Crashed } from '../src/screens/Crashed.tsx';
 import { createAppStore } from '../src/state/appStore.ts';
 import { GameProvider } from '../src/state/store.ts';
 import type { GameState } from '../src/state/store.ts';
@@ -19,6 +20,9 @@ import { NarrationBox } from '../src/ui/NarrationBox.tsx';
 import { publishWidget } from '../src/widget/publish.tsx';
 
 void SplashScreen.preventAutoHideAsync();
+
+/** A screen that throws shows Crashed instead of closing the app (audit 2026-10-15); Try again draws it again. */
+export const ErrorBoundary = Crashed;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

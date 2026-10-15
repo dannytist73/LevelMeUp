@@ -18,14 +18,14 @@ import type { AdjustEvent, DayAbility, PainChoice } from './events.ts';
 import { planNote, planPact, planTrial } from './pact.ts';
 import { ladderMap, startPoints, statXp, toProfile } from './state.ts';
 import type { Consequence, DayRow, InstanceDraft, InstanceRow, Snapshot } from './state.ts';
-import { QUEST_SLOTS, canStepDown, completedSlots, openDay, questsOf, restDays, todayBuilt, todayInput } from './today.ts';
+import { QUEST_SLOTS, canStepDown, completedSlots, dayCounts, openDay, questsOf, restDays, todayBuilt, todayInput } from './today.ts';
 
 /** Every reason an adjustment is refused; the phone has words for each (apps/mobile/src/game/notices.ts). */
 export const ADJUST_CODES = [
   'not_found', 'day_closed', 'already_completed', 'not_swappable', 'no_swaps_left', 'not_an_option', 'already_hard_day',
   'already_protected', 'rest_limit', 'not_exercise', 'not_paused', 'not_too_hard', 'not_current',
   'same_class', 'class_locked', 'ability_not_ready', 'already_applied', 'bad_change', 'no_book', 'same_book', 'already_answered',
-  'no_lighter_plan', 'rest_late', 'same_level', 'no_trial', 'trial_done', 'checkin_gone',
+  'no_lighter_plan', 'rest_late', 'same_level', 'no_trial', 'trial_done', 'checkin_gone', 'day_counts',
 ] as const;
 export type AdjustCode = (typeof ADJUST_CODES)[number];
 
@@ -161,6 +161,8 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
         return { change: { restDay: next } };
       }
       if (day.protection !== null) return refuse('already_protected');
+      // A day that already counts needs no rest: it would only use up one of the two rests in seven (M10c, carried).
+      if (dayCounts(questsOf(s, day))) return refuse('day_counts');
       if (!restAllowed(restDays(s), day.day_number)) return refuse('rest_limit');
       return { change: { day: { id: Number(day.id), protection: 'planned_rest', ...(tappedAt === null ? {} : { tappedAt }) } } };
     }

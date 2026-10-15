@@ -615,5 +615,23 @@ start. The shared Button's label now fills the button's width. Rows 1–2 on the
 | 2 | The same at font 2.0. | Pass: both labels whole (button labels are capped at their scale), the notes wrap. |
 | 3 | Find X9, the next preview APK: open a rep-log quest, go back, open it again; "Add a set" whole. | |
 
-- **The emulator now:** the development build `d49722ad`; Vera on day 2 with nothing logged today; font **2.0** (the
-  emulator closed before it was set back to 1.0: set it back on the next start).
+- **The emulator then:** the development build `d49722ad`; Vera on day 2 with nothing logged today; font 2.0 (set back
+  to 1.0 on the next start, 2026-10-15).
+
+## Audit Phase 0: safety nets (branch `phase0-safety-nets`, 2026-10-15)
+
+From the app audit (`docs/2026-10-15-app-audit.md`, section 5). Rows 1-2 on the emulator with the development build
+`d49722ad` (Claude). Rows 3-4 need the functions deployed (the owner's yes). Rows 5-6 need the next preview APK (the
+owner's yes for the build; the Find X9 rows are the owner's).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | A motion piece can't stay hidden. Today's core quest card shows after a normal start and looks the same once it settles. With its slam-in made never to start (a temporary edit), it still shows; without the safety net it stays invisible. | Pass (2026-10-15). The first try, dropping the animated style through React, didn't work: Reanimated keeps what it last drew. The net now sets the shared values to the motion's end. Seen once before the fix: the card invisible after a cold start of the development build (the 0.5.0 release: 6 of 6 cold starts fine). |
+| 2 | A screen that throws shows "Something went wrong on this screen…" with Try again, not a closed app; Try again draws the app again. | Pass with a temporary throw in Character: the System's box and TRY AGAIN; the error in the log ("LevelMeUp: a screen failed"). After the throw was removed, Try again brought back Today. In a development build LogBox's red screen sits on top first. |
+| 3 | The server refuses a rest today on a day that already counts ("That day already counted…"), and no longer offers it; rest tomorrow still works. | Unit tests pass; live after the deploy. |
+| 4 | An event the server fails on every time is refused on its own ("Something went wrong on the System's side…") and logged; a lost connection still fails the sync for a retry. | Unit tests pass (the failure classes); live after the deploy. |
+| 5 | Find X9, the next preview APK: Today's core quest card shows at every start (cold and warm). | |
+| 6 | Find X9, the next preview APK: About shows the new version; nothing else changed. | |
+
+- **The emulator now:** the development build `d49722ad`; Vera on day 2 (nothing logged today); font 1.0; Metro on
+  8082.

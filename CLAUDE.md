@@ -23,6 +23,8 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
   **Never run `supabase db push`** (the project's migration history belongs to the wedding repo); deploy migrations
   with this repo's `db:deploy` runner. LevelMeUp's names start with `lmu-` (functions, cron) and `LMU_` (secrets).
   Architecture §12 has the full sharing rules. Remote changes need the owner's yes at each milestone.
+- **The code is backed up** in the private GitHub repo `dannytist73/LevelMeUp` (remote `origin`, since 2026-10-15). Push
+  finished work there; it stays private, and nothing that holds a secret is ever committed.
 - **The backend is live (since M3); there is no local database.** Call the Supabase CLI only through
   `scripts/sb.ts` (an allow list pinned to the project). Never add a `supabase/config.toml`, never `link`, never
   `config push`, `db reset`, `migration repair` or `functions deploy --prune`. Commands (details in

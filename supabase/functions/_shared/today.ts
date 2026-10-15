@@ -2,8 +2,8 @@
 // offer on it. Pure. The planner (adjust.ts) and the state view use the same functions, so the phone is offered only
 // what the server will accept.
 import {
-  abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, newLadder, painOption, plannedMoves, restAllowed,
-  secondWindRedo, swapLimit, swapOptions,
+  STREAK_SLOTS, abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, isStreakDay, newLadder, painOption, plannedMoves,
+  restAllowed, secondWindRedo, swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type { BuiltDay, DayInput, QuestDraft, QuestLibrary, Slot } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
@@ -24,6 +24,12 @@ export function questsOf(s: Snapshot, day: DayRow): InstanceRow[] {
 }
 
 export const completedSlots = (quests: readonly InstanceRow[]): Slot[] => quests.filter((q) => q.completed_at !== null).map((q) => q.slot);
+
+/** The day's quests already make it a streak day (spec §2.4, as advance.ts closes it): it needs no rest (M10c, carried). */
+export function dayCounts(quests: readonly InstanceRow[]): boolean {
+  const done = completedSlots(quests);
+  return isStreakDay({ coreDone: done.includes('core'), questsDone: done.filter((slot) => STREAK_SLOTS.includes(slot)).length });
+}
 
 /** The rules' input for an existing day: the player as they are now, the ladders, the 7 days before it. */
 export function todayInput(s: Snapshot, day: DayRow): DayInput {
@@ -109,7 +115,7 @@ export function dayOffers(s: Snapshot, library: QuestLibrary): DayOffers {
   if (day === null) return NO_OFFERS;
   const quests = questsOf(s, day);
   const rests = restDays(s);
-  const restAllowedToday = day.protection === null && restAllowed(rests, day.day_number);
+  const restAllowedToday = day.protection === null && !dayCounts(quests) && restAllowed(rests, day.day_number);
   const restTomorrow = s.character.rest_day !== day.day_number + 1 && restAllowed(rests, day.day_number + 1);
   // A day without quests (protected `no_quests`), or with a template this version doesn't know, offers only rest.
   const whole = QUEST_SLOTS.every((slot) => quests.some((q) => q.slot === slot))

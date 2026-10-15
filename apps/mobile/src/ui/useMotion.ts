@@ -4,12 +4,28 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { cancelAnimation, useAnimatedReaction, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { delayed, timing } from './motion.ts';
+import { SETTLE_MS, delayed, timing } from './motion.ts';
 import type { CountPlan } from './motion.ts';
 
 export function useReduce(override?: boolean): boolean {
   const phone = useReducedMotion();
   return override ?? phone;
+}
+
+/**
+ * Calls `settle` once a motion that ends `ms` from now is surely over (audit 2026-10-15), so the piece can set its shared
+ * values to where the motion ends: an animation that never ran can't leave it hidden. Seen once on the emulator, after a
+ * cold start: Today's core quest card stayed invisible, its slam-in at its first frame. It has to go through Reanimated:
+ * a plain style from React doesn't replace what Reanimated last drew (emulator check). A still piece never waits.
+ */
+export function useSettle(ms: number, active: boolean, settle: () => void): void {
+  const latest = useRef(settle);
+  latest.current = settle;
+  useEffect(() => {
+    if (!active) return;
+    const timer = setTimeout(() => latest.current(), ms + SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [ms, active]);
 }
 
 /**

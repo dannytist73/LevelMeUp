@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { FADE_MS, RISE_MS, RISE_PX, delayed, timing } from './motion.ts';
-import { useReduce } from './useMotion.ts';
+import { useReduce, useSettle } from './useMotion.ts';
 
 export function FadeIn({ children, delay = 0, rise = false, reduceMotion }: {
   children: ReactNode;
@@ -17,6 +17,9 @@ export function FadeIn({ children, delay = 0, rise = false, reduceMotion }: {
   useEffect(() => {
     progress.value = delayed(delay, withTiming(1, timing(reduce ? FADE_MS : RISE_MS)));
   }, [progress, delay, reduce]);
+  useSettle(delay + (reduce ? FADE_MS : RISE_MS), true, () => {
+    progress.value = 1;
+  });
   const rising = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: (1 - progress.value) * RISE_PX }] }));
   const fading = useAnimatedStyle(() => ({ opacity: progress.value }));
   return (

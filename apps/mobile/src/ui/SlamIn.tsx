@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { FADE_MS, SLAM_MS, SLAM_PX, delayed, timing } from './motion.ts';
-import { useReduce } from './useMotion.ts';
+import { useReduce, useSettle } from './useMotion.ts';
 
 export function SlamIn({ children, delay = 0, still = false, style, reduceMotion }: {
   children: ReactNode;
@@ -23,6 +23,9 @@ export function SlamIn({ children, delay = 0, still = false, style, reduceMotion
   useEffect(() => {
     if (!still) progress.value = delayed(delay, withTiming(1, timing(reduce ? FADE_MS : SLAM_MS)));
   }, [still, progress, delay, reduce]);
+  useSettle(delay + (reduce ? FADE_MS : SLAM_MS), !still, () => {
+    progress.value = 1;
+  });
   const moving = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [{ translateY: (1 - progress.value) * -SLAM_PX }, { scale: 1 + (1 - progress.value) * 0.04 }],

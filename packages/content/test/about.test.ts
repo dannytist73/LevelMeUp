@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ABOUT_TEXT, PRIVACY_TEXT, UPDATE_TEXT } from '../src/about.ts';
+import { ABOUT_TEXT, CRASH_TEXT, PRIVACY_TEXT, UPDATE_TEXT } from '../src/about.ts';
 import { lintText } from '../src/lint.ts';
 import { ONBOARDING_TEXT } from '../src/onboarding.ts';
 
@@ -7,7 +7,7 @@ const strings = (value: unknown): string[] =>
   typeof value === 'string' ? [value] : Object.values(value as Record<string, unknown>).flatMap(strings);
 
 describe('About, privacy and the update card (M9b)', () => {
-  const all = [...strings(ABOUT_TEXT), ...strings(PRIVACY_TEXT), ...strings(UPDATE_TEXT), ONBOARDING_TEXT.analysis.update];
+  const all = [...strings(ABOUT_TEXT), ...strings(PRIVACY_TEXT), ...strings(UPDATE_TEXT), ...strings(CRASH_TEXT), ONBOARDING_TEXT.analysis.update];
 
   it('pass the lint: no robotic phrases, no shaming, no emoji', () => {
     for (const text of all) expect(lintText(text), text).toEqual([]);

@@ -11,6 +11,7 @@ import { planAdvance } from '../_shared/advance.ts';
 import { asPlayer, asService, db, lmuCode, loadBodies, loadHistory, loadSnapshot, one } from '../_shared/db.ts';
 import type { Tx } from '../_shared/db.ts';
 import { adjustPayload, applyOrder, checkCompletionPayload, isAdjust, parseSyncBody } from '../_shared/events.ts';
+import { retryable } from '../_shared/failures.ts';
 import type { AdjustEvent, InsightEvent, PainEvent, PhoneEvent, ProvisionalDayEvent, Rejected, SlotRef } from '../_shared/events.ts';
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { provisionalClock, sameQuests } from '../_shared/offline.ts';
@@ -76,7 +77,11 @@ async function applyEvent(userId: string, event: PhoneEvent, timeZone: string): 
       console.error('lmu-sync: the database refused an event', event.type, (error as { code?: string }).code, (error as Error).message);
       return { id: event.id, ok: false, code: 'bad_payload' };
     }
-    throw error;
+    // Anything else would fail again on every try and hold back every event behind it (audit 2026-10-15): only a
+    // failure that can pass on its own fails the sync; this one event is refused, and logged so it can be fixed.
+    if (retryable(error)) throw error;
+    console.error('lmu-sync: an event failed and was refused', event.type, event.id, error);
+    return { id: event.id, ok: false, code: 'server_error' };
   }
 }
 

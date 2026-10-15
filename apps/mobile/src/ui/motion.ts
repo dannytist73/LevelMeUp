@@ -29,6 +29,8 @@ export const FLASH_MS = 120;
 export const REFILL_MS = 400;
 export const CREEP_MS = 4_000;
 export const CREEP_TO = 1.06;
+/** How long past its motion's end a piece waits before settling where the motion ends (`useSettle`, audit 2026-10-15). */
+export const SETTLE_MS = 500;
 
 /** A timing config that always runs (plan decision 1); ease-out unless told otherwise. */
 export function timing(duration: number, easing = Easing.out(Easing.cubic)) {

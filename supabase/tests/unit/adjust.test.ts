@@ -203,6 +203,16 @@ describe('planning an adjustment (adjust.ts)', () => {
     expect(plan(rested(), { type: 'plan_rest', dayId: 2 })).toEqual({ code: 'rest_limit' });
   });
 
+  it('rest: a day that already counts needs none; a rest tomorrow is still open (M10c, carried)', () => {
+    expect(plan(done(at(), 'core'), { type: 'plan_rest', dayId: 2 })).toEqual({ code: 'day_counts' });
+    expect(plan(done(done(at(), 'side1'), 'side2'), { type: 'plan_rest', dayId: 2 })).toEqual({ code: 'day_counts' });
+    expect(plan(done(at(), 'side1'), { type: 'plan_rest', dayId: 2 })).toEqual({ change: { day: { id: 2, protection: 'planned_rest' } } });
+    expect(plan(done(at(), 'core'), { type: 'plan_rest', dayId: 2, tomorrow: true })).toEqual({ change: { restDay: 3 } });
+    // The offer says the same, so the phone is offered only what the server takes.
+    expect(dayOffers(done(at(), 'core'), LIBRARY)).toMatchObject({ restAllowed: false, restTomorrow: true });
+    expect(dayOffers(done(at(), 'side1'), LIBRARY)).toMatchObject({ restAllowed: true, restTomorrow: true });
+  });
+
   it('pain: the ladder rests; gentle movement takes the slot, or today is protected', () => {
     const paused = { ...newLadder(1), paused: true };
     const gentle = dayOffers(at(), LIBRARY).gentle['200']!;

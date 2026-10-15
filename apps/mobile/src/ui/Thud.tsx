@@ -9,8 +9,8 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { buzz } from './haptics.ts';
 import type { Feel } from './haptics.ts';
-import { FADE_MS, THUD_FADE_MS, THUD_FROM, THUD_LAND_MS, THUD_SPRING, after, delayed, timing } from './motion.ts';
-import { useReduce } from './useMotion.ts';
+import { FADE_MS, THUD_FADE_MS, THUD_FROM, THUD_LAND_MS, THUD_SETTLE_MS, THUD_SPRING, after, delayed, timing } from './motion.ts';
+import { useReduce, useSettle } from './useMotion.ts';
 
 export function Thud({ children, delay = 0, still = false, style, testID = 'thud', reduceMotion, haptic }: {
   children: ReactNode;
@@ -31,6 +31,10 @@ export function Thud({ children, delay = 0, still = false, style, testID = 'thud
     opacity.value = delayed(delay, withTiming(1, timing(reduce ? FADE_MS : THUD_FADE_MS)));
     if (!reduce) scale.value = delayed(delay, withSpring(1, THUD_SPRING));
   }, [still, reduce, delay, opacity, scale]);
+  useSettle(delay + (reduce ? FADE_MS : THUD_SETTLE_MS), !still, () => {
+    opacity.value = 1;
+    scale.value = 1;
+  });
   // Its own effect (plan decision 4): only these three restart it, and leaving the screen first cancels it. The wait runs
   // on the animation clock, so the buzz lands with the stamp however long the screen takes to draw (emulator check).
   // `landing` stays out of the deps: it never changes on the phone, and Reanimated's Jest mock makes a new one each render.
