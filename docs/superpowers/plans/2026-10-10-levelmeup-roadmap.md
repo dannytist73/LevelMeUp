@@ -283,7 +283,7 @@ Open items the M1 rules can't settle alone; each later plan picks up its own.
 
 | When | Item |
 |---|---|
-| Built | The server still accepts a rest today on a day that already counts (the phone no longer offers it): refuse it there too, with the next functions deploy. **Built 2026-10-15** in the audit's Phase 0 (`day_counts`, branch `phase0-safety-nets`); live with the next functions deploy (the owner's yes). |
+| Done | The server still accepts a rest today on a day that already counts (the phone no longer offers it): refuse it there too, with the next functions deploy. **Done 2026-10-15** in the audit's Phase 0 (`day_counts`), deployed (`lmu-sync` v20) and checked live. |
 | Later | The rest between sets is in the app only: a notification when it ends, if players leave the app during rests. |
 | Later | Workout memory is kept on the phone: a restored character on a new phone starts without it. |
 | Find X9 | The M10c rows 15–18 (the owner), with the 0.5.0 preview APK (EAS build `ae75658a`): BEGIN on the first screen, the widget (and after the day ends, and after a restart on ColorOS), a hold and a rest felt. |
@@ -298,7 +298,10 @@ alone (`server_error`, `_shared/failures.ts`), and the server refuses a rest on 
 
 | When | Item |
 |---|---|
-| Owner | The functions deploy (rows 3-4 of the checklist's Phase 0 section), and the next preview APK (rows 5-6). |
+| Done | Merged into `main` (`f1a65d3`) and the functions deployed at the owner's yes (2026-10-15 11:07 UTC; `lmu-sync` v20); the live suite passes 50 of 50 with a new `day_counts` test. |
+| Done | The 0.5.1 preview APK at the owner's yes: EAS build `494daa00` (versionCode 6, from `b6464dc`); on the emulator the core quest card showed at 4 of 4 cold starts and "Add a set" stayed whole on reopening. |
+| Find X9 | The 0.5.1 preview APK on the owner's phone (rows 5-6 of the checklist's Phase 0 section, and the "Add a set" row 3). |
+| Dev | The emulator holds the 0.5.1 release (versionCode 6); the next development build must be 0.5.1 or newer to install over it without losing Vera. |
 | Later | Crash reports leave the phone: today an error is only in the phone's log. Sentry's free tier, or a small error event to the server, would need the owner's yes. |
 | Later | CI on GitHub (test, typecheck, the portable and bundle checks on each push): free minutes on a private repo, the owner's yes. |
 

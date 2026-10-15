@@ -613,25 +613,30 @@ start. The shared Button's label now fills the button's width. Rows 1–2 on the
 |---|---|---|
 | 1 | A rep-log quest opened four times from Today: "Add a set" and "Remove the last set" whole each time; Back, I felt pain, LOG IT and Swap this quest unchanged. | Pass (2026-10-15): before the fix "Add a" on every reopening, in the 0.5.0 preview APK and the development build alike. |
 | 2 | The same at font 2.0. | Pass: both labels whole (button labels are capped at their scale), the notes wrap. |
-| 3 | Find X9, the next preview APK: open a rep-log quest, go back, open it again; "Add a set" whole. | |
+| 3 | Find X9, the next preview APK: open a rep-log quest, go back, open it again; "Add a set" whole. | Emulator pass with the 0.5.1 release (EAS build `494daa00`): whole on 3 of 3 reopenings (0.5.0: "Add a" on every one). Find X9: |
 
 - **The emulator then:** the development build `d49722ad`; Vera on day 2 with nothing logged today; font 2.0 (set back
   to 1.0 on the next start, 2026-10-15).
 
 ## Audit Phase 0: safety nets (branch `phase0-safety-nets`, 2026-10-15)
 
-From the app audit (`docs/2026-10-15-app-audit.md`, section 5). Rows 1-2 on the emulator with the development build
-`d49722ad` (Claude). Rows 3-4 need the functions deployed (the owner's yes). Rows 5-6 need the next preview APK (the
-owner's yes for the build; the Find X9 rows are the owner's).
+From the app audit (`docs/2026-10-15-app-audit.md`, section 5). Merged into `main` and the functions deployed at the
+owner's yes (2026-10-15 11:07 UTC: `lmu-sync`, `lmu-onboarding`, `lmu-account-delete` v20, `lmu-articles-tick` v8).
+Rows 1-2 on the emulator with the development build `d49722ad` (Claude), rows 3-4 on the live project, rows 5-6 with
+the 0.5.1 preview APK, EAS build `494daa00` (from `b6464dc`):
+https://expo.dev/artifacts/eas/eAcwyF0TWL4Zomj6v0-y2FbZ11GyZ_lrLVYzgj_pzVY.apk. Claude ran rows 5-6 on the emulator;
+the Find X9 is the owner's.
 
 | # | Check | Result |
 |---|---|---|
 | 1 | A motion piece can't stay hidden. Today's core quest card shows after a normal start and looks the same once it settles. With its slam-in made never to start (a temporary edit), it still shows; without the safety net it stays invisible. | Pass (2026-10-15). The first try, dropping the animated style through React, didn't work: Reanimated keeps what it last drew. The net now sets the shared values to the motion's end. Seen once before the fix: the card invisible after a cold start of the development build (the 0.5.0 release: 6 of 6 cold starts fine). |
 | 2 | A screen that throws shows "Something went wrong on this screen…" with Try again, not a closed app; Try again draws the app again. | Pass with a temporary throw in Character: the System's box and TRY AGAIN; the error in the log ("LevelMeUp: a screen failed"). After the throw was removed, Try again brought back Today. In a development build LogBox's red screen sits on top first. |
-| 3 | The server refuses a rest today on a day that already counts ("That day already counted…"), and no longer offers it; rest tomorrow still works. | Unit tests pass; live after the deploy. |
-| 4 | An event the server fails on every time is refused on its own ("Something went wrong on the System's side…") and logged; a lost connection still fails the sync for a retry. | Unit tests pass (the failure classes); live after the deploy. |
-| 5 | Find X9, the next preview APK: Today's core quest card shows at every start (cold and warm). | |
-| 6 | Find X9, the next preview APK: About shows the new version; nothing else changed. | |
+| 3 | The server refuses a rest today on a day that already counts ("That day already counted…"), and no longer offers it; rest tomorrow still works. | Pass live (2026-10-15, after the deploy): a new live test clears a temporary player's core quest, then asks for a rest: `day_counts`, no protection, `restAllowed` false, `restTomorrow` true. |
+| 4 | An event the server fails on every time is refused on its own ("Something went wrong on the System's side…") and logged; a lost connection still fails the sync for a retry. | Deployed 2026-10-15; the unit tests cover which failures retry. Not triggered live: it takes a server bug. The live suite (50 of 50) shows nothing else changed. |
+| 5 | Find X9, the 0.5.1 preview APK: Today's core quest card shows at every start (cold and warm). | Emulator pass (2026-10-15): 4 of 4 cold starts of the release. Find X9: |
+| 6 | Find X9, the 0.5.1 preview APK: installs over 0.5.0 and keeps the character; About shows 0.5.1; nothing else changed. | Emulator pass: installed over the development build with Vera kept; the package reads 0.5.1 (versionCode 6, not debuggable). Find X9: |
 
-- **The emulator now:** the development build `d49722ad`; Vera on day 2 (nothing logged today); font 1.0; Metro on
-  8082.
+- **The emulator now:** the **0.5.1 preview APK** (versionCode 6), not the development build: the development build
+  `d49722ad` is versionCode 5, and this system image refuses a downgrade (`ro.debuggable` 0); uninstalling would lose
+  Vera. The next development build must be 0.5.1 or newer to install over it. Vera on day 2 (nothing logged today); font
+  1.0.
