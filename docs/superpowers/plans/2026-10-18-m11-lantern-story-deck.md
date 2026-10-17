@@ -119,6 +119,23 @@ are fixed and tested, except the one known limit below.
 - **Known limit.** Read again of a reading held from before its deck opens the full article, then turns to the cards
   about a second later, when the sync it asks for brings them. Today's reading never swaps (decision above).
 
+## Deploy (2026-10-18, at the owner's yes)
+
+- **Type:** M PLUS Rounded 1c (`@expo-google-fonts/m-plus-rounded-1c` 0.4.4, a dev dependency of 24 MB with all seven
+  weights; only the subsets ship). Regular, Medium, Bold and ExtraBold went from 3.3–3.5 MB to 43–45 KB each. fontTools
+  confirms every character of `glyphs.ts`'s ranges is in each subset.
+- **Server:** 21:56 UTC, migration 0016 applied (the wedding's migration history unchanged). `db:test` passed: 803
+  assertions in 8 files, `decks.sql` 27 of them. Functions deployed (sync v21, tick v9). The 22:00 cron wrote the first
+  two decks (article-21, article-22), both through every check.
+- **`test:live`:** 46 of 50 passed. The other 4 failed with `outside_day`: this PC's clock runs 1.27 s behind
+  (`w32tm /stripchart` against time.windows.com), so a completion sent right after onboarding is stamped before the
+  new player's day began. Rerun with the tests' clock moved forward 1.3 s (a test-only preload in the scratchpad, no
+  system change): 50 of 50.
+- **Fix after reading the first decks:** both System notes announced game events that don't happen ("Daily quest
+  added", "Quest active"). The deck prompt now forbids it, and `checkDeck` refuses a System note that names quests, XP,
+  rewards or achievements. Redeployed at 22:12 UTC (sync v22, tick v10); live smoke tests passed. The two decks
+  already written keep their notes until they are reset (the owner's yes; no player sees a deck before 0.6.0).
+
 ## Not in M11
 
 - Body stats and the protein quest (proposed, not chosen yet).

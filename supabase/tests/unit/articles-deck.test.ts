@@ -78,6 +78,13 @@ describe('the Story Deck (M11)', () => {
     expect(checkDeck(same, ARTICLE, [])).toEqual([]);
   });
 
+  it('refuses a System note that announces something in the game (M11 deploy: "Daily quest added")', () => {
+    for (const note of ['Daily quest added. Protect the last cycle.', 'Quest active: phone out of reach.', 'Bonus XP for rest days.']) {
+      expect(checkDeck(parseDeck(deckJson({ system_note: note }))!, ARTICLE, [])).toContain('the System note announces something in the game, which only the app does');
+    }
+    expect(checkDeck(parseDeck(deckJson({ system_note: 'Protect the last cycle. Rest days count.' }))!, ARTICLE, [])).toEqual([]);
+  });
+
   it('refuses quotations, links and copied words', () => {
     const quoted = parseDeck(deckJson({ lesson: 'As the coach said, "rest is part of the work" every day.' }))!;
     expect(checkDeck(quoted, ARTICLE, []).some((p) => p.startsWith('no quotations'))).toBe(true);

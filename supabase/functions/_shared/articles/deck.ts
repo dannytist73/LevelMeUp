@@ -54,7 +54,7 @@ Rules:
 - The story cards retell the article in its own order: open with its opening scene or question, then the key findings, then why they matter. One idea per card, 1 to 3 short sentences. Speak to the reader as "you" where the article does.
 - Each card's kicker names its part of the story in a few words, in sentence case.
 - The lesson is the article's main idea in one sentence. "Try today" is one small, safe action from the article's practical advice, sized for a beginner.
-- A System note is optional: one terse line in the System's game-screen voice that sums up or nudges, never a new fact.
+- A System note is optional: one terse line in the System's game-screen voice that sums up or nudges, never a new fact. It never announces anything in the game (no quest added or active, no XP, rewards or achievements): only the app's own quests do that.
 - Everything else in the house style below holds, except its shape: the deck replaces that.
 
 ${HOUSE_STYLE}`;
@@ -155,6 +155,8 @@ function spelledNumbers(t: string): number[] {
 }
 
 const between = (s: string, [min, max]: readonly [number, number]): boolean => s.length >= min && s.length <= max;
+/** A System note that names these claims something happened in the game ("Daily quest added"), which it didn't (M11 deploy). */
+const GAME_WORDS = /\b(quests?|missions?|xp|rewards?|achievements?|unlocked|bonus)\b/i;
 
 /** Why a deck can't be shown with its article, or nothing. */
 export function checkDeck(d: ArticleDeck, article: ArticleDraft, excerpts: readonly string[]): string[] {
@@ -166,6 +168,7 @@ export function checkDeck(d: ArticleDeck, article: ArticleDraft, excerpts: reado
     if (!between(c.text, L.text)) problems.push(`card "${clip(c.text, 40)}" must be ${L.text[0]}–${L.text[1]} characters`);
   }
   if (d.systemNote !== null && !between(d.systemNote, L.systemNote)) problems.push(`the System note must be ${L.systemNote[0]}–${L.systemNote[1]} characters`);
+  if (d.systemNote !== null && GAME_WORDS.test(d.systemNote)) problems.push('the System note announces something in the game, which only the app does');
   if (!between(d.lesson, L.lesson)) problems.push(`the lesson must be ${L.lesson[0]}–${L.lesson[1]} characters`);
   if (!between(d.tryToday, L.tryToday)) problems.push(`"Try today" must be ${L.tryToday[0]}–${L.tryToday[1]} characters`);
 
