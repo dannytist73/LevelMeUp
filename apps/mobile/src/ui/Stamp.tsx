@@ -1,5 +1,6 @@
 // Stamps (Lantern, M11): an accent circle for XP rewards and an accent outline for marks such as Cleared. Still turned
-// a little when asked, never more than 12°. The accent means reward; red is the Shadow's alone.
+// a little when asked, never more than 12°. The accent means reward; red is the Shadow's alone, so a mark the Shadow
+// makes ("Claimed") is red (review).
 import { Text, View, useWindowDimensions } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { colors, fonts, radius } from '../theme/tokens.ts';
@@ -34,20 +35,21 @@ export function XpStamp({ xp, size: base = 66, rotate = -10, style }: { xp: numb
   );
 }
 
-export function MarkStamp({ text, rotate = -6, style }: { text: string; rotate?: number; style?: StyleProp<ViewStyle> }) {
+export function MarkStamp({ text, rotate = -6, tone = 'reward', style }: { text: string; rotate?: number; tone?: 'reward' | 'shadow'; style?: StyleProp<ViewStyle> }) {
+  const color = tone === 'shadow' ? colors.shadow : colors.accentText;
   return (
     <View
       accessible
       accessibilityLabel={text}
       style={[
         {
-          alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.accentText,
+          alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 2, borderColor: color,
           transform: [{ rotate: `${clampRotation(rotate)}deg` }],
         },
         style,
       ]}
     >
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 15, lineHeight: 19, color: colors.accentText }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 15, lineHeight: 19, color }}>
         {text}
       </Text>
     </View>

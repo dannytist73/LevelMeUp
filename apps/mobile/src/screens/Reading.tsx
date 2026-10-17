@@ -1,12 +1,14 @@
 // A reading read again (M8b decision 7): the article with the takeaway written that day; an article this phone doesn't
 // hold is asked for and arrives with the next sync. M11: it opens on its Story Deck when it has one, with the line written
-// that day on the Your turn card; the full article stays one tap away.
+// that day on the Your turn card; the full article stays one tap away. One held from before its deck existed is asked
+// for again (once a launch), so it gets its cards (review).
 import { PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dateKeyLabel } from '../lib/dates.ts';
 import { isKept } from '../reading/codex.ts';
+import { asDeck } from '../reading/deck.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -27,25 +29,28 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
   const codex = useGame((s) => s.codex);
   const toggleKeep = useGame((s) => s.toggleKeep);
   const [fullArticle, setFullArticle] = useState(false);
+  /** M11: the card the deck was left on, for "Back to the cards" (review). */
+  const [deckStep, setDeckStep] = useState(0);
   // The day it was read on: the one named, else today's when it is today's reading (Read again).
   const todayNumber = view?.today?.article?.id === articleId ? view.today.dayNumber : null;
   const day = dayNumber ?? todayNumber;
   const reading = view?.readings.find((r) => r.id === articleId && (day === null || r.dayNumber === day)) ?? null;
   const known = reading !== null || todayNumber !== null;
+  const deck = article === null ? null : asDeck(article.deck);
+  const hasDeck = deck !== null;
 
   useEffect(() => {
-    if (article === null && known) fetchArticle(articleId);
-  }, [article, known, articleId, fetchArticle]);
+    if (known && !hasDeck) fetchArticle(articleId);
+  }, [hasDeck, known, articleId, fetchArticle]);
 
   const isToday = day !== null && day === todayNumber;
   const label = isToday || reading === null ? R.label : fillText(R.past.label, { date: dateKeyLabel(reading.date) });
   const takeaway = (
     <View style={{ gap: 6 }}>
-      <Label>{article?.deck != null ? R.deck.yourLine : R.yourTakeaway}</Label>
+      <Label>{hasDeck ? R.deck.yourLine : R.yourTakeaway}</Label>
       <Body weight="medium">{reading?.takeaway ?? R.noTakeaway}</Body>
     </View>
   );
-  const deck = article?.deck ?? null;
   if (article !== null && deck !== null && !fullArticle) {
     return (
       <Deck
@@ -55,6 +60,8 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
         turn={takeaway}
         onClose={onBack}
         onFullArticle={() => setFullArticle(true)}
+        initialStep={deckStep}
+        onStep={setDeckStep}
         kept={isKept(codex, article.id)}
         onKeep={() => void toggleKeep({ articleId: article.id, title: article.title, lesson: deck.lesson, keptAt: now() })}
       />

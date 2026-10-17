@@ -42,6 +42,12 @@ describe('the Lantern colours (M11, Moonlight)', () => {
     expect(contrast(colors[back], colors[text])).toBeGreaterThanOrEqual(4.5);
   });
 
+  // The XP bar's fill against its track and the surface around it, on the night and on paper (M11 review).
+  const graphics: [ColorName, ColorName][] = [['segmentNext', 'accent'], ['night', 'accent'], ['trackOnPaper', 'accentInk'], ['paper', 'accentInk']];
+  it.each(graphics)('the bar on %s with a %s fill reaches 3:1', (back, fill) => {
+    expect(contrast(colors[back], colors[fill])).toBeGreaterThanOrEqual(3);
+  });
+
   it('computes WCAG ratios', () => {
     expect(contrast('#000000', '#FFFFFF')).toBeCloseTo(21, 5);
     expect(contrast('#777777', '#777777')).toBe(1);

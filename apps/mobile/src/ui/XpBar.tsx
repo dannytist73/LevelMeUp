@@ -1,4 +1,5 @@
-// The XP bar (D1 Today, D2 Quest cleared; Lantern, M11): a 10 px rounded track with the accent's fill. M10a: given its `level`, the bar moves (spec decisions 3, 5, 7). It fills from `from` when it opens
+// The XP bar (D1 Today, D2 Quest cleared; Lantern, M11): a 10 px rounded track with the accent's fill, the deeper
+// accent on paper (3:1 against its track, M11 review). M10a: given its `level`, the bar moves (spec decisions 3, 5, 7). It fills from `from` when it opens
 // (Quest cleared), then from what it last showed whenever the value changes (Today after a sync). Across a level it
 // fills to the end, flashes chalk and fills again from empty. A drop shows at once, and so does everything with reduced
 // motion. Its accessibility value is always the new one. Without a level it never moves (stat bars, timers, the trial).
@@ -25,6 +26,8 @@ export type XpBarProps = BarProps & {
   reduceMotion?: boolean;
 };
 
+const fillColor = (on: 'night' | 'paper'): string => (on === 'paper' ? colors.accentInk : colors.accent);
+
 const frame = (on: 'night' | 'paper') => ({
   height: 10, borderRadius: radius.pill, overflow: 'hidden' as const, backgroundColor: on === 'paper' ? colors.trackOnPaper : colors.segmentNext,
 });
@@ -38,7 +41,7 @@ export function XpBar({ level, from = null, delay = 0, reduceMotion, ...bar }: X
 function StillBar({ value, max, label, on = 'night' }: BarProps) {
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{ min: 0, max, now: value }} style={frame(on)}>
-      <View testID="xp-fill" style={{ width: `${fillFraction(value, max) * 100}%`, height: '100%', backgroundColor: colors.accent }} />
+      <View testID="xp-fill" style={{ width: `${fillFraction(value, max) * 100}%`, height: '100%', backgroundColor: fillColor(on) }} />
     </View>
   );
 }
@@ -86,7 +89,7 @@ function MovingBar({ value, max, label, on = 'night', level, from, delay, reduce
   const flashing = useAnimatedStyle(() => ({ opacity: flash.value }));
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{ min: 0, max, now: value }} style={frame(on)}>
-      <Animated.View testID="xp-fill" style={[{ height: '100%', backgroundColor: colors.accent }, width]} />
+      <Animated.View testID="xp-fill" style={[{ height: '100%', backgroundColor: fillColor(on) }, width]} />
       {!reduce && <Animated.View testID="xp-flash" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.chalk }, flashing]} />}
     </View>
   );

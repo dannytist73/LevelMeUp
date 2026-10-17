@@ -141,8 +141,8 @@ describe('"Quest cleared" (board D2)', () => {
     expect(screen.getByLabelText('Rank D')).toBeTruthy();
     expect(screen.getByText('Discipline · today counts')).toBeTruthy();
     expect(screen.getByText(`+${DISCIPLINE_PER_CORE_DAY}`)).toBeTruthy(); // the rules' number, not a copy
-    expect(screen.getByText('9 → 10 DAYS')).toBeTruthy();
-    expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
+    expect(screen.getByText('9 → 10 days')).toBeTruthy();
+    expect(screen.getByText('Lv 6 · 87 / 130 XP')).toBeTruthy();
     expect(screen.getByText('43 to Lv 7')).toBeTruthy();
   });
 

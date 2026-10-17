@@ -67,6 +67,17 @@ describe('the Story Deck (M11)', () => {
     expect(numbersIn('1,200 people, 2.5 hours, 90 min')).toEqual(['1200', '2.5', '90']);
   });
 
+  it('reads numbers written as words, so "sixty-six" and "66" are the same number (M11 review)', () => {
+    expect(numbersIn('sixty-six days, three hundred and fifty people, twenty one, ten thousand steps, twelve hundred'))
+      .toEqual(['66', '350', '21', '10000', '1200']);
+    expect(numbersIn('five six-minute walks; three, four')).toEqual(['5', '6', '3', '4']);
+    expect(numbersIn('one small step, the two of them, and none of that')).toEqual([]);
+    const words = parseDeck(deckJson({ lesson: 'People are seven times as likely to keep a habit.' }))!;
+    expect(checkDeck(words, ARTICLE, [])).toContain('the number 7 is not in the article');
+    const same = parseDeck(deckJson({ try_today: 'Sleep in cycles of ninety minutes, and count four to six of them tonight.' }))!;
+    expect(checkDeck(same, ARTICLE, [])).toEqual([]);
+  });
+
   it('refuses quotations, links and copied words', () => {
     const quoted = parseDeck(deckJson({ lesson: 'As the coach said, "rest is part of the work" every day.' }))!;
     expect(checkDeck(quoted, ARTICLE, []).some((p) => p.startsWith('no quotations'))).toBe(true);

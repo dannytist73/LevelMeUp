@@ -6,13 +6,14 @@ import { dayTwoSnapshot, historyOf } from '../../../supabase/tests/unit/fixtures
 import type { Account, GoogleResult } from '../src/auth/google.ts';
 import type { SessionState } from '../src/auth/session.ts';
 import { makeLocal, migrate } from '../src/data/local.ts';
+import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
 import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
 import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, DRAFT_KEY, HAPTICS_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, HAPTICS_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { setBuzzing } from '../src/ui/haptics.ts';
@@ -252,6 +253,24 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('a reading held from before its Story Deck is asked for again, once a launch (M11 review)', async () => {
+    const withReading: ServerState = {
+      ...SERVER, readings: [{ id: 'article-9', cluster: 'sleep', title: 'Wake time', minutes: 6, dayNumber: 0, date: '2026-10-09', takeaway: null }],
+    };
+    const { store, local, api } = await setup([ok(withReading)]);
+    await local.acknowledge([], [], withReading, 1, [{ ...SAMPLE_ARTICLE, id: 'article-9', deck: null }]);
+    await store.getState().boot();
+    expect(store.getState().articles['article-9']).toBeDefined();
+    store.getState().fetchArticle('article-9');
+    await store.getState().syncNow();
+    store.getState().fetchArticle('article-9'); // the server had no deck for it either: not asked again
+    await store.getState().syncNow();
+    const requests = api.sync.mock.calls.map((c) => c[0] as { want: string[]; have: string[] });
+    expect(requests.filter((r) => r.want.includes('article-9'))).toHaveLength(1);
+    expect(requests.some((r) => r.have.includes('article-9'))).toBe(false);
+    store.getState().stop();
+  });
+
   it('more than 3 past readings asked for at once go over the following runs, each once (M8b re-review)', async () => {
     const { store, api } = await setup([ok(SERVER)]);
     await store.getState().boot();
@@ -468,6 +487,21 @@ describe('the game store', () => {
     await store.getState().startOver();
     expect(kv.has(LAST_SETS_KEY)).toBe(false);
     expect(store.getState().lastSets).toEqual({});
+    store.getState().stop();
+  });
+
+  it('keeps the kept lessons on the phone, reads them at boot, and forgets them with the character (M11 decision 7)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(CODEX_KEY, JSON.stringify([{ articleId: 'article-1', title: 'One', lesson: 'Lesson one.', keptAt: 1 }]));
+    await store.getState().boot();
+    expect(store.getState().codex.map((e) => e.articleId)).toEqual(['article-1']);
+    await store.getState().toggleKeep({ articleId: 'article-2', title: 'Two', lesson: 'Lesson two.', keptAt: 2 });
+    expect((JSON.parse(kv.get(CODEX_KEY)!) as { articleId: string }[]).map((e) => e.articleId)).toEqual(['article-2', 'article-1']);
+    expect(await local.pending(10)).toEqual([]); // kept on the phone: nothing goes to the server
+    await store.getState().startOver();
+    expect(kv.has(CODEX_KEY)).toBe(false);
+    expect(store.getState().codex).toEqual([]);
     store.getState().stop();
   });
 

@@ -26,7 +26,7 @@ describe("the Shadow's look (visual spec §2–3)", () => {
   it('speaks in its own box, read as one line, speaker first', async () => {
     await render(<ShadowBox lines={['The day closed in silence, so I took it.', 'Come and take it back.']} />);
     expect(screen.getByLabelText('The Shadow: The day closed in silence, so I took it. Come and take it back.')).toBeTruthy();
-    expect(screen.getByText('THE SHADOW')).toBeTruthy();
+    expect(screen.getByText('The Shadow')).toBeTruthy(); // sentence case (M11)
   });
 
   it('marks the header and the portrait, and says so to screen readers', async () => {

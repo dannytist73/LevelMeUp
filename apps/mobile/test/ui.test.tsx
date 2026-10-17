@@ -77,11 +77,19 @@ describe('NarrationBox', () => {
   it('reads as one line: the speaker, then the words', async () => {
     await render(<NarrationBox>The System is preparing your trials.</NarrationBox>);
     expect(screen.getByLabelText('System: The System is preparing your trials.')).toBeTruthy();
-    expect(screen.getByText('SYSTEM')).toBeTruthy();
+    expect(screen.getByText('System')).toBeTruthy(); // sentence case (M11)
   });
 });
 
 describe('stamps', () => {
+  it('mark in the reward colour, and in the Shadow\'s red for what the Shadow claims (M11 review)', async () => {
+    await render(<MarkStamp text="Cleared" />);
+    expect(flat(screen.getByLabelText('Cleared').props.style)).toMatchObject({ borderColor: colors.accentText });
+    await screen.unmount();
+    await render(<MarkStamp text="Claimed · Day 2" tone="shadow" />);
+    expect(flat(screen.getByLabelText('Claimed · Day 2').props.style)).toMatchObject({ borderColor: colors.shadow });
+  });
+
   it('keep their tilt between −12° and +12°', () => {
     expect(clampRotation(-30)).toBe(-12);
     expect(clampRotation(5)).toBe(5);

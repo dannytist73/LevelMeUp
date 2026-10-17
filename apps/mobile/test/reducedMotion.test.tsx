@@ -81,7 +81,7 @@ describe('"Remove animations" on: the moments only fade (M10a decision 3)', () =
       for (const el of screen.getAllByTestId(id)) expect(flat(el.props.style).transform).toBeUndefined();
     }
     expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
-    expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
+    expect(screen.getByText('Lv 6 · 87 / 130 XP')).toBeTruthy();
   });
 
   it("the Shadow's painting stays still, even once it has loaded", async () => {

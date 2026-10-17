@@ -2,6 +2,8 @@
 // achievement moments. Player-facing, so the lint and the app's font-subset test cover every line.
 
 export const PLAY_TEXT = {
+  /** M11: who speaks, written small at the top of their boxes and said first to screen readers. */
+  speakers: { system: 'System', shadow: 'The Shadow' },
   quest: {
     back: 'Back',
     open: 'Opens the quest',
@@ -72,9 +74,9 @@ export const PLAY_TEXT = {
     statUp: 'Stat up',
     discipline: 'Discipline · today counts',
     streak: 'Streak',
-    streakDays: '{from} → {to} DAYS',
+    streakDays: '{from} → {to} days',
     recovered: 'You took the day back. Your streak holds when today ends.',
-    levelLine: 'LV {level} · {into} / {for} XP',
+    levelLine: 'Lv {level} · {into} / {for} XP',
     toNext: '{xp} to Lv {next}',
     rateLabel: 'How did it feel? Optional, it tunes your next step.',
     easy: 'Easy',

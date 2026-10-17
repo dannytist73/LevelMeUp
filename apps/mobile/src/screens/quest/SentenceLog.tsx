@@ -14,12 +14,17 @@ export type SentenceLogProps = {
   label?: string;
   note?: string;
   claimLabel?: string;
+  /** M11: the line, kept by the caller so it outlives the card or the reader that shows it (review). */
+  value?: string;
+  onChangeText?: (text: string) => void;
 };
 
 export function SentenceLog({
-  disabled, onClaim, label = PLAY_TEXT.sentence.label, note = PLAY_TEXT.sentence.note, claimLabel = PLAY_TEXT.claim.log,
+  disabled, onClaim, label = PLAY_TEXT.sentence.label, note = PLAY_TEXT.sentence.note, claimLabel = PLAY_TEXT.claim.log, value, onChangeText,
 }: SentenceLogProps) {
-  const [text, setText] = useState('');
+  const [own, setOwn] = useState('');
+  const text = value ?? own;
+  const setText = onChangeText ?? setOwn;
   return (
     <View style={{ gap: 12 }}>
       <TextField label={label} value={text} onChangeText={setText} maxLength={MAX_SENTENCE} />

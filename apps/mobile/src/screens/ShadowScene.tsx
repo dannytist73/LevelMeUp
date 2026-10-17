@@ -97,7 +97,7 @@ export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.no
       <Label tone="shadow">{fillText(T.pactLabel, { level: hold.kind === 'trial' ? 2 : 1 })}</Label>
       <ShadowArt />
       {claimed !== null && (
-        <Thud delay={MOMENTS.shadow.stamp} testID="claimed-thud" style={{ alignSelf: 'flex-start' }}><MarkStamp text={claimed} /></Thud>
+        <Thud delay={MOMENTS.shadow.stamp} testID="claimed-thud" style={{ alignSelf: 'flex-start' }}><MarkStamp text={claimed} tone="shadow" /></Thud>
       )}
       <SlamIn><ShadowBox lines={lines} /></SlamIn>
       {!hold.cleared && hold.recovery !== null && (

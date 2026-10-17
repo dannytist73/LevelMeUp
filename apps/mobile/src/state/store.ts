@@ -36,6 +36,7 @@ import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } f
 import type { Draft } from '../onboarding/flow.ts';
 import { readLastSets } from '../quest/lastSets.ts';
 import { readCodex, toggled } from '../reading/codex.ts';
+import { asDeck } from '../reading/deck.ts';
 import type { CodexEntry } from '../reading/codex.ts';
 import type { LastSets } from '../quest/lastSets.ts';
 import { parseTimers } from '../quest/timer.ts';
@@ -295,6 +296,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
     /** M8b: articles a screen asked for; the next sync names them, then they are forgotten (the screen asks again). */
     const wanted = new Set<string>();
+    /** M11 (review): bodies held from before their Story Deck, asked for once a launch so Read again gets the cards. */
+    const deckAsked = new Set<string>();
 
     /** The art manifest is fetched once per launch, after the first sync (or a new player's onboarding). */
     let artChecked = false;
@@ -385,6 +388,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.notes.cancelAll().catch(() => {});
       applier.forget();
       wanted.clear();
+      deckAsked.clear();
       await deps.local.wipe();
       await deps.signOut();
       await deps.kv.removeItem(DRAFT_KEY);
@@ -421,7 +425,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           await refresh({ phase: 'ready', status: 'idle', error: null, updateRequired: false });
           // Forget only what this run asked for or what arrived: one asked for meanwhile goes with the next run (review).
           for (const id of outcome.asked) wanted.delete(id);
-          for (const id of [...wanted]) if (get().articles[id] !== undefined) wanted.delete(id);
+          for (const id of [...wanted]) if (get().articles[id] !== undefined && !deckAsked.has(id)) wanted.delete(id);
           const after = get().cached?.state.character.level ?? null;
           confirmedLevel = after;
           const found: Celebration[] = [];
@@ -437,6 +441,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           // server, and anything cached is stale.
           await deps.local.wipe();
           wanted.clear(); // the old character's readings (re-review)
+          deckAsked.clear();
           confirmedLevel = null;
           await refresh({ phase: 'not_started', status: 'idle', error: null });
           return;
@@ -694,7 +699,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       fetchArticle: (id) => {
-        if (get().articles[id] !== undefined || wanted.has(id)) return;
+        const held = get().articles[id];
+        if (wanted.has(id) || (held !== undefined && (asDeck(held.deck) !== null || deckAsked.has(id)))) return;
+        if (held !== undefined) deckAsked.add(id);
         wanted.add(id);
         void scheduler.request();
       },

@@ -70,10 +70,14 @@ export function sqlStore(sql: Sql): Store {
       const rows = await sql<DueRow[]>`select * from levelmeup.article_decks_due(${limit}::int)`;
       return rows.map((r) => ({
         id: r.id,
+        attempts: Number(r.attempts),
         jobId: Number(r.job_id),
         draft: { title: r.title, summary: r.summary, sections: r.sections, takeaways: r.takeaways, reflectionQuestion: r.reflection_question },
         excerpts: Array.isArray(r.excerpts) ? r.excerpts.filter((e): e is string => typeof e === 'string') : [],
       }));
+    },
+    async claimDeck(articleId, attempts) {
+      return one(await sql<{ ok: boolean }[]>`select levelmeup.article_claim_deck(${articleId}, ${attempts}::int) as ok`).ok;
     },
     async saveDeck(articleId, deck, error) {
       await sql`select levelmeup.article_set_deck(${articleId}, ${deck === null ? null : j(deck)}::jsonb, ${error})`;
@@ -82,6 +86,6 @@ export function sqlStore(sql: Sql): Store {
 }
 
 type DueRow = {
-  id: string; job_id: string; title: string; summary: string; sections: ArticleSection[]; takeaways: string[]; reflection_question: string;
+  id: string; job_id: string; attempts: number; title: string; summary: string; sections: ArticleSection[]; takeaways: string[]; reflection_question: string;
   excerpts: unknown;
 };

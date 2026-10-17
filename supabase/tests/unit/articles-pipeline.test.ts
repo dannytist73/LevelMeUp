@@ -75,13 +75,22 @@ class FakeStore implements Store {
   /** M11: articles and their decks, as 0016's functions keep them. */
   decks: { id: string; jobId: number; draft: ArticleDraft; excerpts: string[]; deck: ArticleDeck | null; attempts: number; error: string | null }[] = [];
   async decksDue(limit: number): Promise<DeckSource[]> {
-    return this.decks.filter((d) => d.deck === null && d.attempts < 2).slice(0, limit).map(({ id, jobId, draft, excerpts }) => ({ id, jobId, draft, excerpts }));
+    return this.decks.filter((d) => d.deck === null && d.attempts < 2).slice(0, limit)
+      .map(({ id, attempts, jobId, draft, excerpts }) => ({ id, attempts, jobId, draft, excerpts }));
+  }
+  /** Set by a test: runs between the due list and the claim, as another tick would. */
+  beforeClaim: (() => void) | null = null;
+  async claimDeck(id: string, attempts: number) {
+    this.beforeClaim?.();
+    const d = this.decks.find((x) => x.id === id)!;
+    if (d.deck !== null || d.attempts !== attempts || attempts >= 2) return false;
+    d.attempts = attempts + 1;
+    return true;
   }
   async saveDeck(id: string, deck: ArticleDeck | null, error: string | null) {
     const d = this.decks.find((x) => x.id === id)!;
-    if (d.deck !== null || d.attempts >= 2) return;
+    if (d.deck !== null) return;
     d.deck = deck;
-    d.attempts++;
     d.error = deck === null ? error : null;
   }
 }
@@ -466,10 +475,33 @@ describe('the Story Deck step (M11 decision 4)', () => {
     expect(store.decks.map((d) => d.attempts)).toEqual([1, 1]);
   });
 
+  it('takes the try before calling, so a tick that dies mid-call has used it (M11 review)', async () => {
+    const { store, decks, run } = withArticles(1);
+    decks.write = async (source) => {
+      decks.written.push(source.id);
+      expect(store.decks[0]!.attempts).toBe(1); // already taken while Claude answers
+      throw new Error('the function was stopped');
+    };
+    await run();
+    await run();
+    expect(store.decks[0]).toMatchObject({ deck: null, attempts: 2 });
+    expect((await run()).deckFailed).toEqual([]);
+    expect(decks.written).toEqual(['article-1', 'article-1']); // two calls at most, ever
+  });
+
+  it('skips an article another tick took after this one listed it, and frees its reservation', async () => {
+    const { store, decks, run } = withArticles(1);
+    store.beforeClaim = () => { store.decks[0]!.attempts = 1; store.beforeClaim = null; };
+    expect(await run()).toMatchObject({ decked: [], deckFailed: [] });
+    expect(decks.written).toEqual([]);
+    expect(store.calls.map((c) => [c.finish!.costUsd, c.finish!.error])).toEqual([[0, 'another tick took the deck']]);
+  });
+
   it('stops at the monthly cap without calling', async () => {
     const { store, decks, run } = withArticles(2);
     store.budgetLeft = 0.05;
     expect(await run()).toMatchObject({ budget: true, decked: [] });
     expect(decks.written).toEqual([]);
+    expect(store.decks.map((d) => d.attempts)).toEqual([0, 0]); // no try taken without a reservation
   });
 });

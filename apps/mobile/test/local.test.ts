@@ -168,6 +168,8 @@ describe('the phone database', () => {
     expect(await local.articleIds()).toEqual([]);
     await local.acknowledge([], [], both, 2, [{ ...SAMPLE_ARTICLE, id: 'article-1' }]);
     expect(await local.articleIds()).toEqual(['article-1']);
+    await local.acknowledge([], [], both, 3, [{ ...SAMPLE_ARTICLE, id: 'article-1', deck: { story: 'cards' } as never }]);
+    expect(await local.articleIds()).toEqual([]); // a deck this phone can't read is sent again too (M11 review)
   });
 
   it('wipe empties the cache, the outbox and the notices', async () => {

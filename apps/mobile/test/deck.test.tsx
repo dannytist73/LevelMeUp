@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
 import { CODEX_MAX, isKept, readCodex, toggled } from '../src/reading/codex.ts';
-import { coverTitle, deckCards, deckMinutes } from '../src/reading/deck.ts';
+import { asDeck, coverTitle, deckCards, deckMinutes } from '../src/reading/deck.ts';
 import { Codex } from '../src/screens/Codex.tsx';
 import { Deck } from '../src/screens/reading/Deck.tsx';
 import { testStore, withStore } from './support/store.ts';
@@ -27,6 +27,24 @@ describe('the deck\'s cards (M11 decision 5)', () => {
   it('take about their words at 150 a minute, plus a minute for your line', () => {
     expect(deckMinutes(DECK)).toBe(2);
     expect(deckMinutes({ ...DECK, story: [{ kicker: 'k', text: 'word '.repeat(400) }] })).toBe(4);
+  });
+});
+
+describe('a deck as the phone reads it (M11 review)', () => {
+  it('keeps a deck of the known shape, and a missing System note is none', () => {
+    expect(asDeck(DECK)).toEqual(DECK);
+    const noNote: Record<string, unknown> = { ...DECK };
+    delete noNote.systemNote;
+    expect(asDeck(noNote)).toEqual({ ...DECK, systemNote: null });
+  });
+
+  it('refuses any other shape, so the reading opens the full article instead', () => {
+    const card = DECK.story[0]!;
+    const bad: unknown[] = [
+      null, 'deck', {}, { ...DECK, story: 'cards' }, { ...DECK, story: [] }, { ...DECK, story: [{ kicker: 'k' }] },
+      { ...DECK, story: [card, card, card, card, card, card] }, { ...DECK, lesson: undefined }, { ...DECK, tryToday: ' ' }, { ...DECK, systemNote: 3 },
+    ];
+    for (const value of bad) expect(asDeck(value)).toBeNull();
   });
 });
 

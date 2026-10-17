@@ -4,6 +4,28 @@ import type { ArticleDeck } from '../../../../supabase/functions/_shared/article
 
 export type { ArticleDeck };
 
+const filled = (s: unknown): s is string => typeof s === 'string' && s.trim() !== '';
+
+/**
+ * The deck as the server sent it, or null when its shape isn't one this phone knows (a later server's, a hand edit):
+ * the phone then shows the full article, and no card is drawn with a piece missing (M11 review).
+ */
+export function asDeck(value: unknown): ArticleDeck | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const d = value as Record<string, unknown>;
+  if (!Array.isArray(d.story) || d.story.length < 1 || d.story.length > 5) return null;
+  if (!filled(d.lesson) || !filled(d.tryToday)) return null;
+  if (d.systemNote !== undefined && d.systemNote !== null && !filled(d.systemNote)) return null;
+  const story: ArticleDeck['story'] = [];
+  for (const card of d.story as unknown[]) {
+    if (typeof card !== 'object' || card === null) return null;
+    const { kicker, text } = card as Record<string, unknown>;
+    if (!filled(kicker) || !filled(text)) return null;
+    story.push({ kicker, text });
+  }
+  return { story, systemNote: typeof d.systemNote === 'string' ? d.systemNote : null, lesson: d.lesson, tryToday: d.tryToday };
+}
+
 export type Card =
   | { kind: 'cover' }
   | { kind: 'story'; i: number; kicker: string; text: string; note: string | null }

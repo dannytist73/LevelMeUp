@@ -14,6 +14,7 @@ import { Vow } from '../src/screens/onboarding/Vow.tsx';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { Today } from '../src/screens/Today.tsx';
+import { colors } from '../src/theme/tokens.ts';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
@@ -279,14 +280,14 @@ describe('Quest cleared moves (M10a decision 4)', () => {
     await cleared(NUMBERS);
     expect(screen.getByTestId('xp-flash')).toBeTruthy(); // a moving bar (where it starts: Task 5's tests)
     expect(screen.getByRole('progressbar', { name: 'Level 6 progress' }).props.accessibilityValue).toEqual({ min: 0, max: 130, now: 87 });
-    expect(screen.getByText('LV 6 · 67 / 130 XP')).toBeTruthy(); // the count's start (the mock never runs it)
-    expect(screen.getByLabelText('LV 6 · 87 / 130 XP')).toBeTruthy();
+    expect(screen.getByText('Lv 6 · 67 / 130 XP')).toBeTruthy(); // the count's start (the mock never runs it)
+    expect(screen.getByLabelText('Lv 6 · 87 / 130 XP')).toBeTruthy();
   });
 
   it('opened later (no before): no fill, no count', async () => {
     await cleared({ ...NUMBERS, levelBefore: null });
     expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
-    expect(screen.getByText('LV 6 · 87 / 130 XP')).toBeTruthy();
+    expect(screen.getByText('Lv 6 · 87 / 130 XP')).toBeTruthy();
   });
 
   it('reopened (no before), the moment stays still: no burst, no ink, nothing slams or thuds (the owner, 2026-10-14)', async () => {
@@ -371,6 +372,7 @@ describe('the reveal, the Shadow and the vow move (M10a decision 4)', () => {
     expect(screen.getAllByTestId('slam-in')).toHaveLength(1);
     expect(screen.getByTestId('claimed-thud')).toBeTruthy();
     expect(screen.getByText(/^Claimed · /)).toBeTruthy();
+    expect(flat(screen.getByLabelText(/^Claimed · /).props.style)).toMatchObject({ borderColor: colors.shadow }); // red is the Shadow's (M11 review)
   });
 
   it('the vow: "Sworn" thuds when it appears', async () => {

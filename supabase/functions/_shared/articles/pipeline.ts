@@ -70,12 +70,14 @@ export interface Store {
   store(jobId: number, article: StoredArticle, sources: readonly StoredSource[]): Promise<string>;
   /** M11: published or waiting articles with no deck and fewer than two tries, newest first. */
   decksDue(limit: number): Promise<DeckSource[]>;
-  /** M11: the deck, or why there is none; either way it counts as a try. */
+  /** M11: takes one of the article's two tries, from the count this tick saw; false when another tick took it. */
+  claimDeck(articleId: string, attempts: number): Promise<boolean>;
+  /** M11: what a try gave: the deck, or why there is none. */
   saveDeck(articleId: string, deck: ArticleDeck | null, error: string | null): Promise<void>;
 }
 
-/** M11: an article to deck, with its job (the budget's row) and its brief's excerpts (the copying check). */
-export type DeckSource = { id: string; jobId: number; draft: ArticleDraft; excerpts: string[] };
+/** M11: an article to deck, with its tries so far, its job (the budget's row) and its brief's excerpts (the copying check). */
+export type DeckSource = { id: string; attempts: number; jobId: number; draft: ArticleDraft; excerpts: string[] };
 export type DeckAnswer = { value: unknown; usage: Usage } | { error: string; usage: Usage | null; maybeBilled: boolean };
 export interface Decks {
   write(source: DeckSource): Promise<DeckAnswer>;
@@ -141,7 +143,11 @@ export async function tick(store: Store, batches: Batches, nowMs: number, option
   return report;
 }
 
-/** M11 decision 4: decks for the newest articles that have none, each reserved against the cap like every call. */
+/**
+ * M11 decision 4: decks for the newest articles that have none, each reserved against the cap like every call. The
+ * try is taken before the call (M11 review): a tick that dies while Claude answers has still used it, so an article is
+ * called at most twice, and its reservation stays booked at the estimate.
+ */
 async function writeDecks(store: Store, decks: Decks, report: TickReport): Promise<void> {
   if (report.budget) return;
   const due = await store.decksDue(DECKS_PER_TICK);
@@ -152,7 +158,8 @@ async function writeDecks(store: Store, decks: Decks, report: TickReport): Promi
       report.budget = true;
       break;
     }
-    reserved.push({ source, aiCallId: id });
+    if (await store.claimDeck(source.id, source.attempts)) reserved.push({ source, aiCallId: id });
+    else await store.finish(id, { status: 'failed', usage: null, costUsd: 0, error: 'another tick took the deck' });
   }
   await Promise.all(reserved.map(async ({ source, aiCallId }) => {
     try {
@@ -169,7 +176,7 @@ async function writeDecks(store: Store, decks: Decks, report: TickReport): Promi
       await store.saveDeck(source.id, problems.length === 0 ? deck : null, problems.length === 0 ? null : clip(problems.join('; '), 1000));
       (problems.length === 0 ? report.decked : report.deckFailed).push(source.id);
     } catch (error) {
-      // One deck that breaks something must not stop the tick; it uses its try, so it can't be paid for every tick.
+      // One deck that breaks something must not stop the tick; its try is already used, so it can't be paid for every tick.
       report.errors++;
       console.error(`article deck ${source.id}`, error);
       await store.saveDeck(source.id, null, `internal: ${clip(String(error), 200)}`).catch(() => {});

@@ -4,7 +4,7 @@
 // turns a card and a quick tap on the cover or a story card turns it too; Previous and Next work for everyone (TalkBack,
 // switch access); each card is announced with its number. Under "Remove animations" cards change without moving.
 // React Native's own Animated and PanResponder, as in Dogeared: no new native module.
-import { CLUSTER_NAMES, READING_TEXT, fillText } from '@levelmeup/content';
+import { CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import type { ReactNode } from 'react';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, PanResponder, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
@@ -35,6 +35,9 @@ export type DeckProps = {
   onFullArticle: () => void;
   kept: boolean;
   onKeep: () => void;
+  /** The card to open on; the caller keeps each card turned to, so "Back to the cards" returns there (M11 review). */
+  initialStep?: number;
+  onStep?: (step: number) => void;
   /** Overrides the phone's setting (tests). */
   reduceMotion?: boolean;
 };
@@ -57,7 +60,7 @@ function RoundButton({ icon, label, onPress, disabled = false, filled = false }:
   );
 }
 
-export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, onKeep, reduceMotion }: DeckProps) {
+export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, onKeep, initialStep = 0, onStep, reduceMotion }: DeckProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const still = useReduce(reduceMotion);
@@ -65,7 +68,7 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   const cards = useMemo(() => deckCards(deck), [deck]);
   const last = cards.length - 1;
   const stories = deck.story.length;
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => Math.max(0, Math.min(initialStep, cards.length - 1)));
   const [back, setBack] = useState(false);
   const dx = useRef(new Animated.Value(0)).current;
   const enter = useRef(new Animated.Value(1)).current;
@@ -83,6 +86,7 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   const show = (to: number, fromLeft: boolean) => {
     setBack(fromLeft);
     setStep(to);
+    onStep?.(to);
     AccessibilityInfo.announceForAccessibility(spoken(to));
   };
   const settle = () => Animated.spring(dx, { toValue: 0, friction: 6, tension: 80, useNativeDriver: true }).start();
@@ -165,9 +169,9 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             <Text selectable maxFontSizeMultiplier={1.5} style={{ fontFamily: fonts.bodyMedium, fontSize: 21, lineHeight: 32, color: colors.ink }}>{c.text}</Text>
             <View style={{ flex: 1, minHeight: 16 }} />
             {c.note !== null && (
-              <View accessible accessibilityLabel={`System: ${c.note}`}
+              <View accessible accessibilityLabel={`${PLAY_TEXT.speakers.system}: ${c.note}`}
                 style={{ gap: 4, padding: 14, borderRadius: radius.control, borderWidth: space.border, borderColor: colors.accent, backgroundColor: colors.panel }}>
-                <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1.2, color: colors.accentText }}>SYSTEM</Text>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.3, color: colors.accentText }}>{PLAY_TEXT.speakers.system}</Text>
                 <Body weight="medium">{c.note}</Body>
               </View>
             )}

@@ -134,6 +134,41 @@ describe('the Story Deck (M11)', () => {
     expect(screen.getByTestId('deck')).toBeTruthy();
   });
 
+  it('keeps the line being written, and the card, while the full article is open (M11 review)', async () => {
+    await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
+    for (let i = 0; i < 5; i++) await next();
+    await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins');
+    await fireEvent.press(screen.getByRole('button', { name: 'Read the full article · 6 min' }));
+    expect(screen.getByLabelText(READING_TEXT.takeawayLabel).props.value).toBe('Small wins'); // the reader's field has it too
+    await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
+    await fireEvent.press(screen.getByRole('button', { name: D.backToCards }));
+    expect(screen.getByTestId('deck-card-turn')).toBeTruthy(); // back where it was left, not the cover
+    expect(screen.getByLabelText(READING_TEXT.takeawayLabel).props.value).toBe('Small wins are evidence.');
+    await fireEvent.press(screen.getByRole('button', { name: D.previous }));
+    await next();
+    expect(screen.getByLabelText(READING_TEXT.takeawayLabel).props.value).toBe('Small wins are evidence.'); // and across a turn
+  });
+
+  it('a deck this phone can\'t read opens the full article instead, and still clears (M11 review)', async () => {
+    const { enqueue } = await renderReading(WITH_ARTICLE, true, { ...SAMPLE_ARTICLE, deck: { story: 'cards' } as never });
+    expect(screen.queryByTestId('deck')).toBeNull();
+    for (const s of SAMPLE_ARTICLE.sections) expect(screen.getByText(s.heading)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: D.backToCards })).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
+    await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
+    expect(enqueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('a deck a sync brings while the full article is open doesn\'t swap the screen (M11 review)', async () => {
+    const { store } = await renderReading(WITH_ARTICLE, true, NO_DECK);
+    await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins');
+    await act(async () => { store.setState({ articles: { [SAMPLE_ARTICLE.id]: SAMPLE_ARTICLE } }); });
+    expect(screen.queryByTestId('deck')).toBeNull();
+    expect(screen.getByLabelText(READING_TEXT.takeawayLabel).props.value).toBe('Small wins');
+    await fireEvent.press(screen.getByRole('button', { name: D.backToCards }));
+    expect(screen.getByTestId('deck-card-cover')).toBeTruthy();
+  });
+
   it('Keep puts the lesson in the Codex, and a second tap takes it out', async () => {
     const { store } = await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
     for (let i = 0; i < 4; i++) await next();

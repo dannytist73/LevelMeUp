@@ -101,6 +101,7 @@ describe('past readings (board D5, decision 7)', () => {
     expect(screen.getByText('Past reading · Fri 9 Oct')).toBeTruthy();
     expect(screen.getByText('Wake at seven.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Claim/ })).toBeNull();
+    expect(store.getState().fetchArticle).toHaveBeenCalledWith('article-9'); // held without its deck: asked for (M11 review)
   });
 
   it('an evergreen reading read twice opens on the day chosen (review)', async () => {
@@ -130,6 +131,7 @@ describe('past readings (board D5, decision 7)', () => {
     expect(screen.getByText(READING_TEXT.deck.yourLine)).toBeTruthy();
     expect(screen.getByText('Wake at seven.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Claim/ })).toBeNull();
+    expect(store.getState().fetchArticle).not.toHaveBeenCalled();
   });
 
   it('a past reading not on the phone is asked for', async () => {

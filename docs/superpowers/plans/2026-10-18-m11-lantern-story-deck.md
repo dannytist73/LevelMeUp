@@ -17,7 +17,9 @@ Superpowers skills).
 
 ## Decisions
 
-1. **Palette (Moonlight).** Token names stay (fewer changes, fewer risks); their values and meanings move:
+1. **Palette (Moonlight).** Token names stay (fewer changes, fewer risks); their values and meanings move. *As built: the
+   names moved with their meanings, so no old name could keep a wrong colour: `vermilion → accent`, `seal → commit`,
+   `ember → accentText` (the Shadow's uses → `shadow`), `sealText → accentInk`.* The values:
    `night #171A2B`, `panel #222640`, `halftone #1E2236`, `line #383F63`, `divider #2A2F4A`, `chalk #F1F0F7`,
    `ash #A4AAC8`, `ashLight #C9CDE2`, `paper #EEF0FA` (the light "moon" surface: reading cards, light panels),
    `ink #1B1E31`, `inkSoft #3A3F5C`, `inkMuted #5A5F7E`, `vermilion → accent #A9B4FF` (bars, the active tab, progress,
@@ -36,7 +38,9 @@ Superpowers skills).
    for new and old articles, and the proven writing prompt stays untouched. Each tick (every 30 minutes, cron only)
    decks at most 2 articles that have none, newest first, with one direct Claude call each (`_shared/articles/deck.ts`,
    about $0.03 each, reserved against the monthly cap like every call). A deck that fails its checks is tried once
-   more on a later tick, then left out (the phone shows the full article). The 18 published articles get decks this
+   more on a later tick, then left out (the phone shows the full article). *As built (review): the try is taken before
+   the call (`article_claim_deck`, from the count the tick saw), so a tick that dies while Claude answers has used it,
+   and an article is called at most twice, ever.* The 18 published articles get decks this
    way over the first few hours after the deploy: about $1 in all. The manual owner tick (`nights: false`) never decks.
 5. **The deck's shape** (`articles.deck`, jsonb, migration 0016):
    `{ story: { kicker, text }[] (3–5), systemNote: string | null, lesson, tryToday }`.
@@ -69,7 +73,7 @@ Superpowers skills).
 | 2 | UI kit restyle: Button, Chip, OptionCard, NightCard, NarrationBox, ShadowBox, SlantPanel, HalftoneHeader, XpBar, ProgressSegments, Toggle, TextField, TimeStepper, Stamp, QuestArt, Portrait, RowLink, LinkButton, InkTabBar, HoldButton, SectionTitle, OutlinedTitle | app tests; the dev kit screen on the emulator |
 | 3 | Screens that draw their own colours or the offset panel (QuestCard, Today, Cleared, Celebration, Shadow scene, Trial, Vanish…): Shadow uses `shadow`, rewards use `accentText` | `git grep` for `ember`/`vermilion` uses, each classified; app tests |
 | 4 | Fonts: subset and add M PLUS Rounded 1c (after the owner's yes), load in `app/_layout.tsx`, OFL text | the bundle loads; emulator |
-| 5 | Server: `_shared/articles/deck.ts` (schema, prompt, parse, checks), migration 0016 (`deck`, `deck_attempts`, `deck_error`, `article_set_deck`, `article_deck_due`), the tick's deck step, `reading.ts`/`db.ts` send `deck` | unit tests (parse, checks, numbers, the tick step with fakes); `db:test` for 0016 |
+| 5 | Server: `_shared/articles/deck.ts` (schema, prompt, parse, checks), migration 0016 (`deck`, `deck_attempts`, `deck_error`, `article_decks_due`, `article_claim_deck`, `article_set_deck`), the tick's deck step, `reading.ts`/`db.ts` send `deck` | unit tests (parse, checks, numbers, the tick step with fakes); `db:test` for 0016 |
 | 6 | Owner tools: the review page shows each deck; `npm run articles -- decks` lists which articles have one | run read-only against the live project |
 | 7 | Phone: `Deck` screen (cards, swipe, buttons, announcements, still path), wired into Quest (reading slot) and Reading (read again); `have` leaves out deckless bodies | app tests (cards in order, claim from Your turn, fallback to the reader, Reduce Motion) |
 | 8 | Codex: kv store, Keep on the lesson card, Codex screen from Character | app tests |
@@ -90,6 +94,30 @@ Superpowers skills).
 7. "Read the full article" shows the article and its sources.
 8. A past reading (Chronicle) opens its deck with the line written that day.
 9. An article with no deck still opens the full reader and clears as before.
+
+## Review (2026-10-18)
+
+An independent review of `7205d55..11845ef` found no critical issue, three important ones and seven minor ones. All
+are fixed and tested, except the one known limit below.
+
+- **Important.**
+  1. A deck's try was counted only after Claude answered, so a tick that died mid-call could have the article called
+     again every tick. The try is now claimed first (`article_claim_deck`, compare-and-set on the count the tick saw,
+     so two ticks can't take the same try).
+  2. The Your turn line was lost on "Read the full article" and on turning cards, and "Back to the cards" restarted at
+     the cover. The quest screen now keeps the line and the card. The deck or the full article is chosen when the
+     article first shows, so a deck a sync brings meanwhile doesn't swap the screen.
+  3. The phone trusted the deck's shape. `asDeck` now checks it, and anything else opens the full article.
+- **Minor.**
+  - The Shadow's "Claimed" stamp is red.
+  - "System", "The Shadow", "days" and "Lv" are in sentence case. The speaker names now come from the content package.
+  - The XP bar on paper fills in `accentInk` (3:1 against its track).
+  - A past reading held from before its deck is asked for again, once per launch.
+  - The number check reads numbers written as words ("sixty-six" is 66); a lone "one" or "two" is not counted.
+  - The privacy page names the Codex, and deleting the Codex with the character is tested.
+  - Deploy order is migration first, then functions; the checklist says so.
+- **Known limit.** Read again of a reading held from before its deck opens the full article, then turns to the cards
+  about a second later, when the sync it asks for brings them. Today's reading never swaps (decision above).
 
 ## Not in M11
 

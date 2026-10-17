@@ -646,7 +646,8 @@ the Find X9 is the owner's.
 Plan: `docs/superpowers/plans/2026-10-18-m11-lantern-story-deck.md`. Needs, each at the owner's yes: migration 0016 +
 the functions deployed (the decks then fill in by cron, about $1 for the published library), and an EAS development build
 0.6.0 (versionCode 7) for the emulator; then a preview APK for the Find X9. The typeface (M PLUS Rounded 1c) waits for
-the owner's yes to download its files.
+the owner's yes to download its files. Deploy order: migration 0016 first, then the functions (the sync reads the new
+`deck` column).
 
 | # | Check | Result |
 |---|---|---|
@@ -657,7 +658,7 @@ the owner's yes to download its files.
 | 5 | Remove animations (Android setting): cards change without moving. | |
 | 6 | TalkBack: each card is announced with its number ("Card 3 of 7: …"). | |
 | 7 | Keep a lesson: it shows in the Codex (Character → Codex) and is still there after the app restarts; Take out removes it. | |
-| 8 | "Read the full article" shows the article with its sources; "Back to the cards" returns. | |
-| 9 | A past reading (Chronicle) opens its deck; Your turn shows the line written that day. | |
+| 8 | "Read the full article" shows the article with its sources; "Back to the cards" returns to the card it was left on, and a half-typed line on Your turn is still there (also after Previous and Next). | |
+| 9 | A past reading (Chronicle) opens its deck; Your turn shows the line written that day. One read before its deck existed opens the full article, then its cards once the sync it asks for brings them (about a second). | |
 | 10 | An article with no deck (before the cron writes it) opens the full reader and clears as before; after its deck arrives, the next sync brings it. | |
 | 11 | The home-screen widget in the new colours. | |
