@@ -4,7 +4,7 @@
 // waiting line.
 import { CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import { View } from 'react-native';
-import type { ArticleSummary, QuestView } from '../../game/types.ts';
+import type { ArticleBody, ArticleSummary, QuestView } from '../../game/types.ts';
 import { asDeck, deckCards, deckMinutes } from '../../reading/deck.ts';
 import { useGame } from '../../state/store.ts';
 import { colors, radius, space } from '../../theme/tokens.ts';
@@ -13,13 +13,16 @@ import { Tap } from '../../ui/Tap.tsx';
 import { Body, Heading, Label, Small, Title } from '../../ui/Text.tsx';
 import { QuestRow, WillSync, questXp } from '../QuestCard.tsx';
 
-/** "6 cards · about 3 min", or "6 min" for an article without a deck on this phone. */
-export function useReadingLength(article: ArticleSummary): string {
-  const held = useGame((s) => s.articles[article.id] ?? null);
+/** "6 cards · about 3 min", or "6 min read" for an article without a deck on this phone. */
+export function readingLength(article: ArticleSummary, held: ArticleBody | null): string {
   const deck = held === null ? null : asDeck(held.deck);
   return deck === null
     ? fillText(READING_TEXT.minutes, { n: article.minutes })
     : fillText(READING_TEXT.deck.cards, { cards: deckCards(deck).length, minutes: deckMinutes(deck) });
+}
+
+export function useReadingLength(article: ArticleSummary): string {
+  return readingLength(article, useGame((s) => s.articles[article.id] ?? null));
 }
 
 export type ReadingProps = { quest: QuestView; article: ArticleSummary | null; waiting: boolean; onOpen: () => void };

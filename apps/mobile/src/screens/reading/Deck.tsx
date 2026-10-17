@@ -7,7 +7,7 @@
 import { CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import type { ReactNode } from 'react';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, PanResponder, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, PanResponder, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ArticleBody } from '../../game/types.ts';
 import { coverTitle, deckCards, deckMinutes } from '../../reading/deck.ts';
@@ -16,6 +16,7 @@ import { colors, fonts, radius, space } from '../../theme/tokens.ts';
 import { Icon } from '../../ui/icons.tsx';
 import type { IconName } from '../../ui/icons.tsx';
 import { LinkButton } from '../../ui/LinkButton.tsx';
+import { Tap } from '../../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../../ui/Text.tsx';
 import { useReduce } from '../../ui/useMotion.ts';
 
@@ -44,19 +45,21 @@ export type DeckProps = {
 
 function RoundButton({ icon, label, onPress, disabled = false, filled = false }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean; filled?: boolean }) {
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({
+      on={filled ? 'accent' : 'night'}
+      radius={radius.pill}
+      style={{
         width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: filled ? colors.accent : colors.panel, opacity: disabled ? 0.4 : pressed ? 0.8 : 1,
-      })}
+        backgroundColor: filled ? colors.accent : colors.panel, opacity: disabled ? 0.4 : 1,
+      }}
     >
       <Icon name={icon} size={20} color={filled ? colors.onAccent : colors.chalk} />
-    </Pressable>
+    </Tap>
   );
 }
 
@@ -189,19 +192,21 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             </View>
             <View style={{ flex: 1, minHeight: 16 }} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
-              <Pressable
+              <Tap
                 accessibilityRole="button"
                 accessibilityLabel={kept ? D.keptLabel : D.keepLabel}
                 accessibilityState={{ selected: kept }}
                 onPress={onKeep}
-                style={({ pressed }) => ({
+                on={kept ? 'accent' : 'night'}
+                radius={radius.pill}
+                style={{
                   minHeight: 48, paddingHorizontal: 18, borderRadius: radius.pill, flexDirection: 'row', alignItems: 'center', gap: 8,
-                  borderWidth: space.border, borderColor: colors.accentText, backgroundColor: kept ? colors.accent : 'transparent', opacity: pressed ? 0.85 : 1,
-                })}
+                  borderWidth: space.border, borderColor: colors.accentText, backgroundColor: kept ? colors.accent : 'transparent', 
+                }}
               >
                 <Icon name="bookmark" size={18} color={kept ? colors.onAccent : colors.accentText} />
                 <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: kept ? colors.onAccent : colors.chalk }}>{kept ? D.kept : D.keep}</Text>
-              </Pressable>
+              </Tap>
               <RoundButton icon="share" label={D.share} onPress={share} />
             </View>
             <Caption>{D.keepNote}</Caption>
@@ -231,7 +236,9 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
     </ScrollView>
   );
 
+  // M12 (audit 16): with the phone drawing edge to edge, the keyboard would cover Your turn's Claim; the deck rises above it.
   return (
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.night }}>
     <View testID="deck" style={{ flex: 1, backgroundColor: colors.night }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: 10 }}>
         <RoundButton icon="close" label={D.close} onPress={onClose} />
@@ -281,5 +288,6 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
         <RoundButton icon="arrowRight" label={D.next} onPress={next} disabled={at === last} filled />
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 }

@@ -12,6 +12,7 @@ import { colors, fonts, radius } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Tap } from '../../ui/Tap.tsx';
 import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
+import { ClaimButton } from './ClaimBar.tsx';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
 
 const T = PLAY_TEXT.reps;
@@ -72,7 +73,8 @@ export function RepLog({ condition, disabled, onClaim, last = null, now = Date.n
         <Button label={T.removeSet} variant="secondary" disabled={sets.length <= 1} onPress={() => setSets((all) => all.slice(0, -1))} style={{ flexGrow: 1 }} />
       </View>
       <Small>{T.note}</Small>
-      <Button label={PLAY_TEXT.claim.log} variant="commitment" disabled={disabled || !repsValid(sets)} onPress={() => onClaim(repsPayload(sets))} />
+      <ClaimButton label={sets.length === 1 ? PLAY_TEXT.claim.set : fillText(PLAY_TEXT.claim.sets, { n: sets.length })}
+        disabled={disabled || !repsValid(sets)} onPress={() => onClaim(repsPayload(sets))} />
     </View>
   );
 }

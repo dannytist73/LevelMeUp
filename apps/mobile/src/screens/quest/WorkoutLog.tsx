@@ -15,6 +15,7 @@ import { colors, radius, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Body, Heading, Label, Small } from '../../ui/Text.tsx';
 import { Step } from './RepLog.tsx';
+import { ClaimButton } from './ClaimBar.tsx';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
 
 const T = PLAY_TEXT.workout;
@@ -82,7 +83,7 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
       })}
       <Small>{T.rest}</Small>
       <Small>{T.note}</Small>
-      <Button label={T.log} variant="commitment" disabled={disabled || !sessionValid(sets)} onPress={() => onClaim(sessionPayload(sets))} />
+      <ClaimButton label={T.log} disabled={disabled || !sessionValid(sets)} onPress={() => onClaim(sessionPayload(sets))} />
     </View>
   );
 }

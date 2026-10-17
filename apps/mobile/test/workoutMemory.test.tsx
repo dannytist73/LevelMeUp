@@ -90,7 +90,7 @@ describe('the rest (decision 8)', () => {
       expect(screen.getByText(R.over)).toBeTruthy();
       await fireEvent.press(screen.getByRole('checkbox', { name: fillText(R.done, { n: 2 }) })); // the last set
       expect(screen.queryByText(/^Rest \d/)).toBeNull();
-      await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.claim.log }));
+      await fireEvent.press(screen.getByRole('button', { name: fillText(PLAY_TEXT.claim.sets, { n: 2 }) }));
       expect(onClaim).toHaveBeenCalledWith({ sets: [10, 10] }); // the checks change nothing that's logged
     });
 
@@ -114,7 +114,7 @@ describe('the quest screen remembers what was logged', () => {
     const enqueue = jest.fn(async (_event: Omit<PhoneEvent, 'id'>) => {});
     store.setState({ enqueue: enqueue as never });
     await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
-    await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.workout.log }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${PLAY_TEXT.workout.log} · `) })); // M12: the fixed bar
     const quest = server.today!.quests.find((q) => q.id === 200)!;
     if (quest.condition.kind !== 'session') throw new Error('expected a workout');
     const sent = (enqueue.mock.calls.at(-1)![0] as unknown as { payload: { sets: number[] } }).payload.sets;

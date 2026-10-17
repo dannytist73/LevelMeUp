@@ -15,11 +15,18 @@ export const PLAY_TEXT = {
     willSync: 'Will sync',
     picture: '{stat} quest picture',
     slots: { core: 'Core quest', side: 'Side quest', article: "Today's reading", recovery: 'Recovery quest' },
+    /** M12 (board R3-2): under the fixed button of a rep log or a workout. */
+    kept: 'Your sets are kept for next time.',
   },
   claim: {
     tap: 'Mark cleared',
     timer: 'Claim',
     log: 'Log it',
+    /** M12: a rep log's button says what it logs. */
+    set: 'Log 1 set',
+    sets: 'Log {n} sets',
+    /** M12: the fixed button adds the quest's XP. */
+    xp: '· +{xp} XP',
   },
   timer: {
     start: 'Start',
@@ -85,6 +92,10 @@ export const PLAY_TEXT = {
     tooHardNote: 'Noted. If it stays too hard, the System eases this one.',
     continue: 'Continue',
     undo: 'Logged by mistake? Undo',
+    /** M12 (board R3-3, plan decision 6): Cleared leads on. */
+    next: 'Next: {title}',
+    nextReading: "Next: today's reading · {length}",
+    back: 'Back to Today',
   },
   celebration: {
     levelLabel: 'Level up',

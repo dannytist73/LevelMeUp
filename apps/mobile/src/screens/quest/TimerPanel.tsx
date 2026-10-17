@@ -10,6 +10,7 @@ import type { TimerState } from '../../quest/timer.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Display, Heading, Small } from '../../ui/Text.tsx';
 import { XpBar } from '../../ui/XpBar.tsx';
+import { ClaimButton } from './ClaimBar.tsx';
 
 const T = PLAY_TEXT.timer;
 
@@ -62,7 +63,7 @@ export function TimerPanel({ timer, targetMs, now, endsAt, disabled, onChange, o
         disabled={disabled}
         onPress={() => onChange(running ? pauseTimer(timer, now()) : startTimer(timer, now()))}
       />
-      <Button label={PLAY_TEXT.claim.timer} variant="commitment" disabled={disabled || !done} onPress={() => onClaim(timerPayload(timer, clamped()))} />
+      <ClaimButton label={PLAY_TEXT.claim.timer} disabled={disabled || !done} onPress={() => onClaim(timerPayload(timer, clamped()))} />
     </View>
   );
 }

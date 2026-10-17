@@ -3,7 +3,9 @@
 // exercise down a rung; "I felt pain" stays reachable. M10a: the moment moves (spec decision 4): the lines burst, the title
 // slams in, the XP stamp thuds in a splash of ink, the panel slams in and its rank stamps thud, then the bar fills from
 // where it was while the level line counts up. Reopened later (no before), it shows still (the owner, 2026-10-14).
-// M10b: a firm click as the XP stamp lands, one tick for the rank stamps (spec decision 2).
+// M10b: a firm click as the XP stamp lands, one tick for the rank stamps (spec decision 2). M12 (board R3-3; plan decision
+// 6, audit 12, 22): "Next" leads on to the next quest or the reading, with Back to Today beside it; nothing is selected
+// before the player rates (no rating counts as Right on the server).
 import { ADJUST_TEXT, PLAY_TEXT, READING_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
@@ -55,6 +57,8 @@ export type ClearedProps = {
   rateable?: boolean;
   /** M8b: the reading quest's "Read again". */
   onReadAgain?: () => void;
+  /** M12: what comes next ("Next: today's reading · 3 min"); without one, Continue goes back to Today. */
+  next?: { label: string; onPress: () => void };
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -98,13 +102,12 @@ function RateButton({ label, selected, onPress }: { label: string; selected: boo
 }
 
 export function Cleared({
-  heading, line, numbers, rating, dayOpen, waiting, onRate, onUndo, onContinue, canStepDown, onStepDown, onPain, rateable, onReadAgain,
+  heading, line, numbers, rating, dayOpen, waiting, onRate, onUndo, onContinue, canStepDown, onStepDown, onPain, rateable, onReadAgain, next,
 }: ClearedProps) {
   const insets = useSafeAreaInsets();
   /** The step down was just sent: say so, rather than "if it stays too hard" (the offer itself is gone). */
   const [eased, setEased] = useState(false);
   const { level, xpIntoLevel, xpForLevel } = numbers.level;
-  const shown: Rating = rating ?? 'right';
   const before = numbers.levelBefore === null ? null : point(numbers.levelBefore);
   /** Just cleared on this screen: the moment plays. Reopened later, it shows still. */
   const fresh = before !== null;
@@ -168,7 +171,7 @@ export function Cleared({
           <Small>{C.rateLabel}</Small>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {RATINGS.map(([value, label]) => (
-              <RateButton key={value} label={label} selected={shown === value} onPress={() => { if (value !== shown) onRate(value); }} />
+              <RateButton key={value} label={label} selected={rating === value} onPress={() => { if (value !== rating) onRate(value); }} />
             ))}
           </View>
           {rating === 'too_hard' &&
@@ -192,7 +195,14 @@ export function Cleared({
         </View>
       )}
 
-      <Button label={C.continue} onPress={onContinue} />
+      {next !== undefined ? (
+        <View style={{ gap: 10 }}>
+          <Button label={next.label} onPress={next.onPress} />
+          <Button label={C.back} variant="secondary" onPress={onContinue} />
+        </View>
+      ) : (
+        <Button label={C.continue} onPress={onContinue} />
+      )}
       {onReadAgain !== undefined && <Button label={READING_TEXT.readAgain} variant="secondary" onPress={onReadAgain} />}
       {/* M10c: a quiet link, so it never competes with Continue. */}
       {dayOpen && <LinkButton label={C.undo} onPress={onUndo} />}

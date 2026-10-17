@@ -3,9 +3,9 @@ import { PLAY_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { MAX_SENTENCE, sentenceValid, textPayload } from '../../quest/payload.ts';
-import { Button } from '../../ui/Button.tsx';
 import { Small } from '../../ui/Text.tsx';
 import { TextField } from '../../ui/TextField.tsx';
+import { ClaimButton } from './ClaimBar.tsx';
 
 export type SentenceLogProps = {
   disabled: boolean;
@@ -29,7 +29,7 @@ export function SentenceLog({
     <View style={{ gap: 12 }}>
       <TextField label={label} value={text} onChangeText={setText} maxLength={MAX_SENTENCE} />
       <Small>{note}</Small>
-      <Button label={claimLabel} variant="commitment" disabled={disabled || !sentenceValid(text)} onPress={() => onClaim(textPayload(text))} />
+      <ClaimButton label={claimLabel} disabled={disabled || !sentenceValid(text)} onPress={() => onClaim(textPayload(text))} />
     </View>
   );
 }

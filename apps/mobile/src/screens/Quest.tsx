@@ -2,34 +2,40 @@
 // why it was picked, how to do it, the safety lines, and the panel that logs it. A cleared quest shows "Quest cleared".
 // M6b: "I felt pain" under the safety lines, a swap, and the hard-day tag. M6c: a workout's log, and a way to change the
 // equipment or program. M10c: a logged workout or rep log is remembered on this phone for next time (decision 7).
+// M12 (Round 3, board R3-2; audit 2, 9, 10, 12): one top bar; the title, then the log first, its button fixed at the
+// bottom; How and Why fold below, Safety stays open; Cleared leads on to the next quest; a half-written takeaway waits.
 import {
   ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate,
   fillText, questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { KeyboardAvoidingView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { timerTargetMs } from '../../../../supabase/functions/_shared/events.ts';
 import { artUrl } from '../art/manifest.ts';
 import { isResting } from '../game/adjust.ts';
 import { findQuest } from '../game/offline.ts';
 import { sealedQuest, shadowHold } from '../game/pact.ts';
+import { upNext } from '../game/today.ts';
 import { clearedSummary } from '../quest/cleared.ts';
 import { questKey, sessionMemory } from '../quest/lastSets.ts';
 import type { Shot } from '../quest/cleared.ts';
 import { NEW_TIMER } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { QuestArt } from '../ui/QuestArt.tsx';
+import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { Body, Caption, Label, Small, Title } from '../ui/Text.tsx';
-import { COMPLETION_NAMES, questXp } from './QuestCard.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
+import { questXp } from './QuestCard.tsx';
+import { CLAIM_BAR_SPACE, ClaimBarHost } from './quest/ClaimBar.tsx';
 import { Cleared } from './quest/Cleared.tsx';
 import { RepLog } from './quest/RepLog.tsx';
 import { SentenceLog } from './quest/SentenceLog.tsx';
@@ -38,8 +44,10 @@ import { TimerPanel } from './quest/TimerPanel.tsx';
 import { WorkoutLog } from './quest/WorkoutLog.tsx';
 import { isKept } from '../reading/codex.ts';
 import { asDeck } from '../reading/deck.ts';
+import { keepDraft, takeawayDraft } from '../reading/drafts.ts';
 import { Deck } from './reading/Deck.tsx';
 import { openSource } from './reading/openSource.ts';
+import { readingLength } from './reading/ReadingCard.tsx';
 import { Reader } from './reading/Reader.tsx';
 
 const T = PLAY_TEXT.quest;
@@ -57,10 +65,12 @@ export type QuestProps = {
   onTrial?: () => void;
   /** M8b: a reading, read again (decision 5). */
   onRead?: (articleId: string) => void;
+  /** M12 decision 6: Cleared's "Next", in place of this screen. */
+  onNext?: (questId: number) => void;
   now?: () => number;
 };
 
-export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, onRead, now = Date.now }: QuestProps) {
+export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, onRead, onNext, now = Date.now }: QuestProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const pending = useGame((s) => s.pending);
@@ -84,7 +94,10 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const [fullArticle, setFullArticle] = useState<boolean | null>(null);
   /** M11: the card the deck was left on and the takeaway being written, kept here to outlive both (review). */
   const [deckStep, setDeckStep] = useState(0);
-  const [takeaway, setTakeaway] = useState('');
+  /** M12 (audit 9): null until typed in here; the draft kept for this article stands in until then. */
+  const [typed, setTyped] = useState<string | null>(null);
+  const [showHow, setShowHow] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
   const [, redraw] = useState(0);
   /** A claim on its way: a second tap before the screen redraws sends nothing (review). */
   const claiming = useRef(false);
@@ -101,6 +114,11 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const missing = todaysArticle !== null && reading === null ? todaysArticle.id : null;
   const deck = reading === null ? null : asDeck(reading.deck);
   if (reading !== null && fullArticle === null) setFullArticle(deck === null);
+  const takeaway = typed ?? (todaysArticle === null ? '' : takeawayDraft(todaysArticle.id));
+  const setTakeaway = (text: string) => {
+    setTyped(text);
+    if (todaysArticle !== null) keepDraft(todaysArticle.id, text);
+  };
   useEffect(() => {
     if (missing !== null) fetchArticle(missing);
   }, [missing, fetchArticle]);
@@ -139,7 +157,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   };
   if (view === null || today === null || quest === null || (!dayOpen && quest.completedAt === null)) {
     return (
-      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: space.gutter, gap: 20 }}>
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 20 }}>
+        <TopBar onBack={onBack} />
         <NarrationBox>{T.gone}</NarrationBox>
         <Button label={T.back} variant="secondary" onPress={onBack} />
       </ScreenScroll>
@@ -153,8 +172,14 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const hold = shadowHold(view, now());
 
   if (quest.completedAt !== null) {
+    // M12 decision 6: what comes after this quest, so Cleared can lead straight on.
+    const after = upNext(today, (q) => q.id === quest.id || sealedQuest(hold, q));
+    const nextLabel = after === null ? null : after.slot === 'article' && today.article !== null
+      ? fillText(PLAY_TEXT.cleared.nextReading, { length: readingLength(today.article, articles[today.article.id] ?? null) })
+      : fillText(PLAY_TEXT.cleared.next, { title: authoredTemplate(after.templateId).voice[view.profile.voice].title });
     return (
       <Cleared
+        next={after !== null && nextLabel !== null && onNext !== undefined ? { label: nextLabel, onPress: () => onNext(after.id) } : undefined}
         // The reading quest's name is its slot's: the topic says more (M8b emulator check).
         heading={`${slot} · ${todaysArticle !== null ? CLUSTER_NAMES[todaysArticle.cluster] : template.name}`}
         line={todaysArticle !== null ? todaysArticle.title : summary}
@@ -190,6 +215,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
     try {
       setBefore({ character: view.character, quests: today.quests });
       await enqueue({ type: 'complete', instanceId: quest.id, completedAt: now(), rating: null, payload });
+      if (todaysArticle !== null) keepDraft(todaysArticle.id, ''); // M12: claimed, so the draft is done
       if (quest.completion === 'timer') await saveTimer(quest.id, null).catch(() => {});
       // M10c decision 7: next time starts from these sets.
       const sets = Array.isArray(payload.sets) ? (payload.sets as number[]) : null;
@@ -273,10 +299,12 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
       );
     }
     return (
-      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
-        {deck !== null
-          ? <Button label={READING_TEXT.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
-          : <Button label={T.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.night }}>
+      <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
+        <TopBar onBack={onBack} />
+        {deck !== null && (
+          <Button label={READING_TEXT.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
+        )}
         <Reader
           article={reading}
           label={READING_TEXT.label}
@@ -296,60 +324,69 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
         />
         {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
       </ScreenScroll>
+      </KeyboardAvoidingView>
     );
   }
 
+  const xp = questXp(quest);
+  const logsSets = quest.completion === 'reps' || quest.condition.kind === 'session';
+  const hasHow = template.steps.length > 0;
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
-      <Button label={T.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
-      <QuestArt
-        uri={artUrl(art, artKey(template, quest.condition), quest.id)}
-        label={fillText(T.picture, { stat: STAT_NAMES[quest.stat] })}
-        fallback={STAT_NAMES[quest.stat]}
-      />
-      <View style={{ gap: 8 }}>
-        <Label tone="accentText">{slot}</Label>
-        <Title>{words.title}</Title>
-        <Body weight="medium">{summary}</Body>
-        {quest.book !== null && <Body tone="ashLight">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Body>}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          <Chip label={STAT_NAMES[quest.stat]} />
-          <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
-          <Chip label={`+${questXp(quest)} XP`} kind="outline" />
-          {quest.hardDay && <Chip label={A.hardDay.tag} kind="outline" />}
-        </View>
-      </View>
-      {/* The voice line quotes the full version's numbers (M2 carried item), so a hard day hides it. */}
-      {!quest.hardDay && <Body>{words.line}</Body>}
-      <View style={{ gap: 4, padding: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.line }}>
-        <Label>{T.why}</Label>
-        <Small>{renderWhy(quest.why, view.profile.voice, { classId: view.profile.classId })}</Small>
-      </View>
-      {template.steps.length > 0 && (
-        <View style={{ gap: 6 }}>
-          <Label>{T.steps}</Label>
-          {template.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
-        </View>
-      )}
-      {(template.exercise !== null || template.safety.length > 0) && (
-        <View style={{ gap: 6 }}>
-          <Label>{T.safety}</Label>
-          {template.safety.map((line, i) => <Small key={i}>{line}</Small>)}
-          {template.exercise !== null && <Small tone="chalk">{EXERCISE_SAFETY_LINE}</Small>}
-          {template.exercise !== null && (
-            <Button label={A.pain.open} variant="secondary" onPress={() => onPain(quest.id)} style={{ alignSelf: 'flex-start' }} />
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.night }}>
+      <ClaimBarHost suffix={fillText(PLAY_TEXT.claim.xp, { xp })} note={logsSets ? T.kept : undefined}>
+        <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + CLAIM_BAR_SPACE, paddingHorizontal: space.gutter, gap: 20 }}>
+          <TopBar onBack={onBack} />
+          <View style={{ gap: 6 }}>
+            <Label tone="accentText">{`${slot} · ${STAT_NAMES[quest.stat]} · +${xp} XP`}</Label>
+            <Title accessibilityRole="header">{words.title}</Title>
+            <Body weight="medium">{summary}</Body>
+            {quest.book !== null && <Body tone="ashLight">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Body>}
+            {quest.hardDay && <Chip label={A.hardDay.tag} kind="outline" />}
+          </View>
+          {quest.completedAt === null && isResting(quest, view.paused) && <NarrationBox>{A.paused.quest}</NarrationBox>}
+          {/* M12 (audit 2): the log first, where the thumb is; its button sits in the bar at the bottom. */}
+          {panel}
+          <View style={{ gap: 10 }}>
+            <RowLink label={T.steps} open={showHow} onPress={() => setShowHow((s) => !s)} />
+            {showHow && (
+              <View style={{ gap: 10, paddingHorizontal: 4 }}>
+                <QuestArt
+                  uri={artUrl(art, artKey(template, quest.condition), quest.id)}
+                  label={fillText(T.picture, { stat: STAT_NAMES[quest.stat] })}
+                  fallback={STAT_NAMES[quest.stat]}
+                />
+                {hasHow && template.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
+              </View>
+            )}
+            <RowLink label={T.why} open={showWhy} onPress={() => setShowWhy((s) => !s)} />
+            {showWhy && (
+              <View style={{ gap: 8, paddingHorizontal: 4 }}>
+                {/* The voice line quotes the full version's numbers (M2 carried item), so a hard day hides it. */}
+                {!quest.hardDay && <Body>{words.line}</Body>}
+                <Small>{renderWhy(quest.why, view.profile.voice, { classId: view.profile.classId })}</Small>
+              </View>
+            )}
+          </View>
+          {/* Safety stays open (CLAUDE.md: exercise safety is never folded away), with "I felt pain" in reach. */}
+          {(template.exercise !== null || template.safety.length > 0) && (
+            <View style={{ gap: 6, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.divider }}>
+              <Label>{T.safety}</Label>
+              {template.safety.map((line, i) => <Small key={i}>{line}</Small>)}
+              {template.exercise !== null && <Small tone="chalk">{EXERCISE_SAFETY_LINE}</Small>}
+              {template.exercise !== null && (
+                <Button label={A.pain.open} variant="secondary" onPress={() => onPain(quest.id)} style={{ alignSelf: 'flex-start' }} />
+              )}
+            </View>
           )}
-        </View>
-      )}
-      {quest.completedAt === null && isResting(quest, view.paused) && <NarrationBox>{A.paused.quest}</NarrationBox>}
-      {panel}
-      {today.swapsLeft > 0 && quest.swaps.length > 0 && (
-        <Button label={A.swap.open} variant="secondary" onPress={() => onSwap(quest.id)} />
-      )}
-      {quest.condition.kind === 'session' && onTraining !== undefined && (
-        <Button label={PLAY_TEXT.workout.change} variant="secondary" onPress={onTraining} />
-      )}
-      {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
-    </ScreenScroll>
+          {today.swapsLeft > 0 && quest.swaps.length > 0 && (
+            <Button label={A.swap.open} variant="secondary" onPress={() => onSwap(quest.id)} />
+          )}
+          {quest.condition.kind === 'session' && onTraining !== undefined && (
+            <Button label={PLAY_TEXT.workout.change} variant="secondary" onPress={onTraining} />
+          )}
+          {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
+        </ScreenScroll>
+      </ClaimBarHost>
+    </KeyboardAvoidingView>
   );
 }
