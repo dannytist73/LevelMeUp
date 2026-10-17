@@ -36,6 +36,8 @@ import { SentenceLog } from './quest/SentenceLog.tsx';
 import { TapClaim } from './quest/TapClaim.tsx';
 import { TimerPanel } from './quest/TimerPanel.tsx';
 import { WorkoutLog } from './quest/WorkoutLog.tsx';
+import { isKept } from '../reading/codex.ts';
+import { Deck } from './reading/Deck.tsx';
 import { openSource } from './reading/openSource.ts';
 import { Reader } from './reading/Reader.tsx';
 
@@ -69,9 +71,13 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const fetchArticle = useGame((s) => s.fetchArticle);
   const lastSets = useGame((s) => s.lastSets);
   const rememberSets = useGame((s) => s.rememberSets);
+  const codex = useGame((s) => s.codex);
+  const toggleKeep = useGame((s) => s.toggleKeep);
   const [before, setBefore] = useState<Shot | null>(null);
   const [timer, setTimer] = useState<TimerState>(NEW_TIMER);
   const [busy, setBusy] = useState(false);
+  /** M11: the full article instead of the Story Deck. */
+  const [fullArticle, setFullArticle] = useState(false);
   const [, redraw] = useState(0);
   /** A claim on its way: a second tap before the screen redraws sends nothing (review). */
   const claiming = useRef(false);
@@ -234,9 +240,33 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
 
   if (reading !== null) {
     const xp = questXp(quest);
+    const deck = reading.deck ?? null;
+    if (deck !== null && !fullArticle) {
+      // M11: the reading opens on its Story Deck; Your turn is the takeaway that clears the quest.
+      return (
+        <Deck
+          article={{ ...reading, deck }}
+          label={READING_TEXT.label}
+          xp={xp}
+          turn={(
+            <View style={{ gap: 10 }}>
+              <SentenceLog disabled={busy} label={READING_TEXT.takeawayLabel} note={READING_TEXT.takeawayNote}
+                claimLabel={fillText(READING_TEXT.claim, { xp })} onClaim={(payload) => void claim(payload)} />
+              {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
+            </View>
+          )}
+          onClose={onBack}
+          onFullArticle={() => setFullArticle(true)}
+          kept={isKept(codex, reading.id)}
+          onKeep={() => void toggleKeep({ articleId: reading.id, title: reading.title, lesson: deck.lesson, keptAt: now() })}
+        />
+      );
+    }
     return (
       <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
-        <Button label={T.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+        {deck !== null
+          ? <Button label={READING_TEXT.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
+          : <Button label={T.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />}
         <Reader
           article={reading}
           label={READING_TEXT.label}

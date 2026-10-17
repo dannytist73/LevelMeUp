@@ -35,6 +35,8 @@ import type { NoteOs, NotifySettings, Permission, PlannedNote } from '../notify/
 import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
 import type { Draft } from '../onboarding/flow.ts';
 import { readLastSets } from '../quest/lastSets.ts';
+import { readCodex, toggled } from '../reading/codex.ts';
+import type { CodexEntry } from '../reading/codex.ts';
 import type { LastSets } from '../quest/lastSets.ts';
 import { parseTimers } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
@@ -92,6 +94,8 @@ export const PORTRAIT_KEY = 'lmu.portrait';
 export const HAPTICS_KEY = 'lmu.haptics';
 /** M10c decision 7: each exercise's and rep-log quest's last logged sets, kept on this phone. */
 export const LAST_SETS_KEY = 'lmu.lastSets';
+/** M11 decision 7: the lessons kept from the Story Decks, on this phone. */
+export const CODEX_KEY = 'lmu.codex';
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
 /** A level-up carries the level it came from: one sync can cross more than one (the portrait's tier, M9a review). */
@@ -150,6 +154,10 @@ export type GameState = {
   haptics: boolean;
   /** M10c decision 7: the last logged sets, by exercise and rep-log quest, kept on this phone. */
   lastSets: LastSets;
+  /** M11: the lessons kept from the Story Decks, newest first. */
+  codex: CodexEntry[];
+  /** M11: keeps a deck's lesson in the Codex, or takes it out; shown at once, even if the phone can't store it. */
+  toggleKeep: (entry: CodexEntry) => Promise<void>;
   boot: () => Promise<void>;
   enqueue: (event: NewEvent) => Promise<void>;
   syncNow: () => Promise<void>;
@@ -389,11 +397,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(NOTIFY_KEY);
       await deps.kv.removeItem(PORTRAIT_KEY);
       await deps.kv.removeItem(LAST_SETS_KEY); // M10c: the character's workouts, not the phone's
+      await deps.kv.removeItem(CODEX_KEY); // M11: the character's kept lessons go with it
       // The Haptics switch stays: it is the phone's, not the character's (M10b plan decision 3).
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, account: await deps.account(),
+        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, codex: [], account: await deps.account(),
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -488,9 +497,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       portrait: null,
       haptics: true,
       lastSets: {},
+      codex: [],
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -503,6 +513,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(PORTRAIT_KEY).catch(() => null),
           deps.kv.getItem(HAPTICS_KEY).catch(() => null),
           deps.kv.getItem(LAST_SETS_KEY).catch(() => null),
+          deps.kv.getItem(CODEX_KEY).catch(() => null),
         ]);
         const haptics = hapticsText !== 'off';
         setBuzzing(haptics);
@@ -516,7 +527,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         set({
           draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
-          shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText),
+          shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
         });
         await scheduler.request();
       },
@@ -610,6 +621,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         const lastSets = { ...get().lastSets, ...sets };
         set({ lastSets });
         await deps.kv.setItem(LAST_SETS_KEY, JSON.stringify(lastSets)).catch(() => {});
+      },
+
+      toggleKeep: async (entry) => {
+        const codex = toggled(get().codex, entry);
+        set({ codex });
+        await deps.kv.setItem(CODEX_KEY, JSON.stringify(codex)).catch(() => {});
       },
 
       dismissTrainingNotice: async () => {

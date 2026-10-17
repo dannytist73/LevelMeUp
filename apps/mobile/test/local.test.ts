@@ -158,6 +158,18 @@ describe('the phone database', () => {
     expect(await local.articleIds()).toEqual([]);
   });
 
+  it('leaves an article held without its Story Deck out of `have`, so it is sent again (M11 decision 6)', async () => {
+    const { local } = await fresh();
+    const s = serverState();
+    const both: ServerState = { ...s, today: { ...s.today!, article: { id: 'article-1', cluster: 'sleep', title: 'One', minutes: 6 } }, nextArticle: { id: 'article-2', cluster: 'sleep', title: 'Two', minutes: 6 } };
+    const { deck: _gone, ...old } = SAMPLE_ARTICLE;
+    await local.acknowledge([], [], both, 1, [{ ...SAMPLE_ARTICLE, id: 'article-1', deck: null }, { ...old, id: 'article-2' } as typeof SAMPLE_ARTICLE]);
+    expect(Object.keys((await local.snapshot()).articles).sort()).toEqual(['article-1', 'article-2']); // still shown, as the full article
+    expect(await local.articleIds()).toEqual([]);
+    await local.acknowledge([], [], both, 2, [{ ...SAMPLE_ARTICLE, id: 'article-1' }]);
+    expect(await local.articleIds()).toEqual(['article-1']);
+  });
+
   it('wipe empties the cache, the outbox and the notices', async () => {
     const { local } = await fresh();
     await local.enqueue(complete('a'), 1);

@@ -40,4 +40,15 @@ export const SAMPLE_ARTICLE: ArticleBody = {
     { n: 1, title: 'How are habits formed', url: 'https://example.org/habits', host: 'example.org' },
     { n: 2, title: 'Small wins and motivation', url: 'https://www.example.com/small-wins', host: 'example.com' },
   ],
+  // M11: its Story Deck, in the shape the tick stores (only the article's own facts and numbers).
+  deck: {
+    story: [
+      { kicker: 'The story', text: 'One push-up proves very little. But each small promise you keep is a piece of evidence about who you are.' },
+      { kicker: 'What is really happening', text: 'Big efforts depend on mood; small ones survive bad days. Repeating something in the same setting matters more than how hard you go.' },
+      { kicker: 'How long it takes', text: 'On average it takes about 66 days for a habit to feel automatic. Thirty days of small wins already make a case your mind finds hard to argue with.' },
+    ],
+    systemNote: 'A streak is exactly this: evidence, one day at a time.',
+    lesson: 'Small promises kept are evidence about who you are.',
+    tryToday: 'Pick one win so small it survives your worst day, and tick it off tonight.',
+  },
 };

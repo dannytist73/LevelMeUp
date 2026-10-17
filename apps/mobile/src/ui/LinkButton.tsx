@@ -8,15 +8,17 @@ export type LinkButtonProps = {
   label: string;
   onPress: () => void;
   tone?: 'chalk' | 'accentText';
+  /** What a screen reader says, when the label alone is ambiguous (defaults to the label). */
+  accessibilityLabel?: string;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-export function LinkButton({ label, onPress, tone = 'chalk', disabled = false, style }: LinkButtonProps) {
+export function LinkButton({ label, onPress, tone = 'chalk', disabled = false, style, accessibilityLabel }: LinkButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}

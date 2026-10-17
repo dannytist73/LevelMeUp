@@ -1,26 +1,32 @@
 // A reading read again (M8b decision 7): the article with the takeaway written that day; an article this phone doesn't
-// hold is asked for and arrives with the next sync.
+// hold is asked for and arrives with the next sync. M11: it opens on its Story Deck when it has one, with the line written
+// that day on the Your turn card; the full article stays one tap away.
 import { PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dateKeyLabel } from '../lib/dates.ts';
+import { isKept } from '../reading/codex.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label } from '../ui/Text.tsx';
+import { Deck } from './reading/Deck.tsx';
 import { Reader } from './reading/Reader.tsx';
 import { openSource } from './reading/openSource.ts';
 
 const R = READING_TEXT;
 
-export function Reading({ articleId, dayNumber = null, onBack }: { articleId: string; dayNumber?: number | null; onBack: () => void }) {
+export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }: { articleId: string; dayNumber?: number | null; onBack: () => void; now?: () => number }) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const article = useGame((s) => s.articles[articleId] ?? null);
   const fetchArticle = useGame((s) => s.fetchArticle);
+  const codex = useGame((s) => s.codex);
+  const toggleKeep = useGame((s) => s.toggleKeep);
+  const [fullArticle, setFullArticle] = useState(false);
   // The day it was read on: the one named, else today's when it is today's reading (Read again).
   const todayNumber = view?.today?.article?.id === articleId ? view.today.dayNumber : null;
   const day = dayNumber ?? todayNumber;
@@ -33,24 +39,36 @@ export function Reading({ articleId, dayNumber = null, onBack }: { articleId: st
 
   const isToday = day !== null && day === todayNumber;
   const label = isToday || reading === null ? R.label : fillText(R.past.label, { date: dateKeyLabel(reading.date) });
+  const takeaway = (
+    <View style={{ gap: 6 }}>
+      <Label>{article?.deck != null ? R.deck.yourLine : R.yourTakeaway}</Label>
+      <Body weight="medium">{reading?.takeaway ?? R.noTakeaway}</Body>
+    </View>
+  );
+  const deck = article?.deck ?? null;
+  if (article !== null && deck !== null && !fullArticle) {
+    return (
+      <Deck
+        article={{ ...article, deck }}
+        label={label}
+        xp={null}
+        turn={takeaway}
+        onClose={onBack}
+        onFullArticle={() => setFullArticle(true)}
+        kept={isKept(codex, article.id)}
+        onKeep={() => void toggleKeep({ articleId: article.id, title: article.title, lesson: deck.lesson, keptAt: now() })}
+      />
+    );
+  }
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
-      <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+      {deck !== null
+        ? <Button label={R.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
+        : <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />}
       {article === null ? (
         <NarrationBox>{known ? R.missing : R.gone}</NarrationBox>
       ) : (
-        <Reader
-          article={article}
-          label={label}
-          xp={null}
-          onOpenSource={openSource}
-          footer={(
-            <View style={{ gap: 6 }}>
-              <Label>{R.yourTakeaway}</Label>
-              <Body weight="medium">{reading?.takeaway ?? R.noTakeaway}</Body>
-            </View>
-          )}
-        />
+        <Reader article={article} label={label} xp={null} onOpenSource={openSource} footer={takeaway} />
       )}
     </ScreenScroll>
   );

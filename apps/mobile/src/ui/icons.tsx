@@ -5,7 +5,9 @@ import { colors } from '../theme/tokens.ts';
 export type IconName =
   | 'settings' | 'flame' | 'shield' | 'sun' | 'user' | 'calendar' | 'chevronLeft' | 'chevronRight'
   // M10c: rows that open in place, the portrait's switch, a set done.
-  | 'chevronDown' | 'chevronUp' | 'switch' | 'check';
+  | 'chevronDown' | 'chevronUp' | 'switch' | 'check'
+  // M11: the Story Deck's close, arrows, keep and share.
+  | 'close' | 'arrowLeft' | 'arrowRight' | 'bookmark' | 'share';
 
 const GEAR =
   'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z';
@@ -39,6 +41,16 @@ function shapes(name: IconName) {
       return [<Path key="p" d="M4 8h13l-3-3M20 16H7l3 3" />];
     case 'check':
       return [<Path key="p" d="M5 12l5 5 9-10" />];
+    case 'close':
+      return [<Path key="p" d="M18 6L6 18M6 6l12 12" />];
+    case 'arrowLeft':
+      return [<Path key="p" d="M19 12H5M12 19l-7-7 7-7" />];
+    case 'arrowRight':
+      return [<Path key="p" d="M5 12h14M12 5l7 7-7 7" />];
+    case 'bookmark':
+      return [<Path key="p" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />];
+    case 'share':
+      return [<Path key="p" d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />];
   }
 }
 

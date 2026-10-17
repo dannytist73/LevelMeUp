@@ -1,5 +1,5 @@
 import { CLUSTER_LINES, CLUSTER_NAMES, READING_TEXT } from '@levelmeup/content';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
@@ -96,7 +96,7 @@ describe('past readings (board D5, decision 7)', () => {
   });
 
   it('a past reading shows the article with the takeaway written that day', async () => {
-    const store = testStore({ view: project(state, []), articles: { 'article-9': { ...SAMPLE_ARTICLE, id: 'article-9' } } });
+    const store = testStore({ view: project(state, []), articles: { 'article-9': { ...SAMPLE_ARTICLE, id: 'article-9', deck: null } } });
     await render(withStore(store, <Reading articleId="article-9" onBack={jest.fn()} />));
     expect(screen.getByText('Past reading · Fri 9 Oct')).toBeTruthy();
     expect(screen.getByText('Wake at seven.')).toBeTruthy();
@@ -111,10 +111,25 @@ describe('past readings (board D5, decision 7)', () => {
         { id: 'article-9', cluster: 'sleep', title: 'Wake time', minutes: 6, dayNumber: 0, date: '2026-10-09', takeaway: 'First.' },
       ],
     };
-    const store = testStore({ view: project(twice, []), articles: { 'article-9': { ...SAMPLE_ARTICLE, id: 'article-9' } } });
+    const store = testStore({ view: project(twice, []), articles: { 'article-9': { ...SAMPLE_ARTICLE, id: 'article-9', deck: null } } });
     await render(withStore(store, <Reading articleId="article-9" dayNumber={0} onBack={jest.fn()} />));
     expect(screen.getByText('Past reading · Fri 9 Oct')).toBeTruthy();
     expect(screen.getByText('First.')).toBeTruthy();
+  });
+
+  it('M11: a past reading with a Story Deck opens on its cover; Your turn shows the line written that day', async () => {
+    const store = testStore({ view: project(state, []), articles: { 'article-9': { ...SAMPLE_ARTICLE, id: 'article-9' } } });
+    await render(withStore(store, <Reading articleId="article-9" onBack={jest.fn()} />));
+    expect(screen.getByTestId('deck-card-cover')).toBeTruthy();
+    expect(screen.getByText('Past reading · Fri 9 Oct')).toBeTruthy();
+    for (let i = 0; i < 5; i++) {
+      await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.deck.next }));
+      await act(async () => { await new Promise((done) => setTimeout(done, 300)); }); // the card flies off first
+    }
+    expect(screen.getByTestId('deck-card-turn')).toBeTruthy();
+    expect(screen.getByText(READING_TEXT.deck.yourLine)).toBeTruthy();
+    expect(screen.getByText('Wake at seven.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Claim/ })).toBeNull();
   });
 
   it('a past reading not on the phone is asked for', async () => {

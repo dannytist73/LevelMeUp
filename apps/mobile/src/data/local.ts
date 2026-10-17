@@ -96,8 +96,20 @@ export function makeLocal(sql: Sql) {
         else await tx.run(`delete from articles where id not in (${keep.map(() => '?').join(', ')})`, keep);
       });
     },
-    /** M8b: the articles this phone holds, for the next sync's `have` (decision 3). */
-    articleIds: async () => (await sql.all<{ id: string }>('select id from articles order by id')).map((r) => r.id),
+    /**
+     * M8b: the articles this phone holds, for the next sync's `have` (decision 3). M11 decision 6: one held without its
+     * Story Deck is left out, so the server sends it again (today's and the next day's) until its deck arrives.
+     */
+    articleIds: async () => (await sql.all<{ id: string; json: string }>('select id, json from articles order by id'))
+      .filter((r) => {
+        try {
+          const deck: unknown = (JSON.parse(r.json) as { deck?: unknown }).deck;
+          return typeof deck === 'object' && deck !== null;
+        } catch {
+          return false;
+        }
+      })
+      .map((r) => r.id),
     async dismissNotice(eventId: string): Promise<void> {
       await sql.run('delete from notices where event_id = ?', [eventId]);
     },

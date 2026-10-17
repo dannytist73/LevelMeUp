@@ -1,0 +1,97 @@
+// M11: the Story Deck's cards and the Codex, apart from the screens that show them.
+import { READING_TEXT } from '@levelmeup/content';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
+import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
+import { CODEX_MAX, isKept, readCodex, toggled } from '../src/reading/codex.ts';
+import { coverTitle, deckCards, deckMinutes } from '../src/reading/deck.ts';
+import { Codex } from '../src/screens/Codex.tsx';
+import { Deck } from '../src/screens/reading/Deck.tsx';
+import { testStore, withStore } from './support/store.ts';
+
+const DECK = SAMPLE_ARTICLE.deck!;
+
+describe('the deck\'s cards (M11 decision 5)', () => {
+  it('are the cover, the story cards with the System note on the last one, the lesson and Your turn', () => {
+    const cards = deckCards(DECK);
+    expect(cards.map((c) => c.kind)).toEqual(['cover', 'story', 'story', 'story', 'lesson', 'turn']);
+    expect(cards.filter((c) => c.kind === 'story').map((c) => (c.kind === 'story' ? c.note : 'x'))).toEqual([null, null, DECK.systemNote]);
+  });
+
+  it('split a title at its colon into the cover\'s title and subtitle', () => {
+    expect(coverTitle('Rest Between Sets: The Pause That Builds Strength')).toEqual({ title: 'Rest Between Sets', subtitle: 'The Pause That Builds Strength' });
+    expect(coverTitle('Why tiny wins change how you see yourself')).toEqual({ title: 'Why tiny wins change how you see yourself', subtitle: null });
+    expect(coverTitle(': odd')).toEqual({ title: ': odd', subtitle: null });
+  });
+
+  it('take about their words at 150 a minute, plus a minute for your line', () => {
+    expect(deckMinutes(DECK)).toBe(2);
+    expect(deckMinutes({ ...DECK, story: [{ kicker: 'k', text: 'word '.repeat(400) }] })).toBe(4);
+  });
+});
+
+describe('the Codex (M11 decision 7)', () => {
+  const a = { articleId: 'article-1', title: 'One', lesson: 'Lesson one.', keptAt: 1 };
+  const b = { articleId: 'article-2', title: 'Two', lesson: 'Lesson two.', keptAt: 2 };
+
+  it('keeps one lesson per article, newest first; keeping it again takes it out', () => {
+    const kept = toggled(toggled([], a), b);
+    expect(kept.map((e) => e.articleId)).toEqual(['article-2', 'article-1']);
+    expect(isKept(kept, 'article-1')).toBe(true);
+    expect(toggled(kept, a).map((e) => e.articleId)).toEqual(['article-2']);
+  });
+
+  it('reads back what it stored, and treats anything unreadable as empty', () => {
+    expect(readCodex(JSON.stringify([a, b]))).toEqual([b, a]);
+    expect(readCodex(null)).toEqual([]);
+    expect(readCodex('not json')).toEqual([]);
+    expect(readCodex(JSON.stringify([{ articleId: 3 }, a]))).toEqual([a]);
+  });
+
+  it('holds at most CODEX_MAX lessons, dropping the oldest', () => {
+    let codex = [] as ReturnType<typeof toggled>;
+    for (let i = 0; i < CODEX_MAX + 5; i++) codex = toggled(codex, { ...a, articleId: `article-${i}`, keptAt: i });
+    expect(codex).toHaveLength(CODEX_MAX);
+    expect(codex[0]!.articleId).toBe(`article-${CODEX_MAX + 4}`);
+  });
+});
+
+describe('the deck without animations (Remove animations, M11 decision 8)', () => {
+  it('changes cards at once, and announces each with its number', async () => {
+    await render(
+      <Deck article={{ ...SAMPLE_ARTICLE, deck: DECK }} label="Today's reading" xp={10} turn={<Text>turn</Text>}
+        onClose={jest.fn()} onFullArticle={jest.fn()} kept={false} onKeep={jest.fn()} reduceMotion />,
+    );
+    expect(screen.getByLabelText('Card 1 of 6')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.deck.next }));
+    expect(screen.getByTestId('deck-card-story')).toBeTruthy(); // no wait: nothing flies
+    expect(screen.getByLabelText('Card 2 of 6')).toBeTruthy();
+  });
+
+  it('closes from its first card', async () => {
+    const onClose = jest.fn();
+    await render(
+      <Deck article={{ ...SAMPLE_ARTICLE, deck: DECK }} label="Today's reading" xp={null} turn={<Text>turn</Text>}
+        onClose={onClose} onFullArticle={jest.fn()} kept={false} onKeep={jest.fn()} reduceMotion />,
+    );
+    expect(screen.getByText('6 cards · about 2 min')).toBeTruthy(); // a past reading shows no XP
+    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.deck.close }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the Codex screen (M11 decision 7)', () => {
+  it('lists the kept lessons with their readings, and takes one out', async () => {
+    const store = testStore({ codex: [{ articleId: 'article-2', title: 'Two', lesson: 'Lesson two.', keptAt: 2 }, { articleId: 'article-1', title: 'One', lesson: 'Lesson one.', keptAt: 1 }] });
+    await render(withStore(store, <Codex onBack={jest.fn()} />));
+    expect(screen.getByText('Lesson two.')).toBeTruthy();
+    expect(screen.getByText('One')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Take "Lesson two." out of your Codex' }));
+    expect(store.getState().codex.map((e) => e.articleId)).toEqual(['article-1']);
+  });
+
+  it('says how to fill it when empty', async () => {
+    await render(withStore(testStore(), <Codex onBack={jest.fn()} />));
+    expect(screen.getByText(READING_TEXT.codex.empty)).toBeTruthy();
+  });
+});

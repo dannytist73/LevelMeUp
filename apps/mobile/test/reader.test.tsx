@@ -1,9 +1,9 @@
 import { PLAY_TEXT, READING_TEXT } from '@levelmeup/content';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
 import { project } from '../src/game/project.ts';
-import type { PhoneEvent, ServerState } from '../src/game/types.ts';
+import type { ArticleBody, PhoneEvent, ServerState } from '../src/game/types.ts';
 import { Quest } from '../src/screens/Quest.tsx';
 import { openSource } from '../src/screens/reading/openSource.ts';
 import { Reader } from '../src/screens/reading/Reader.tsx';
@@ -16,9 +16,12 @@ const base = serverState();
 const WITH_ARTICLE: ServerState = { ...base, today: { ...base.today!, article: SUMMARY } };
 const articleId = base.today!.quests.find((q) => q.slot === 'article')!.id;
 
-async function renderReading(server: ServerState, held: boolean) {
+/** M11: the article as a phone held it before Story Decks (and as one whose deck failed). */
+const NO_DECK: ArticleBody = { ...SAMPLE_ARTICLE, deck: null };
+
+async function renderReading(server: ServerState, held: boolean, article: ArticleBody = NO_DECK) {
   const pending: PhoneEvent[] = [];
-  const store = testStore({ view: project(server, []), articles: held ? { [SAMPLE_ARTICLE.id]: SAMPLE_ARTICLE } : {} });
+  const store = testStore({ view: project(server, []), articles: held ? { [article.id]: article } : {} });
   const enqueue = jest.fn(async (event: Omit<PhoneEvent, 'id'>) => {
     pending.push({ ...event, id: `00000000-0000-4000-8000-${String(pending.length + 1).padStart(12, '0')}` } as PhoneEvent);
     store.setState({ view: project(server, pending) });
@@ -73,6 +76,72 @@ describe('the reader (board D3, M8b decision 5)', () => {
     expect(screen.getByText(READING_TEXT.waiting)).toBeTruthy();
     expect(store.getState().fetchArticle).toHaveBeenCalledWith(SAMPLE_ARTICLE.id);
     expect(screen.queryByRole('button', { name: 'Claim +10 XP' })).toBeNull();
+  });
+});
+
+describe('the Story Deck (M11)', () => {
+  const D = READING_TEXT.deck;
+  // The card flies off for 220 ms before the next one arrives (Remove animations is off in these tests).
+  const next = async () => {
+    await fireEvent.press(screen.getByRole('button', { name: D.next }));
+    await act(async () => { await new Promise((done) => setTimeout(done, 300)); });
+  };
+
+  it('opens on the cover, then the story cards, the lesson and Your turn, one card at a time', async () => {
+    await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
+    expect(screen.getByTestId('deck-card-cover')).toBeTruthy();
+    expect(screen.getByText('6 cards · about 2 min · +10 XP')).toBeTruthy();
+    expect(screen.getByRole('button', { name: D.previous }).props.accessibilityState).toMatchObject({ disabled: true });
+    await next();
+    expect(screen.getByText(SAMPLE_ARTICLE.deck!.story[0]!.text)).toBeTruthy();
+    expect(screen.getByText('1 of 3')).toBeTruthy();
+    await next();
+    await next();
+    expect(screen.getByLabelText(`System: ${SAMPLE_ARTICLE.deck!.systemNote}`)).toBeTruthy(); // on the last story card
+    await next();
+    expect(screen.getByText(SAMPLE_ARTICLE.deck!.lesson)).toBeTruthy();
+    expect(screen.getByText(SAMPLE_ARTICLE.deck!.tryToday)).toBeTruthy();
+    await next();
+    expect(screen.getByText(SAMPLE_ARTICLE.question)).toBeTruthy();
+    expect(screen.getByRole('button', { name: D.next }).props.accessibilityState).toMatchObject({ disabled: true });
+    await fireEvent.press(screen.getByRole('button', { name: D.previous }));
+    expect(screen.getByTestId('deck-card-lesson')).toBeTruthy();
+  });
+
+  it('a tap on the cover or a story card turns it', async () => {
+    await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
+    const card = screen.getByTestId('deck-card-cover').children[0] as never;
+    await fireEvent(card, 'touchStart', { nativeEvent: { pageX: 100, pageY: 200 } });
+    await fireEvent(card, 'touchEnd', { nativeEvent: { pageX: 102, pageY: 201 } });
+    await act(async () => { await new Promise((done) => setTimeout(done, 300)); });
+    expect(screen.getByTestId('deck-card-story')).toBeTruthy();
+  });
+
+  it('Your turn claims the reading quest with the takeaway, as the reader does', async () => {
+    const { enqueue } = await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
+    for (let i = 0; i < 5; i++) await next();
+    await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
+    await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
+    expect(enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: articleId, completedAt: NOW, rating: null, payload: { text: 'Small wins are evidence.' } });
+  });
+
+  it('the full article is one tap away, and the cards one tap back', async () => {
+    await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
+    for (let i = 0; i < 5; i++) await next();
+    await fireEvent.press(screen.getByRole('button', { name: 'Read the full article · 6 min' }));
+    for (const s of SAMPLE_ARTICLE.sections) expect(screen.getByText(s.heading)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: D.backToCards }));
+    expect(screen.getByTestId('deck')).toBeTruthy();
+  });
+
+  it('Keep puts the lesson in the Codex, and a second tap takes it out', async () => {
+    const { store } = await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
+    for (let i = 0; i < 4; i++) await next();
+    await fireEvent.press(screen.getByRole('button', { name: D.keepLabel }));
+    expect(store.getState().codex).toEqual([{ articleId: SAMPLE_ARTICLE.id, title: SAMPLE_ARTICLE.title, lesson: SAMPLE_ARTICLE.deck!.lesson, keptAt: NOW }]);
+    expect(screen.getByText(D.kept)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: D.keptLabel }));
+    expect(store.getState().codex).toEqual([]);
   });
 });
 
