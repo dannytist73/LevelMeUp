@@ -26,10 +26,10 @@ export const ErrorBoundary = Crashed;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    BlackHanSans: require('../assets/fonts/BlackHanSans-Latin.ttf'),
-    'GothicA1-Regular': require('../assets/fonts/GothicA1-Regular-Latin.ttf'),
-    'GothicA1-Medium': require('../assets/fonts/GothicA1-Medium-Latin.ttf'),
-    'GothicA1-Bold': require('../assets/fonts/GothicA1-Bold-Latin.ttf'),
+    'MPlusRounded-ExtraBold': require('../assets/fonts/MPlusRounded1c-ExtraBold-Latin.ttf'),
+    'MPlusRounded-Regular': require('../assets/fonts/MPlusRounded1c-Regular-Latin.ttf'),
+    'MPlusRounded-Medium': require('../assets/fonts/MPlusRounded1c-Medium-Latin.ttf'),
+    'MPlusRounded-Bold': require('../assets/fonts/MPlusRounded1c-Bold-Latin.ttf'),
   });
   const [store, setStore] = useState<StoreApi<GameState> | null>(null);
   const [failed, setFailed] = useState(false);

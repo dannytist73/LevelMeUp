@@ -43,9 +43,9 @@
         "react-native-android-widget",
         {
           "fonts": [
-            "./assets/fonts/BlackHanSans-Latin.ttf",
-            "./assets/fonts/GothicA1-Regular-Latin.ttf",
-            "./assets/fonts/GothicA1-Bold-Latin.ttf"
+            "./assets/fonts/MPlusRounded1c-ExtraBold-Latin.ttf",
+            "./assets/fonts/MPlusRounded1c-Regular-Latin.ttf",
+            "./assets/fonts/MPlusRounded1c-Bold-Latin.ttf"
           ],
           "widgets": [
             {

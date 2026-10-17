@@ -57,12 +57,15 @@ export const colors = {
 
 export type ColorName = keyof typeof colors;
 
-/** Font families as loaded by `useFonts` in app/_layout.tsx (the Latin subsets in assets/fonts). */
+/**
+ * Font families as loaded by `useFonts` in app/_layout.tsx (the Latin subsets in assets/fonts). Lantern (M11): M PLUS
+ * Rounded 1c, ExtraBold for display, titles and headings, Regular, Medium and Bold for the body.
+ */
 export const fonts = {
-  display: 'BlackHanSans',
-  body: 'GothicA1-Regular',
-  bodyMedium: 'GothicA1-Medium',
-  bodyBold: 'GothicA1-Bold',
+  display: 'MPlusRounded-ExtraBold',
+  body: 'MPlusRounded-Regular',
+  bodyMedium: 'MPlusRounded-Medium',
+  bodyBold: 'MPlusRounded-Bold',
 } as const;
 
 export type TypeVariant = 'display' | 'title' | 'heading' | 'label' | 'body' | 'small' | 'meta' | 'caption';

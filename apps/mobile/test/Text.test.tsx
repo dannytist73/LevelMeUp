@@ -7,14 +7,14 @@ const styleOf = (text: string) => StyleSheet.flatten(screen.getByText(text).prop
 
 describe('Lantern text (M11)', () => {
   it.each([
-    ['Display', Display, 'BlackHanSans', 54, 1.15],
-    ['Title', Title, 'BlackHanSans', 30, 1.15],
-    ['Heading', Heading, 'BlackHanSans', 21, 1.2],
-    ['Label', Label, 'GothicA1-Bold', 14, 1.3],
-    ['Body', Body, 'GothicA1-Regular', 16, 1.5],
-    ['Small', Small, 'GothicA1-Regular', 14, 1.5],
-    ['Meta', Meta, 'GothicA1-Regular', 13, 1.5],
-    ['Caption', Caption, 'GothicA1-Regular', 12, 1.5],
+    ['Display', Display, 'MPlusRounded-ExtraBold', 54, 1.15],
+    ['Title', Title, 'MPlusRounded-ExtraBold', 30, 1.15],
+    ['Heading', Heading, 'MPlusRounded-ExtraBold', 21, 1.2],
+    ['Label', Label, 'MPlusRounded-Bold', 14, 1.3],
+    ['Body', Body, 'MPlusRounded-Regular', 16, 1.5],
+    ['Small', Small, 'MPlusRounded-Regular', 14, 1.5],
+    ['Meta', Meta, 'MPlusRounded-Regular', 13, 1.5],
+    ['Caption', Caption, 'MPlusRounded-Regular', 12, 1.5],
   ] as const)('%s uses its family, size and font-scale cap', async (_, Variant, family, size, cap) => {
     await render(<Variant>words</Variant>);
     expect(styleOf('words')).toMatchObject({ fontFamily: family, fontSize: size });
@@ -30,11 +30,11 @@ describe('Lantern text (M11)', () => {
 
   it('takes a tone and a body weight', async () => {
     await render(<Body tone="ink" weight="bold">on paper</Body>);
-    expect(styleOf('on paper')).toMatchObject({ color: colors.ink, fontFamily: 'GothicA1-Bold' });
+    expect(styleOf('on paper')).toMatchObject({ color: colors.ink, fontFamily: 'MPlusRounded-Bold' });
   });
 
   it('ignores a weight on display text', async () => {
     await render(<Heading weight="bold">Title</Heading>);
-    expect(styleOf('Title').fontFamily).toBe('BlackHanSans');
+    expect(styleOf('Title').fontFamily).toBe('MPlusRounded-ExtraBold');
   });
 });

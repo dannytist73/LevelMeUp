@@ -1,5 +1,5 @@
-// Builds the Latin subsets of the two OFL fonts (visual spec §1.2) from the @expo-google-fonts packages and copies their
-// licences. Run after changing `src/theme/glyphs.ts`: node scripts/subset-fonts.mts (from apps/mobile).
+// Builds the Latin subsets of the app's OFL font (M PLUS Rounded 1c, M11 Lantern) from its @expo-google-fonts package
+// and copies its licence. Run after changing `src/theme/glyphs.ts`: node scripts/subset-fonts.mts (from apps/mobile).
 import { copyFileSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -8,13 +8,13 @@ import { subsetText } from '../src/theme/glyphs.ts';
 
 const require = createRequire(import.meta.url);
 const out = join(import.meta.dirname, '..', 'assets', 'fonts');
-const pkg = (name: string) => dirname(require.resolve(`@expo-google-fonts/${name}/package.json`));
+const pkg = dirname(require.resolve('@expo-google-fonts/m-plus-rounded-1c/package.json'));
 
 const FONTS = [
-  { from: join(pkg('black-han-sans'), '400Regular', 'BlackHanSans_400Regular.ttf'), to: 'BlackHanSans-Latin.ttf' },
-  { from: join(pkg('gothic-a1'), '400Regular', 'GothicA1_400Regular.ttf'), to: 'GothicA1-Regular-Latin.ttf' },
-  { from: join(pkg('gothic-a1'), '500Medium', 'GothicA1_500Medium.ttf'), to: 'GothicA1-Medium-Latin.ttf' },
-  { from: join(pkg('gothic-a1'), '700Bold', 'GothicA1_700Bold.ttf'), to: 'GothicA1-Bold-Latin.ttf' },
+  { from: join(pkg, '400Regular', 'MPLUSRounded1c_400Regular.ttf'), to: 'MPlusRounded1c-Regular-Latin.ttf' },
+  { from: join(pkg, '500Medium', 'MPLUSRounded1c_500Medium.ttf'), to: 'MPlusRounded1c-Medium-Latin.ttf' },
+  { from: join(pkg, '700Bold', 'MPLUSRounded1c_700Bold.ttf'), to: 'MPlusRounded1c-Bold-Latin.ttf' },
+  { from: join(pkg, '800ExtraBold', 'MPLUSRounded1c_800ExtraBold.ttf'), to: 'MPlusRounded1c-ExtraBold-Latin.ttf' },
 ];
 
 const kb = (bytes: number) => `${(bytes / 1024).toFixed(1)} KB`;
@@ -31,6 +31,5 @@ for (const font of FONTS) {
 }
 console.log(`total: ${kb(before)} -> ${kb(after)}`);
 
-copyFileSync(join(pkg('black-han-sans'), 'LICENSE_FONT'), join(out, 'OFL-BlackHanSans.txt'));
-copyFileSync(join(pkg('gothic-a1'), 'LICENSE_FONT'), join(out, 'OFL-GothicA1.txt'));
-console.log(`licences copied (${kb(statSync(join(out, 'OFL-GothicA1.txt')).size)} each, about)`);
+copyFileSync(join(pkg, 'LICENSE_FONT'), join(out, 'OFL-MPlusRounded1c.txt'));
+console.log(`licence copied (${kb(statSync(join(out, 'OFL-MPlusRounded1c.txt')).size)})`);

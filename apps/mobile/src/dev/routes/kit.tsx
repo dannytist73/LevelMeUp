@@ -46,8 +46,8 @@ export default function Kit() {
           <Heading>Name tomorrow's hardest task</Heading>
           <Label>Core quest</Label>
           <Body>Your trials are set. Clear the core quest and today counts, whatever else happens.</Body>
-          <Body weight="medium">Gothic A1 medium: 3 sets of 8 · about 12 min</Body>
-          <Body weight="bold">Gothic A1 bold: Walk 20 minutes</Body>
+          <Body weight="medium">M PLUS Rounded medium: 3 sets of 8 · about 12 min</Body>
+          <Body weight="bold">M PLUS Rounded bold: Walk 20 minutes</Body>
           <Small>Small: Unlocked: you cleared incline push-ups 3 times this week.</Small>
           <Meta>Meta: Vitality · cleared 07:40</Meta>
           <Caption>Caption: 62 / 130 XP — “quotes”, ellipsis…, × and →</Caption>

@@ -1,5 +1,5 @@
 // The home-screen widget (M10c decision 9), drawn from its snapshot in the app's own look: the night, chalk words in
-// Black Han Sans and Gothic A1, the accent's streak. One tap anywhere opens the app. Only src/widget/ imports the library.
+// M PLUS Rounded 1c (Lantern, M11), the accent's streak. One tap anywhere opens the app. Only src/widget/ imports the library.
 // The library builds its own tree from these elements and calls each one's type: no fragments (emulator check: a
 // fragment drew nothing and threw "Symbol(react.fragment) is not a function"), so children are arrays with keys.
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
@@ -14,9 +14,9 @@ const ASH = '#A4AAC8';
 const ACCENT = '#BAC3FF';
 const LINE = '#383F63';
 // The font files the config plugin copies (app.json), named by their file names.
-const DISPLAY = 'BlackHanSans-Latin';
-const BODY = 'GothicA1-Regular-Latin';
-const BOLD = 'GothicA1-Bold-Latin';
+const DISPLAY = 'MPlusRounded1c-ExtraBold-Latin';
+const BODY = 'MPlusRounded1c-Regular-Latin';
+const BOLD = 'MPlusRounded1c-Bold-Latin';
 
 export function TodayWidget({ snap, now }: { snap: WidgetSnapshot | null; now: number }) {
   const lines = widgetLines(snap, now);

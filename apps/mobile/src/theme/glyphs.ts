@@ -1,5 +1,5 @@
-// The characters the bundled fonts keep (visual spec §1.2): Black Han Sans and Gothic A1 also cover Korean, which
-// makes them several MB each, so `scripts/subset-fonts.ts` keeps only these ranges. A test checks that every string
+// The characters the bundled font keeps (visual spec §1.2): M PLUS Rounded 1c (M11) also covers Japanese, which makes
+// it over 3 MB a weight, so `scripts/subset-fonts.mts` keeps only these ranges. A test checks that every string
 // in the content package is covered; when it fails, add the character's range here and run the script again.
 
 /** Inclusive Unicode ranges. */
