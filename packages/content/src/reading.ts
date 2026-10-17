@@ -62,6 +62,26 @@ export const READING_TEXT = {
     remove: 'Take out',
     removeLabel: 'Take "{lesson}" out of your Codex',
     open: 'Codex',
+    /** M12 (audit 24): taking a lesson out can be undone. */
+    removed: 'Lesson taken out',
+    undo: 'Undo',
+    /** M12: a kept lesson opens the reading it came from. */
+    openLabel: 'Open the reading "{title}"',
+  },
+  /** M12 (board R3-5, plan decision 1): the Library tab. */
+  library: {
+    title: 'Library',
+    line: 'Your readings and the lessons you kept',
+    today: "Today's reading",
+    openCards: 'Open the cards',
+    readAgain: 'Read again',
+    kept: 'Kept lessons · {n}',
+    seeAll: 'See all',
+    noKept: 'No kept lessons yet',
+    noKeptLine: "Tap Keep on a reading's lesson card and it lands here.",
+    openToday: "Open today's reading",
+    pastLine: '{date} · {topic}',
+    lineSaved: 'your line saved',
   },
   insight: {
     title: 'Insight',

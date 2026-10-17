@@ -1,4 +1,4 @@
-// The three tabs (spec §1.3) with the Ink Panel tab bar.
+// The tabs (spec §1.3) with the Ink Panel tab bar. M12 (plan decision 1): Library joins as the second.
 import { Redirect, Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../../src/state/store.ts';
@@ -8,6 +8,7 @@ import type { TabItem } from '../../src/ui/InkTabBar.tsx';
 
 const TABS: readonly TabItem[] = [
   { key: 'index', label: 'Today', icon: 'sun' },
+  { key: 'library', label: 'Library', icon: 'book' },
   { key: 'character', label: 'Character', icon: 'user' },
   { key: 'chronicle', label: 'Chronicle', icon: 'calendar' },
 ];
@@ -30,6 +31,7 @@ export default function TabsLayout() {
       )}
     >
       <Tabs.Screen name="index" />
+      <Tabs.Screen name="library" />
       <Tabs.Screen name="character" />
       <Tabs.Screen name="chronicle" />
     </Tabs>

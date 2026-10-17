@@ -99,13 +99,20 @@ describe('the deck without animations (Remove animations, M11 decision 8)', () =
 });
 
 describe('the Codex screen (M11 decision 7)', () => {
-  it('lists the kept lessons with their readings, and takes one out', async () => {
-    const store = testStore({ codex: [{ articleId: 'article-2', title: 'Two', lesson: 'Lesson two.', keptAt: 2 }, { articleId: 'article-1', title: 'One', lesson: 'Lesson one.', keptAt: 1 }] });
-    await render(withStore(store, <Codex onBack={jest.fn()} />));
+  it('lists the kept lessons with their readings, opens one, and takes one out with Undo (M12, audit 24)', async () => {
+    const two = { articleId: 'article-2', title: 'Two', lesson: 'Lesson two.', keptAt: 2 };
+    const store = testStore({ codex: [two, { articleId: 'article-1', title: 'One', lesson: 'Lesson one.', keptAt: 1 }] });
+    const onOpenReading = jest.fn();
+    await render(withStore(store, <Codex onBack={jest.fn()} onOpenReading={onOpenReading} />));
     expect(screen.getByText('Lesson two.')).toBeTruthy();
     expect(screen.getByText('One')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /^Lesson two\. Open the reading "Two"$/ }));
+    expect(onOpenReading).toHaveBeenCalledWith('article-2');
     await fireEvent.press(screen.getByRole('button', { name: 'Take "Lesson two." out of your Codex' }));
     expect(store.getState().codex.map((e) => e.articleId)).toEqual(['article-1']);
+    expect(screen.getByText(READING_TEXT.codex.removed)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.codex.undo }));
+    expect(store.getState().codex.map((e) => e.articleId).sort()).toEqual(['article-1', 'article-2']);
   });
 
   it('says how to fill it when empty', async () => {

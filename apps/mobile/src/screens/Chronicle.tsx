@@ -1,6 +1,7 @@
 // Chronicle (spec §1.3–1.4, board D5; M6d): the streak, best and shields as tiles; the month calendar of real dates
 // (decisions 3–4); growth since day 1 (decision 5). M8b: the past readings (decision 7). M10c: the tiles count today once
-// it counts (as Today does); growth leads with its line and shows only the stats that grew.
+// it counts (as Today does); growth leads with its line and shows only the stats that grew. M12: the past readings moved
+// to the Library tab (plan decision 1).
 import { CHRONICLE_TEXT, STAT_NAMES, fillText, growthLine } from '@levelmeup/content';
 import { MAX_SHIELDS, STATS } from '@levelmeup/rules';
 import { View } from 'react-native';
@@ -17,7 +18,6 @@ import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { Calendar } from './chronicle/Calendar.tsx';
-import { PastReadings } from './reading/PastReadings.tsx';
 import { lastSynced } from './syncLine.ts';
 
 const C = CHRONICLE_TEXT;
@@ -63,7 +63,7 @@ function Growth({ growth }: { growth: ServerState['growth'] }) {
   );
 }
 
-export function Chronicle({ onOpenReading = () => {} }: { onOpenReading?: (id: string, dayNumber: number) => void } = {}) {
+export function Chronicle() {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const status = useGame((s) => s.status);
@@ -98,7 +98,6 @@ export function Chronicle({ onOpenReading = () => {} }: { onOpenReading?: (id: s
               todayLook={view.today === null ? 'none' : todayMark(view.today)}
             />
             <Growth growth={view.growth} />
-            <PastReadings readings={view.readings.filter((r) => r.dayNumber !== view.today?.dayNumber)} onOpen={onOpenReading} />
           </>
         )}
         {stale && <Caption>{lastSynced(lastSyncedAt, view?.profile.timeZone ?? 'UTC')}</Caption>}

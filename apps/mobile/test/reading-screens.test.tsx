@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
-import { Chronicle } from '../src/screens/Chronicle.tsx';
+import { Library } from '../src/screens/Library.tsx';
 import { Reading } from '../src/screens/Reading.tsx';
 import { InsightPanel } from '../src/screens/reading/InsightPanel.tsx';
 import { ReadingHero, ReadingRow } from '../src/screens/reading/ReadingCard.tsx';
@@ -93,11 +93,12 @@ describe('past readings (board D5, decision 7)', () => {
     ],
   };
 
-  it("lists the readings before today's, newest first, and opens one", async () => {
+  it("the Library lists the readings before today's, newest first, with the line saved that day, and opens one (M12)", async () => {
     const onOpenReading = jest.fn();
-    await render(withStore(testStore({ view: project(state, []) }), <Chronicle onOpenReading={onOpenReading} />));
-    expect(screen.getByText(READING_TEXT.past.title)).toBeTruthy(); // SectionTitle capitalises it in its style
-    expect(screen.queryByText(SAMPLE_ARTICLE.title)).toBeNull(); // today's (day 1) is on Today
+    await render(withStore(testStore({ view: project(state, []) }), <Library onOpenQuest={jest.fn()} onOpenReading={onOpenReading} onOpenCodex={jest.fn()} />));
+    expect(screen.getByText(READING_TEXT.past.title)).toBeTruthy();
+    expect(screen.queryByText(SAMPLE_ARTICLE.title)).toBeNull(); // today's (day 1) has its own place
+    expect(screen.getByText(`Fri 9 Oct · ${CLUSTER_NAMES.sleep} · ${READING_TEXT.library.lineSaved}`)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /The quiet power of a fixed wake time/ }));
     expect(onOpenReading).toHaveBeenCalledWith('article-9', 0);
   });

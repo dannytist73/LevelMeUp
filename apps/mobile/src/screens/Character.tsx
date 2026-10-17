@@ -1,7 +1,8 @@
 // Character (spec §1.3, board D4; M6d): the portrait frame, name, level and title, the stats with progress to their next
 // point, the class path, Scholar's Path for a Mage at level 10, the achievements, the vow, and the class change (M6b).
-// M10c: Switch portrait is a round button on the portrait's corner; the class change is a row.
-import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, READING_TEXT, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
+// M10c: Switch portrait is a round button on the portrait's corner; the class change is a row. M12: the Codex moved to the
+// Library tab (plan decision 1).
+import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { figureFor, otherFigure } from '../art/portraits.ts';
@@ -27,13 +28,12 @@ import { lastSynced } from './syncLine.ts';
 
 const T = CHARACTER_TEXT;
 
-export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void; /** M11: the kept lessons. */ onOpenCodex?: () => void; now?: () => number };
+export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void; now?: () => number };
 
-export function Character({ onChangeClass, onOpenBook, onOpenCodex, now = Date.now }: CharacterProps) {
+export function Character({ onChangeClass, onOpenBook, now = Date.now }: CharacterProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const vow = useGame((s) => s.vow);
-  const codex = useGame((s) => s.codex);
   const status = useGame((s) => s.status);
   const lastSyncedAt = useGame((s) => s.lastSyncedAt);
   const chosen = useGame((s) => s.portrait);
@@ -103,9 +103,6 @@ export function Character({ onChangeClass, onOpenBook, onOpenCodex, now = Date.n
             <Label tone="chalk">{T.vow.title}</Label>
             <Body>{`“${vow}”`}</Body>
           </NightCard>
-        )}
-        {onOpenCodex !== undefined && (
-          <RowLink label={READING_TEXT.codex.open} line={codex.length === 0 ? READING_TEXT.codex.empty : fillText(READING_TEXT.codex.count, { n: codex.length })} onPress={onOpenCodex} />
         )}
         <RowLink label={ADJUST_TEXT.classChange.open}
           line={lock === null ? `${ADJUST_TEXT.classChange.label}: ${className}` : `${ADJUST_TEXT.classChange.label}: ${className} · ${lockLine(lock, timeZone)}`}
