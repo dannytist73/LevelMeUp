@@ -135,6 +135,15 @@ are fixed and tested, except the one known limit below.
   added", "Quest active"). The deck prompt now forbids it, and `checkDeck` refuses a System note that names quests, XP,
   rewards or achievements. Redeployed at 22:12 UTC (sync v22, tick v10); live smoke tests passed. The two decks
   already written keep their notes until they are reset (the owner's yes; no player sees a deck before 0.6.0).
+- **Backfill, at the owner's word ("use a subagent ... for free for now; only the next ones use our API"):** at 22:18
+  UTC, before the 22:30 tick, the 16 waiting articles and article-21/22 were set aside (`deck_attempts = 2` with a
+  "held" note). Three Claude Code subagents wrote their decks from the same prompt and schema (no API call). Every deck
+  passed `parseDeck` + `checkDeck` (run by the owner session, the same code as the cron) before
+  `article_set_deck` stored it. 18 of 18 published articles now have a deck; new articles get theirs from the cron
+  (the API). The one-off script was not committed.
+- **Found, not fixed (the owner's call):** 12 of the 18 articles carry the same kind of System note in their own
+  sections ("Daily quest added", "Comeback bonus available", "New quest unlocked"), and players see these in today's
+  reader. Proposed: the same check in `checkArticle` for new articles, and a correction of the 12 notes.
 
 ## Not in M11
 
