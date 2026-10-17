@@ -10,7 +10,7 @@ import { Button } from '../../ui/Button.tsx';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { NightCard } from '../../ui/NightCard.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
-import { SlantPanel } from '../../ui/SlantPanel.tsx';
+import { Panel } from '../../ui/Panel.tsx';
 import { Body, Caption, Heading, Label, Small } from '../../ui/Text.tsx';
 
 const T = ONBOARDING_TEXT.save;
@@ -40,12 +40,12 @@ export function Save({ onBegin }: { onBegin: () => void }) {
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 24 }}>
       <NarrationBox>{saved ? T.saved : T.line}</NarrationBox>
       {!saved && (
-        <SlantPanel offset contentStyle={{ paddingHorizontal: 18, paddingBottom: 18, gap: 10 }}>
-          <Label tone="sealText">{T.title}</Label>
+        <Panel outlined contentStyle={{ paddingHorizontal: 18, paddingBottom: 18, gap: 10 }}>
+          <Label tone="accentInk">{T.title}</Label>
           <Heading tone="ink">{T.subtitle}</Heading>
           <Body tone="inkSoft">{T.body}</Body>
           <Button label={T.google} on="paper" disabled={busy} onPress={() => void save()} />
-        </SlantPanel>
+        </Panel>
       )}
       {note !== null && <View accessibilityLiveRegion="polite"><Small tone="chalk">{note}</Small></View>}
       <NightCard>

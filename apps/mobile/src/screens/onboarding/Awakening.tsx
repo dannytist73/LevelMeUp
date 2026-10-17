@@ -7,7 +7,7 @@ import { NAME_MAX, complete, nextPath } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
 import { space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
-import { HalftoneHeader } from '../../ui/HalftoneHeader.tsx';
+import { ScreenHeader } from '../../ui/ScreenHeader.tsx';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
@@ -60,11 +60,11 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-      <HalftoneHeader style={{ paddingTop: insets.top + 40 }}>
+      <ScreenHeader style={{ paddingTop: insets.top + 40 }}>
         <SpeedLines />
-        <Label tone="ember">{T.signal}</Label>
+        <Label tone="accentText">{T.signal}</Label>
         <Heading>{T.detected}</Heading>
-      </HalftoneHeader>
+      </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
         <NarrationBox>{T.line}</NarrationBox>
         <TextField label={T.ask} value={draft.name} onChangeText={(name) => editDraft({ name })} maxLength={NAME_MAX} />

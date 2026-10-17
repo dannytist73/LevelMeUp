@@ -5,7 +5,7 @@ import { CLUSTER_NAMES, READING_TEXT, fillText } from '@levelmeup/content';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import type { ArticleBody } from '../../game/types.ts';
-import { colors } from '../../theme/tokens.ts';
+import { colors, radius } from '../../theme/tokens.ts';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../../ui/Text.tsx';
 
@@ -26,9 +26,8 @@ export function Reader({ article, label, xp, footer, onOpenSource }: ReaderProps
   return (
     <View style={{ gap: 22 }}>
       <View style={{ gap: 8 }}>
-        <Label tone="ember">{label}</Label>
-        <Label>{meta.toUpperCase()}</Label>
-        <Label>{CLUSTER_NAMES[article.cluster].toUpperCase()}</Label>
+        <Label tone="accentText">{label}</Label>
+        <Label>{`${meta} · ${CLUSTER_NAMES[article.cluster]}`}</Label>
         <Title>{article.title}</Title>
         <Body weight="medium">{article.summary}</Body>
       </View>
@@ -44,11 +43,11 @@ export function Reader({ article, label, xp, footer, onOpenSource }: ReaderProps
           {s.systemNote !== null && <NarrationBox>{s.systemNote}</NarrationBox>}
         </View>
       ))}
-      <View style={{ gap: 10, padding: 16, borderWidth: 2, borderColor: colors.line }}>
+      <View style={{ gap: 10, padding: 16, borderRadius: radius.card, backgroundColor: colors.panel }}>
         <Label>{R.takeaways}</Label>
         {article.takeaways.map((t, i) => (
           <View key={i} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-            <Heading tone="ember">{String(i + 1)}</Heading>
+            <Heading tone="accentText">{String(i + 1)}</Heading>
             <Body style={{ flex: 1 }}>{t}</Body>
           </View>
         ))}

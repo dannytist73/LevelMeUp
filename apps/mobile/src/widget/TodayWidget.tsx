@@ -1,5 +1,5 @@
 // The home-screen widget (M10c decision 9), drawn from its snapshot in the app's own look: the night, chalk words in
-// Black Han Sans and Gothic A1, an ember streak. One tap anywhere opens the app. Only src/widget/ imports the library.
+// Black Han Sans and Gothic A1, the accent's streak. One tap anywhere opens the app. Only src/widget/ imports the library.
 // The library builds its own tree from these elements and calls each one's type: no fragments (emulator check: a
 // fragment drew nothing and threw "Symbol(react.fragment) is not a function"), so children are arrays with keys.
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
@@ -8,11 +8,11 @@ import { widgetLines } from './snapshot.ts';
 import type { WidgetSnapshot } from './snapshot.ts';
 
 // The app's tokens (src/theme/tokens.ts), as the widget's hex type wants them.
-const NIGHT = '#0E0E10';
-const CHALK = '#F1ECE1';
-const ASH = '#A8A196';
-const EMBER = '#F0765E';
-const LINE = '#4A4A50';
+const NIGHT = '#171A2B';
+const CHALK = '#F1F0F7';
+const ASH = '#A4AAC8';
+const ACCENT = '#BAC3FF';
+const LINE = '#383F63';
 // The font files the config plugin copies (app.json), named by their file names.
 const DISPLAY = 'BlackHanSans-Latin';
 const BODY = 'GothicA1-Regular-Latin';
@@ -24,12 +24,12 @@ export function TodayWidget({ snap, now }: { snap: WidgetSnapshot | null; now: n
     ? [
       <FlexWidget key="top" style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <TextWidget text={lines.day} style={{ fontFamily: DISPLAY, fontSize: 18, color: CHALK, letterSpacing: 0.04 }} />
-        <TextWidget text={lines.streak} style={{ fontFamily: BOLD, fontSize: 13, color: EMBER }} />
+        <TextWidget text={lines.streak} style={{ fontFamily: BOLD, fontSize: 13, color: ACCENT }} />
       </FlexWidget>,
       <FlexWidget key="quest" style={{ width: 'match_parent', flexDirection: 'column' }}>
         {[
           ...(lines.label === null ? [] : [<TextWidget key="label" text={lines.label} style={{ fontFamily: DISPLAY, fontSize: 11, color: ASH, letterSpacing: 0.14 }} />]),
-          <TextWidget key="title" text={lines.title} maxLines={2} truncate="END" style={{ fontFamily: DISPLAY, fontSize: 20, color: lines.cleared ? EMBER : CHALK }} />,
+          <TextWidget key="title" text={lines.title} maxLines={2} truncate="END" style={{ fontFamily: DISPLAY, fontSize: 20, color: lines.cleared ? ACCENT : CHALK }} />,
         ]}
       </FlexWidget>,
       <TextWidget key="progress" text={lines.progress} style={{ fontFamily: BODY, fontSize: 13, color: ASH }} />,

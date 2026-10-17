@@ -19,16 +19,16 @@ import { dayCleared, nextQuest, quickClearable, shownStreak, xpToday } from '../
 import type { QuestView, TodayView } from '../game/types.ts';
 import { clockTime, dayLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
-import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
+import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { ShadowMark } from '../ui/ShadowMark.tsx';
-import { SlantPanel } from '../ui/SlantPanel.tsx';
+import { Panel } from '../ui/Panel.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { Thud } from '../ui/Thud.tsx';
 import { useGrowth } from '../ui/useMotion.ts';
@@ -203,19 +203,19 @@ export function Today({
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-      <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
+      <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <View style={{ flexShrink: 1, gap: 2 }}>
             {today !== null && (
               <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
             )}
-            <Title>{today !== null ? `DAY ${today.dayNumber}` : 'TODAY'}</Title>
+            <Title>{today !== null ? `Day ${today.dayNumber}` : 'Today'}</Title>
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Settings"
             onPress={onSettings}
-            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.chalk }}
+            style={{ width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.panel }}
           >
             <Icon name="settings" size={20} />
           </Pressable>
@@ -223,9 +223,9 @@ export function Today({
         {view !== null && (
           <>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-              <Heading>{view.profile.name.toUpperCase()}</Heading>
-              <View style={{ paddingVertical: 3, paddingHorizontal: 10, backgroundColor: colors.paper, transform: [{ skewX: '-10deg' }] }}>
-                <Label tone="ink">{`LV ${view.character.level} ${CLASS_NAMES[view.profile.classId]}`}</Label>
+              <Heading>{view.profile.name}</Heading>
+              <View style={{ paddingVertical: 3, paddingHorizontal: 12, backgroundColor: colors.paper, borderRadius: radius.pill }}>
+                <Label tone="ink">{`Lv ${view.character.level} ${CLASS_NAMES[view.profile.classId]}`}</Label>
               </View>
             </View>
             <View style={{ gap: 6 }}>
@@ -235,8 +235,8 @@ export function Today({
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
                 <Thud key={streakGrew} still={streakGrew === 0} haptic="tick" testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Icon name="flame" size={18} color={colors.ember} />
-                  <Heading tone="ember">{String(streak!.current)}</Heading>
+                  <Icon name="flame" size={18} color={colors.accentText} />
+                  <Heading tone="accentText">{String(streak!.current)}</Heading>
                 </Thud>
                 <Small tone="chalk" style={{ flexShrink: 1 }}>
                   {[TODAY_TEXT.streak, ...(note !== null ? [note] : streak!.counts ? [TODAY_TEXT.counts] : [])].join(' · ')}
@@ -252,7 +252,7 @@ export function Today({
             {mark !== null && usable && <Body tone="ash">{mark}</Body>}
           </>
         )}
-      </HalftoneHeader>
+      </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
         {updateRequired && <UpdateNeeded />}
         {view !== null && !trainingNoticeSeen && trainingUnset(view.profile) && (
@@ -275,11 +275,11 @@ export function Today({
 function DayClearedPanel({ today }: { today: TodayView }) {
   return (
     <View accessible accessibilityRole="summary">
-      <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 4 }}>
+      <Panel outlined contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 4 }}>
         <Title tone="ink">{fillText(TODAY_TEXT.dayCleared, { day: today.dayNumber })}</Title>
-        <Body tone="sealText" weight="bold">{fillText(TODAY_TEXT.earned, { xp: xpToday(today) })}</Body>
+        <Body tone="accentInk" weight="bold">{fillText(TODAY_TEXT.earned, { xp: xpToday(today) })}</Body>
         <Small tone="inkSoft">{fillText(TODAY_TEXT.nextDay, { time: clockTime(today.endsAt!, today.timeZone) })}</Small>
-      </SlantPanel>
+      </Panel>
     </View>
   );
 }
@@ -287,8 +287,8 @@ function DayClearedPanel({ today }: { today: TodayView }) {
 /** Board F3: the Trial of Stillness above the sealed side quests (M7c decision 6). */
 function TrialPanel({ onTrial }: { onTrial: () => void }) {
   return (
-    <View style={{ gap: 10, padding: 16, borderWidth: 2, borderColor: colors.ember, backgroundColor: colors.panel }}>
-      <Heading tone="ember">{SHADOW_TEXT.trial.title.toUpperCase()}</Heading>
+    <View style={{ gap: 10, padding: 16, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.shadow, backgroundColor: colors.panel }}>
+      <Heading tone="shadow">{SHADOW_TEXT.trial.title}</Heading>
       <Small tone="chalk">{SHADOW_TEXT.trial.line}</Small>
       <Button label={SHADOW_TEXT.trial.start} onPress={onTrial} />
     </View>

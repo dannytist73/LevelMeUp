@@ -10,7 +10,7 @@ import { clockLabel } from '../lib/dates.ts';
 import { shadowClock } from '../notify/plan.ts';
 import type { NotifySettings } from '../notify/types.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
@@ -70,7 +70,7 @@ export function Notifications({ onBack, onOpenSettings }: NotificationsProps) {
           accessibilityRole="button"
           accessibilityLabel="Back"
           onPress={onBack}
-          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, borderWidth: 2, borderColor: colors.chalk }}
+          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.line }}
         >
           <Label tone="chalk">Back</Label>
         </Pressable>
@@ -101,7 +101,7 @@ export function Notifications({ onBack, onOpenSettings }: NotificationsProps) {
 
       {level === 2 && allowed && notify.optedIn && (
         <NightCard>
-          <Body weight="bold" tone="ember">{T.shadowTitle}</Body>
+          <Body weight="bold" tone="shadow">{T.shadowTitle}</Body>
           <Small>{fillText(T.shadowNote, { time: clockLabel(shadowClock(notify.evening.minutes, boundary)) })}</Small>
         </NightCard>
       )}

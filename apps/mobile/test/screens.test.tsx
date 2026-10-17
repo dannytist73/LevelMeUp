@@ -61,9 +61,9 @@ describe('Today', () => {
   it('shows the day, the player, the XP bar, the streak and shields', async () => {
     await renderToday();
     expect(screen.getByText('SAT · 10 OCT')).toBeTruthy();
-    expect(screen.getByText('DAY 1')).toBeTruthy();
-    expect(screen.getByText('RIN')).toBeTruthy();
-    expect(screen.getByText(/^LV \d+ Warrior$/)).toBeTruthy();
+    expect(screen.getByText('Day 1')).toBeTruthy();
+    expect(screen.getByText('Rin')).toBeTruthy();
+    expect(screen.getByText(/^Lv \d+ Warrior$/)).toBeTruthy();
     expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ })).toBeTruthy();
     expect(screen.getByText('day streak')).toBeTruthy();
     // M10c: shields as the icon and the number; the label still says it in full.
@@ -164,7 +164,7 @@ describe('Character (M6d)', () => {
     await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     expect(screen.getByLabelText('Warrior portrait, level 1')).toBeTruthy();
     expect(screen.getByText(view.profile.name)).toBeTruthy();
-    expect(screen.getByText('LV 1 WARRIOR')).toBeTruthy();
+    expect(screen.getByText('Lv 1 Warrior')).toBeTruthy();
     expect(screen.getByText(/XP total/)).toBeTruthy();
     expect(screen.getByText('Next: Level 2')).toBeTruthy();
   });
@@ -362,8 +362,8 @@ describe('Settings', () => {
 describe('Celebration (M6a decision 8)', () => {
   it('shows nothing while nothing is queued', async () => {
     await render(withStore(testStore(), <Celebration />));
-    expect(screen.queryByText('LEVEL UP')).toBeNull();
-    expect(screen.queryByText('ACHIEVEMENT')).toBeNull();
+    expect(screen.queryByText('Level up')).toBeNull();
+    expect(screen.queryByText('Achievement')).toBeNull();
   });
 
   it('scrolls, so a long achievement at the largest text size is never cut off (review)', async () => {
@@ -374,8 +374,8 @@ describe('Celebration (M6a decision 8)', () => {
   it('shows a level-up, and Continue dismisses it', async () => {
     const store = testStore({ celebrations: [{ kind: 'level', level: 7, from: 6 }] });
     await render(withStore(store, <Celebration />));
-    expect(screen.getByText('LEVEL UP')).toBeTruthy();
-    expect(screen.getByText('LV 7')).toBeTruthy();
+    expect(screen.getByText('Level up')).toBeTruthy();
+    expect(screen.getByText('Lv 7')).toBeTruthy();
     expect(screen.getByText('Level 7. The System marks your growth.')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(store.getState().dismissCelebration).toHaveBeenCalled();
@@ -393,7 +393,7 @@ describe('Celebration (M6a decision 8)', () => {
   it('shows an achievement with its name, what it was for, and its title', async () => {
     const titled = ACHIEVEMENTS.find((a) => a.title !== null)!;
     await render(withStore(testStore({ celebrations: [{ kind: 'achievement', id: titled.id }] }), <Celebration />));
-    expect(screen.getByText('ACHIEVEMENT')).toBeTruthy();
+    expect(screen.getByText('Achievement')).toBeTruthy();
     expect(screen.getByText(titled.name)).toBeTruthy();
     expect(screen.getByText(titled.description)).toBeTruthy();
     expect(screen.getByText(`Title earned: ${titled.title}`)).toBeTruthy();

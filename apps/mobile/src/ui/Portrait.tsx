@@ -7,7 +7,7 @@ import { Image, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Defs, G, Line, Path, Pattern, Rect } from 'react-native-svg';
 import { portraitUrl } from '../art/portraits.ts';
 import type { Figure } from '../art/portraits.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 
 const EMBLEM: Record<ClassId, string[]> = {
   warrior: ['M6 18 18 6', 'M15 6h3v3', 'M8 13l3 3', 'M5 19l2-2', 'M4 17l3 3'],
@@ -40,7 +40,7 @@ export function Portrait({ classId, level, figure, label, marked = false }: Port
   const uri = portraitUrl(classId, figure, level);
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label}
-      style={{ alignSelf: 'center', transform: [{ rotate: '-2deg' }], borderWidth: 3, borderColor: colors.paper }}>
+      style={{ alignSelf: 'center', borderRadius: radius.card + 6, overflow: 'hidden', borderWidth: 2, borderColor: colors.line }}>
       <View style={{ width: w, height: h }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Svg width={w} height={h}>
           <Defs>
@@ -63,10 +63,9 @@ export function Portrait({ classId, level, figure, label, marked = false }: Port
             // M7c decision 9: the Shadow's mark, a dark corner creeping in, edged in ember, until the recovery quest is cleared.
             <G testID="shadow-mark">
               <Path d={`M0 ${h} L0 ${h * 0.42} C${w * 0.16} ${h * 0.5} ${w * 0.32} ${h * 0.68} ${w * 0.64} ${h} Z`} fill={colors.void} fillOpacity={0.9} />
-              <Path d={`M0 ${h * 0.42} C${w * 0.16} ${h * 0.5} ${w * 0.32} ${h * 0.68} ${w * 0.64} ${h}`} fill="none" stroke={colors.ember} strokeWidth={2.5} />
+              <Path d={`M0 ${h * 0.42} C${w * 0.16} ${h * 0.5} ${w * 0.32} ${h * 0.68} ${w * 0.64} ${h}`} fill="none" stroke={colors.shadow} strokeWidth={2.5} />
             </G>
           )}
-          <Rect x={0} y={0} width={w} height={h} fill="none" stroke={colors.ink} strokeWidth={6} />
         </Svg>
       </View>
     </View>

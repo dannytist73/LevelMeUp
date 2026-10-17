@@ -141,7 +141,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
     return (
       <Cleared
         // The reading quest's name is its slot's: the topic says more (M8b emulator check).
-        heading={`${slot} · ${todaysArticle !== null ? CLUSTER_NAMES[todaysArticle.cluster] : template.name}`.toUpperCase()}
+        heading={`${slot} · ${todaysArticle !== null ? CLUSTER_NAMES[todaysArticle.cluster] : template.name}`}
         line={todaysArticle !== null ? todaysArticle.title : summary}
         numbers={clearedSummary(before, { character: view.character, quests: today.quests }, quest.id)}
         rating={quest.rating}
@@ -266,7 +266,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
         fallback={STAT_NAMES[quest.stat]}
       />
       <View style={{ gap: 8 }}>
-        <Label tone="ember">{slot}</Label>
+        <Label tone="accentText">{slot}</Label>
         <Title>{words.title}</Title>
         <Body weight="medium">{summary}</Body>
         {quest.book !== null && <Body tone="ashLight">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Body>}

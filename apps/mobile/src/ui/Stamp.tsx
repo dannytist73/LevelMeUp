@@ -1,8 +1,8 @@
-// Stamps (visual spec §1.3, §2): a seal-red circle for XP rewards and an ember outline for marks such as CLEARED. Always
-// rotated a little, never more than 12°. Red means reward here, never a warning.
+// Stamps (Lantern, M11): an accent circle for XP rewards and an accent outline for marks such as Cleared. Still turned
+// a little when asked, never more than 12°. The accent means reward; red is the Shadow's alone.
 import { Text, View, useWindowDimensions } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { colors, fonts } from '../theme/tokens.ts';
+import { colors, fonts, radius } from '../theme/tokens.ts';
 
 export const clampRotation = (degrees: number): number => Math.max(-12, Math.min(12, degrees));
 
@@ -17,17 +17,17 @@ export function XpStamp({ xp, size: base = 66, rotate = -10, style }: { xp: numb
       accessibilityLabel={`+${xp} XP`}
       style={[
         {
-          width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: colors.chalk,
-          backgroundColor: colors.seal, alignItems: 'center', justifyContent: 'center',
+          width: size, height: size, borderRadius: size / 2, borderWidth: 3, borderColor: colors.night,
+          backgroundColor: colors.commit, alignItems: 'center', justifyContent: 'center',
           transform: [{ rotate: `${clampRotation(rotate)}deg` }],
         },
         style,
       ]}
     >
-      <Text maxFontSizeMultiplier={STAMP_MAX_SCALE} style={{ fontFamily: fonts.display, fontSize: Math.round(base * 0.35), lineHeight: Math.round(base * 0.37), color: colors.white }}>
+      <Text maxFontSizeMultiplier={STAMP_MAX_SCALE} style={{ fontFamily: fonts.display, fontSize: Math.round(base * 0.33), lineHeight: Math.round(base * 0.37), color: colors.onAccent }}>
         +{xp}
       </Text>
-      <Text maxFontSizeMultiplier={STAMP_MAX_SCALE} style={{ fontFamily: fonts.bodyBold, fontSize: Math.round(base * 0.15), letterSpacing: 1.6, color: colors.white }}>
+      <Text maxFontSizeMultiplier={STAMP_MAX_SCALE} style={{ fontFamily: fonts.bodyBold, fontSize: Math.round(base * 0.15), letterSpacing: 1, color: colors.onAccent }}>
         XP
       </Text>
     </View>
@@ -41,13 +41,13 @@ export function MarkStamp({ text, rotate = -6, style }: { text: string; rotate?:
       accessibilityLabel={text}
       style={[
         {
-          alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 10, borderWidth: 2, borderColor: colors.ember,
+          alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.accentText,
           transform: [{ rotate: `${clampRotation(rotate)}deg` }],
         },
         style,
       ]}
     >
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 14, lineHeight: 18, letterSpacing: 0.08 * 14, color: colors.ember, textTransform: 'uppercase' }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 15, lineHeight: 19, color: colors.accentText }}>
         {text}
       </Text>
     </View>

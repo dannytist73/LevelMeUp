@@ -58,7 +58,7 @@ describe('the motion numbers (M10a decisions 3–5)', () => {
     expect(inkDrops(16, 120)).toHaveLength(16);
     expect(drops.filter((d) => Math.hypot(d.dx, d.dy) > 80 + 1e-9 || Math.hypot(d.dx, d.dy) < 80 * 0.6)).toEqual([]);
     expect(drops.filter((d) => d.size < 5 || d.size > 12)).toEqual([]);
-    expect(new Set(drops.map((d) => d.tone))).toEqual(new Set(['vermilion', 'seal', 'chalk']));
+    expect(new Set(drops.map((d) => d.tone))).toEqual(new Set(['accent', 'accentText', 'chalk']));
   });
 
   it('every moment is over in under two seconds (the Shadow\'s creep aside)', () => {
@@ -319,7 +319,7 @@ describe('level-ups and achievements move (M10a decision 4)', () => {
     await render(withStore(testStore({ view: project(serverState(), []), celebrations: [{ kind: 'level', level: 5, from: 4 }] }), <Celebration />));
     expect(flat(screen.getByTestId('speed-lines', hidden).props.style).transform).toBeDefined();
     expect(screen.getByTestId('level-thud')).toBeTruthy();
-    expect(screen.getByText('LV 5')).toBeTruthy();
+    expect(screen.getByText('Lv 5')).toBeTruthy();
     expect(screen.getAllByTestId('ink-drop', hidden)).toHaveLength(16);
     expect(screen.getAllByTestId('fade-in')).toHaveLength(2); // the portrait and its line
     expect(screen.getAllByTestId('slam-in')).toHaveLength(2); // LEVEL UP and the System's line

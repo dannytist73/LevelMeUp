@@ -24,7 +24,7 @@ export function PastReadings({ readings, onOpen }: { readings: readonly ReadingV
               onPress={() => onOpen(r.id, r.dayNumber)}
               style={{ minHeight: 44, paddingVertical: 8, gap: 2, borderBottomWidth: 1, borderColor: colors.line }}
             >
-              <Label>{date.toUpperCase()}</Label>
+              <Label>{date}</Label>
               <Body>{r.title}</Body>
             </Pressable>
           );

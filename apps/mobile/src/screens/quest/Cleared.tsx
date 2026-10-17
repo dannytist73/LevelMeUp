@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ClearedNumbers } from '../../quest/cleared.ts';
-import { colors, fonts, space } from '../../theme/tokens.ts';
+import { colors, fonts, radius, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { InkBurst } from '../../ui/InkBurst.tsx';
 import { LinkButton } from '../../ui/LinkButton.tsx';
@@ -20,7 +20,7 @@ import type { BarPoint } from '../../ui/motion.ts';
 import { OutlinedTitle } from '../../ui/OutlinedTitle.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { SlamIn } from '../../ui/SlamIn.tsx';
-import { SlantPanel } from '../../ui/SlantPanel.tsx';
+import { Panel } from '../../ui/Panel.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
 import { XpStamp } from '../../ui/Stamp.tsx';
 import { Body, Caption, Heading, Label, Small } from '../../ui/Text.tsx';
@@ -87,7 +87,7 @@ function RateButton({ label, selected, onPress }: { label: string; selected: boo
       onPress={onPress}
       style={{
         flexGrow: 1, flexBasis: 90, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8,
-        borderWidth: 2, borderColor: selected ? colors.paper : colors.line, backgroundColor: selected ? colors.paper : 'transparent',
+        borderRadius: radius.pill, borderWidth: space.border, borderColor: selected ? colors.paper : colors.line, backgroundColor: selected ? colors.paper : 'transparent',
       }}
     >
       <Text maxFontSizeMultiplier={1.5} style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: selected ? colors.ink : colors.chalk, textAlign: 'center' }}>
@@ -131,21 +131,21 @@ export function Cleared({
       </View>
 
       <SlamIn delay={M.panel} still={!fresh}>
-        <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
+        <Panel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
           {numbers.statUps.map((up) => (
-            <View key={up.stat} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: 2, borderColor: colors.ink }}>
+            <View key={up.stat} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: 1, borderColor: colors.trackOnPaper }}>
               <View style={{ flex: 1, gap: 2 }}>
-                <Label tone="sealText">{C.statUp}</Label>
-                <Heading tone="ink">{`${STAT_NAMES[up.stat].toUpperCase()} ${up.from} → ${up.to}`}</Heading>
+                <Label tone="accentInk">{C.statUp}</Label>
+                <Heading tone="ink">{`${STAT_NAMES[up.stat]} ${up.from} → ${up.to}`}</Heading>
               </View>
               {/* M10b: the rank stamps land together, so only the first one ticks. */}
               <Thud delay={M.rank} still={!fresh} haptic={up.stat === ticking ? 'tick' : undefined} testID="rank-thud">
                 <View
                   accessible
                   accessibilityLabel={`Rank ${up.rank}`}
-                  style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: colors.sealText, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-8deg' }] }}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.accentInk, alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <Heading tone="sealText">{up.rank}</Heading>
+                  <Heading tone="white">{up.rank}</Heading>
                 </View>
               </Thud>
             </View>
@@ -160,7 +160,7 @@ export function Cleared({
               <Caption tone="inkMuted">{fillText(C.toNext, { xp: xpForLevel - xpIntoLevel, next: level + 1 })}</Caption>
             </View>
           </View>
-        </SlantPanel>
+        </Panel>
       </SlamIn>
 
       {dayOpen && rateable !== false && (

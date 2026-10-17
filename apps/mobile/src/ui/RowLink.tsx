@@ -2,7 +2,7 @@
 // chevron that turns). Buttons stay for actions, so a place never looks like something you'd send. At least 56 high;
 // the label and its line wrap at any font size.
 import { Pressable, View } from 'react-native';
-import { colors } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Icon } from './icons.tsx';
 import { Body, Small } from './Text.tsx';
 
@@ -30,8 +30,9 @@ export function RowLink({ label, line, onPress, open }: RowLinkProps) {
         gap: 12,
         paddingHorizontal: 14,
         paddingVertical: 10,
-        borderWidth: 2,
+        borderWidth: space.border,
         borderColor: colors.line,
+        borderRadius: radius.control,
         backgroundColor: pressed ? colors.divider : colors.panel,
       })}
     >

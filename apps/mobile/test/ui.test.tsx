@@ -3,7 +3,6 @@ import { StyleSheet, Text } from 'react-native';
 import { colors } from '../src/theme/tokens.ts';
 import { Button } from '../src/ui/Button.tsx';
 import { Chip } from '../src/ui/Chip.tsx';
-import { HalftoneHeader } from '../src/ui/HalftoneHeader.tsx';
 import { Icon } from '../src/ui/icons.tsx';
 import { InkTabBar } from '../src/ui/InkTabBar.tsx';
 import { NarrationBox } from '../src/ui/NarrationBox.tsx';
@@ -12,7 +11,8 @@ import { OutlinedTitle, fittedSize } from '../src/ui/OutlinedTitle.tsx';
 import { ScreenScroll } from '../src/ui/ScreenScroll.tsx';
 import { SectionTitle } from '../src/ui/SectionTitle.tsx';
 import { SlamIn } from '../src/ui/SlamIn.tsx';
-import { SlantPanel, slantPoints } from '../src/ui/SlantPanel.tsx';
+import { Panel } from '../src/ui/Panel.tsx';
+import { ScreenHeader } from '../src/ui/ScreenHeader.tsx';
 import { MarkStamp, XpStamp, clampRotation } from '../src/ui/Stamp.tsx';
 import { XpBar, fillFraction } from '../src/ui/XpBar.tsx';
 import { HOLD_SETTLE_MS, HoldButton } from '../src/ui/HoldButton.tsx';
@@ -38,15 +38,15 @@ describe('Button', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('a commitment button is seal red with white text', async () => {
+  it('a commitment button is the commit colour with navy text', async () => {
     await render(<Button label="Accept class" variant="commitment" onPress={() => {}} />);
-    expect(flat(screen.getByRole('button').props.style).backgroundColor).toBe(colors.seal);
-    expect(flat(screen.getByText('Accept class').props.style).color).toBe(colors.white);
+    expect(flat(screen.getByRole('button').props.style).backgroundColor).toBe(colors.commit);
+    expect(flat(screen.getByText('Accept class').props.style).color).toBe(colors.onAccent);
   });
 
-  it('a primary button is paper on the night and ink on paper', async () => {
+  it('a primary button is the accent on the night and ink on paper', async () => {
     await render(<Button label="A" onPress={() => {}} />);
-    expect(flat(screen.getByRole('button').props.style).backgroundColor).toBe(colors.paper);
+    expect(flat(screen.getByRole('button').props.style).backgroundColor).toBe(colors.accent);
     await screen.unmount();
     await render(<Button label="B" on="paper" onPress={() => {}} />);
     expect(flat(screen.getByRole('button').props.style).backgroundColor).toBe(colors.ink);
@@ -62,29 +62,14 @@ describe('Button', () => {
   });
 });
 
-describe('SlantPanel', () => {
-  it('cuts the top-left corner down by the depth', () => {
-    expect(slantPoints('top', 18, 300, 200)).toBe('0,18 300,0 300,200 0,200');
-  });
-
-  it('cuts the bottom edge up towards the right', () => {
-    expect(slantPoints('bottom', 30, 390, 240)).toBe('0,0 390,0 390,210 0,240');
-  });
-
-  it('never cuts deeper than half the panel', () => {
-    expect(slantPoints('top', 18, 300, 20)).toBe('0,10 300,0 300,20 0,20');
-  });
-
-  it('renders its children, with the vermilion offset only when asked', async () => {
-    await render(<SlantPanel offset><Text>inside</Text></SlantPanel>);
+describe('Panel (Lantern, M11)', () => {
+  it('renders its children on paper with rounded corners, outlined in the accent only when asked', async () => {
+    await render(<Panel outlined><Text>inside</Text></Panel>);
     expect(screen.getByText('inside')).toBeTruthy();
-    expect(screen.queryByTestId('slant-offset')).toBeNull(); // drawn once the panel knows its size
-    await fireEvent(screen.getByTestId('slant-panel'), 'layout', { nativeEvent: { layout: { width: 300, height: 200 } } });
-    expect(screen.getByTestId('slant-offset')).toBeTruthy();
+    expect(flat(screen.getByTestId('panel').props.style)).toMatchObject({ backgroundColor: colors.paper, borderColor: colors.accent, borderWidth: 2, borderRadius: 22 });
     await screen.unmount();
-    await render(<SlantPanel><Text>plain</Text></SlantPanel>);
-    await fireEvent(screen.getByTestId('slant-panel'), 'layout', { nativeEvent: { layout: { width: 300, height: 200 } } });
-    expect(screen.queryByTestId('slant-offset')).toBeNull();
+    await render(<Panel><Text>plain</Text></Panel>);
+    expect(flat(screen.getByTestId('panel').props.style)).toMatchObject({ borderWidth: 0 });
   });
 });
 
@@ -107,27 +92,32 @@ describe('stamps', () => {
     await render(<XpStamp xp={20} rotate={-25} />);
     const stamp = screen.getByLabelText('+20 XP');
     expect(flat(stamp.props.style).transform).toEqual([{ rotate: '-12deg' }]);
-    expect(flat(stamp.props.style).backgroundColor).toBe(colors.seal);
+    expect(flat(stamp.props.style).backgroundColor).toBe(colors.commit);
   });
 
-  it('a mark stamp is an ember outline', async () => {
+  it('a mark stamp is an accent outline', async () => {
     await render(<MarkStamp text="Cleared +20" />);
-    expect(flat(screen.getByLabelText('Cleared +20').props.style)).toMatchObject({ borderColor: colors.ember });
+    expect(flat(screen.getByLabelText('Cleared +20').props.style)).toMatchObject({ borderColor: colors.accentText });
   });
 });
 
 describe('small pieces', () => {
-  it('a chip is an uppercase label, solid or outlined', async () => {
-    await render(<Chip label="strength" />);
-    expect(flat(screen.getByText('strength').props.style).textTransform).toBe('uppercase');
+  it('a chip is a pill in sentence case, solid or outlined (Lantern)', async () => {
+    await render(<Chip label="Strength" />);
+    expect(flat(screen.getByText('Strength').props.style).textTransform).toBeUndefined();
+    expect(flat(screen.getByTestId('chip').props.style)).toMatchObject({ backgroundColor: colors.paper, borderRadius: 999 });
     await screen.unmount();
-    await render(<Chip label="timer" kind="outline" />);
-    expect(flat(screen.getByTestId('chip').props.style).borderColor).toBe(colors.chalk);
+    await render(<Chip label="Timer" kind="outline" />);
+    expect(flat(screen.getByTestId('chip').props.style).borderColor).toBe(colors.line);
+    await screen.unmount();
+    await render(<Chip label="Next" kind="accent" />);
+    expect(flat(screen.getByTestId('chip').props.style).backgroundColor).toBe(colors.accent);
+    expect(flat(screen.getByText('Next').props.style).color).toBe(colors.onAccent);
   });
 
-  it('a night card has a 2 px chalk border, or a quiet one once cleared', async () => {
+  it('a night card is rounded with a quiet line, quieter once cleared', async () => {
     await render(<NightCard><Text>a</Text></NightCard>);
-    expect(flat(screen.getByTestId('night-card').props.style)).toMatchObject({ borderWidth: 2, borderColor: colors.chalk });
+    expect(flat(screen.getByTestId('night-card').props.style)).toMatchObject({ borderWidth: 1.5, borderColor: colors.line, borderRadius: 22 });
     await screen.unmount();
     await render(<NightCard quiet><Text>b</Text></NightCard>);
     expect(flat(screen.getByTestId('night-card').props.style).borderColor).toBe(colors.lineSoft);
@@ -145,8 +135,8 @@ describe('small pieces', () => {
     expect(screen.getByTestId('icon-settings', { includeHiddenElements: true }).props.importantForAccessibility).toBe('no-hide-descendants');
   });
 
-  it('the halftone header shows its children', async () => {
-    await render(<HalftoneHeader><Text>Day 3</Text></HalftoneHeader>);
+  it('the screen header shows its children', async () => {
+    await render(<ScreenHeader><Text>Day 3</Text></ScreenHeader>);
     expect(screen.getByText('Day 3')).toBeTruthy();
   });
 
@@ -180,7 +170,7 @@ describe('small pieces', () => {
     await fireEvent(screen.getByRole('header', { name: 'INK PANEL' }), 'layout', layout(300));
     expect(drawnSizes()).toEqual([]); // not measured yet: nothing drawn, so no clipped first frame
     await fireEvent(screen.getByText('INK PANEL', { includeHiddenElements: true }), 'layout', layout(400));
-    expect(drawnSizes()).toEqual([41, 41, 41]); // three copies; room 300 − 8 − 5 = 287, 58 × 287/400 ≈ 41.6
+    expect(drawnSizes()).toEqual([41]); // Lantern draws one copy; room 300 − 8 − 5 = 287, 58 × 287/400 ≈ 41.6
   });
 
   it('the outlined title can be centred: each copy is anchored at the middle of its box (Quest cleared, M6a)', async () => {
@@ -196,8 +186,8 @@ describe('small pieces', () => {
     await fireEvent(screen.getByRole('header', { name: 'CLEARED' }), 'layout', layout(300));
     await fireEvent(screen.getByText('CLEARED', { includeHiddenElements: true }), 'layout', layout(200));
     walk(screen.toJSON() as Node);
-    // the vermilion copy sits 5 to the right (58 × 0.09), the ink and chalk copies at the middle
-    expect(drawn).toEqual([{ x: 155, anchor: 'middle' }, { x: 150, anchor: 'middle' }, { x: 150, anchor: 'middle' }]);
+    // Lantern draws one chalk copy, at the middle
+    expect(drawn).toEqual([{ x: 150, anchor: 'middle' }]);
   });
 
   it('a screen scroll shows its content, with a band behind the status bar that never takes touches', async () => {
@@ -233,7 +223,9 @@ describe('InkTabBar', () => {
     expect(all).toHaveLength(3);
     expect(screen.getByRole('tab', { name: 'Character' }).props.accessibilityState).toMatchObject({ selected: true });
     expect(screen.getByRole('tab', { name: 'Today' }).props.accessibilityState).toMatchObject({ selected: false });
-    expect(flat(screen.getByRole('tab', { name: 'Character' }).props.style)).toMatchObject({ borderTopColor: colors.vermilion, borderTopWidth: 4 });
+    expect(screen.getAllByTestId('tab-pill')).toHaveLength(1); // the active tab's icon sits on a pill
+    expect(flat(screen.getByText('Character').props.style).color).toBe(colors.accentText);
+    expect(flat(screen.getByText('Today').props.style).color).toBe(colors.ash);
     for (const tab of all) expect(flat(tab.props.style).minHeight).toBeGreaterThanOrEqual(44);
     // single words: wrapping broke CHARACTER mid-word at the largest font and display size (emulator), so they shrink to fit
     for (const label of ['Today', 'Character', 'Chronicle']) {
@@ -263,7 +255,7 @@ describe('OptionCard', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('selected: checked, with the vermilion offset for a single choice only', async () => {
+  it('selected: checked, paper outlined in the accent', async () => {
     await render(
       <>
         <OptionCard label="Steady" selected onPress={() => {}} />
@@ -272,7 +264,7 @@ describe('OptionCard', () => {
     );
     expect(screen.getByRole('radio', { name: 'Steady' }).props.accessibilityState).toMatchObject({ checked: true });
     expect(screen.getByRole('checkbox', { name: 'Knees' }).props.accessibilityState).toMatchObject({ checked: true });
-    expect(screen.getAllByTestId('option-offset')).toHaveLength(1);
+    expect(screen.getAllByTestId('option-selected')).toHaveLength(2);
   });
 
   it('a disabled card says so and ignores taps', async () => {
@@ -358,25 +350,25 @@ describe('QuestArt (M6a decision 10)', () => {
     expect(screen.getByLabelText('Strength quest picture')).toBeTruthy();
   });
 
-  it('draws the ink fallback without a picture', async () => {
+  it('draws the fallback without a picture', async () => {
     await render(<QuestArt uri={null} label="Focus quest picture" fallback="Focus" />);
     expect(screen.getByTestId('quest-art-fallback')).toBeTruthy();
-    expect(screen.getByText('FOCUS')).toBeTruthy();
+    expect(screen.getByText('Focus')).toBeTruthy();
   });
 
   it('falls back when the picture fails to load', async () => {
     await render(<QuestArt uri="https://example.test/missing.webp" label="Wisdom quest picture" fallback="Wisdom" />);
     await fireEvent(screen.getByTestId('quest-art'), 'error');
-    expect(screen.getByText('WISDOM')).toBeTruthy();
+    expect(screen.getByText('Wisdom')).toBeTruthy();
   });
 });
 
 describe('XpBar on paper', () => {
-  it('uses an ink border on paper and chalk on the night', async () => {
+  it('is a rounded track: light on paper, dark on the night', async () => {
     await render(<XpBar value={1} max={2} label="On paper" on="paper" />);
-    expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On paper' }).props.style).borderColor).toBe(colors.ink);
+    expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On paper' }).props.style)).toMatchObject({ backgroundColor: colors.trackOnPaper, borderRadius: 999 });
     await render(<XpBar value={1} max={2} label="On night" />);
-    expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On night' }).props.style).borderColor).toBe(colors.chalk);
+    expect(StyleSheet.flatten(screen.getByRole('progressbar', { name: 'On night' }).props.style).backgroundColor).toBe(colors.segmentNext);
   });
 });
 

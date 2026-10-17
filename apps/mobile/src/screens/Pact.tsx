@@ -17,7 +17,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
-import { SlantPanel } from '../ui/SlantPanel.tsx';
+import { Panel } from '../ui/Panel.tsx';
 import { Body, Label, Small, Title } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 
@@ -104,10 +104,10 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
           </View>
         ))}
       </View>
-      <SlantPanel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
-        <Label tone="sealText">{T.rulesTitle}</Label>
+      <Panel contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+        <Label tone="accentInk">{T.rulesTitle}</Label>
         {T.rules.map((rule, i) => <Body key={rule} tone="ink">{`${i + 1}. ${rule}`}</Body>)}
-      </SlantPanel>
+      </Panel>
       {action}
       <Button label={T.notNow} variant="secondary" onPress={onDone} />
     </ScreenScroll>

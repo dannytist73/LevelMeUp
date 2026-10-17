@@ -1,10 +1,11 @@
-// Buttons (visual spec §2): primary is paper on the night and ink on paper; commitment is seal red with white text
-// (accept class, swear, sign, claim); secondary is a 2 px outline. At least 48 high; the label wraps instead of cutting.
+// Buttons (Lantern, M11): pills. Primary is the accent on the night and ink on paper; commitment (accept class, swear,
+// sign, claim) is the commit colour; both carry navy text. Secondary is a quiet outline. At least 48 high; the label
+// wraps instead of cutting.
 // The label fills the button's width: a label box only as wide as its words lost its last word on Android when the text
 // view was reused from another screen ("Add a set" showed "Add a", 2026-10-15).
 import { Pressable, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { colors, fonts, type as scale } from '../theme/tokens.ts';
+import { colors, fonts, radius, space, type as scale } from '../theme/tokens.ts';
 
 export type ButtonProps = {
   label: string;
@@ -20,9 +21,9 @@ export type ButtonProps = {
 
 export function Button({ label, onPress, variant = 'primary', on = 'night', disabled = false, style, accessibilityLabel }: ButtonProps) {
   const look = {
-    primary: on === 'night' ? { bg: colors.paper, fg: colors.ink, border: colors.paper } : { bg: colors.ink, fg: colors.chalk, border: colors.ink },
-    commitment: { bg: colors.seal, fg: colors.white, border: colors.chalk },
-    secondary: { bg: 'transparent', fg: on === 'night' ? colors.chalk : colors.ink, border: on === 'night' ? colors.chalk : colors.ink },
+    primary: on === 'night' ? { bg: colors.accent, fg: colors.onAccent, border: colors.accent } : { bg: colors.ink, fg: colors.chalk, border: colors.ink },
+    commitment: { bg: colors.commit, fg: colors.onAccent, border: colors.commit },
+    secondary: { bg: 'transparent', fg: on === 'night' ? colors.chalk : colors.ink, border: on === 'night' ? colors.line : colors.inkMuted },
   }[variant];
   const display = variant !== 'secondary';
   return (
@@ -34,14 +35,15 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
       onPress={onPress}
       style={({ pressed }) => [
         {
-          minHeight: 48,
-          paddingHorizontal: 16,
+          minHeight: display ? 52 : 48,
+          paddingHorizontal: 20,
           paddingVertical: 8,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: look.bg,
-          borderWidth: 2,
+          borderWidth: space.border,
           borderColor: look.border,
+          borderRadius: radius.pill,
           opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
         },
         style,
@@ -53,9 +55,7 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
           alignSelf: 'stretch',
           color: look.fg,
           textAlign: 'center',
-          ...(display
-            ? { fontFamily: fonts.display, fontSize: 16, lineHeight: 20, letterSpacing: 0.12 * 16, textTransform: 'uppercase' }
-            : { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 19 }),
+          ...(display ? { fontFamily: fonts.display, fontSize: 17, lineHeight: 22 } : { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20 }),
         }}
       >
         {label}

@@ -3,7 +3,7 @@
 import { PRIVACY_TEXT } from '@levelmeup/content';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, space } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Label, Title } from '../ui/Text.tsx';
@@ -17,7 +17,7 @@ export function Privacy({ onBack }: { onBack: () => void }) {
           accessibilityRole="button"
           accessibilityLabel="Back"
           onPress={onBack}
-          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, borderWidth: 2, borderColor: colors.chalk }}
+          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.line }}
         >
           <Label tone="chalk">Back</Label>
         </Pressable>

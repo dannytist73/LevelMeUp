@@ -134,10 +134,10 @@ async function renderCleared(over: Partial<ClearedProps> = {}) {
 describe('"Quest cleared" (board D2)', () => {
   it('shows the XP, the stat up with its rank, Discipline, the streak and the level bar', async () => {
     await renderCleared();
-    expect(screen.getByRole('header', { name: 'CLEARED' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Cleared' })).toBeTruthy();
     expect(screen.getByText('CORE QUEST · KNEE PUSH-UPS')).toBeTruthy();
     expect(screen.getByLabelText('+20 XP')).toBeTruthy();
-    expect(screen.getByText('STRENGTH 11 → 12')).toBeTruthy();
+    expect(screen.getByText('Strength 11 → 12')).toBeTruthy();
     expect(screen.getByLabelText('Rank D')).toBeTruthy();
     expect(screen.getByText('Discipline · today counts')).toBeTruthy();
     expect(screen.getByText(`+${DISCIPLINE_PER_CORE_DAY}`)).toBeTruthy(); // the rules' number, not a copy
@@ -176,7 +176,7 @@ describe('"Quest cleared" (board D2)', () => {
 
   it('without changes, shows no stat up, no streak and no Discipline line', async () => {
     await renderCleared({ numbers: { ...NUMBERS, statUps: [], streak: null, discipline: false } });
-    expect(screen.queryByText('STAT UP')).toBeNull();
+    expect(screen.queryByText('Stat up')).toBeNull();
     expect(screen.queryByText('Streak')).toBeNull();
     expect(screen.queryByText('Discipline · today counts')).toBeNull();
   });
@@ -238,7 +238,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const { enqueue } = await renderQuest(server, core.id);
     await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared' }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: core.id, completedAt: NOW, rating: null, payload: {} });
-    expect(screen.getByRole('header', { name: 'CLEARED' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Cleared' })).toBeTruthy();
     expect(screen.getByText('Discipline · today counts')).toBeTruthy();
   });
 

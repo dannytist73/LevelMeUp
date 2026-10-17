@@ -10,7 +10,7 @@ import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, wi
 import type { SharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { SHADOW_ART_URL } from '../art/portraits.ts';
-import { colors } from '../theme/tokens.ts';
+import { colors, radius } from '../theme/tokens.ts';
 import {
   BREATH_MS, BREATH_TO, CREEP_MS, CREEP_TO, EMBERS, GLOW_SHARE, PULSE_FROM, PULSE_MS, PULSE_TO, SHADOW_EYES, delayed, forever, timing,
 } from './motion.ts';
@@ -34,9 +34,9 @@ function Glow({ eye, id, pulse }: { eye: ShadowEye; id: string; pulse: SharedVal
       <Svg width="100%" height="100%" viewBox="0 0 100 100">
         <Defs>
           <RadialGradient id={id} cx="50" cy="50" r="50" gradientUnits="userSpaceOnUse">
-            <Stop offset="0" stopColor={colors.vermilion} stopOpacity={0.9} />
-            <Stop offset="0.4" stopColor={colors.vermilion} stopOpacity={0.45} />
-            <Stop offset="1" stopColor={colors.vermilion} stopOpacity={0} />
+            <Stop offset="0" stopColor={colors.shadow} stopOpacity={0.9} />
+            <Stop offset="0.4" stopColor={colors.shadow} stopOpacity={0.45} />
+            <Stop offset="1" stopColor={colors.shadow} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Circle cx="50" cy="50" r="50" fill={`url(#${id})`} />
@@ -106,10 +106,10 @@ export function ShadowArt() {
   }, [reduce, active, pulse]);
   const moving = useAnimatedStyle(() => ({ transform: [{ scale: creep.value * breath.value }] }));
   const smouldering = useAnimatedStyle(() => ({ opacity: Math.min(1, pulse.value + 0.15) }));
-  const eye = { width: 34, height: 7, backgroundColor: colors.vermilion };
+  const eye = { width: 34, height: 7, backgroundColor: colors.shadow };
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={T.art}
-      style={{ width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, borderColor: colors.line, backgroundColor: colors.halftone }}>
+      style={{ width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: radius.card, backgroundColor: colors.void }}>
       <Animated.View testID="shadow-eyes" style={[{ flexDirection: 'row', gap: 22 }, reduce ? null : smouldering]}>
         <View style={[eye, { transform: [{ rotate: '10deg' }] }]} />
         <View style={[eye, { transform: [{ rotate: '-10deg' }] }]} />

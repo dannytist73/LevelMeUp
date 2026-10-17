@@ -25,7 +25,7 @@ export function ReadingCard({ quest, article, waiting, onOpen }: { quest: QuestV
       <NightCard quiet>
         <View style={{ gap: 4 }}>
           <Body weight="bold" tone="ashLight">{article.title}</Body>
-          <Label tone="ember">{fillText(READING_TEXT.cleared, { xp })}</Label>
+          <Label tone="accentText">{fillText(READING_TEXT.cleared, { xp })}</Label>
           {waiting && <Caption>{PLAY_TEXT.quest.willSync}</Caption>}
         </View>
         <LinkButton label={READING_TEXT.readAgain} onPress={onOpen} />

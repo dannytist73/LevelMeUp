@@ -1,4 +1,4 @@
-// A quest on Today (D1 board): the core quest in a paper panel with its XP stamp, the others as night cards. Words come
+// A quest on Today (D1 board; Lantern, M11): the core quest in a panel outlined in the accent with its XP stamp, the others as night cards. Words come
 // from the content package in the player's voice; numbers from the quest's stored snapshot. M4 showed; M6a makes every
 // card open its quest and puts the picture on the core quest; M6b adds the hard-day tag and "I felt pain". M10c: the open
 // core quest ends in a Begin bar; a cleared quest is a slim, quiet row; the next quest is marked; a check-off quest has a
@@ -12,7 +12,7 @@ import type { ClassId } from '@levelmeup/rules';
 import { Pressable, View } from 'react-native';
 import type { QuestView } from '../game/types.ts';
 import { clockTime } from '../lib/dates.ts';
-import { colors } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { HoldButton } from '../ui/HoldButton.tsx';
@@ -20,7 +20,7 @@ import { Icon } from '../ui/icons.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { QuestArt } from '../ui/QuestArt.tsx';
 import { SlamIn } from '../ui/SlamIn.tsx';
-import { SlantPanel } from '../ui/SlantPanel.tsx';
+import { Panel } from '../ui/Panel.tsx';
 import { XpStamp } from '../ui/Stamp.tsx';
 import { Body, Caption, Heading, Label, Meta, Small, Title } from '../ui/Text.tsx';
 
@@ -70,16 +70,16 @@ function ClearedRow({ title, stat, time, xp, waiting, on, onOpen }: {
   return (
     <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
       <View style={{
-        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12,
-        backgroundColor: paper ? colors.paper : colors.panel, borderWidth: 2, borderColor: paper ? colors.paper : colors.divider,
+        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: radius.control,
+        backgroundColor: paper ? colors.paper : colors.panel, borderWidth: space.border, borderColor: paper ? colors.paper : colors.divider,
       }}>
-        <Icon name="check" size={22} color={paper ? colors.sealText : colors.ember} />
+        <Icon name="check" size={22} color={paper ? colors.accentInk : colors.accentText} />
         <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
           <Body weight="bold" tone={paper ? 'ink' : 'ashLight'}>{title}</Body>
           <Meta style={paper ? { color: colors.inkMuted } : undefined}>{fillText(TODAY_TEXT.clearedAt, { stat, time })}</Meta>
           {waiting && <WillSync on={on} />}
         </View>
-        <Label tone={paper ? 'sealText' : 'ember'}>{fillText(TODAY_TEXT.cleared, { xp })}</Label>
+        <Label tone={paper ? 'accentInk' : 'accentText'}>{fillText(TODAY_TEXT.cleared, { xp })}</Label>
       </View>
     </Pressable>
   );
@@ -105,7 +105,7 @@ export function QuestCard({
   if (cleared) {
     return (
       <ClearedRow title={words.title} stat={stat} time={clockTime(quest.completedAt!, timeZone)} xp={xp} waiting={waiting}
-        on={quest.slot === 'core' ? 'paper' : 'night'} onOpen={onOpen} />
+        on="night" onOpen={onOpen} />
     );
   }
 
@@ -116,30 +116,33 @@ export function QuestCard({
       <View style={{ gap: 10 }}>
         <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
           <SlamIn>
-            <View style={{ marginRight: 6 }}>
-              <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
-                <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} />
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 56 }}>
-                  <Chip label={stat} on="paper" />
-                  <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" on="paper" />
-                  {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" on="paper" />}
-              {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" on="paper" />}
+            {/* Lantern (M11): the card you act on now is the panel outlined in the accent, its picture across the top. */}
+            <View>
+              <Panel outlined fill={colors.panel} contentStyle={{ padding: 0 }}>
+                <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} rounded={false} />
+                <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 18, gap: 10 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    <Chip label={stat} />
+                    <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
+                    {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" />}
+                    {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" />}
+                  </View>
+                  <View style={{ gap: 4 }}>
+                    <Title>{words.title}</Title>
+                    <Body tone="ashLight" weight="medium">{summary}</Body>
+                    {quest.book !== null && <Small>{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
+                  </View>
+                  {/* M10c: the why as one quiet line (the quest screen keeps its box), so Begin stays on the first screen. */}
+                  <Small>{why}</Small>
+                  {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
+                  {waiting && <WillSync on="night" />}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 54, marginTop: 4, borderRadius: radius.pill, backgroundColor: colors.commit }}>
+                    <Heading tone="onAccent">{TODAY_TEXT.begin}</Heading>
+                    <Icon name="chevronRight" size={22} color={colors.onAccent} />
+                  </View>
                 </View>
-                <View style={{ gap: 4 }}>
-                  <Title tone="ink">{words.title}</Title>
-                  <Body tone="inkSoft" weight="medium">{summary}</Body>
-                  {quest.book !== null && <Small tone="inkSoft">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
-                </View>
-                {/* M10c: the why as one quiet line (the quest screen keeps its box), so Begin stays on the first screen. */}
-                <Small tone="inkSoft">{why}</Small>
-                {template.exercise !== null && <Small tone="inkMuted">{EXERCISE_SAFETY_LINE}</Small>}
-                {waiting && <WillSync on="paper" />}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, backgroundColor: colors.seal }}>
-                  <Heading tone="white">{TODAY_TEXT.begin.toUpperCase()}</Heading>
-                  <Icon name="chevronRight" size={22} color={colors.white} />
-                </View>
-              </SlantPanel>
-              <XpStamp xp={xp} style={{ position: 'absolute', top: -20, right: -8 }} />
+              </Panel>
+              <XpStamp xp={xp} size={60} rotate={0} style={{ position: 'absolute', top: 12, right: 12 }} />
             </View>
           </SlamIn>
         </Pressable>
@@ -177,13 +180,13 @@ export function QuestCard({
       <NightCard>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flexShrink: 1 }}>
-            {next && <Chip label={TODAY_TEXT.next} kind="ember" />}
+            {next && <Chip label={TODAY_TEXT.next} kind="accent" />}
             <Chip label={stat} />
             <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
             {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" />}
             {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" />}
           </View>
-          <Heading tone="ember">{`+${xp} XP`}</Heading>
+          <Heading tone="accentText">{`+${xp} XP`}</Heading>
         </View>
         <Heading>{words.title}</Heading>
         <Meta>{summary}</Meta>

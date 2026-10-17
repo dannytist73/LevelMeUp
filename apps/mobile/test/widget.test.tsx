@@ -39,7 +39,7 @@ describe('the snapshot', () => {
 describe('the lines, by when it is drawn', () => {
   it('a day: the day, the streak, the core quest and the count', () => {
     expect(widgetLines(SNAP, 1_000)).toEqual({
-      kind: 'day', day: 'DAY 6', streak: '5-day streak', label: WIDGET_TEXT.core, title: 'Wall push-ups', progress: '1 of 4 cleared', cleared: false,
+      kind: 'day', day: 'Day 6', streak: '5-day streak', label: WIDGET_TEXT.core, title: 'Wall push-ups', progress: '1 of 4 cleared', cleared: false,
     });
   });
 
@@ -58,7 +58,7 @@ describe('the widget and its task', () => {
   it('draws the lines, labelled for TalkBack', async () => {
     await render(<TodayWidget snap={SNAP} now={1_000} />);
     expect(screen.getByLabelText(WIDGET_TEXT.label)).toBeTruthy();
-    for (const text of ['DAY 6', '5-day streak', WIDGET_TEXT.core, 'Wall push-ups', fillText(WIDGET_TEXT.progress, { done: 1, total: 4 })]) {
+    for (const text of ['Day 6', '5-day streak', WIDGET_TEXT.core, 'Wall push-ups', fillText(WIDGET_TEXT.progress, { done: 1, total: 4 })]) {
       expect(screen.getByText(text)).toBeTruthy();
     }
   });

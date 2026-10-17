@@ -2,7 +2,7 @@
 // Screen readers get two labelled buttons and the time as text.
 import { Pressable, Text, View } from 'react-native';
 import { clockLabel } from '../lib/dates.ts';
-import { colors, fonts } from '../theme/tokens.ts';
+import { colors, fonts, radius, space } from '../theme/tokens.ts';
 import { Heading, Label } from './Text.tsx';
 
 const DAY = 24 * 60;
@@ -20,7 +20,7 @@ export function TimeStepper({ label, minutes, onChange }: { label: string; minut
   return (
     <View style={{ flexGrow: 1, flexBasis: 150, gap: 8 }}>
       <Label>{label}</Label>
-      <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: colors.chalk }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: space.border, borderColor: colors.line, borderRadius: radius.control, backgroundColor: colors.panel }}>
         <Step text="−" label={`${label} 30 minutes earlier`} onPress={() => move(-30)} />
         <Heading style={{ flex: 1, textAlign: 'center' }}>{clockLabel(minutes)}</Heading>
         <Step text="+" label={`${label} 30 minutes later`} onPress={() => move(30)} />

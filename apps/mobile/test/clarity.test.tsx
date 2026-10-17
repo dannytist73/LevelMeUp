@@ -30,15 +30,15 @@ describe('Today (M10c)', () => {
   it('the open core quest ends in a Begin bar that is part of its card', async () => {
     const s = serverState();
     const { onOpenQuest } = await renderToday(s);
-    expect(screen.getByText('BEGIN')).toBeTruthy();
-    await fireEvent.press(screen.getByText('BEGIN'));
+    expect(screen.getByText('Begin')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Begin'));
     expect(onOpenQuest).toHaveBeenCalledWith(s.today!.quests.find((q) => q.slot === 'core')!.id);
   });
 
   it('a cleared core quest is a slim row; the next quest is marked; the streak shows today with "today counts"', async () => {
     const s = serverState(['core'], { streak_current: 5, streak_best: 5 });
     await renderToday(s);
-    expect(screen.queryByText('BEGIN')).toBeNull();
+    expect(screen.queryByText('Begin')).toBeNull();
     expect(screen.getByText(titleOf(s, 'core'))).toBeTruthy();
     expect(screen.getByText(fillText(TODAY_TEXT.cleared, { xp: xpOf(s, 'core') }))).toBeTruthy();
     expect(screen.getAllByText(TODAY_TEXT.next)).toHaveLength(1);

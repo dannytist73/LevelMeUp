@@ -7,7 +7,7 @@ import { Body } from './Text.tsx';
 export type LinkButtonProps = {
   label: string;
   onPress: () => void;
-  tone?: 'chalk' | 'ember';
+  tone?: 'chalk' | 'accentText';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };

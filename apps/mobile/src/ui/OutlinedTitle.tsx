@@ -1,5 +1,5 @@
-// Display text with an ink outline and a vermilion offset copy (the System board's "INK PANEL"), drawn as SVG text
-// because React Native has no multiple text shadows (visual spec §5). Read as a plain heading. SVG text can't wrap, so
+// Display text drawn as SVG text so it can shrink to fit one line (Lantern, M11: one chalk copy; Ink Panel drew an ink
+// outline and a vermilion offset copy, visual spec §5). Read as a plain heading. SVG text can't wrap, so
 // the title shrinks to fit a narrow screen (cut off at the largest display size, found on the emulator): a hidden copy
 // measures its natural width.
 import { useState } from 'react';
@@ -17,13 +17,12 @@ export function OutlinedTitle({ text, size = 58, align = 'start' }: { text: stri
   const [box, onLayout] = useSize();
   const [natural, setNatural] = useState<number | null>(null);
   const fontSize = box === null ? size : fittedSize(size, natural, box.width - 8 - Math.round(size * 0.09));
-  const offset = Math.round(fontSize * 0.09);
   const baseline = Math.round(fontSize * 0.9);
   // Centred (Quest cleared, M6a): every copy is anchored at the middle of the box.
   const x = align === 'center' && box !== null ? box.width / 2 : 4;
   const anchor = align === 'center' ? 'middle' : 'start';
   return (
-    <View accessible accessibilityRole="header" accessibilityLabel={text} onLayout={onLayout} style={{ height: Math.round(fontSize * 1.1) + offset }}>
+    <View accessible accessibilityRole="header" accessibilityLabel={text} onLayout={onLayout} style={{ height: Math.round(fontSize * 1.1) }}>
       <View style={{ position: 'absolute', width: 4000, opacity: 0 }} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <Text allowFontScaling={false} onLayout={(e) => setNatural(e.nativeEvent.layout.width)} style={{ alignSelf: 'flex-start', fontFamily: fonts.display, fontSize: size }}>
           {text}
@@ -31,12 +30,6 @@ export function OutlinedTitle({ text, size = 58, align = 'start' }: { text: stri
       </View>
       {box !== null && natural !== null && (
         <Svg width={box.width} height={box.height}>
-          <SvgText x={x + offset} y={baseline + offset} textAnchor={anchor} fontFamily={fonts.display} fontSize={fontSize} fill={colors.vermilion}>
-            {text}
-          </SvgText>
-          <SvgText x={x} y={baseline} textAnchor={anchor} fontFamily={fonts.display} fontSize={fontSize} fill={colors.ink} stroke={colors.ink} strokeWidth={6} strokeLinejoin="round">
-            {text}
-          </SvgText>
           <SvgText x={x} y={baseline} textAnchor={anchor} fontFamily={fonts.display} fontSize={fontSize} fill={colors.chalk}>
             {text}
           </SvgText>

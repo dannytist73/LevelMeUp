@@ -1,10 +1,10 @@
-// The tab bar (visual spec §2, D1 Today): an ink bar under a 2 px chalk rule; the active tab has a 4 px vermilion top
-// bar and chalk text. Labels are single words, so wrapping could only break one mid-word ("CHARACT/ER" at the largest
-// font and display size, found on the emulator): a label grows with the font size while its tab has room, then shrinks
-// to fit it. Android shrinks as far as needed (its only floor is 4 px), so nothing is cut; `minimumFontScale` applies on
-// iOS only, where 0.6× is still far below what any of these words needs.
+// The tab bar (Lantern, M11): a dark bar with a quiet top line; the active tab's icon sits on a soft pill and its icon
+// and label take the accent. Labels are single words, so wrapping could only break one mid-word ("CHARACT/ER" at the
+// largest font and display size, found on the emulator): a label grows with the font size while its tab has room, then
+// shrinks to fit it. Android shrinks as far as needed (its only floor is 4 px), so nothing is cut; `minimumFontScale`
+// applies on iOS only, where 0.6× is still far below what any of these words needs.
 import { Pressable, Text, View } from 'react-native';
-import { colors, fonts } from '../theme/tokens.ts';
+import { colors, fonts, radius } from '../theme/tokens.ts';
 import { Icon } from './icons.tsx';
 import type { IconName } from './icons.tsx';
 
@@ -24,11 +24,11 @@ export function InkTabBar({
   return (
     <View
       accessibilityRole="tablist"
-      style={{ flexDirection: 'row', paddingHorizontal: 8, paddingBottom: 8 + bottomInset, borderTopWidth: 2, borderTopColor: colors.chalk, backgroundColor: colors.tabBar }}
+      style={{ flexDirection: 'row', paddingHorizontal: 8, paddingTop: 6, paddingBottom: 8 + bottomInset, borderTopWidth: 1, borderTopColor: colors.divider, backgroundColor: colors.tabBar }}
     >
       {tabs.map((tab) => {
         const selected = tab.key === active;
-        const tone = selected ? colors.chalk : colors.ash;
+        const tone = selected ? colors.accentText : colors.ash;
         return (
           <Pressable
             key={tab.key}
@@ -36,13 +36,12 @@ export function InkTabBar({
             accessibilityLabel={tab.label}
             accessibilityState={{ selected }}
             onPress={() => onSelect(tab.key)}
-            style={{
-              flex: 1, minHeight: 62, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 4,
-              borderTopWidth: 4, borderTopColor: selected ? colors.vermilion : 'transparent',
-            }}
+            style={{ flex: 1, minHeight: 62, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 4 }}
           >
-            <Icon name={tab.icon} color={tone} />
-            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ fontFamily: fonts.display, fontSize: 12, lineHeight: 16, letterSpacing: 1.2, color: tone, textTransform: 'uppercase', textAlign: 'center' }}>
+            <View testID={selected ? 'tab-pill' : undefined} style={{ paddingHorizontal: 18, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: selected ? colors.panel : 'transparent' }}>
+              <Icon name={tab.icon} color={tone} />
+            </View>
+            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ fontFamily: fonts.bodyBold, fontSize: 12, lineHeight: 16, color: tone, textAlign: 'center' }}>
               {tab.label}
             </Text>
           </Pressable>

@@ -211,7 +211,7 @@ describe('Character reveal (O08)', () => {
 
   it('shows the class, the words, the stats as game estimates, the routine and the pact suggestion', async () => {
     await show(<Reveal onAccept={() => {}} onFix={() => {}} />, READY_DRAFT, revealed());
-    expect(screen.getByText('WARRIOR')).toBeTruthy();
+    expect(screen.getByText('Warrior')).toBeTruthy();
     expect(screen.getByText(classStats(CLASSES.warrior))).toBeTruthy();
     expect(screen.getByLabelText(`System: ${REVEAL.narrative}`)).toBeTruthy();
     expect(screen.getByText(ONBOARDING_TEXT.reveal.estimates)).toBeTruthy();

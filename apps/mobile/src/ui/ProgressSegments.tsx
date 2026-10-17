@@ -1,6 +1,6 @@
-// The onboarding's progress (visual spec §2): one bar per question screen; done = paper, current = vermilion.
+// The onboarding's progress (Lantern, M11): one rounded bar per question screen; done = paper, current = the accent.
 import { View } from 'react-native';
-import { colors } from '../theme/tokens.ts';
+import { colors, radius } from '../theme/tokens.ts';
 
 export function ProgressSegments({ count, current }: { count: number; current: number }) {
   return (
@@ -15,7 +15,7 @@ export function ProgressSegments({ count, current }: { count: number; current: n
         <View
           key={i}
           testID="segment"
-          style={{ flex: 1, height: 6, backgroundColor: i < current ? colors.paper : i === current ? colors.vermilion : colors.segmentNext }}
+          style={{ flex: 1, height: 6, borderRadius: radius.pill, backgroundColor: i < current ? colors.paper : i === current ? colors.accent : colors.segmentNext }}
         />
       ))}
     </View>

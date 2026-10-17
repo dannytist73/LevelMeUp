@@ -32,8 +32,8 @@ async function renderReading(server: ServerState, held: boolean) {
 describe('the reader (board D3, M8b decision 5)', () => {
   it('shows the article: its topic, title, summary, sections with their sources, the System note, the takeaways', async () => {
     await render(<Reader article={SAMPLE_ARTICLE} label="Today's reading" xp={10} onOpenSource={jest.fn()} />);
-    expect(screen.getByText('6 MIN · WISDOM +10 XP')).toBeTruthy();
-    expect(screen.getByText('DISCIPLINE AND HABITS')).toBeTruthy();
+    expect(screen.getByText(/^6 min · Wisdom \+10 XP · /)).toBeTruthy();
+    expect(screen.getByText(/ · Discipline and habits$/)).toBeTruthy();
     expect(screen.getByText(SAMPLE_ARTICLE.title)).toBeTruthy();
     expect(screen.getByText(SAMPLE_ARTICLE.summary)).toBeTruthy();
     for (const s of SAMPLE_ARTICLE.sections) expect(screen.getByText(s.heading)).toBeTruthy();
@@ -63,7 +63,7 @@ describe('the reader (board D3, M8b decision 5)', () => {
     await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
     await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
     expect(screen.queryByRole('button', { name: PLAY_TEXT.cleared.easy })).toBeNull();
-    expect(screen.getByText("TODAY'S READING · DISCIPLINE AND HABITS")).toBeTruthy(); // not the slot twice
+    expect(screen.getByText("Today's reading · Discipline and habits")).toBeTruthy(); // not the slot twice
     await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.readAgain }));
     expect(onRead).toHaveBeenCalledWith(SAMPLE_ARTICLE.id);
   });

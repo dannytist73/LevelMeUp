@@ -68,8 +68,8 @@ export const PLAY_TEXT = {
     note: 'One line is enough.',
   },
   cleared: {
-    title: 'CLEARED',
-    statUp: 'STAT UP',
+    title: 'Cleared',
+    statUp: 'Stat up',
     discipline: 'Discipline · today counts',
     streak: 'Streak',
     streakDays: '{from} → {to} DAYS',
@@ -85,9 +85,9 @@ export const PLAY_TEXT = {
     undo: 'Logged by mistake? Undo',
   },
   celebration: {
-    levelLabel: 'LEVEL UP',
+    levelLabel: 'Level up',
     level: 'Level {level}. The System marks your growth.',
-    achievementLabel: 'ACHIEVEMENT',
+    achievementLabel: 'Achievement',
     titleEarned: 'Title earned: {title}',
     /** M9a decision 8: a level-up that changes the portrait's tier (levels 5 and 10). */
     portrait: 'Your portrait has changed.',

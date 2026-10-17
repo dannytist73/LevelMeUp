@@ -20,7 +20,7 @@ export function ClassPath({ view, dayNumber }: { view: Shown; dayNumber: number 
           <NightCard key={id} quiet={status.kind === 'locked'}>
             <View style={{ gap: 4 }}>
               <Heading>{ABILITY_NAMES[id]}</Heading>
-              <Label tone={status.kind === 'locked' ? 'ash' : 'ember'}>{statusText(status)}</Label>
+              <Label tone={status.kind === 'locked' ? 'ash' : 'accentText'}>{statusText(status)}</Label>
               <Small>{ABILITY_LINES[id]}</Small>
             </View>
           </NightCard>

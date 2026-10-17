@@ -18,7 +18,7 @@ export function InsightPanel({ insight, onChoose }: { insight: InsightView; onCh
   return (
     <NightCard>
       <View style={{ gap: 10 }}>
-        <Heading tone="ember">{I.title}</Heading>
+        <Heading tone="accentText">{I.title}</Heading>
         {chosen !== null && !picking ? (
           <>
             <Body weight="medium">{fillText(I.chosen, { topic: CLUSTER_NAMES[chosen] })}</Body>

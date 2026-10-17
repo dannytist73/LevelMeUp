@@ -147,7 +147,7 @@ export function Trial({ onDone, now = Date.now }: TrialProps) {
   const done = Math.min(elapsed(), TRIAL_FOCUS_MS);
   return frame(
     <>
-      <Label tone="ember">{SHADOW_TEXT.trial.title}</Label>
+      <Label tone="shadow">{SHADOW_TEXT.trial.title}</Label>
       <Label>{T.label}</Label>
       <View accessible accessibilityRole="timer" accessibilityLabel={`${clock(TRIAL_FOCUS_MS - done)} ${T.left}`} style={{ alignItems: 'center', gap: 6, paddingVertical: 18 }}>
         <Display>{clock(TRIAL_FOCUS_MS - done)}</Display>

@@ -1,12 +1,11 @@
-// The XP bar (D1 Today, D2 Quest cleared): a 14 px bar with a 2 px border (chalk on the night, ink on paper) and a
-// vermilion fill. M10a: given its `level`, the bar moves (spec decisions 3, 5, 7). It fills from `from` when it opens
+// The XP bar (D1 Today, D2 Quest cleared; Lantern, M11): a 10 px rounded track with the accent's fill. M10a: given its `level`, the bar moves (spec decisions 3, 5, 7). It fills from `from` when it opens
 // (Quest cleared), then from what it last showed whenever the value changes (Today after a sync). Across a level it
 // fills to the end, flashes chalk and fills again from empty. A drop shows at once, and so does everything with reduced
 // motion. Its accessibility value is always the new one. Without a level it never moves (stat bars, timers, the trial).
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
-import { colors } from '../theme/tokens.ts';
+import { colors, radius } from '../theme/tokens.ts';
 import { FILL_MS, FLASH_MS, REFILL_MS, WRAP_FILL_MS, delayed, fillFraction, fillSegments, timing } from './motion.ts';
 import type { BarPoint } from './motion.ts';
 import { useReduce } from './useMotion.ts';
@@ -27,7 +26,7 @@ export type XpBarProps = BarProps & {
 };
 
 const frame = (on: 'night' | 'paper') => ({
-  height: 14, borderWidth: 2, borderColor: on === 'paper' ? colors.ink : colors.chalk, backgroundColor: on === 'paper' ? colors.paper : colors.night,
+  height: 10, borderRadius: radius.pill, overflow: 'hidden' as const, backgroundColor: on === 'paper' ? colors.trackOnPaper : colors.segmentNext,
 });
 
 export function XpBar({ level, from = null, delay = 0, reduceMotion, ...bar }: XpBarProps) {
@@ -39,7 +38,7 @@ export function XpBar({ level, from = null, delay = 0, reduceMotion, ...bar }: X
 function StillBar({ value, max, label, on = 'night' }: BarProps) {
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{ min: 0, max, now: value }} style={frame(on)}>
-      <View testID="xp-fill" style={{ width: `${fillFraction(value, max) * 100}%`, height: '100%', backgroundColor: colors.vermilion }} />
+      <View testID="xp-fill" style={{ width: `${fillFraction(value, max) * 100}%`, height: '100%', backgroundColor: colors.accent }} />
     </View>
   );
 }
@@ -87,7 +86,7 @@ function MovingBar({ value, max, label, on = 'night', level, from, delay, reduce
   const flashing = useAnimatedStyle(() => ({ opacity: flash.value }));
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{ min: 0, max, now: value }} style={frame(on)}>
-      <Animated.View testID="xp-fill" style={[{ height: '100%', backgroundColor: colors.vermilion }, width]} />
+      <Animated.View testID="xp-fill" style={[{ height: '100%', backgroundColor: colors.accent }, width]} />
       {!reduce && <Animated.View testID="xp-flash" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.chalk }, flashing]} />}
     </View>
   );

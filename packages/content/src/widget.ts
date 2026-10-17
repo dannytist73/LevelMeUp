@@ -2,9 +2,9 @@
 // quests are cleared, and what to do when the day has moved on. Player-facing, so the lint and the font subsets cover it.
 
 export const WIDGET_TEXT = {
-  day: 'DAY {day}',
+  day: 'Day {day}',
   streak: '{n}-day streak',
-  core: 'CORE QUEST',
+  core: 'Core quest',
   cleared: 'Cleared',
   dayCleared: 'Day cleared',
   progress: '{done} of {total} cleared',

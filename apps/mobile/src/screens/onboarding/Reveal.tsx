@@ -16,7 +16,7 @@ import { STEP_PATH, asksMind } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
 import { space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
-import { HalftoneHeader } from '../../ui/HalftoneHeader.tsx';
+import { ScreenHeader } from '../../ui/ScreenHeader.tsx';
 import { MOMENTS } from '../../ui/motion.ts';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { NightCard } from '../../ui/NightCard.tsx';
@@ -109,7 +109,7 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
         <SlamIn delay={MOMENTS.reveal.panel}>
           <View style={{ gap: 4 }}>
             <Label>{T.classLabel}</Label>
-            <Display>{CLASS_NAMES[profile.classId].toUpperCase()}</Display>
+            <Display>{CLASS_NAMES[profile.classId]}</Display>
             <Label tone="chalk">{classStats(CLASSES[profile.classId])}</Label>
           </View>
         </SlamIn>
@@ -135,7 +135,7 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
             <View key={stat} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Label tone="chalk" style={{ flex: 1 }}>{STAT_NAMES[stat]}</Label>
               <Heading>{String(character.stats[stat].points)}</Heading>
-              <Label tone="ember">{character.stats[stat].rank}</Label>
+              <Label tone="accentText">{character.stats[stat].rank}</Label>
             </View>
           ))}
           <Small>{T.statsNote}</Small>
@@ -171,11 +171,11 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-      <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
+      <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
         <SpeedLines burst />
-        <Label tone="ember">{T.title}</Label>
+        <Label tone="accentText">{T.title}</Label>
         <Title>{profile.name}</Title>
-      </HalftoneHeader>
+      </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>{body}</View>
     </ScreenScroll>
   );

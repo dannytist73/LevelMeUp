@@ -11,7 +11,7 @@ import { moveKey, setsLine, startFromLast } from '../../quest/lastSets.ts';
 import type { LastSets } from '../../quest/lastSets.ts';
 import { MAX_REPS, moveUnit, sessionPayload, sessionValid } from '../../quest/payload.ts';
 import { WORKOUT_REST_MS } from '../../quest/rest.ts';
-import { colors } from '../../theme/tokens.ts';
+import { colors, radius, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Body, Heading, Label, Small } from '../../ui/Text.tsx';
 import { Step } from './RepLog.tsx';
@@ -55,8 +55,8 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
         const shown = open === m;
         const before = last[moveKey(move.move)];
         return (
-          <View key={move.move} style={{ gap: 8, padding: 12, borderWidth: 2, borderColor: colors.chalk }}>
-            <Label tone="ember">{fillText(T.exercise, { n: m + 1, total: moves.length })}</Label>
+          <View key={move.move} style={{ gap: 8, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.line }}>
+            <Label tone="accentText">{fillText(T.exercise, { n: m + 1, total: moves.length })}</Label>
             <Heading>{words.name}</Heading>
             <Body weight="medium">{moveTarget(move)}</Body>
             {before !== undefined && <Small tone="chalk">{fillText(T.lastTime, { sets: setsLine(before) })}</Small>}
@@ -66,7 +66,7 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
               onPress={() => setOpen(shown ? null : m)} style={{ alignSelf: 'flex-start' }} />
             {shown && words.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
             {sets[m]!.map((n, s) => (
-              <View key={s} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderWidth: 2, borderColor: colors.line }}>
+              <View key={s} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderRadius: radius.control, backgroundColor: colors.panel }}>
                 <SetDone n={s + 1} done={done[`${m}:${s}`] === true} onPress={() => toggle(m, s)} />
                 <Label style={{ flexGrow: 1, paddingRight: 12, paddingVertical: 8 }}>{fillText(T.set, { n: s + 1 })}</Label>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>

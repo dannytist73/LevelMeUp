@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Chip } from '../../ui/Chip.tsx';
-import { HalftoneHeader } from '../../ui/HalftoneHeader.tsx';
+import { ScreenHeader } from '../../ui/ScreenHeader.tsx';
 import { Icon } from '../../ui/icons.tsx';
 import type { IconName } from '../../ui/icons.tsx';
 import { InkTabBar } from '../../ui/InkTabBar.tsx';
@@ -15,7 +15,7 @@ import { OutlinedTitle } from '../../ui/OutlinedTitle.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../../ui/SectionTitle.tsx';
 import { SlamIn } from '../../ui/SlamIn.tsx';
-import { SlantPanel } from '../../ui/SlantPanel.tsx';
+import { Panel } from '../../ui/Panel.tsx';
 import { MarkStamp, XpStamp } from '../../ui/Stamp.tsx';
 import { Body, Caption, Display, Heading, Label, Meta, Small, Title } from '../../ui/Text.tsx';
 import { XpBar } from '../../ui/XpBar.tsx';
@@ -34,10 +34,10 @@ export default function Kit() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <ScreenScroll contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32, gap: 28 }}>
-        <HalftoneHeader>
+        <ScreenHeader>
           <Label>LevelMeUp · design system · dark only</Label>
           <OutlinedTitle text="INK PANEL" />
-        </HalftoneHeader>
+        </ScreenHeader>
 
         <View style={{ paddingHorizontal: space.gutter, gap: 12 }}>
           <SectionTitle title="Type" />
@@ -58,12 +58,12 @@ export default function Kit() {
           <NarrationBox>Narration box: the System's voice.</NarrationBox>
           <SlamIn key={replay}>
             <View>
-              <SlantPanel offset contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 4 }}>
-                <Label tone="sealText">Quest panel</Label>
+              <Panel outlined contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 4 }}>
+                <Label tone="accentInk">Quest panel</Label>
                 <Title tone="ink">Cut corner, red offset</Title>
                 <Small tone="inkMuted">Stop if you feel sharp pain, dizziness or chest pain.</Small>
                 <Button label="Log reps" on="paper" onPress={() => setReplay((n) => n + 1)} />
-              </SlantPanel>
+              </Panel>
               <XpStamp xp={20} style={{ position: 'absolute', top: -20, right: -8 }} />
             </View>
           </SlamIn>

@@ -96,7 +96,7 @@ export const ADJUST_TEXT = {
       'A planned phone-free block. The screen stays dark and awake, and the block counts while LevelMeUp stays open. ' +
       'Leaving the app pauses it; calls and other apps always work.',
     minutes: '{n} minutes',
-    running: 'VANISHED',
+    running: 'Vanished',
     backAt: 'Back at {at}.',
     paused: 'You left LevelMeUp, so Vanish paused.',
     resume: 'Resume',

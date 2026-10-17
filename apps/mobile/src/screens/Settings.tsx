@@ -14,7 +14,7 @@ import { pactName, pactStartsNext } from '../game/pact.ts';
 import { clockLabel } from '../lib/dates.ts';
 import type { Permission } from '../notify/types.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
@@ -76,7 +76,7 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
           accessibilityRole="button"
           accessibilityLabel="Back"
           onPress={onBack}
-          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, borderWidth: 2, borderColor: colors.chalk }}
+          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.line }}
         >
           <Label tone="chalk">Back</Label>
         </Pressable>

@@ -19,7 +19,7 @@ export function Toggle({ label, line, value, disabled = false, onChange }: Toggl
       >
         <Body weight="bold" style={{ flexShrink: 1 }}>{label}</Body>
         <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-          <Switch value={value} disabled={disabled} trackColor={{ false: colors.line, true: colors.ember }} thumbColor={colors.chalk} />
+          <Switch value={value} disabled={disabled} trackColor={{ false: colors.line, true: colors.accent }} thumbColor={colors.chalk} />
         </View>
       </Pressable>
       <Small>{line}</Small>

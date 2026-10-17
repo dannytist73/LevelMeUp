@@ -5,12 +5,12 @@ import { Body, Caption, Display, Heading, Label, Meta, Small, Title } from '../s
 
 const styleOf = (text: string) => StyleSheet.flatten(screen.getByText(text).props.style);
 
-describe('Ink Panel text', () => {
+describe('Lantern text (M11)', () => {
   it.each([
-    ['Display', Display, 'BlackHanSans', 58, 1.15],
-    ['Title', Title, 'BlackHanSans', 34, 1.15],
-    ['Heading', Heading, 'BlackHanSans', 22, 1.2],
-    ['Label', Label, 'BlackHanSans', 13, 1.3],
+    ['Display', Display, 'BlackHanSans', 54, 1.15],
+    ['Title', Title, 'BlackHanSans', 30, 1.15],
+    ['Heading', Heading, 'BlackHanSans', 21, 1.2],
+    ['Label', Label, 'GothicA1-Bold', 14, 1.3],
     ['Body', Body, 'GothicA1-Regular', 16, 1.5],
     ['Small', Small, 'GothicA1-Regular', 14, 1.5],
     ['Meta', Meta, 'GothicA1-Regular', 13, 1.5],
@@ -22,10 +22,10 @@ describe('Ink Panel text', () => {
     expect(screen.getByText('words').props.numberOfLines).toBeUndefined();
   });
 
-  it('labels are uppercase and tracked; the words stay as written for screen readers', async () => {
-    await render(<Label>core quest</Label>);
-    expect(styleOf('core quest')).toMatchObject({ textTransform: 'uppercase' });
-    expect(styleOf('core quest').letterSpacing).toBeGreaterThan(1);
+  it('labels keep their words as written (sentence case), barely tracked', async () => {
+    await render(<Label>Core quest</Label>);
+    expect(styleOf('Core quest')).toMatchObject({ textTransform: 'none' });
+    expect(styleOf('Core quest').letterSpacing).toBeLessThan(0.5);
   });
 
   it('takes a tone and a body weight', async () => {

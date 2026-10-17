@@ -1,6 +1,7 @@
-// A labelled text input (visual spec §3: real inputs with labels). It grows with the phone's font size.
+// A labelled text input (visual spec §3: real inputs with labels; Lantern, M11: rounded). It grows with the phone's font
+// size.
 import { TextInput, View } from 'react-native';
-import { colors, fonts } from '../theme/tokens.ts';
+import { colors, fonts, radius, space } from '../theme/tokens.ts';
 import { Label } from './Text.tsx';
 
 export type TextFieldProps = {
@@ -17,7 +18,7 @@ export function TextField({ label, value, onChangeText, maxLength, multiline = f
   const paper = on === 'paper';
   return (
     <View style={{ gap: 8 }}>
-      <Label tone={paper ? 'sealText' : 'ash'}>{label}</Label>
+      <Label tone={paper ? 'accentInk' : 'ash'}>{label}</Label>
       <TextInput
         accessibilityLabel={label}
         value={value}
@@ -25,10 +26,10 @@ export function TextField({ label, value, onChangeText, maxLength, multiline = f
         maxLength={maxLength}
         multiline={multiline}
         maxFontSizeMultiplier={1.5}
-        selectionColor={colors.vermilion}
+        selectionColor={colors.accent}
         style={{
-          minHeight: 52, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 2,
-          borderColor: paper ? colors.ink : colors.chalk, backgroundColor: paper ? colors.paper : colors.panel,
+          minHeight: 52, paddingHorizontal: 16, paddingVertical: 12, borderWidth: space.border, borderRadius: radius.control,
+          borderColor: paper ? colors.inkMuted : colors.line, backgroundColor: paper ? colors.white : colors.panel,
           color: paper ? colors.ink : colors.chalk, fontFamily: fonts.bodyMedium, fontSize: 18,
         }}
       />

@@ -24,7 +24,7 @@ export function StatsPanel({ character }: { character: CharacterView }) {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
               <Label tone="chalk" style={{ flexGrow: 1 }}>{STAT_NAMES[stat]}</Label>
               <Heading>{String(s.points)}</Heading>
-              <Small tone="ember" weight="bold">{fillText(T.rank, { rank: s.rank })}</Small>
+              <Small tone="accentText" weight="bold">{fillText(T.rank, { rank: s.rank })}</Small>
             </View>
             <XpBar value={into} max={span} label={fillText(T.bar, { stat: STAT_NAMES[stat] })} />
             <Meta>{statLine(stat, s.points, s.xp)}</Meta>

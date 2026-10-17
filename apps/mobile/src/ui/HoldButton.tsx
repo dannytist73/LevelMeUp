@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, Text } from 'react-native';
 import Animated, { Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors, fonts } from '../theme/tokens.ts';
+import { colors, fonts, radius } from '../theme/tokens.ts';
 import { Button } from './Button.tsx';
 import { buzz } from './haptics.ts';
 
@@ -77,12 +77,12 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
       unstable_pressDelay={HOLD_SETTLE_MS}
       onPressIn={start}
       onPressOut={stop}
-      style={{ minHeight: 56, paddingHorizontal: 16, justifyContent: 'center', borderWidth: 2, borderColor: colors.chalk, backgroundColor: colors.seal, opacity: disabled ? 0.45 : 1 }}
+      style={{ minHeight: 56, paddingHorizontal: 20, justifyContent: 'center', borderRadius: radius.pill, overflow: 'hidden', backgroundColor: colors.commit, opacity: disabled ? 0.45 : 1 }}
     >
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 16, lineHeight: 20, letterSpacing: 1.9, color: colors.white, textAlign: 'center', textTransform: 'uppercase' }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 17, lineHeight: 22, color: colors.onAccent, textAlign: 'center' }}>
         {label}
       </Text>
-      <Animated.View testID="hold-fill" style={[{ position: 'absolute', left: 0, bottom: 0, height: 4, backgroundColor: colors.paper }, bar]} />
+      <Animated.View testID="hold-fill" style={[{ position: 'absolute', left: 0, bottom: 0, height: 5, backgroundColor: colors.onAccent }, bar]} />
     </Pressable>
   );
 }

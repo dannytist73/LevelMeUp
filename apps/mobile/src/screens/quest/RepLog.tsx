@@ -8,7 +8,7 @@ import { Pressable, Text, View } from 'react-native';
 import { setsLine } from '../../quest/lastSets.ts';
 import { MAX_REPS, MAX_SETS, repUnit, repsPayload, repsValid, startingSets } from '../../quest/payload.ts';
 import { REPS_REST_MS } from '../../quest/rest.ts';
-import { colors, fonts } from '../../theme/tokens.ts';
+import { colors, fonts, radius } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
@@ -49,7 +49,7 @@ export function RepLog({ condition, disabled, onClaim, last = null, now = Date.n
       <Caption>{fillText(T.unitLine, { unit })}</Caption>
       {last !== null && <Small>{fillText(T.lastTime, { sets: setsLine(last) })}</Small>}
       {sets.map((n, i) => (
-        <View key={i} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderWidth: 2, borderColor: colors.chalk }}>
+        <View key={i} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderRadius: radius.control, backgroundColor: colors.panel }}>
           <SetDone n={i + 1} done={done[i] === true} onPress={() => toggle(i)} />
           <Label style={{ flexGrow: 1, paddingRight: 12, paddingVertical: 8 }}>{fillText(T.set, { n: i + 1 })}</Label>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>

@@ -8,8 +8,8 @@ import { figureFor, otherFigure } from '../art/portraits.ts';
 import { scholarsPathOpen } from '../game/character.ts';
 import { marked, shadowHold } from '../game/pact.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
-import { HalftoneHeader } from '../ui/HalftoneHeader.tsx';
+import { colors, radius, space } from '../theme/tokens.ts';
+import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
@@ -42,9 +42,9 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
   if (view === null) {
     return (
       <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-        <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
+        <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
           <Label>{T.label}</Label>
-        </HalftoneHeader>
+        </ScreenHeader>
         <View style={{ paddingHorizontal: space.gutter, gap: 12 }}>
           <NarrationBox>The System is preparing your trials.</NarrationBox>
           {stale && <Caption>{lastSynced(lastSyncedAt, 'UTC')}</Caption>}
@@ -64,7 +64,7 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-      <HalftoneHeader style={{ paddingTop: insets.top + 22 }}>
+      <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
         <Label>{T.label}</Label>
         <View style={{ alignSelf: 'center' }}>
           <Portrait classId={classId} level={level} figure={figure} marked={mark}
@@ -72,17 +72,17 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
           <Pressable accessibilityRole="button" accessibilityLabel={T.switchPortrait} onPress={() => void setPortrait(otherFigure(figure))}
             style={({ pressed }) => ({
               position: 'absolute', right: -10, bottom: -10, width: 52, height: 52, borderRadius: 26, alignItems: 'center',
-              justifyContent: 'center', backgroundColor: pressed ? colors.ashLight : colors.paper, borderWidth: 3, borderColor: colors.ink,
+              justifyContent: 'center', backgroundColor: pressed ? colors.ashLight : colors.accent, borderWidth: 3, borderColor: colors.halftone,
             })}>
-            <Icon name="switch" size={24} color={colors.ink} />
+            <Icon name="switch" size={24} color={colors.onAccent} />
           </Pressable>
         </View>
         <Title>{view.profile.name}</Title>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-          <View style={{ paddingVertical: 3, paddingHorizontal: 10, backgroundColor: colors.paper, transform: [{ skewX: '-10deg' }] }}>
-            <Label tone="ink">{`LV ${level} ${className.toUpperCase()}`}</Label>
+          <View style={{ paddingVertical: 3, paddingHorizontal: 12, backgroundColor: colors.paper, borderRadius: radius.pill }}>
+            <Label tone="ink">{`Lv ${level} ${className}`}</Label>
           </View>
-          {title !== null && <Body tone="ember" weight="bold">{`“${title}”`}</Body>}
+          {title !== null && <Body tone="accentText" weight="bold">{`“${title}”`}</Body>}
         </View>
         <View style={{ gap: 6 }}>
           <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} label={`Level ${level} progress`} />
@@ -91,7 +91,7 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
             <Caption>{fillText(T.next, { level: level + 1 })}</Caption>
           </View>
         </View>
-      </HalftoneHeader>
+      </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
         <StatsPanel character={view.character} />
         <ClassPath view={view} dayNumber={view.today?.dayNumber ?? null} />

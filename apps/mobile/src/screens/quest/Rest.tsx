@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { moreRest, restClock, restLeft, startRest } from '../../quest/rest.ts';
 import type { Rest } from '../../quest/rest.ts';
-import { colors } from '../../theme/tokens.ts';
+import { colors, radius, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { buzz } from '../../ui/haptics.ts';
 import { Icon } from '../../ui/icons.tsx';
@@ -51,8 +51,8 @@ export function RestBar({ rest, over, now, onMore, onSkip }: { rest: Rest; over:
   if (rest !== null) {
     const clock = restClock(restLeft(rest, now()));
     return (
-      <View style={{ gap: 10, padding: 12, borderWidth: 2, borderColor: colors.ember, backgroundColor: colors.panel }}>
-        <Heading tone="ember" accessibilityLabel={`${T.label}: ${clock}`}>{fillText(T.left, { time: clock })}</Heading>
+      <View style={{ gap: 10, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.accent, backgroundColor: colors.panel }}>
+        <Heading tone="accentText" accessibilityLabel={`${T.label}: ${clock}`}>{fillText(T.left, { time: clock })}</Heading>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button label={T.more} accessibilityLabel={T.moreLabel} variant="secondary" onPress={onMore} style={{ flexGrow: 1 }} />
           <Button label={T.skip} variant="secondary" onPress={onSkip} style={{ flexGrow: 1 }} />
@@ -74,8 +74,8 @@ export function SetDone({ n, done, onPress }: { n: number; done: boolean; onPres
       onPress={onPress}
       style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
     >
-      <View style={{ width: 28, height: 28, borderWidth: 2, borderColor: done ? colors.ember : colors.line, backgroundColor: done ? colors.seal : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-        {done && <Icon name="check" size={18} color={colors.white} />}
+      <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: done ? colors.commit : colors.line, backgroundColor: done ? colors.commit : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+        {done && <Icon name="check" size={18} color={colors.onAccent} />}
       </View>
     </Pressable>
   );

@@ -9,7 +9,7 @@ import { Button } from '../../ui/Button.tsx';
 import { HoldButton } from '../../ui/HoldButton.tsx';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
-import { SlantPanel } from '../../ui/SlantPanel.tsx';
+import { Panel } from '../../ui/Panel.tsx';
 import { MarkStamp } from '../../ui/Stamp.tsx';
 import { TextField } from '../../ui/TextField.tsx';
 import { Caption, Heading, Label } from '../../ui/Text.tsx';
@@ -34,13 +34,13 @@ export function Vow({ onDone, screenReader }: { onDone: () => void; /** Tests on
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 24 }}>
       <NarrationBox>{T.line}</NarrationBox>
-      <SlantPanel offset contentStyle={{ paddingHorizontal: 18, paddingBottom: 18, gap: 12 }}>
-        <Label tone="sealText">{T.label}</Label>
+      <Panel outlined contentStyle={{ paddingHorizontal: 18, paddingBottom: 18, gap: 12 }}>
+        <Label tone="accentInk">{T.label}</Label>
         {editing
           ? <TextField label={T.edit} value={text} onChangeText={setText} maxLength={VOW_MAX} multiline on="paper" />
           : <Heading tone="ink">{text}</Heading>}
         {!editing && !sworn && <Button label={T.edit} variant="secondary" on="paper" onPress={() => setEditing(true)} />}
-      </SlantPanel>
+      </Panel>
       {sworn ? (
         <>
           <Thud testID="sworn-thud" style={{ alignSelf: 'flex-start' }}><MarkStamp text={T.sworn} /></Thud>

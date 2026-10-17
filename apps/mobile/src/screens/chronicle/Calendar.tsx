@@ -8,7 +8,7 @@ import type { ServerState } from '../../game/types.ts';
 import { compareMonths, marksByDate, monthOf, monthWeeks, shiftMonth } from '../../lib/calendar.ts';
 import type { CellMark, Month } from '../../lib/calendar.ts';
 import { dateKeyLabel, monthLabel } from '../../lib/dates.ts';
-import { colors, fonts } from '../../theme/tokens.ts';
+import { colors, fonts, radius, space } from '../../theme/tokens.ts';
 import { Icon } from '../../ui/icons.tsx';
 import { Heading, Label } from '../../ui/Text.tsx';
 import { useSize } from '../../ui/useSize.ts';
@@ -32,7 +32,7 @@ function shapes({ mark, today }: Look, w: number, h: number, hatch: string) {
     parts.push(<Rect key="hatch" x={0} y={0} width={w} height={h} fill={`url(#${hatch})`} />);
     parts.push(<Rect key="paused" x={1} y={1} width={w - 2} height={h - 2} fill="none" stroke={colors.ash} strokeWidth={2} />);
   }
-  if (today) parts.push(<Rect key="today" x={1.5} y={1.5} width={w - 3} height={h - 3} fill="none" stroke={colors.vermilion} strokeWidth={3} />);
+  if (today) parts.push(<Rect key="today" x={1.5} y={1.5} width={w - 3} height={h - 3} fill="none" stroke={colors.accent} strokeWidth={3} />);
   return parts;
 }
 
@@ -76,7 +76,7 @@ function MonthButton({ name, label, disabled, onPress }: { name: 'chevronLeft' |
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.line }}
+      style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.line }}
     >
       <Icon name={name} size={20} color={disabled ? colors.line : colors.chalk} />
     </Pressable>

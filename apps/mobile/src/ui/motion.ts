@@ -105,13 +105,13 @@ export function countPlan(was: BarPoint | null, now: BarPoint, delay: number): C
   return null;
 }
 
-export type InkTone = 'vermilion' | 'seal' | 'chalk';
+export type InkTone = 'accent' | 'accentText' | 'chalk';
 export type InkDrop = { dx: number; dy: number; size: number; tone: InkTone };
 
 const JITTER = [0, 0.31, -0.22, 0.17, -0.35, 0.08, 0.26, -0.12];
 const REACH = [1, 0.62, 0.84, 0.71, 0.93];
 const SIZES = [12, 7, 10, 5, 8, 6];
-const TONES: readonly InkTone[] = ['vermilion', 'chalk', 'seal'];
+const TONES: readonly InkTone[] = ['accent', 'chalk', 'accentText'];
 
 /** The ink splash's drops (spec decision 3, plan decision 3): a fixed table, never random, so every run is the same. */
 export function inkDrops(count: number, radius: number): InkDrop[] {
@@ -135,19 +135,19 @@ export const PULSE_TO = 0.85;
 export const BREATH_MS = 2_500;
 export const BREATH_TO = 1.015;
 
-export type Ember = { x: number; y: number; rise: number; drift: number; size: number; ms: number; delay: number; tone: 'ember' | 'vermilion' };
+export type Ember = { x: number; y: number; rise: number; drift: number; size: number; ms: number; delay: number; tone: 'shadow' | 'shadowDeep' };
 
 /** The Shadow's embers: a fixed table, never random (like the ink drops), each starting in its lower half and rising
  * `rise` dp over `ms`, drifting `drift` dp sideways, after `delay`. */
 export const EMBERS: readonly Ember[] = [
-  { x: 0.40, y: 0.78, rise: 52, drift: 4, size: 4, ms: 4_200, delay: 0, tone: 'ember' },
-  { x: 0.58, y: 0.66, rise: 38, drift: -5, size: 3, ms: 3_400, delay: 600, tone: 'vermilion' },
-  { x: 0.46, y: 0.90, rise: 66, drift: -3, size: 5, ms: 4_800, delay: 1_300, tone: 'ember' },
-  { x: 0.63, y: 0.84, rise: 44, drift: 6, size: 3, ms: 3_800, delay: 300, tone: 'vermilion' },
-  { x: 0.37, y: 0.62, rise: 30, drift: 3, size: 3, ms: 3_000, delay: 2_100, tone: 'ember' },
-  { x: 0.52, y: 0.74, rise: 58, drift: -6, size: 4, ms: 4_500, delay: 900, tone: 'vermilion' },
-  { x: 0.66, y: 0.70, rise: 34, drift: -4, size: 3, ms: 3_200, delay: 2_700, tone: 'ember' },
-  { x: 0.43, y: 0.68, rise: 46, drift: 5, size: 4, ms: 3_900, delay: 1_800, tone: 'vermilion' },
-  { x: 0.55, y: 0.93, rise: 70, drift: 2, size: 5, ms: 5_000, delay: 2_400, tone: 'ember' },
-  { x: 0.61, y: 0.60, rise: 32, drift: -2, size: 3, ms: 3_600, delay: 1_500, tone: 'vermilion' },
+  { x: 0.40, y: 0.78, rise: 52, drift: 4, size: 4, ms: 4_200, delay: 0, tone: 'shadow' },
+  { x: 0.58, y: 0.66, rise: 38, drift: -5, size: 3, ms: 3_400, delay: 600, tone: 'shadowDeep' },
+  { x: 0.46, y: 0.90, rise: 66, drift: -3, size: 5, ms: 4_800, delay: 1_300, tone: 'shadow' },
+  { x: 0.63, y: 0.84, rise: 44, drift: 6, size: 3, ms: 3_800, delay: 300, tone: 'shadowDeep' },
+  { x: 0.37, y: 0.62, rise: 30, drift: 3, size: 3, ms: 3_000, delay: 2_100, tone: 'shadow' },
+  { x: 0.52, y: 0.74, rise: 58, drift: -6, size: 4, ms: 4_500, delay: 900, tone: 'shadowDeep' },
+  { x: 0.66, y: 0.70, rise: 34, drift: -4, size: 3, ms: 3_200, delay: 2_700, tone: 'shadow' },
+  { x: 0.43, y: 0.68, rise: 46, drift: 5, size: 4, ms: 3_900, delay: 1_800, tone: 'shadowDeep' },
+  { x: 0.55, y: 0.93, rise: 70, drift: 2, size: 5, ms: 5_000, delay: 2_400, tone: 'shadow' },
+  { x: 0.61, y: 0.60, rise: 32, drift: -2, size: 3, ms: 3_600, delay: 1_500, tone: 'shadowDeep' },
 ];
