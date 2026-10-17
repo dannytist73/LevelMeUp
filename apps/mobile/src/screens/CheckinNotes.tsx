@@ -1,5 +1,6 @@
 // Today's part of the check-in (M7a, board F3 without the Pact's parts): a settled "I just didn't" once, the question while
-// a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer.
+// a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer. M12 (audit 1): its buttons are
+// quiet, so Up next keeps the screen's one bright button.
 import { CHECKIN_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -53,7 +54,7 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
           <NarrationBox>{T.title}</NarrationBox>
           <Small tone="chalk">{checkinLead(checkin, view.today?.dayNumber ?? null)}</Small>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <Button label={T.open} onPress={onCheckin} />
+            <Button label={T.open} variant="secondary" onPress={onCheckin} />
             <Button label={T.openLater} variant="secondary" onPress={() => answerLater(checkin.id)} />
           </View>
         </View>
@@ -67,7 +68,7 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
       {lighterPlan !== null && offered && !answeredOffer && (
         <View style={{ gap: 8 }}>
           <NarrationBox>{fillText(LIGHTER_TEXT.offer, { from: lighterPlan.from, to: lighterPlan.to })}</NarrationBox>
-          <Button label={LIGHTER_TEXT.accept} onPress={() => answerOffer(true)} />
+          <Button label={LIGHTER_TEXT.accept} variant="secondary" onPress={() => answerOffer(true)} />
           <Button label={LIGHTER_TEXT.decline} variant="secondary" onPress={() => answerOffer(false)} />
         </View>
       )}

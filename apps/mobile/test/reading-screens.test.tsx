@@ -6,7 +6,7 @@ import type { ServerState } from '../src/game/types.ts';
 import { Chronicle } from '../src/screens/Chronicle.tsx';
 import { Reading } from '../src/screens/Reading.tsx';
 import { InsightPanel } from '../src/screens/reading/InsightPanel.tsx';
-import { ReadingCard } from '../src/screens/reading/ReadingCard.tsx';
+import { ReadingHero, ReadingRow } from '../src/screens/reading/ReadingCard.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -15,22 +15,27 @@ const SUMMARY = { id: SAMPLE_ARTICLE.id, cluster: SAMPLE_ARTICLE.cluster, title:
 const base = serverState();
 const article = base.today!.quests.find((q) => q.slot === 'article')!;
 
-describe("Today's reading card (board D1)", () => {
-  it('shows the title, the minutes and XP, and Read', async () => {
+describe("Today's reading (board D1; M12 boards R3-1, R3-5)", () => {
+  it('as Up next: the topic, the title, how long it takes and its XP, and Read', async () => {
     const onOpen = jest.fn();
-    await render(<ReadingCard quest={article} article={SUMMARY} waiting={false} onOpen={onOpen} />);
+    await render(withStore(testStore(), <ReadingHero quest={article} article={SUMMARY} waiting={false} onOpen={onOpen} />));
     expect(screen.getByText(SAMPLE_ARTICLE.title)).toBeTruthy();
-    expect(screen.getByText('6 min · Wisdom +10 XP · one takeaway')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.read }));
+    expect(screen.getByText('6 min read · +10 XP')).toBeTruthy();
+    expect(screen.getByText(`${READING_TEXT.label} · ${CLUSTER_NAMES[SAMPLE_ARTICLE.cluster]}`)).toBeTruthy();
+    await fireEvent.press(screen.getByText(READING_TEXT.read));
     expect(onOpen).toHaveBeenCalled();
   });
 
-  it('says it waits while the day has no article, and shows a cleared reading', async () => {
-    const view = await render(<ReadingCard quest={article} article={null} waiting={false} onOpen={jest.fn()} />);
+  it('counts the Story Deck\'s cards once the phone holds it', async () => {
+    await render(withStore(testStore({ articles: { [SAMPLE_ARTICLE.id]: SAMPLE_ARTICLE } }),
+      <ReadingHero quest={article} article={SUMMARY} waiting={false} onOpen={jest.fn()} />));
+    expect(screen.getByText(/^\d+ cards · about \d+ min · \+10 XP$/)).toBeTruthy();
+  });
+
+  it('as a row: says it waits while the day has no article', async () => {
+    await render(withStore(testStore(), <ReadingRow quest={article} article={null} waiting={false} onOpen={jest.fn()} />));
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: READING_TEXT.read })).toBeNull();
-    await view.rerender(<ReadingCard quest={{ ...article, completedAt: '2026-10-10T13:00:00.000Z' }} article={SUMMARY} waiting={false} onOpen={jest.fn()} />);
-    expect(screen.getByText('Cleared +10')).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
 
@@ -50,10 +55,12 @@ describe("Today's reading card on Today", () => {
         onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()} now={() => Date.UTC(2026, 9, 10, 13)} />
     ));
     const view = await render(today(withArticle(false)));
-    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.read }));
+    await fireEvent.press(screen.getByText(SAMPLE_ARTICLE.title));
     expect(onOpenQuest).toHaveBeenCalledWith(article.id);
+    // Once cleared it waits under Done today; its row opens the article itself.
     await view.rerender(today(withArticle(true)));
-    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.readAgain }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Done today · 1' }));
+    await fireEvent.press(screen.getByText(SAMPLE_ARTICLE.title));
     expect(onOpenReading).toHaveBeenCalledWith(SAMPLE_ARTICLE.id);
   });
 });

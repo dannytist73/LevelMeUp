@@ -1,9 +1,9 @@
 import {
-  ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, PLAY_TEXT, fillText,
+  ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, PLAY_TEXT, TODAY_TEXT, fillText,
 } from '@levelmeup/content';
 import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import { dateKeyLabel } from '../src/lib/dates.ts';
 import type { ServerState } from '../src/game/types.ts';
@@ -51,46 +51,50 @@ describe('Today', () => {
 
   it('shows the core quest\'s picture, or its ink fallback, as part of the card for TalkBack (M6a, review)', async () => {
     await renderToday();
-    expect(screen.getByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeTruthy();
+    expect(within(screen.getByTestId('up-next')).getByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByLabelText(/quest picture/)).toBeNull(); // not a stop of its own inside the card
-    // M8b: the reading is its own card, with no button until the day has an article.
-    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(3);
+    // M8b: the reading has no button until the day has an article. M12: Up next and the open side quest open their quest;
+    // the cleared one waits folded under "Done today".
+    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(2);
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
   });
 
   it('shows the day, the player, the XP bar, the streak and shields', async () => {
     await renderToday();
     expect(screen.getByText('SAT · 10 OCT')).toBeTruthy();
-    expect(screen.getByText('Day 1')).toBeTruthy();
-    expect(screen.getByText('Rin')).toBeTruthy();
-    expect(screen.getByText(/^Lv \d+ Warrior$/)).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Day 1' })).toBeTruthy();
+    expect(screen.getByText(/^Rin · Lv \d+ Warrior$/)).toBeTruthy(); // M12: one line
     expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ })).toBeTruthy();
     expect(screen.getByText('day streak')).toBeTruthy();
     // M10c: shields as the icon and the number; the label still says it in full.
     expect(screen.getByLabelText('0 of 2 shields')).toBeTruthy();
   });
 
-  it('shows the core quest in the player\'s voice, with its target, why, safety line and XP stamp', async () => {
+  it('shows the core quest as Up next in the player\'s voice, with its target, safety line and XP; its why is on its screen', async () => {
     await renderToday();
     const template = authoredTemplate(core.templateId);
-    expect(screen.getByText(template.voice.system.title)).toBeTruthy();
-    expect(screen.getByText(questSummary(core))).toBeTruthy();
-    expect(screen.getByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeTruthy();
-    if (template.exercise !== null) expect(screen.getAllByText(EXERCISE_SAFETY_LINE).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText(`+${xpOf(core)} XP`)).toBeTruthy();
+    const next = within(screen.getByTestId('up-next'));
+    expect(next.getByText(template.voice.system.title)).toBeTruthy();
+    expect(next.getByText(questSummary(core))).toBeTruthy();
+    expect(screen.queryByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeNull(); // M12: the quest screen keeps it
+    if (template.exercise !== null) expect(next.getAllByText(EXERCISE_SAFETY_LINE).length).toBeGreaterThan(0);
+    expect(next.getByText(`· +${xpOf(core)} XP`)).toBeTruthy();
   });
 
-  it('shows the side quests: open ones with their XP, cleared ones with the time and a stamp', async () => {
+  it('shows the other open quests as rows with their XP, and the cleared ones folded under Done today', async () => {
     await renderToday();
-    expect(screen.getByText('1 / 2')).toBeTruthy();
+    expect(screen.getByText('2 left')).toBeTruthy(); // side quest 2 and the reading
     expect(screen.getByText(authoredTemplate(side2.templateId).voice.system.title)).toBeTruthy();
-    expect(screen.getAllByText(`+${xpOf(side2)} XP`).length).toBeGreaterThan(0);
+    expect(screen.getByText(`+${xpOf(side2)}`)).toBeTruthy();
+    expect(screen.queryByText(`${STAT_NAMES[side1.stat]} · cleared 21:00`)).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Done today · 1' }));
     expect(screen.getByText(`${STAT_NAMES[side1.stat]} · cleared 21:00`)).toBeTruthy();
     expect(screen.getByText(`Cleared +${xpOf(side1)}`)).toBeTruthy(); // M10c: a quiet line, not a stamp
   });
 
   it('marks a quest whose change the server hasn\'t confirmed', async () => {
     await renderToday({ view: project(SERVER, [completeEvent(core.id)]) });
+    await fireEvent.press(screen.getByRole('button', { name: 'Done today · 2' }));
     expect(screen.getByText('Will sync')).toBeTruthy();
     expect(screen.getAllByText(`Cleared +${xpOf(core)}`)).toHaveLength(2); // the core quest and side quest 1
   });
@@ -102,23 +106,30 @@ describe('Today', () => {
     expect(screen.queryByText(/error|failed/i)).toBeNull();
   });
 
-  it('nothing cached yet and syncing: "preparing your trials", no retry yet', async () => {
+  it('nothing cached yet and syncing: a skeleton, no retry yet (M12, audit 11)', async () => {
     await renderToday({ phase: 'loading', view: null, status: 'syncing' });
-    expect(screen.getByLabelText('System: The System is preparing your trials.')).toBeTruthy();
+    expect(screen.getByLabelText('Loading')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
-  it.each(['offline', 'retrying', 'idle'] as const)('nothing cached and %s: "preparing" with a retry that syncs', async (status) => {
+  it.each([
+    ['offline', 'state-offline', TODAY_TEXT.states.offline],
+    ['retrying', 'state-failed', TODAY_TEXT.states.failed],
+    ['idle', 'state-empty', TODAY_TEXT.states.waiting],
+  ] as const)('nothing cached and %s: says which, with a retry that syncs', async (status, id, title) => {
     const { store } = await renderToday({ phase: 'loading', view: null, status });
+    expect(screen.getByTestId(id)).toBeTruthy();
+    expect(screen.getByText(title)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(store.getState().syncNow).toHaveBeenCalled();
   });
 
-  it('a cached day that has ended is not offered: "preparing" until the next day arrives', async () => {
+  it('a cached day that has ended is not offered: it says so until the next day arrives', async () => {
     const ended = { ...SERVER, today: { ...SERVER.today!, endsAt: new Date(NOW - 1).toISOString() } };
-    await renderToday({ status: 'offline' }, ended);
-    expect(screen.getByLabelText('System: The System is preparing your trials.')).toBeTruthy();
+    await renderToday({ status: 'idle' }, ended);
+    expect(screen.getByText(TODAY_TEXT.states.ended)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(screen.queryByTestId('up-next')).toBeNull();
   });
 
   it('a lost sign-in is explained, and starting again needs a second, explicit tap', async () => {
@@ -514,7 +525,7 @@ describe("Scholar's Path: the book screen (M6d decision 12)", () => {
     await render(withStore(testStore({ view: project({ ...server, today: { ...server.today!, quests } }, []) }),
       <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
       now={() => DAY_TWO_NOW} />));
-    expect(screen.getAllByText('Reading: Dune')).toHaveLength(2); // the core card and an open side card
+    expect(screen.getAllByText('Reading: Dune')).toHaveLength(2); // Up next and an open side quest's row
   });
 });
 

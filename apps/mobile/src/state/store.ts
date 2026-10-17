@@ -97,6 +97,20 @@ export const HAPTICS_KEY = 'lmu.haptics';
 export const LAST_SETS_KEY = 'lmu.lastSets';
 /** M11 decision 7: the lessons kept from the Story Decks, on this phone. */
 export const CODEX_KEY = 'lmu.codex';
+/** M12 decisions 8–9: the one-time offers already shown (the reminder, the set-up cards), as a JSON list of names. */
+export const OFFERS_KEY = 'lmu.offers';
+
+/** The one-time offers (M12): each shows once, then lives in Settings. */
+export type Offer = 'reminder';
+
+const readOffers = (text: string | null): Offer[] => {
+  try {
+    const value: unknown = text === null ? [] : JSON.parse(text);
+    return Array.isArray(value) ? value.filter((v): v is Offer => typeof v === 'string') : [];
+  } catch {
+    return [];
+  }
+};
 
 /** A level-up or a new achievement, confirmed by the server (M6a decision 8). */
 /** A level-up carries the level it came from: one sync can cross more than one (the portrait's tier, M9a review). */
@@ -157,6 +171,8 @@ export type GameState = {
   lastSets: LastSets;
   /** M11: the lessons kept from the Story Decks, newest first. */
   codex: CodexEntry[];
+  /** M12: the one-time offers already shown on this phone. */
+  offers: Offer[];
   /** M11: keeps a deck's lesson in the Codex, or takes it out; shown at once, even if the phone can't store it. */
   toggleKeep: (entry: CodexEntry) => Promise<void>;
   boot: () => Promise<void>;
@@ -176,6 +192,8 @@ export type GameState = {
   /** M10c: remembers logged sets (merged over what's kept); shown at once, even if the phone can't store them. */
   rememberSets: (sets: Readonly<Record<string, readonly number[]>>) => Promise<void>;
   dismissTrainingNotice: () => Promise<void>;
+  /** M12: an offer was shown and answered; it never shows again on this phone for this character. */
+  markOffer: (offer: Offer) => Promise<void>;
   answerLater: (checkinId: number) => void;
   /** The app came back to the foreground: a check-in put off with "Later" shows again. */
   reopen: () => void;
@@ -402,11 +420,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(PORTRAIT_KEY);
       await deps.kv.removeItem(LAST_SETS_KEY); // M10c: the character's workouts, not the phone's
       await deps.kv.removeItem(CODEX_KEY); // M11: the character's kept lessons go with it
+      await deps.kv.removeItem(OFFERS_KEY); // M12: the next character gets its own offers
       // The Haptics switch stays: it is the phone's, not the character's (M10b plan decision 3).
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, codex: [], account: await deps.account(),
+        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, codex: [], offers: [], account: await deps.account(),
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -503,9 +522,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       haptics: true,
       lastSets: {},
       codex: [],
+      offers: [],
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -519,6 +539,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(HAPTICS_KEY).catch(() => null),
           deps.kv.getItem(LAST_SETS_KEY).catch(() => null),
           deps.kv.getItem(CODEX_KEY).catch(() => null),
+          deps.kv.getItem(OFFERS_KEY).catch(() => null),
         ]);
         const haptics = hapticsText !== 'off';
         setBuzzing(haptics);
@@ -533,6 +554,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
           shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
+          offers: readOffers(offersText),
         });
         await scheduler.request();
       },
@@ -637,6 +659,13 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       dismissTrainingNotice: async () => {
         set({ trainingNoticeSeen: true });
         await deps.kv.setItem(TRAINING_NOTICE_KEY, 'seen').catch(() => {});
+      },
+
+      markOffer: async (offer) => {
+        if (get().offers.includes(offer)) return;
+        const offers = [...get().offers, offer];
+        set({ offers });
+        await deps.kv.setItem(OFFERS_KEY, JSON.stringify(offers)).catch(() => {});
       },
 
       answerLater: (checkinId) => set({ checkinLater: checkinId }),

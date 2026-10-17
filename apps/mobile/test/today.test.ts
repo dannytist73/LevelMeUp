@@ -1,6 +1,6 @@
 // M10c: what Today says about the day (src/game/today.ts): today counts, the streak shown, the next quest, the day
-// cleared, and which quests a hold can clear.
-import { dayCleared, nextQuest, quickClearable, shownStreak, todayCounts, xpToday } from '../src/game/today.ts';
+// cleared, and which quests Today can clear. M12: Up next and the day done once its must-do quests are.
+import { dayCleared, mustDo, openQuests, quickClearable, shownStreak, todayCounts, upNext, xpToday } from '../src/game/today.ts';
 import type { QuestView, ServerState } from '../src/game/types.ts';
 import { serverState } from './support/fixtures.ts';
 
@@ -43,12 +43,32 @@ describe('today counts (decision 2)', () => {
   });
 });
 
-describe('the day cleared and the XP it earned', () => {
-  it('is cleared only when every quest is', () => {
-    const s = serverState();
-    expect(dayCleared(s.today!)).toBe(false);
-    expect(dayCleared(serverState(slots(s)).today!)).toBe(true);
-    expect(dayCleared({ ...s.today!, quests: [] })).toBe(false);
+const ARTICLE = { id: 'article-9', cluster: 'sleep' as const, title: 'Wake time', minutes: 6 };
+const withArticle = (s: ServerState): ServerState => ({ ...s, today: { ...s.today!, article: ARTICLE } });
+
+describe('the day done and the XP it earned (M12 decision 2)', () => {
+  it('needs the core quest and, once the day has its article, the reading; side quests are extras', () => {
+    expect(dayCleared(withArticle(serverState()).today!)).toBe(false);
+    expect(dayCleared(withArticle(serverState(['core'])).today!)).toBe(false);
+    expect(dayCleared(withArticle(serverState(['core', 'article'])).today!)).toBe(true);
+    expect(dayCleared(withArticle(serverState(['side1', 'side2', 'article'])).today!)).toBe(false);
+    expect(dayCleared(serverState(['core']).today!)).toBe(true); // the article never came: the core quest is enough
+    expect(dayCleared({ ...serverState().today!, quests: [] })).toBe(false);
+  });
+
+  it('needs an open recovery quest too', () => {
+    const s = serverState(['core']);
+    const recovery: QuestView = { ...s.today!.quests[1]!, id: 999, slot: 'recovery', completedAt: null };
+    const today = { ...s.today!, quests: [...s.today!.quests, recovery] };
+    expect(mustDo(today).map((q) => q.slot).sort()).toEqual(['core', 'recovery']);
+    expect(dayCleared(today)).toBe(false);
+  });
+
+  it('a day with no must-do quest needs every quest', () => {
+    const s = serverState(['side1']);
+    const sidesOnly = { ...s.today!, quests: s.today!.quests.filter((q) => q.slot === 'side1' || q.slot === 'side2') };
+    expect(dayCleared(sidesOnly)).toBe(false);
+    expect(dayCleared({ ...sidesOnly, quests: sidesOnly.quests.map((q) => ({ ...q, completedAt: '2026-10-10T13:00:00.000Z' })) })).toBe(true);
   });
 
   it("adds up the cleared quests' XP", () => {
@@ -59,24 +79,33 @@ describe('the day cleared and the XP it earned', () => {
   });
 });
 
-describe('the next quest', () => {
-  it('is none while the core quest is open', () => {
-    expect(nextQuest(serverState().today!)).toBeNull();
+describe('Up next (M12 decision 3)', () => {
+  it('is the core quest while it is open', () => {
+    expect(upNext(withArticle(serverState()).today!)?.slot).toBe('core');
   });
 
-  it('is the first open quest after the core quest is cleared, and none when all are', () => {
-    const s = serverState(['core']);
-    const first = s.today!.quests.find((q) => q.slot !== 'core')!;
-    expect(nextQuest(s.today!)?.id).toBe(first.id);
-    expect(nextQuest(serverState(['core', first.slot]).today!)?.slot).not.toBe(first.slot);
-    expect(nextQuest(serverState(slots(s)).today!)).toBeNull();
+  it('then the reading, then the side quests; none once the day is done', () => {
+    expect(upNext(withArticle(serverState(['core'])).today!)?.slot).toBe('article');
+    expect(upNext(withArticle(serverState(['core', 'side1'])).today!)?.slot).toBe('article');
+    expect(upNext(withArticle(serverState(['core', 'article'])).today!)).toBeNull();
+  });
+
+  it('a reading whose article has not come waits behind the side quests', () => {
+    expect(upNext(serverState(['side1']).today!)?.slot).toBe('core');
+    const s = { ...serverState().today!, quests: serverState().today!.quests.filter((q) => q.slot !== 'core') };
+    expect(upNext(s)?.slot).toBe('side1');
   });
 
   it('puts a recovery quest first', () => {
-    const s = serverState(['core']);
-    const today = s.today!;
-    const recovery: QuestView = { ...today.quests[1]!, id: 999, slot: 'recovery' };
-    expect(nextQuest({ ...today, quests: [...today.quests, recovery] })?.id).toBe(999);
+    const s = serverState();
+    const recovery: QuestView = { ...s.today!.quests[1]!, id: 999, slot: 'recovery', completedAt: null };
+    expect(upNext({ ...s.today!, quests: [...s.today!.quests, recovery] })?.id).toBe(999);
+  });
+
+  it('skips what it is told to (the side quests a Trial seals)', () => {
+    const s = withArticle(serverState(['core', 'article']));
+    const sides = { ...s.today!, quests: s.today!.quests.filter((q) => q.slot !== 'article' && q.slot !== 'core') };
+    expect(openQuests(sides, (q) => q.slot === 'side1').map((q) => q.slot)).toEqual(['side2']);
   });
 });
 

@@ -1,5 +1,6 @@
 // What Today says about the day as it stands (M10c): whether it already counts for the streak, the streak to show, the
-// next quest, whether the day is cleared, and which quests a hold on Today can clear.
+// next quest, whether the day is cleared, and which quests Today can clear itself. M12 (Round 3, plan decisions 2–3):
+// the day is done once its must-do quests are, and one quest is "Up next".
 import { STREAK_SLOTS, isStreakDay } from '@levelmeup/rules';
 import type { Shown } from './project.ts';
 import type { QuestView, TodayView } from './types.ts';
@@ -27,21 +28,44 @@ export function shownStreak(view: Pick<Shown, 'today' | 'character'>): { current
   return { current: shown, best: Math.max(best, shown), counts };
 }
 
-/** Every quest of the day is cleared. */
-export const dayCleared = (today: TodayView): boolean => today.quests.length > 0 && today.quests.every((q) => q.completedAt !== null);
+/**
+ * What a day needs (M12 decision 2): the core quest, a recovery quest while there is one, and the reading once the day
+ * has its article (a day whose article never came isn't held open by it). Side quests are extras. A day with none of
+ * these needs every quest. A display rule only: the streak is the server's (spec §2.4) and doesn't change.
+ */
+export function mustDo(today: TodayView): QuestView[] {
+  return today.quests.filter((q) => q.slot === 'core' || q.slot === 'recovery' || (q.slot === 'article' && today.article !== null));
+}
+
+/** The day is done: everything it needs is cleared. */
+export function dayCleared(today: TodayView): boolean {
+  if (today.quests.length === 0) return false;
+  const must = mustDo(today);
+  return (must.length > 0 ? must : today.quests).every((q) => q.completedAt !== null);
+}
 
 /** The XP today's cleared quests earned. */
 export const xpToday = (today: TodayView): number =>
   today.quests.filter((q) => q.completedAt !== null).reduce((sum, q) => sum + Object.values(q.xp).reduce((s, x) => s + (x ?? 0), 0), 0);
 
-/** The first open quest after the core quest is cleared: the one Today marks "Next". None while the core quest is open. */
-export function nextQuest(today: TodayView): QuestView | null {
-  const core = today.quests.find((q) => q.slot === 'core');
-  if (core !== undefined && core.completedAt === null) return null;
-  const order: QuestView['slot'][] = ['recovery', 'side1', 'side2', 'article'];
-  return [...today.quests].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot)).find((q) => q.slot !== 'core' && q.completedAt === null) ?? null;
+/** The order Today works through the day (M12 decision 3): a recovery quest, the core quest, the reading, the side quests. */
+const ORDER: readonly QuestView['slot'][] = ['recovery', 'core', 'article', 'side1', 'side2'];
+
+/** Today's open quests in that order, without those `skip` names (the side quests a Trial seals). */
+export function openQuests(today: TodayView, skip: (q: QuestView) => boolean = () => false): QuestView[] {
+  return [...today.quests].sort((a, b) => ORDER.indexOf(a.slot) - ORDER.indexOf(b.slot)).filter((q) => q.completedAt === null && !skip(q));
 }
 
-/** A check-off quest Today can clear with a hold (M10c decision 6): open, `tap`, not the reading, not sealed. */
+/**
+ * The one quest Today puts first, with the only bright button (M12 decision 3), or none once the day is done: side
+ * quests are extras then. A reading whose article hasn't arrived waits behind the side quests.
+ */
+export function upNext(today: TodayView, skip: (q: QuestView) => boolean = () => false): QuestView | null {
+  if (dayCleared(today)) return null;
+  const open = openQuests(today, skip);
+  return open.find((q) => q.slot !== 'article' || today.article !== null) ?? open[0] ?? null;
+}
+
+/** A check-off quest Today can clear from its row (M10c decision 6; M12: the check circle): open, `tap`, not the reading, not sealed. */
 export const quickClearable = (quest: QuestView, sealed: boolean): boolean =>
   quest.completedAt === null && quest.completion === 'tap' && quest.slot !== 'article' && !sealed;

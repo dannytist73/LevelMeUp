@@ -1,5 +1,5 @@
 import { CHECKIN_TEXT, PACT_TEXT, PLAY_TEXT, SHADOW_LINES, SHADOW_TEXT, fillText, retreatLine, shadowLine } from '@levelmeup/content';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { AppState } from 'react-native';
 import { project } from '../src/game/project.ts';
@@ -162,11 +162,9 @@ describe('Today after a miss (board F3)', () => {
     await render(withStore(testStore({ view: project(state, []), ...over }), <Today {...props} now={() => DAY_TWO_NOW} />));
     return props;
   };
-  const sections = () => screen.getAllByText(/^(Core quest|Side quests|Recovery|Today's reading)$/).map((t) => t.props.children as string);
-
-  it('lists the recovery quest first while it is open, for every player', async () => {
+  it('puts the recovery quest Up next while it is open, for every player (M12 decision 3)', async () => {
     await today(claimedState(null));
-    expect(sections()[0]).toBe('Recovery');
+    expect(within(screen.getByTestId('up-next')).getByText(/^Recovery quest · /)).toBeTruthy();
     expect(screen.getByText(CHECKIN_TEXT.held)).toBeTruthy(); // no pact: M7a's line
   });
 

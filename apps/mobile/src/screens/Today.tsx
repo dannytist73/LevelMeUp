@@ -1,13 +1,15 @@
 // Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
 // the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
 // quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx); M7a the check-in (CheckinNotes.tsx). M8b: today's
-// reading card and the Mage's Insight. M7c: after "I just didn't" under a pact, the Shadow's mark and box, the recovery quest first, and
-// at level 2 the Trial above the sealed side quests (board F3). M10b: the streak's flare ticks (spec decision 2).
-// M10c: a quieter header (the day at title size, shields as a number), the streak with today once it counts, notices one
-// at a time, the cleared day's panel, the next quest marked, and check-off quests cleared with a hold.
+// reading and the Mage's Insight. M7c: after "I just didn't" under a pact, the Shadow's mark and box, the recovery quest
+// first, and at level 2 the Trial above the sealed side quests (board F3). M10b: the streak's flare ticks.
+// M12 (Round 3, boards R3-1 and R3-4; audit 1, 3, 11, 12): a tighter header, the notices in one strip, "Up next" with the
+// screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
+// the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
 import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
-import { Pressable, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
 import { isExercise, isResting } from '../game/adjust.ts';
@@ -15,32 +17,43 @@ import { trainingUnset } from '../game/character.ts';
 import { streakNote } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
 import { marked, sealedQuest, shadowHold } from '../game/pact.ts';
-import { dayCleared, nextQuest, quickClearable, shownStreak, xpToday } from '../game/today.ts';
+import type { ShadowHold } from '../game/pact.ts';
+import type { Shown } from '../game/project.ts';
+import { dayCleared, openQuests, quickClearable, shownStreak, upNext } from '../game/today.ts';
 import type { QuestView, TodayView } from '../game/types.ts';
-import { clockTime, dayLabel } from '../lib/dates.ts';
+import { dayLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
+import type { Status } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
-import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { Icon } from '../ui/icons.tsx';
+import { LinkButton } from '../ui/LinkButton.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { RowLink } from '../ui/RowLink.tsx';
+import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { ShadowMark } from '../ui/ShadowMark.tsx';
-import { Panel } from '../ui/Panel.tsx';
+import { TodaySkeleton } from '../ui/Skeleton.tsx';
+import { Snackbar } from '../ui/Snackbar.tsx';
+import { StateNote } from '../ui/StateNote.tsx';
+import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { Thud } from '../ui/Thud.tsx';
 import { useGrowth } from '../ui/useMotion.ts';
 import { XpBar } from '../ui/XpBar.tsx';
 import { CheckinNotes } from './CheckinNotes.tsx';
 import { DayActions, DayBanners, PausedExercises } from './DayActions.tsx';
-import { QuestCard } from './QuestCard.tsx';
+import { QuestRow, UpNextCard, clearedQuestRow, questRowProps } from './QuestCard.tsx';
 import { InsightPanel } from './reading/InsightPanel.tsx';
-import { ReadingCard } from './reading/ReadingCard.tsx';
+import { ReadingHero, ReadingRow } from './reading/ReadingCard.tsx';
 import { SignInLost } from './SignInLost.tsx';
 import { syncMark } from './syncLine.ts';
+import { DayDonePanel, ReminderOffer } from './today/DayDone.tsx';
 import { UpdateNeeded } from './UpdateNeeded.tsx';
+
+const S = TODAY_TEXT.states;
 
 export type TodayProps = {
   onSettings: () => void;
@@ -63,16 +76,50 @@ export type TodayProps = {
   now?: () => number;
 };
 
-const SECTION: Record<QuestView['slot'], string> = {
-  core: 'Core quest', side1: 'Side quests', side2: 'Side quests', article: "Today's reading", recovery: 'Recovery',
-};
+/** One item of the notice strip (M12 decision 4): its words and what it offers. */
+type Notice = { key: string; text: string; actions: { label: string; onPress: () => void }[] };
+
+/** The notices, one at a time, in one strip (audit 3): "1 of 3" while more wait. */
+function NoticeStrip({ items }: { items: readonly Notice[] }) {
+  const first = items[0];
+  if (first === undefined) return null;
+  return (
+    <View key={first.key} testID="notice-strip" style={{ gap: 6 }}>
+      <NarrationBox>{first.text}</NarrationBox>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 16 }}>
+        {first.actions.map((a) => <LinkButton key={a.label} label={a.label} tone="accentText" onPress={a.onPress} />)}
+        {items.length > 1 && <Caption>{fillText(TODAY_TEXT.notices, { n: 1, total: items.length })}</Caption>}
+      </View>
+    </View>
+  );
+}
+
+/** Not a usable day (audit 11): loading is a skeleton; offline, a failed reach and an ended day each say what they are. */
+function NoDay({ view, status, ended, onRetry }: { view: Shown | null; status: Status; ended: boolean; onRetry: () => void }) {
+  if (status === 'syncing') return <TodaySkeleton />;
+  const retry = { label: S.retry, onPress: onRetry };
+  if (status === 'offline') return <StateNote kind="offline" title={S.offline} line={S.offlineLine} action={retry} />;
+  if (status === 'retrying') return <StateNote kind="failed" title={S.failed} line={S.failedLine} action={retry} />;
+  if (view !== null && ended) return <StateNote kind="empty" title={S.ended} line={S.endedLine} action={retry} />;
+  return <StateNote kind="empty" title={S.waiting} line={S.waitingLine} action={retry} />;
+}
+
+/** Board F3: the Trial of Stillness above the sealed side quests (M7c decision 6). */
+function TrialPanel({ onTrial }: { onTrial: () => void }) {
+  return (
+    <View style={{ gap: 10, padding: 16, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.shadow, backgroundColor: colors.panel }}>
+      <Heading tone="shadow">{SHADOW_TEXT.trial.title}</Heading>
+      <Small tone="chalk">{SHADOW_TEXT.trial.line}</Small>
+      <Button label={SHADOW_TEXT.trial.start} variant="secondary" onPress={onTrial} />
+    </View>
+  );
+}
 
 export function Today({
   onSettings, onOpenQuest, onOpenReading, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {},
   shown = true, now = Date.now,
 }: TodayProps) {
   const insets = useSafeAreaInsets();
-  const phase = useGame((s) => s.phase);
   const view = useGame((s) => s.view);
   // M10a decision 7: the streak's flame thuds when a sync raises it while Today is shown, never on opening. M10b review:
   // "shown" is in front, not just mounted under another tab or screen, where its tick would play unseen.
@@ -89,30 +136,38 @@ export function Today({
   const updateRequired = useGame((s) => s.updateRequired);
   const trainingNoticeSeen = useGame((s) => s.trainingNoticeSeen);
   const dismissTrainingNotice = useGame((s) => s.dismissTrainingNotice);
+  /** The quest a check circle just cleared, while its Undo shows. */
+  const [snack, setSnack] = useState<{ id: number; title: string } | null>(null);
+  const [showDone, setShowDone] = useState(false);
 
   const today = view?.today ?? null;
   const usable = today !== null && today.quests.length > 0 && Date.parse(today.endsAt!) > now();
-  // Spec §1.4: the empty state always offers a retry, except while a sync is already running.
-  const canRetry = status !== 'syncing';
   const mark = syncMark(status);
   // M7a: "paused" while a check-in waits, "held today" after "I just didn't".
   const note = view === null ? null : streakNote(view);
   // M7c: what the Shadow holds today (the mark, the seal), from the state; none without a pact.
   const hold = view === null ? null : shadowHold(view, now());
+  const open = (): boolean => today !== null && Date.parse(today.endsAt!) > now();
 
-  // M10c: one notice at a time, so a pile of them never pushes the quests down; Got it shows the next.
-  const notice = notices[0];
-  const noticeBoxes = notice === undefined ? null : (
-    <View key={notice.eventId} style={{ gap: 8 }}>
-      <NarrationBox>{noticeText(notice.code)}</NarrationBox>
-      {notices.length > 1 && <Caption>{fillText(TODAY_TEXT.notices, { n: 1, total: notices.length })}</Caption>}
-      <Button label="Got it" variant="secondary" onPress={() => dismissNotice(notice.eventId)} />
-    </View>
-  );
-  /** M10c decision 6: a hold on Today clears a check-off quest, as the quest screen's Mark cleared does. */
-  const quickClear = (q: QuestView) => {
-    if (today === null || Date.parse(today.endsAt!) <= now()) return;
+  const strip: Notice[] = [
+    ...(view !== null && !trainingNoticeSeen && trainingUnset(view.profile)
+      // Players from before M6c never chose a training setup: asked once (M6d decision 13).
+      ? [{ key: 'training', text: ADJUST_TEXT.training.notice, actions: [
+          { label: ADJUST_TEXT.training.setUp, onPress: () => { void dismissTrainingNotice(); onTraining(); } },
+          { label: ADJUST_TEXT.day.notNow, onPress: () => void dismissTrainingNotice() },
+        ] }]
+      : []),
+    ...notices.map((n) => ({ key: n.eventId, text: noticeText(n.code), actions: [{ label: TODAY_TEXT.gotIt, onPress: () => void dismissNotice(n.eventId) }] })),
+  ];
+
+  /** M12 decision 3: a check circle clears a check-off quest as the quest screen's Mark cleared does; Undo takes it back. */
+  const check = (q: QuestView, title: string) => {
+    if (!open()) return;
     void enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} });
+    setSnack({ id: q.id, title });
+  };
+  const undo = (id: number) => {
+    if (open()) void enqueue({ type: 'undo', instanceId: id });
   };
 
   let body;
@@ -120,177 +175,203 @@ export function Today({
     // M4 re-review: the sign-in is gone for good; starting again is the player's choice, confirmed, never automatic.
     body = <SignInLost />;
   } else if (!usable) {
-    body = (
-      <View style={{ gap: 16 }}>
-        <NarrationBox>The System is preparing your trials.</NarrationBox>
-        {canRetry && <Button label="Try again" variant="secondary" onPress={() => void syncNow()} />}
-        {mark !== null && <Caption>{mark}</Caption>}
-      </View>
-    );
+    body = <NoDay view={view} status={status} ended={today !== null} onRetry={() => void syncNow()} />;
   } else {
-    const quests = today!.quests;
-    const titles = [...new Set(quests.map((q) => SECTION[q.slot]))];
-    // Board F3 (M7c decision 6): the recovery quest comes first while it is open.
-    const slots = quests.some((q) => q.slot === 'recovery' && q.completedAt === null)
-      ? [SECTION.recovery, ...titles.filter((t) => t !== SECTION.recovery)]
-      : titles;
-    const sides = quests.filter((q) => q.slot === 'side1' || q.slot === 'side2');
-    const next = nextQuest(today!);
     body = (
-      <View style={{ gap: 30 }}>
-        {view!.offline && <NarrationBox>{OFFLINE_TEXT.built}</NarrationBox>}
-        {dayCleared(today!) && <DayClearedPanel today={today!} />}
-        <DayBanners today={today!} restDay={view!.character.restDay} />
-        {hold !== null && hold.kind !== 'paused' && (
-          <View style={{ gap: 8 }}>
-            <ShadowBox lines={[shadowLine(hold.cleared ? 'release' : 'mark', today!.dayNumber)]} />
-            <Button label={SHADOW_TEXT.reopen} variant="secondary" onPress={onShadow} style={{ alignSelf: 'flex-start' }} />
-          </View>
-        )}
-        {slots.map((title) => {
-          const inSection = quests.filter((q) => SECTION[q.slot] === title);
-          const count = title === 'Side quests' ? `${sides.filter((q) => q.completedAt !== null).length} / ${sides.length}` : undefined;
-          return (
-            <View key={title} style={{ gap: 14 }}>
-              {title === SECTION.side1 && hold !== null && hold.sealed && <TrialPanel onTrial={onTrial} />}
-              <SectionTitle title={title} count={count} />
-              {inSection.map((q) => {
-                if (q.slot === 'article') {
-                  // M8b decision 5: the reading card, and the Mage's Insight under it (decision 8).
-                  return (
-                    <View key={q.id} style={{ gap: 14 }}>
-                      <ReadingCard
-                        quest={q}
-                        article={today!.article}
-                        waiting={view!.waiting.has(q.id)}
-                        onOpen={() => {
-                          const article = today!.article;
-                          if (q.completedAt !== null && article !== null && onOpenReading !== undefined) onOpenReading(article.id);
-                          else onOpenQuest(q.id);
-                        }}
-                      />
-                      {view!.insight !== null && <InsightPanel insight={view!.insight} onChoose={(cluster) => void enqueue({ type: 'insight', cluster })} />}
-                    </View>
-                  );
-                }
-                const sealed = sealedQuest(hold, q);
-                return (
-                  <QuestCard
-                    key={q.id}
-                    quest={q}
-                    voice={view!.profile.voice}
-                    classId={view!.profile.classId}
-                    timeZone={today!.timeZone}
-                    waiting={view!.waiting.has(q.id)}
-                    onOpen={sealed ? onTrial : () => onOpenQuest(q.id)}
-                    sealed={sealed}
-                    next={next?.id === q.id}
-                    onQuickClear={quickClearable(q, sealed) ? () => quickClear(q) : undefined}
-                    artUri={q.slot === 'core' ? artUrl(art, artKey(authoredTemplate(q.templateId), q.condition), q.id) : null}
-                    onPain={q.slot === 'core' && q.completedAt === null && isExercise(q) ? () => onPain(q.id) : undefined}
-                    resting={q.completedAt === null && isResting(q, view!.paused)}
-                  />
-                );
-              })}
-            </View>
-          );
-        })}
-        <DayActions view={view!} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />
-        <PausedExercises view={view!} enqueue={enqueue} />
-      </View>
+      <DayBody view={view!} today={today!} hold={hold} art={art} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onPain={onPain}
+        onShadow={onShadow} onTrial={onTrial} onSwap={onSwap} onVanish={onVanish} onCheck={check} showDone={showDone}
+        onToggleDone={() => setShowDone((s) => !s)} enqueue={enqueue} />
     );
   }
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-      <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-          <View style={{ flexShrink: 1, gap: 2 }}>
-            {today !== null && (
-              <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
-            )}
-            <Title>{today !== null ? `Day ${today.dayNumber}` : 'Today'}</Title>
+    <View style={{ flex: 1, backgroundColor: colors.night }}>
+      <ScreenScroll contentContainerStyle={{ paddingBottom: snack === null ? 32 : 96 }}>
+        <ScreenHeader style={{ paddingTop: insets.top + 16, paddingBottom: 18, gap: 10, marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <View style={{ flexShrink: 1, gap: 2 }}>
+              {today !== null && (
+                <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
+              )}
+              <Title accessibilityRole="header">{today !== null ? `Day ${today.dayNumber}` : 'Today'}</Title>
+            </View>
+            <Tap
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+              onPress={onSettings}
+              radius={radius.pill}
+              style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.panel }}
+            >
+              <Icon name="settings" size={20} />
+            </Tap>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Settings"
-            onPress={onSettings}
-            style={{ width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.panel }}
-          >
-            <Icon name="settings" size={20} />
-          </Pressable>
+          {view !== null && (
+            <>
+              {/* The streak reads as one stop (audit 15): its number, what it is and today's note. */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, rowGap: 4, alignItems: 'center' }}>
+                <View accessible accessibilityLabel={[`${streak!.current} ${TODAY_TEXT.streak}`, ...(note !== null ? [note] : streak!.counts ? [TODAY_TEXT.counts] : [])].join(', ')}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+                  <Thud key={streakGrew} still={streakGrew === 0} haptic="tick" testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Icon name="flame" size={18} color={colors.accentText} />
+                    <Heading tone="accentText">{String(streak!.current)}</Heading>
+                  </Thud>
+                  <Small tone="chalk" style={{ flexShrink: 1 }}>
+                    {[TODAY_TEXT.streak, ...(note !== null ? [note] : streak!.counts ? [TODAY_TEXT.counts] : [])].join(' · ')}
+                  </Small>
+                </View>
+                <View accessible accessibilityLabel={fillText(TODAY_TEXT.shields, { n: view.character.streak.shields, max: MAX_SHIELDS })}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Icon name="shield" size={18} />
+                  <Heading>{String(view.character.streak.shields)}</Heading>
+                </View>
+              </View>
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', columnGap: 12 }}>
+                  <Body weight="bold">{`${view.profile.name} · Lv ${view.character.level} ${CLASS_NAMES[view.profile.classId]}`}</Body>
+                  <Caption>{`${view.character.xpIntoLevel} / ${view.character.xpForLevel} XP`}</Caption>
+                </View>
+                <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} level={view.character.level} label={`Level ${view.character.level} progress`} />
+              </View>
+              {marked(hold) && <ShadowMark label={SHADOW_TEXT.mark} accessibilityLabel={SHADOW_TEXT.markLabel} />}
+              {mark !== null && usable && <Caption>{mark}</Caption>}
+            </>
+          )}
+        </ScreenHeader>
+        <View style={{ paddingHorizontal: space.gutter, gap: 22 }}>
+          {updateRequired && <UpdateNeeded />}
+          {view !== null && <CheckinNotes view={view} onCheckin={onCheckin} now={now} />}
+          <NoticeStrip items={strip} />
+          {body}
         </View>
-        {view !== null && (
-          <>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-              <Heading>{view.profile.name}</Heading>
-              <View style={{ paddingVertical: 3, paddingHorizontal: 12, backgroundColor: colors.paper, borderRadius: radius.pill }}>
-                <Label tone="ink">{`Lv ${view.character.level} ${CLASS_NAMES[view.profile.classId]}`}</Label>
-              </View>
-            </View>
-            <View style={{ gap: 6 }}>
-              <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} level={view.character.level} label={`Level ${view.character.level} progress`} />
-              <Caption>{`${view.character.xpIntoLevel} / ${view.character.xpForLevel} XP`}</Caption>
-            </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-                <Thud key={streakGrew} still={streakGrew === 0} haptic="tick" testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Icon name="flame" size={18} color={colors.accentText} />
-                  <Heading tone="accentText">{String(streak!.current)}</Heading>
-                </Thud>
-                <Small tone="chalk" style={{ flexShrink: 1 }}>
-                  {[TODAY_TEXT.streak, ...(note !== null ? [note] : streak!.counts ? [TODAY_TEXT.counts] : [])].join(' · ')}
-                </Small>
-              </View>
-              <View accessible accessibilityLabel={fillText(TODAY_TEXT.shields, { n: view.character.streak.shields, max: MAX_SHIELDS })}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Icon name="shield" size={18} />
-                <Heading>{String(view.character.streak.shields)}</Heading>
-              </View>
-            </View>
-            {marked(hold) && <ShadowMark label={SHADOW_TEXT.mark} accessibilityLabel={SHADOW_TEXT.markLabel} />}
-            {mark !== null && usable && <Body tone="ash">{mark}</Body>}
-          </>
-        )}
-      </ScreenHeader>
-      <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
-        {updateRequired && <UpdateNeeded />}
-        {view !== null && !trainingNoticeSeen && trainingUnset(view.profile) && (
-          // Players from before M6c never chose a training setup: asked once (M6d decision 13).
-          <View style={{ gap: 8 }}>
-            <NarrationBox>{ADJUST_TEXT.training.notice}</NarrationBox>
-            <Button label={ADJUST_TEXT.training.setUp} onPress={() => { void dismissTrainingNotice(); onTraining(); }} />
-            <Button label={ADJUST_TEXT.day.notNow} variant="secondary" onPress={() => void dismissTrainingNotice()} />
-          </View>
-        )}
-        {view !== null && <CheckinNotes view={view} onCheckin={onCheckin} now={now} />}
-        {noticeBoxes}
-        {body}
-      </View>
-    </ScreenScroll>
-  );
-}
-
-/** M10c: every quest of the day is cleared: what it earned, and when the next day starts. */
-function DayClearedPanel({ today }: { today: TodayView }) {
-  return (
-    <View accessible accessibilityRole="summary">
-      <Panel outlined contentStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 4 }}>
-        <Title tone="ink">{fillText(TODAY_TEXT.dayCleared, { day: today.dayNumber })}</Title>
-        <Body tone="accentInk" weight="bold">{fillText(TODAY_TEXT.earned, { xp: xpToday(today) })}</Body>
-        <Small tone="inkSoft">{fillText(TODAY_TEXT.nextDay, { time: clockTime(today.endsAt!, today.timeZone) })}</Small>
-      </Panel>
+      </ScreenScroll>
+      {snack !== null && (
+        <View style={{ position: 'absolute', left: space.gutter, right: space.gutter, bottom: 12 }}>
+          <Snackbar key={snack.id} message={fillText(TODAY_TEXT.markedDone, { title: snack.title })} actionLabel={TODAY_TEXT.undo}
+            onAction={() => undo(snack.id)} onHide={() => setSnack(null)} />
+        </View>
+      )}
     </View>
   );
 }
 
-/** Board F3: the Trial of Stillness above the sealed side quests (M7c decision 6). */
-function TrialPanel({ onTrial }: { onTrial: () => void }) {
+type DayBodyProps = {
+  view: Shown;
+  today: TodayView;
+  hold: ShadowHold | null;
+  art: Parameters<typeof artUrl>[0];
+  onOpenQuest: (questId: number) => void;
+  onOpenReading?: (articleId: string) => void;
+  onPain: (questId: number) => void;
+  onShadow: () => void;
+  onTrial: () => void;
+  onSwap: () => void;
+  onVanish: () => void;
+  onCheck: (q: QuestView, title: string) => void;
+  showDone: boolean;
+  onToggleDone: () => void;
+  enqueue: Parameters<typeof DayActions>[0]['enqueue'];
+};
+
+/** A usable day: Up next or the day done, the other open quests, the day's options, and what's cleared. */
+function DayBody({
+  view, today, hold, art, onOpenQuest, onOpenReading, onPain, onShadow, onTrial, onSwap, onVanish, onCheck, showDone, onToggleDone, enqueue,
+}: DayBodyProps) {
+  const voice = view.profile.voice;
+  const sealed = (q: QuestView) => sealedQuest(hold, q);
+  const done = dayCleared(today);
+  const next = upNext(today, sealed);
+  const rest = openQuests(today).filter((q) => q.id !== next?.id);
+  /** Before the day is done, everything left is "Then"; after, the side quests are optional extras. */
+  const then = done ? [] : rest;
+  const extras = done ? rest : [];
+  const cleared = today.quests.filter((q) => q.completedAt !== null);
+  const anySealed = rest.some(sealed);
+  const resting = (q: QuestView) => q.completedAt === null && isResting(q, view.paused);
+
+  const openReading = (q: QuestView) => {
+    if (q.completedAt !== null && today.article !== null && onOpenReading !== undefined) onOpenReading(today.article.id);
+    else onOpenQuest(q.id);
+  };
+  const row = (q: QuestView) => {
+    if (q.slot === 'article') {
+      return <ReadingRow key={q.id} quest={q} article={today.article} waiting={view.waiting.has(q.id)} onOpen={() => openReading(q)} />;
+    }
+    const isSealed = sealed(q);
+    const title = authoredTemplate(q.templateId).voice[voice].title;
+    const checkable = quickClearable(q, isSealed);
+    return (
+      <QuestRow key={q.id} {...questRowProps(q, voice, { resting: resting(q), sealed: isSealed, ...(checkable ? { onCheck: () => onCheck(q, title) } : {}) })}
+        waiting={view.waiting.has(q.id)} onOpen={isSealed ? onTrial : () => onOpenQuest(q.id)} />
+    );
+  };
+
   return (
-    <View style={{ gap: 10, padding: 16, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.shadow, backgroundColor: colors.panel }}>
-      <Heading tone="shadow">{SHADOW_TEXT.trial.title}</Heading>
-      <Small tone="chalk">{SHADOW_TEXT.trial.line}</Small>
-      <Button label={SHADOW_TEXT.trial.start} onPress={onTrial} />
+    <View style={{ gap: 26 }}>
+      {view.offline && <StateNote kind="offline" title={OFFLINE_TEXT.built} />}
+      <DayBanners today={today} restDay={view.character.restDay} />
+      {hold !== null && hold.kind !== 'paused' && (
+        <View style={{ gap: 8 }}>
+          <ShadowBox lines={[shadowLine(hold.cleared ? 'release' : 'mark', today.dayNumber)]} />
+          <Button label={SHADOW_TEXT.reopen} variant="secondary" onPress={onShadow} style={{ alignSelf: 'flex-start' }} />
+        </View>
+      )}
+
+      {done && (
+        <View style={{ gap: 16 }}>
+          <DayDonePanel view={view} today={today} />
+          <ReminderOffer />
+        </View>
+      )}
+
+      {next !== null && (
+        <View style={{ gap: 12 }}>
+          <SectionTitle title={TODAY_TEXT.upNext} />
+          {next.slot === 'article' && today.article !== null ? (
+            <ReadingHero quest={next} article={today.article} waiting={view.waiting.has(next.id)} onOpen={() => openReading(next)} />
+          ) : (
+            <UpNextCard
+              quest={next}
+              voice={voice}
+              waiting={view.waiting.has(next.id)}
+              onGo={quickClearable(next, false) ? () => onCheck(next, authoredTemplate(next.templateId).voice[voice].title) : () => onOpenQuest(next.id)}
+              artUri={next.slot === 'core' ? artUrl(art, artKey(authoredTemplate(next.templateId), next.condition), next.id) : null}
+              onPain={next.slot === 'core' && isExercise(next) ? () => onPain(next.id) : undefined}
+              resting={resting(next)}
+            />
+          )}
+          <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />
+        </View>
+      )}
+
+      {then.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <SectionTitle title={TODAY_TEXT.then} count={fillText(TODAY_TEXT.left, { n: then.length })} />
+          {anySealed && <TrialPanel onTrial={onTrial} />}
+          {then.map(row)}
+        </View>
+      )}
+
+      {view.insight !== null && <InsightPanel insight={view.insight} onChoose={(cluster) => void enqueue({ type: 'insight', cluster })} />}
+
+      {extras.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <SectionTitle title={TODAY_TEXT.extra} count={TODAY_TEXT.optional} />
+          {anySealed && <TrialPanel onTrial={onTrial} />}
+          {extras.map(row)}
+        </View>
+      )}
+
+      {next === null && <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />}
+
+      {cleared.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <RowLink label={fillText(TODAY_TEXT.doneToday, { n: cleared.length })} open={showDone} onPress={onToggleDone} />
+          {showDone && cleared.map((q) => (q.slot === 'article'
+            ? clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => openReading(q), today.article?.title)
+            : clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => onOpenQuest(q.id))))}
+        </View>
+      )}
+      <PausedExercises view={view} enqueue={enqueue} />
     </View>
   );
 }

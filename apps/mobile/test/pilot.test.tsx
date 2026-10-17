@@ -22,7 +22,7 @@ describe('the update card (M9b decision 5)', () => {
       <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
         onCheckin={jest.fn()} now={now} />));
     expect(screen.getByLabelText(`System: ${UPDATE_TEXT.line}`)).toBeTruthy();
-    expect(screen.getByText('Core quest')).toBeTruthy();
+    expect(screen.getByTestId('up-next')).toBeTruthy();
   });
 
   it('Settings says it in the Sync section; without it there is no card', async () => {

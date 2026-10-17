@@ -97,14 +97,13 @@ export const PLAY_TEXT = {
   },
 } as const;
 
-/** M10c: Today's own words: the streak note, the core quest's Begin, the next quest, the cleared day, the day's options,
- * the notices' count and quick clear. */
+/** M10c: Today's own words: the streak note, the core quest's Begin, the cleared day, the day's options and the notices'
+ * count. M12 (Round 3, boards R3-1 and R3-4): Up next, Then, the day done, the check circle and its Undo, the states. */
 export const TODAY_TEXT = {
   streak: 'day streak',
   counts: 'today counts',
   shields: '{n} of {max} shields',
   begin: 'Begin',
-  next: 'Next',
   cleared: 'Cleared +{xp}',
   clearedAt: '{stat} · cleared {time}',
   dayCleared: 'Day {day} cleared',
@@ -112,9 +111,42 @@ export const TODAY_TEXT = {
   nextDay: 'The next day starts at {time}.',
   change: 'Change today',
   notices: '{n} of {total}',
-  hold: 'Hold to clear · +{xp} XP',
-  holdTap: 'Clear it',
-  holdConfirm: 'Yes, mark it cleared',
+  gotIt: 'Got it',
+  upNext: 'Up next',
+  then: 'Then',
+  left: '{n} left',
+  doneToday: 'Done today · {n}',
+  extra: 'If you want more',
+  optional: 'Optional',
+  tapHint: 'tap the circle when done',
+  markDone: 'Mark {title} done',
+  markedDone: '{title} cleared',
+  undo: 'Undo',
+  dayDone: {
+    holds: 'Your streak holds. Rest well.',
+    rest: 'Rest well.',
+    kept: '1 lesson kept',
+    keptMany: '{n} lessons kept',
+  },
+  reminder: {
+    title: 'A nudge tomorrow?',
+    line: 'One morning briefing at {time}. Change it any time in Settings.',
+    yes: 'Remind me',
+    no: 'Not now',
+    on: 'Your morning briefing comes at {time}.',
+  },
+  states: {
+    loading: 'Loading your day',
+    offline: "You're offline",
+    offlineLine: "Today's quests come with the next sync.",
+    failed: "Couldn't reach the System",
+    failedLine: "It tries again by itself. Today's quests come with the next sync.",
+    waiting: "Today's quests aren't here yet",
+    waitingLine: 'They come with the next sync.',
+    ended: 'This day has ended',
+    endedLine: 'The next day is on its way.',
+    retry: 'Try again',
+  },
 } as const;
 
 /** Fills `{name}` placeholders. A missing value is a bug, so it throws. */

@@ -22,7 +22,7 @@ describe('the snapshot', () => {
     const core = s.today!.quests.find((q) => q.slot === 'core')!;
     expect(widgetSnapshot(view)).toEqual({
       day: 1, streak: 6, core: authoredTemplate(core.templateId).voice.system.title, coreCleared: true,
-      done: 1, total: s.today!.quests.length, endsAt: Date.parse(s.today!.endsAt!),
+      done: 1, total: s.today!.quests.length, endsAt: Date.parse(s.today!.endsAt!), dayDone: true, // no article that day: the core quest closes it (M12)
     });
     expect(widgetSnapshot(null)).toBeNull();
     expect(widgetSnapshot({ ...view, today: null })).toBeNull();

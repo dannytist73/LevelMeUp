@@ -5,6 +5,8 @@ export const READING_TEXT = {
   label: "Today's reading",
   meta: '{minutes} min · Wisdom +{xp} XP',
   cardMeta: '{minutes} min · Wisdom +{xp} XP · one takeaway',
+  // M12: a reading's length on Today and in the Library, when the phone holds no Story Deck for it.
+  minutes: '{n} min read',
   read: 'Read',
   readAgain: 'Read again',
   cleared: 'Cleared +{xp}',

@@ -28,7 +28,8 @@ describe("M10c: Today's words and the widget's", () => {
 
   it('fill their placeholders', () => {
     expect(fillText(TODAY_TEXT.dayCleared, { day: 6 })).toBe('Day 6 cleared');
-    expect(fillText(TODAY_TEXT.hold, { xp: 10 })).toBe('Hold to clear · +10 XP');
+    expect(fillText(TODAY_TEXT.markDone, { title: 'Walk 10 minutes' })).toBe('Mark Walk 10 minutes done');
+    expect(fillText(TODAY_TEXT.doneToday, { n: 2 })).toBe('Done today · 2');
     expect(fillText(WIDGET_TEXT.progress, { done: 2, total: 4 })).toBe('2 of 4 cleared');
     expect(fillText(PLAY_TEXT.rest.left, { time: '1:45' })).toBe('Rest 1:45');
     expect(fillText(PLAY_TEXT.workout.lastTime, { sets: '10 · 9' })).toBe('Last time: 10 · 9');

@@ -1,202 +1,209 @@
-// A quest on Today (D1 board; Lantern, M11): the core quest in a panel outlined in the accent with its XP stamp, the others as night cards. Words come
-// from the content package in the player's voice; numbers from the quest's stored snapshot. M4 showed; M6a makes every
-// card open its quest and puts the picture on the core quest; M6b adds the hard-day tag and "I felt pain". M10c: the open
-// core quest ends in a Begin bar; a cleared quest is a slim, quiet row; the next quest is marked; a check-off quest has a
-// hold-to-clear bar under its card.
+// The quests on Today (D1 board; Lantern, M11; Round 3, M12 boards R3-1 and R3-4). Words come from the content package
+// in the player's voice; numbers from the quest's stored snapshot. M12 (plan decision 3, audit 1): one quest is "Up
+// next", a card holding the screen's only bright button (the core quest keeps its picture); the others are quiet rows
+// that open their quest, and a check-off quest's row has a check circle that clears it (Today offers Undo). A cleared
+// quest is a slim row with its XP.
 import {
   ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, SHADOW_TEXT, STAT_NAMES, TODAY_TEXT, authoredTemplate, fillText, questSummary,
-  renderWhy,
 } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
-import type { ClassId } from '@levelmeup/rules';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import type { QuestView } from '../game/types.ts';
 import { clockTime } from '../lib/dates.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
-import { HoldButton } from '../ui/HoldButton.tsx';
 import { Icon } from '../ui/icons.tsx';
-import { NightCard } from '../ui/NightCard.tsx';
 import { QuestArt } from '../ui/QuestArt.tsx';
 import { SlamIn } from '../ui/SlamIn.tsx';
-import { Panel } from '../ui/Panel.tsx';
-import { XpStamp } from '../ui/Stamp.tsx';
+import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Meta, Small, Title } from '../ui/Text.tsx';
 
 export const COMPLETION_NAMES = { tap: 'Check off', timer: 'Timer', reps: 'Rep log', text: 'One sentence' } as const;
 
-export type QuestCardProps = {
+/** M10c: the core card's picture is a wider crop than the quest screen's 16:9 (emulator: Begin fell below the fold). */
+export const TODAY_ART_RATIO = 2;
+
+export const questXp = (quest: QuestView): number => Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0);
+
+const SLOT_NAMES: Readonly<Record<QuestView['slot'], string>> = {
+  core: PLAY_TEXT.quest.slots.core, side1: PLAY_TEXT.quest.slots.side, side2: PLAY_TEXT.quest.slots.side,
+  article: PLAY_TEXT.quest.slots.article, recovery: PLAY_TEXT.quest.slots.recovery,
+};
+
+export function WillSync({ on = 'night' }: { on?: 'paper' | 'night' }) {
+  return <Caption tone={on === 'paper' ? 'inkMuted' : 'ash'}>{PLAY_TEXT.quest.willSync}</Caption>;
+}
+
+/** The tags a quest can carry today: a hard day's lighter version, an exercise resting after pain. */
+function Tags({ quest, resting }: { quest: QuestView; resting: boolean }) {
+  if (!quest.hardDay && !resting) return null;
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" />}
+      {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" />}
+    </View>
+  );
+}
+
+/** The bright bar at the foot of Up next: the only accent button on Today (audit 1). */
+function GoBar({ label, xp }: { label: string; xp: number }) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 8, minHeight: 54, marginTop: 4, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.commit }}>
+      <Heading tone="onAccent">{label}</Heading>
+      <Label tone="onAccent">{`· +${xp} XP`}</Label>
+      <Icon name="chevronRight" size={22} color={colors.onAccent} />
+    </View>
+  );
+}
+
+export type UpNextProps = {
   quest: QuestView;
   voice: Voice;
-  classId: ClassId;
-  timeZone: string;
-  /** The server hasn't confirmed a change to this quest yet. */
   waiting: boolean;
-  /** Opens the quest screen (M6a). */
-  onOpen: () => void;
+  /** Opens the quest screen; for a check-off side quest, clears it instead (Today offers Undo). */
+  onGo: () => void;
   /** The core quest's picture, or null for the ink fallback (M6a decision 10). */
   artUri: string | null;
   /** An open exercise core quest: "I felt pain" under the card (board D1). */
   onPain?: () => void;
-  /** The quest's exercise is resting after pain (M6b review): the card says so. */
   resting?: boolean;
-  /** M7c: a side quest the Trial of Stillness seals: a quiet card that opens the trial. */
-  sealed?: boolean;
-  /** M10c: the quest to do next, once the core quest is cleared. */
-  next?: boolean;
-  /** M10c decision 6: a check-off quest cleared by a hold under its card. */
-  onQuickClear?: () => void;
 };
 
-/** M10c: the core card's picture is a wider crop than the quest screen's 16:9 (emulator: Begin fell below the fold). */
-export const TODAY_ART_RATIO = 2;
-
-/** M10c: how long the hold to clear a quest from Today lasts: quick, but never a brushed tap. */
-export const QUICK_CLEAR_MS = 800;
-
-function QuickClear({ xp, onDone }: { xp: number; onDone: () => void }) {
-  return (
-    <HoldButton label={fillText(TODAY_TEXT.hold, { xp })} tapLabel={TODAY_TEXT.holdTap} confirmLabel={TODAY_TEXT.holdConfirm}
-      holdMs={QUICK_CLEAR_MS} onDone={onDone} />
-  );
-}
-
-/** M10c: a cleared quest, quiet: its title, when it was cleared, and its XP in a small ember line. */
-function ClearedRow({ title, stat, time, xp, waiting, on, onOpen }: {
-  title: string; stat: string; time: string; xp: number; waiting: boolean; on: 'paper' | 'night'; onOpen: () => void;
-}) {
-  const paper = on === 'paper';
-  return (
-    <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
-      <View style={{
-        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: radius.control,
-        backgroundColor: paper ? colors.paper : colors.panel, borderWidth: space.border, borderColor: paper ? colors.paper : colors.divider,
-      }}>
-        <Icon name="check" size={22} color={paper ? colors.accentInk : colors.accentText} />
-        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
-          <Body weight="bold" tone={paper ? 'ink' : 'ashLight'}>{title}</Body>
-          <Meta style={paper ? { color: colors.inkMuted } : undefined}>{fillText(TODAY_TEXT.clearedAt, { stat, time })}</Meta>
-          {waiting && <WillSync on={on} />}
-        </View>
-        <Label tone={paper ? 'accentInk' : 'accentText'}>{fillText(TODAY_TEXT.cleared, { xp })}</Label>
-      </View>
-    </Pressable>
-  );
-}
-
-export const questXp = (quest: QuestView): number => Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0);
-
-function WillSync({ on }: { on: 'paper' | 'night' }) {
-  return <Caption tone={on === 'paper' ? 'inkMuted' : 'ash'}>Will sync</Caption>;
-}
-
-export function QuestCard({
-  quest, voice, classId, timeZone, waiting, onOpen, artUri, onPain, resting = false, sealed = false, next = false, onQuickClear,
-}: QuestCardProps) {
+/** Up next (board R3-1): the quest to do now. The whole card is one button; "I felt pain" sits beside it, never inside. */
+export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, resting = false }: UpNextProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
-  const summary = questSummary(quest);
-  const why = renderWhy(quest.why, voice, { classId });
   const xp = questXp(quest);
   const stat = STAT_NAMES[quest.stat];
-  const cleared = quest.completedAt !== null;
-
-  if (cleared) {
-    return (
-      <ClearedRow title={words.title} stat={stat} time={clockTime(quest.completedAt!, timeZone)} xp={xp} waiting={waiting}
-        on="night" onOpen={onOpen} />
-    );
-  }
-
-  if (quest.slot === 'core') {
-    // The pain button sits beside the card, never inside it: a button inside the card's pressable is unreachable for
-    // screen readers. The Begin bar is part of the card (M10c): the whole card is the one button.
-    return (
-      <View style={{ gap: 10 }}>
-        <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
-          <SlamIn>
-            {/* Lantern (M11): the card you act on now is the panel outlined in the accent, its picture across the top. */}
-            <View>
-              <Panel outlined fill={colors.panel} contentStyle={{ padding: 0 }}>
-                <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} rounded={false} />
-                <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 18, gap: 10 }}>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                    <Chip label={stat} />
-                    <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
-                    {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" />}
-                    {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" />}
-                  </View>
-                  <View style={{ gap: 4 }}>
-                    <Title>{words.title}</Title>
-                    <Body tone="ashLight" weight="medium">{summary}</Body>
-                    {quest.book !== null && <Small>{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
-                  </View>
-                  {/* M10c: the why as one quiet line (the quest screen keeps its box), so Begin stays on the first screen. */}
-                  <Small>{why}</Small>
-                  {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
-                  {waiting && <WillSync on="night" />}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 54, marginTop: 4, borderRadius: radius.pill, backgroundColor: colors.commit }}>
-                    <Heading tone="onAccent">{TODAY_TEXT.begin}</Heading>
-                    <Icon name="chevronRight" size={22} color={colors.onAccent} />
-                  </View>
-                </View>
-              </Panel>
-              <XpStamp xp={xp} size={60} rotate={0} style={{ position: 'absolute', top: 12, right: 12 }} />
-            </View>
-          </SlamIn>
-        </Pressable>
-        {onQuickClear !== undefined && <QuickClear xp={xp} onDone={onQuickClear} />}
-        {onPain !== undefined && (
-          <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} style={{ alignSelf: 'flex-start' }} />
-        )}
-      </View>
-    );
-  }
-
-  if (sealed) {
-    return (
-      <Pressable
+  const core = quest.slot === 'core';
+  const clears = quest.completion === 'tap' && !core;
+  return (
+    <View style={{ gap: 10 }}>
+      <Tap
         accessibilityRole="button"
-        accessibilityLabel={`${words.title}. ${SHADOW_TEXT.trial.sealed}. ${SHADOW_TEXT.trial.sealedHint}`}
-        onPress={onOpen}
+        accessibilityLabel={`${SLOT_NAMES[quest.slot]}, ${stat}. ${words.title}. ${questSummary(quest)}. ${clears ? fillText(TODAY_TEXT.markDone, { title: words.title }) : TODAY_TEXT.begin}, +${xp} XP`}
+        accessibilityHint={clears ? undefined : PLAY_TEXT.quest.open}
+        onPress={onGo}
+        radius={radius.card}
       >
-        <NightCard quiet>
-          {/* Wraps: at the largest font the chip goes under the title instead of past the card's edge (emulator). */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <View style={{ flexGrow: 1, flexShrink: 1, gap: 3 }}>
-              <Body weight="bold" tone="ashLight">{words.title}</Body>
-              <Meta>{`${stat} · ${summary}`}</Meta>
+        <SlamIn>
+          {/* The card you act on now is outlined in the accent; the core quest's picture runs across its top. */}
+          <View testID="up-next" style={{ borderRadius: radius.card, borderWidth: space.heroBorder, borderColor: colors.accent, backgroundColor: colors.panel, overflow: 'hidden' }}>
+            {core && <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} rounded={false} />}
+            <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 18, gap: 8 }}>
+              <Label tone="accentText">{`${SLOT_NAMES[quest.slot]} · ${stat}`}</Label>
+              <Title>{words.title}</Title>
+              <Body tone="ashLight" weight="medium">{questSummary(quest)}</Body>
+              {quest.book !== null && <Small>{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
+              <Tags quest={quest} resting={resting} />
+              {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
+              {waiting && <WillSync />}
+              <GoBar label={clears ? PLAY_TEXT.claim.tap : TODAY_TEXT.begin} xp={xp} />
             </View>
-            <Chip label={SHADOW_TEXT.trial.sealed} kind="outline" />
           </View>
-        </NightCard>
-      </Pressable>
-    );
-  }
-
-  const card = (
-    <Pressable accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen}>
-      <NightCard>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flexShrink: 1 }}>
-            {next && <Chip label={TODAY_TEXT.next} kind="accent" />}
-            <Chip label={stat} />
-            <Chip label={COMPLETION_NAMES[quest.completion]} kind="outline" />
-            {quest.hardDay && <Chip label={ADJUST_TEXT.hardDay.tag} kind="outline" />}
-            {resting && <Chip label={ADJUST_TEXT.paused.tag} kind="outline" />}
-          </View>
-          <Heading tone="accentText">{`+${xp} XP`}</Heading>
-        </View>
-        <Heading>{words.title}</Heading>
-        <Meta>{summary}</Meta>
-        {quest.book !== null && <Small tone="chalk">{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
-        <Small>{why}</Small>
-        {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
-        {waiting && <WillSync on="night" />}
-      </NightCard>
-    </Pressable>
+        </SlamIn>
+      </Tap>
+      {onPain !== undefined && <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} style={{ alignSelf: 'flex-start' }} />}
+    </View>
   );
-  if (onQuickClear === undefined) return card;
-  return <View style={{ gap: 10 }}>{card}<QuickClear xp={xp} onDone={onQuickClear} /></View>;
+}
+
+/** A check-off quest's check circle (M12 decision 3): 48 dp, beside its row, never inside it. */
+function CheckCircle({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <Tap accessibilityRole="checkbox" accessibilityLabel={fillText(TODAY_TEXT.markDone, { title })} accessibilityState={{ checked: false }}
+      onPress={onPress} radius={radius.pill} style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.lineStrong }} />
+    </Tap>
+  );
+}
+
+export type QuestRowProps = {
+  title: string;
+  /** "Vitality · 10 minutes". */
+  line: string;
+  xp: number;
+  onOpen: () => void;
+  /** A check-off quest: its circle clears it. */
+  onCheck?: () => void;
+  /** A tag at the end instead of the XP ("Sealed"). */
+  tag?: string;
+  /** A second line ("Reading: Dune"). */
+  note?: string;
+  waiting?: boolean;
+  /** What a screen reader hears for the row, when the title and line don't say it all. */
+  accessibilityLabel?: string;
+};
+
+/** An open quest that isn't Up next (board R3-1's "Then"): quiet, one line of detail, its XP at the end. */
+export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting = false, accessibilityLabel }: QuestRowProps) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: radius.control, borderWidth: space.border, borderColor: colors.divider, backgroundColor: colors.panel }}>
+      {onCheck !== undefined && <CheckCircle title={title} onPress={onCheck} />}
+      <Tap
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? `${title}. ${line}. ${tag ?? `+${xp} XP`}`}
+        accessibilityHint={PLAY_TEXT.quest.open}
+        onPress={onOpen}
+        radius={radius.control}
+        style={{ flex: 1, minHeight: 60, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 4, paddingLeft: onCheck === undefined ? 16 : 0, paddingRight: 14, paddingVertical: 10 }}
+      >
+        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
+          <Body weight="bold">{title}</Body>
+          <Meta>{line}</Meta>
+          {note !== undefined && <Small>{note}</Small>}
+          {waiting && <WillSync />}
+        </View>
+        {tag !== undefined ? <Chip label={tag} kind="outline" /> : <Label tone="accentText">{`+${xp}`}</Label>}
+      </Tap>
+    </View>
+  );
+}
+
+/** A Then row for a quest: its words, its stat and target, a check circle when a tap clears it. */
+export function questRowProps(quest: QuestView, voice: Voice, extra: { resting: boolean; sealed: boolean; onCheck?: () => void }): Omit<QuestRowProps, 'onOpen'> {
+  const title = authoredTemplate(quest.templateId).voice[voice].title;
+  const stat = STAT_NAMES[quest.stat];
+  const parts = [stat, extra.onCheck !== undefined ? TODAY_TEXT.tapHint : questSummary(quest)];
+  if (quest.hardDay) parts.push(ADJUST_TEXT.hardDay.tag);
+  if (extra.resting) parts.push(ADJUST_TEXT.paused.tag);
+  return {
+    title,
+    line: parts.join(' · '),
+    xp: questXp(quest),
+    ...(quest.book === null ? {} : { note: fillText(BOOK_TEXT.questLine, { title: quest.book }) }),
+    ...(extra.onCheck === undefined ? {} : { onCheck: extra.onCheck }),
+    ...(extra.sealed ? { tag: SHADOW_TEXT.trial.sealed, accessibilityLabel: `${title}. ${SHADOW_TEXT.trial.sealed}. ${SHADOW_TEXT.trial.sealedHint}` } : {}),
+  };
+}
+
+/** M10c: a cleared quest, quiet: its title, when it was cleared, and its XP. */
+export function ClearedRow({ title, stat, time, xp, waiting, onOpen }: {
+  title: string; stat: string; time: string; xp: number; waiting: boolean; onOpen: () => void;
+}) {
+  return (
+    <Tap accessibilityRole="button" accessibilityHint={PLAY_TEXT.quest.open} onPress={onOpen} radius={radius.control}>
+      <View style={{
+        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: radius.control,
+        backgroundColor: colors.panel, borderWidth: space.border, borderColor: colors.divider,
+      }}>
+        <Icon name="check" size={22} color={colors.accentText} />
+        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
+          <Body weight="bold" tone="ashLight">{title}</Body>
+          <Meta>{fillText(TODAY_TEXT.clearedAt, { stat, time })}</Meta>
+          {waiting && <WillSync />}
+        </View>
+        <Label tone="accentText">{fillText(TODAY_TEXT.cleared, { xp })}</Label>
+      </View>
+    </Tap>
+  );
+}
+
+/** The cleared row of a quest; the reading's carries its article's title. */
+export function clearedQuestRow(quest: QuestView, voice: Voice, timeZone: string, waiting: boolean, onOpen: () => void, title?: string) {
+  return (
+    <ClearedRow key={quest.id} title={title ?? authoredTemplate(quest.templateId).voice[voice].title} stat={STAT_NAMES[quest.stat]}
+      time={clockTime(quest.completedAt!, timeZone)} xp={questXp(quest)} waiting={waiting} onOpen={onOpen} />
+  );
 }

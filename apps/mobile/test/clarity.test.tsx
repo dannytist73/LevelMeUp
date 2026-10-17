@@ -1,17 +1,16 @@
 // M10c (clarity): Today says what to do next and quietens what's done; Character and the Chronicle lose their noise.
+// M12 (Round 3): Up next, Then, the day done once its core quest and reading are, the check circle with Undo.
 import { CHARACTER_TEXT, TODAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { clockTime } from '../src/lib/dates.ts';
 import { Character } from '../src/screens/Character.tsx';
 import { Chronicle } from '../src/screens/Chronicle.tsx';
-import { QUICK_CLEAR_MS } from '../src/screens/QuestCard.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { HOLD_SETTLE_MS } from '../src/ui/HoldButton.tsx';
+import { SNACKBAR_MS } from '../src/ui/Snackbar.tsx';
 import { serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
-import { fingerDown, fingerUp } from './support/touch.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // inside day 1 (12:00–20:00 UTC)
 const titleOf = (s: ServerState, slot: string) => authoredTemplate(s.today!.quests.find((q) => q.slot === slot)!.templateId).voice.system.title;
@@ -26,22 +25,26 @@ async function renderToday(server: ServerState, over: Parameters<typeof testStor
   return { store, onOpenQuest };
 }
 
-describe('Today (M10c)', () => {
-  it('the open core quest ends in a Begin bar that is part of its card', async () => {
+describe('Today (M10c, M12)', () => {
+  it('the open core quest is Up next, one card ending in Begin, the only bright button', async () => {
     const s = serverState();
     const { onOpenQuest } = await renderToday(s);
-    expect(screen.getByText('Begin')).toBeTruthy();
+    const next = within(screen.getByTestId('up-next'));
+    expect(next.getByText('Begin')).toBeTruthy();
+    expect(screen.getAllByTestId('up-next')).toHaveLength(1);
     await fireEvent.press(screen.getByText('Begin'));
     expect(onOpenQuest).toHaveBeenCalledWith(s.today!.quests.find((q) => q.slot === 'core')!.id);
+    // The rest wait as rows under "Then".
+    expect(screen.getByText(TODAY_TEXT.then)).toBeTruthy();
+    expect(screen.getByText(titleOf(s, 'side2'))).toBeTruthy();
   });
 
-  it('a cleared core quest is a slim row; the next quest is marked; the streak shows today with "today counts"', async () => {
-    const s = serverState(['core'], { streak_current: 5, streak_best: 5 });
+  it('with the core quest cleared, the reading moves up; the streak shows today with "today counts"', async () => {
+    const base = serverState(['core'], { streak_current: 5, streak_best: 5 });
+    const s = { ...base, today: { ...base.today!, article: { id: 'article-9', cluster: 'sleep' as const, title: 'Wake time', minutes: 6 } } };
     await renderToday(s);
-    expect(screen.queryByText('Begin')).toBeNull();
-    expect(screen.getByText(titleOf(s, 'core'))).toBeTruthy();
-    expect(screen.getByText(fillText(TODAY_TEXT.cleared, { xp: xpOf(s, 'core') }))).toBeTruthy();
-    expect(screen.getAllByText(TODAY_TEXT.next)).toHaveLength(1);
+    expect(within(screen.getByTestId('up-next')).getByText('Wake time')).toBeTruthy();
+    expect(screen.getByRole('button', { name: fillText(TODAY_TEXT.doneToday, { n: 1 }) })).toBeTruthy();
     expect(screen.getByText('6')).toBeTruthy();
     expect(screen.getByText(`${TODAY_TEXT.streak} · ${TODAY_TEXT.counts}`)).toBeTruthy();
   });
@@ -50,7 +53,6 @@ describe('Today (M10c)', () => {
     await renderToday(serverState([], { streak_current: 5, streak_best: 5 }));
     expect(screen.getByText('5')).toBeTruthy();
     expect(screen.getByText(TODAY_TEXT.streak)).toBeTruthy();
-    expect(screen.queryByText(TODAY_TEXT.next)).toBeNull();
   });
 
   it('a cleared day heads the list with what it earned and when the next day starts', async () => {
@@ -61,7 +63,42 @@ describe('Today (M10c)', () => {
     const xp = all.reduce((sum, slot) => sum + xpOf(s, slot), 0);
     expect(screen.getByText(fillText(TODAY_TEXT.earned, { xp }))).toBeTruthy();
     expect(screen.getByText(fillText(TODAY_TEXT.nextDay, { time: clockTime(s.today!.endsAt!, s.today!.timeZone) }))).toBeTruthy();
-    expect(screen.queryByText(TODAY_TEXT.next)).toBeNull();
+    expect(screen.queryByTestId('up-next')).toBeNull();
+  });
+
+  it('the day is done once the core quest and the reading are; side quests are then optional (decision 2)', async () => {
+    const base = serverState(['core', 'article']);
+    const s = { ...base, today: { ...base.today!, article: { id: 'article-9', cluster: 'sleep' as const, title: 'Wake time', minutes: 6 } } };
+    await renderToday(s);
+    expect(screen.getByTestId('day-done')).toBeTruthy();
+    expect(screen.getByText(TODAY_TEXT.extra)).toBeTruthy();
+    expect(screen.getByText(TODAY_TEXT.optional)).toBeTruthy();
+    expect(screen.getByText(titleOf(s, 'side1'))).toBeTruthy();
+    expect(screen.queryByTestId('up-next')).toBeNull();
+  });
+
+  it('a day whose article never came is done with its core quest', async () => {
+    await renderToday(serverState(['core']));
+    expect(screen.getByTestId('day-done')).toBeTruthy();
+  });
+
+  it('offers a morning briefing once, on the day done; Remind me asks the phone and turns it on (decision 9)', async () => {
+    const all = serverState().today!.quests.map((q) => q.slot);
+    const { store } = await renderToday(serverState(all), { permission: 'ask' });
+    expect(screen.getByTestId('reminder-offer')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.reminder.yes }));
+    expect(store.getState().markOffer).toHaveBeenCalledWith('reminder');
+    expect(store.getState().allowNotify).toHaveBeenCalled();
+    expect(store.getState().setNotify).toHaveBeenCalledWith(expect.objectContaining({ optedIn: true, briefing: expect.objectContaining({ on: true }) }));
+    expect(screen.queryByTestId('reminder-offer')).toBeNull();
+  });
+
+  it('never offers it again, nor when refused for good or already on', async () => {
+    const all = serverState().today!.quests.map((q) => q.slot);
+    await renderToday(serverState(all), { offers: ['reminder'] });
+    expect(screen.queryByTestId('reminder-offer')).toBeNull();
+    await renderToday(serverState(all), { permission: 'denied' });
+    expect(screen.queryByTestId('reminder-offer')).toBeNull();
   });
 
   it('shows one notice at a time, with how many wait', async () => {
@@ -76,39 +113,39 @@ describe('Today (M10c)', () => {
     expect(store.getState().dismissNotice).toHaveBeenCalledWith('a');
   });
 
-  describe('quick clear (decision 6)', () => {
+  describe('the check circle (M12 decision 3)', () => {
     beforeEach(() => jest.useFakeTimers());
     afterEach(() => jest.useRealTimers());
 
-    /** Day 1 with side quest 1 a check-off quest. */
-    const tapDay = (): ServerState => {
-      const s = serverState();
-      return { ...s, today: { ...s.today!, quests: s.today!.quests.map((q) => (q.slot === 'side1' ? { ...q, completion: 'tap' as const } : q)) } };
-    };
-
-    it('a hold under a check-off quest sends its completion; a short press sends nothing', async () => {
-      const s = tapDay();
+    it("a check-off quest's circle sends its completion, and Undo takes it back for 5 seconds", async () => {
+      const s = serverState(); // side quest 1 is a check-off quest
       const side1 = s.today!.quests.find((q) => q.slot === 'side1')!;
       const { store } = await renderToday(s);
-      const hold = screen.getByRole('button', { name: fillText(TODAY_TEXT.hold, { xp: xpOf(s, 'side1') }) });
-      await fingerDown(hold);
-      await act(async () => { jest.advanceTimersByTime(HOLD_SETTLE_MS + QUICK_CLEAR_MS / 2); });
-      await fingerUp(hold);
-      await act(async () => { jest.advanceTimersByTime(2_000); });
-      expect(store.getState().enqueue).not.toHaveBeenCalled();
-      await fingerDown(hold);
-      await act(async () => { jest.advanceTimersByTime(HOLD_SETTLE_MS + QUICK_CLEAR_MS); });
+      await fireEvent.press(screen.getByRole('checkbox', { name: fillText(TODAY_TEXT.markDone, { title: titleOf(s, 'side1') }) }));
       expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: side1.id, completedAt: NOW, rating: null, payload: {} });
+      expect(screen.getByText(fillText(TODAY_TEXT.markedDone, { title: titleOf(s, 'side1') }))).toBeTruthy();
+      await fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.undo }));
+      expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'undo', instanceId: side1.id });
+      expect(screen.queryByTestId('snackbar')).toBeNull();
     });
 
-    it('only check-off quests get the hold', async () => {
+    it('the Undo goes after 5 seconds', async () => {
       const s = serverState();
-      const taps = s.today!.quests.filter((q) => q.completion === 'tap' && q.slot !== 'article').length;
       await renderToday(s);
-      expect(screen.queryAllByRole('button', { name: /^Hold to clear/ })).toHaveLength(taps);
+      await fireEvent.press(screen.getByRole('checkbox', { name: fillText(TODAY_TEXT.markDone, { title: titleOf(s, 'side1') }) }));
+      expect(screen.getByTestId('snackbar')).toBeTruthy();
+      await act(async () => { jest.advanceTimersByTime(SNACKBAR_MS); });
+      expect(screen.queryByTestId('snackbar')).toBeNull();
+    });
+
+    it('only check-off quests get the circle', async () => {
+      const s = serverState();
+      const taps = s.today!.quests.filter((q) => q.completion === 'tap' && q.slot !== 'article' && q.slot !== 'core').length;
+      await renderToday(s);
+      expect(screen.queryAllByRole('checkbox')).toHaveLength(taps);
       const none = { ...s, today: { ...s.today!, quests: s.today!.quests.map((q) => ({ ...q, completion: 'timer' as const })) } };
       await renderToday(none);
-      expect(screen.queryAllByRole('button', { name: /^Hold to clear/ })).toHaveLength(0);
+      expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
     });
   });
 });
