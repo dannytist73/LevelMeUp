@@ -50,9 +50,10 @@ Superpowers skills).
    server). Read again (past readings) shows the deck with the line written that day. "Read the full article" opens
    the reader. A body cached without a deck is left out of the sync's `have`, so today's and the next day's articles
    are sent again until their deck arrives (at most 2 bodies of about 10 KB a sync).
-7. **Codex.** "Keep" on the lesson card saves `{articleId, title, lesson, keptAt}` on the phone (kv `lmu.codex`,
-   survives character deletion like the haptics switch). A Codex screen lists them, newest first, from the Character
-   tab. Phone-only: no server change, nothing to delete on the server.
+7. **Codex.** "Keep" on the lesson card saves `{articleId, title, lesson, keptAt}` on the phone (kv `lmu.codex`, at
+   most 200). A Codex screen lists them, newest first, from the Character tab. Phone-only: no server change. *As
+   built: the Codex goes with the character when it is deleted (like the workouts' last sets), not kept like the
+   haptics switch: kept lessons are the player's, and "delete my character" should leave nothing of theirs.*
 8. **Swipe.** Dogeared's deck, ported: a pan responder that captures only a clearly sideways drag, a tap on a story
    card turns it, Previous/Next buttons for everyone (TalkBack, switch users), a still path under Reduce Motion, each
    card announced ("Card 3 of 7: …"). React Native's own `Animated` + `PanResponder` as in Dogeared; no new native
