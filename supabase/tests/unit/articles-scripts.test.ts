@@ -65,6 +65,15 @@ describe('the review page (M8a decision 10)', () => {
   it('says when nothing waits', () => {
     expect(reviewHtml([])).toContain('No articles are waiting for review.');
   });
+
+  it('shows the Story Deck under its article, or that it is not written yet (M11)', () => {
+    expect(reviewHtml([article])).toContain('Story Deck: not written yet');
+    const deck = { story: [{ kicker: 'The story', text: 'You <wake> tired.' }], systemNote: 'Sleep counts.', lesson: 'Sleep in cycles.', tryToday: 'Wake at one time.' };
+    const html = reviewHtml([{ ...article, deck }]);
+    expect(html).toContain('You &lt;wake&gt; tired.');
+    expect(html).toContain('System: Sleep counts.');
+    expect(html).toContain('<b>Try it today:</b> Wake at one time.');
+  });
 });
 
 /** The fixture article as the database stores it (camelCase sections). */
@@ -112,5 +121,6 @@ describe("the owner's corrections (M8b follow-up)", () => {
     expect(sql).toContain("title = 'Franklin''s plan'");
     expect(sql).toContain("where id = 'article-21' and status = 'review' returning id");
     expect(sql).toContain('words = 900, reading_minutes = 5');
+    expect(sql).toContain('deck = null, deck_attempts = 0, deck_error = null'); // M11: a corrected article gets a fresh deck
   });
 });

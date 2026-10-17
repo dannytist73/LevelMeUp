@@ -11,6 +11,7 @@
 //   npm run articles -- correct <file>    apply the owner's corrections (a JSON list of {id, find, replace, why}) to
 //                                         articles waiting for review; nothing is written unless every one passes
 //   npm run articles -- spend             this month's Claude spend against the cap
+//   npm run articles -- decks             M11: which articles have their Story Deck (read only)
 //   npm run articles -- cron on|off|status
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -105,7 +106,7 @@ function jobs(): void {
 
 function review(): void {
   const articles = query<ReviewArticle>([`select a.id, a.cluster, a.topic, a.title, a.summary, a.words, a.reading_minutes, a.sections,
-    a.takeaways, a.reflection_question,
+    a.takeaways, a.reflection_question, a.deck,
     coalesce((select jsonb_agg(jsonb_build_object('idx', s.idx, 'url', s.url, 'title', s.title) order by s.idx)
       from levelmeup.article_sources s where s.article_id = a.id), '[]'::jsonb) as sources
     from levelmeup.articles a where a.status = 'review' order by a.job_id`]);
@@ -147,6 +148,17 @@ function decide(ids: readonly string[], status: 'published' | 'rejected'): void 
   console.log(`${status}: ${done.map((r) => r.id).join(', ') || 'none (only articles waiting for review can be decided)'}`);
 }
 
+/** M11: which articles have their Story Deck, which wait, and why any were left to the full article (read only). */
+function decks(): void {
+  console.table(query([`select a.status, count(*) filter (where a.deck is not null)::int as with_deck,
+    count(*) filter (where a.deck is null and a.deck_attempts < 2)::int as waiting,
+    count(*) filter (where a.deck is null and a.deck_attempts >= 2)::int as left_out
+    from levelmeup.articles a where a.status in ('published', 'review') group by a.status order by a.status`]));
+  const out = query([`select id, title, left(deck_error, 120) as why from levelmeup.articles
+    where deck is null and deck_attempts >= 2 and status in ('published', 'review') order by id`]);
+  if (out.length > 0) console.table(out);
+}
+
 function spend(): void {
   const rows = query<{ kind: string; status: string; calls: number; usd: string }>([`select kind, status, count(*)::int as calls, coalesce(sum(cost_usd), 0)::text as usd
     from levelmeup.ai_generations where created_at >= date_trunc('month', now() at time zone 'utc') at time zone 'utc'
@@ -186,6 +198,7 @@ try {
     case 'publish': decide(rest, 'published'); break;
     case 'reject': decide(rest, 'rejected'); break;
     case 'spend': spend(); break;
+    case 'decks': decks(); break;
     case 'cron': cron(rest[0]); break;
     default: throw new Error('commands: setup, tick [--night], evergreen <n>, jobs, review, publish <id…>, reject <id…>, correct <file>, spend, cron on|off|status');
   }

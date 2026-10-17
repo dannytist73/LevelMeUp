@@ -3,6 +3,7 @@ import type { Brief } from '../../supabase/functions/_shared/articles/brief.ts';
 import { articleTexts, articleWords, checkArticle, readingMinutes } from '../../supabase/functions/_shared/articles/check.ts';
 import type { ArticleDraft, ArticleSection } from '../../supabase/functions/_shared/articles/check.ts';
 import { clip } from '../../supabase/functions/_shared/articles/text.ts';
+import type { ArticleDeck } from '../../supabase/functions/_shared/articles/deck.ts';
 
 export const TICK_JOB = 'lmu-articles-tick';
 export const TICK_SCHEDULE = '*/30 * * * *';
@@ -53,11 +54,24 @@ export type ReviewArticle = {
   id: string; cluster: string; topic: string; title: string; summary: string; words: number; reading_minutes: number;
   sections: { heading: string; paragraphs: string[]; systemNote: string | null; sourceIds: number[] }[];
   takeaways: string[]; reflection_question: string; sources: { idx: number; url: string; title: string }[];
+  /** M11: its Story Deck, once the cron has written it. */
+  deck?: ArticleDeck | null;
 };
 
 const esc = (text: string): string => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** The owner's review page: every article waiting, in full, with its sources. */
+/** M11: the Story Deck under its article, card by card; or a line saying the cron hasn't written it yet. */
+function deckHtml(deck: ArticleDeck | null): string {
+  if (deck === null) return '<p class="meta">Story Deck: not written yet (the cron writes it within the hour).</p>';
+  return `<section class="deck"><h3>Story Deck</h3>
+  ${deck.story.map((c, i) => `<p><span class="cites">${i + 1}. ${esc(c.kicker)}</span><br>${esc(c.text)}</p>`).join('\n  ')}
+  ${deck.systemNote === null ? '' : `<p class="system">System: ${esc(deck.systemNote)}</p>`}
+  <p><b>Lesson:</b> ${esc(deck.lesson)}</p>
+  <p><b>Try it today:</b> ${esc(deck.tryToday)}</p>
+</section>`;
+}
+
+/** The owner's review page: every article waiting, in full, with its sources and its Story Deck. */
 export function reviewHtml(articles: readonly ReviewArticle[]): string {
   const body = articles.length === 0
     ? '<p>No articles are waiting for review.</p>'
@@ -72,6 +86,7 @@ export function reviewHtml(articles: readonly ReviewArticle[]): string {
   <p class="question">${esc(a.reflection_question)}</p>
   <h3>Sources</h3>
   <ol>${a.sources.map((s) => `<li value="${s.idx}"><a href="${esc(s.url)}">${esc(s.title)}</a></li>`).join('')}</ol>
+  ${deckHtml(a.deck ?? null)}
 </article>`).join('\n');
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -84,6 +99,7 @@ export function reviewHtml(articles: readonly ReviewArticle[]): string {
   .system { font: 15px/1.5 ui-monospace, monospace; border-left: 3px solid #f0765e; padding-left: .75rem; }
   .cites { font: 12px system-ui, sans-serif; color: #6b645a; }
   .question { font-weight: bold; }
+  .deck { background: #eef0fa; padding: .25rem 1rem; border-radius: 12px; }
 </style></head>
 <body><h1>Articles for review (${articles.length})</h1>
 <p>Publish: <code>npm run articles -- publish &lt;id…&gt;</code> · Keep out: <code>npm run articles -- reject &lt;id…&gt;</code></p>
@@ -167,6 +183,7 @@ export function applyCorrections(
 /** Stores a corrected article, only while it still waits for review. */
 export function correctionSql(a: StoredArticle, words: number, minutes: number): string {
   return `update levelmeup.articles set title = ${literal(a.title)}, summary = ${literal(a.summary)}, sections = ${sqlJson(a.sections)},
-  takeaways = ${sqlJson(a.takeaways)}, reflection_question = ${literal(a.reflection_question)}, words = ${words}, reading_minutes = ${minutes}
+  takeaways = ${sqlJson(a.takeaways)}, reflection_question = ${literal(a.reflection_question)}, words = ${words}, reading_minutes = ${minutes},
+  deck = null, deck_attempts = 0, deck_error = null
   where id = ${literal(a.id)} and status = 'review' returning id`;
 }
