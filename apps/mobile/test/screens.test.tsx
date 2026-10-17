@@ -207,6 +207,22 @@ describe('Character (M6d)', () => {
     expect(screen.getByText(`${ACHIEVEMENTS.length - 2} still hidden.`)).toBeTruthy();
   });
 
+  it('M12 (board R3-6): how many are earned, the latest three with See all, and the next within reach with progress', async () => {
+    const earned = ['first-trial', 'trials-10', 'level-5', 'streak-7', 'rung-1'];
+    const view = { ...project(SERVER, []), achievements: earned };
+    await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
+    expect(screen.getByText('Achievements · 5 earned')).toBeTruthy();
+    expect(screen.getByText('New Ground')).toBeTruthy(); // newest first
+    expect(screen.queryByText('First Trial')).toBeNull(); // the oldest waits behind See all
+    await fireEvent.press(screen.getByRole('button', { name: 'See all 5' }));
+    expect(screen.getByText('First Trial')).toBeTruthy();
+    // The next of each kind: 50 quests, level 10, a 14-day streak.
+    expect(screen.getByText('Within reach')).toBeTruthy();
+    expect(screen.getByLabelText(new RegExp(`^Fifty Trials\. Clear 50 quests\. ${view.growth.questsCleared} of 50 quests$`))).toBeTruthy();
+    expect(screen.getByText('At Lv 10')).toBeTruthy();
+    expect(screen.getByText(`Best streak ${view.character.streak.best} of 14 days`)).toBeTruthy();
+  });
+
   it('with nothing earned, says the first achievement is one quest away', async () => {
     await render(withStore(testStore({ view: project(SERVER, []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     expect(screen.getByText('Your first achievement is one quest away.')).toBeTruthy();

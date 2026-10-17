@@ -33,6 +33,14 @@ export const CHARACTER_TEXT = {
     count: '{earned} / {total}',
     hidden: '{n} still hidden.',
     none: 'Your first achievement is one quest away.',
+    /** M12 (board R3-6): what's earned, and the next ones within reach with how far along they are. */
+    earned: '{n} earned',
+    next: 'Within reach',
+    quests: '{have} of {need} quests',
+    level: 'At Lv {level}',
+    streak: 'Best streak {have} of {need} days',
+    seeAll: 'See all {n}',
+    fewer: 'Show fewer',
   },
   vow: { title: 'Your vow' },
   scholar: {

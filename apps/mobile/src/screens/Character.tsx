@@ -3,7 +3,7 @@
 // M10c: Switch portrait is a round button on the portrait's corner; the class change is a row. M12: the Codex moved to the
 // Library tab (plan decision 1).
 import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { figureFor, otherFigure } from '../art/portraits.ts';
 import { scholarsPathOpen } from '../game/character.ts';
@@ -12,11 +12,12 @@ import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { Icon } from '../ui/icons.tsx';
-import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { Portrait } from '../ui/Portrait.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
+import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Label, Title } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
 import { Achievements } from './character/Achievements.tsx';
@@ -47,7 +48,12 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
           <Label>{T.label}</Label>
         </ScreenHeader>
         <View style={{ paddingHorizontal: space.gutter, gap: 12 }}>
-          <NarrationBox>The System is preparing your trials.</NarrationBox>
+          {/* M12 (audit 11): loading looks like loading. */}
+          <Skeleton>
+            <Bone height={180} width={180} round={radius.card} />
+            <Bone height={24} width="50%" />
+            {[0, 1, 2, 3].map((i) => <Bone key={i} height={18} />)}
+          </Skeleton>
           {stale && <Caption>{lastSynced(lastSyncedAt, 'UTC')}</Caption>}
         </View>
       </ScreenScroll>
@@ -70,15 +76,16 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
         <View style={{ alignSelf: 'center' }}>
           <Portrait classId={classId} level={level} figure={figure} marked={mark}
             label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
-          <Pressable accessibilityRole="button" accessibilityLabel={T.switchPortrait} onPress={() => void setPortrait(otherFigure(figure))}
-            style={({ pressed }) => ({
+          <Tap accessibilityRole="button" accessibilityLabel={T.switchPortrait} onPress={() => void setPortrait(otherFigure(figure))}
+            on="accent" radius={26}
+            style={{
               position: 'absolute', right: -10, bottom: -10, width: 52, height: 52, borderRadius: 26, alignItems: 'center',
-              justifyContent: 'center', backgroundColor: pressed ? colors.ashLight : colors.accent, borderWidth: 3, borderColor: colors.halftone,
-            })}>
+              justifyContent: 'center', backgroundColor: colors.accent, borderWidth: 3, borderColor: colors.halftone,
+            }}>
             <Icon name="switch" size={24} color={colors.onAccent} />
-          </Pressable>
+          </Tap>
         </View>
-        <Title>{view.profile.name}</Title>
+        <Title accessibilityRole="header">{view.profile.name}</Title>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <View style={{ paddingVertical: 3, paddingHorizontal: 12, backgroundColor: colors.paper, borderRadius: radius.pill }}>
             <Label tone="ink">{`Lv ${level} ${className}`}</Label>
@@ -97,7 +104,8 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
         <StatsPanel character={view.character} />
         <ClassPath view={view} dayNumber={view.today?.dayNumber ?? null} />
         {scholarsPathOpen(classId, level) && <ScholarsPath view={view} onOpenBook={onOpenBook} />}
-        <Achievements earned={view.achievements} />
+        <Achievements earned={view.achievements}
+          progress={{ questsCleared: view.growth.questsCleared, level, bestStreak: view.character.streak.best }} />
         {vow !== null && (
           <NightCard>
             <Label tone="chalk">{T.vow.title}</Label>
