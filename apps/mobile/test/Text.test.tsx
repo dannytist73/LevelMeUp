@@ -7,14 +7,15 @@ const styleOf = (text: string) => StyleSheet.flatten(screen.getByText(text).prop
 
 describe('Lantern text (M11)', () => {
   it.each([
-    ['Display', Display, 'MPlusRounded-ExtraBold', 54, 1.15],
-    ['Title', Title, 'MPlusRounded-ExtraBold', 30, 1.15],
-    ['Heading', Heading, 'MPlusRounded-ExtraBold', 21, 1.2],
-    ['Label', Label, 'MPlusRounded-Bold', 14, 1.3],
-    ['Body', Body, 'MPlusRounded-Regular', 16, 1.5],
-    ['Small', Small, 'MPlusRounded-Regular', 14, 1.5],
-    ['Meta', Meta, 'MPlusRounded-Regular', 13, 1.5],
-    ['Caption', Caption, 'MPlusRounded-Regular', 12, 1.5],
+    // M12 (audit 6): body, labels and small text to 2×, titles to 1.5×.
+    ['Display', Display, 'MPlusRounded-ExtraBold', 54, 1.3],
+    ['Title', Title, 'MPlusRounded-ExtraBold', 30, 1.5],
+    ['Heading', Heading, 'MPlusRounded-ExtraBold', 21, 1.5],
+    ['Label', Label, 'MPlusRounded-Bold', 14, 2],
+    ['Body', Body, 'MPlusRounded-Regular', 16, 2],
+    ['Small', Small, 'MPlusRounded-Regular', 14, 2],
+    ['Meta', Meta, 'MPlusRounded-Regular', 13, 2],
+    ['Caption', Caption, 'MPlusRounded-Regular', 12, 2],
   ] as const)('%s uses its family, size and font-scale cap', async (_, Variant, family, size, cap) => {
     await render(<Variant>words</Variant>);
     expect(styleOf('words')).toMatchObject({ fontFamily: family, fontSize: size });

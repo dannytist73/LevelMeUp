@@ -1,15 +1,44 @@
-// M10a: the hooks behind the motion pieces. `useReduce` reads the phone's "Remove animations" (Reanimated reads it once,
-// at launch) unless a test or the motion bench overrides it.
-import { useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+// M10a: the hooks behind the motion pieces. `useReduce` reads the phone's "Remove animations" unless a test or the motion
+// bench overrides it. M12 (audit 25): Reanimated reads the setting once, at launch; the phone's own accessibility events
+// now keep it current, so switching it on mid-session stills the next moment.
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { AccessibilityInfo, AppState } from 'react-native';
 import { cancelAnimation, useAnimatedReaction, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { SETTLE_MS, delayed, timing } from './motion.ts';
 import type { CountPlan } from './motion.ts';
 
+/** The setting as the phone last changed it; null until it changes (Reanimated's launch value is right until then). */
+let reported: boolean | null = null;
+const watchers = new Set<() => void>();
+let listening = false;
+
+function report(on: boolean): void {
+  if (on === reported) return;
+  reported = on;
+  for (const watcher of watchers) watcher();
+}
+
+function listen(): void {
+  if (listening) return;
+  listening = true;
+  try {
+    AccessibilityInfo.addEventListener('reduceMotionChanged', report);
+  } catch {
+    // No accessibility module (a test without it): Reanimated's value stands.
+  }
+}
+
+const subscribe = (watcher: () => void): (() => void) => {
+  watchers.add(watcher);
+  return () => watchers.delete(watcher);
+};
+
 export function useReduce(override?: boolean): boolean {
-  const phone = useReducedMotion();
-  return override ?? phone;
+  const atLaunch = useReducedMotion();
+  listen();
+  const live = useSyncExternalStore(subscribe, () => reported);
+  return override ?? live ?? atLaunch;
 }
 
 /**

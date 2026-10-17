@@ -4,12 +4,13 @@
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import type { Condition } from '@levelmeup/rules';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { setsLine } from '../../quest/lastSets.ts';
 import { MAX_REPS, MAX_SETS, repUnit, repsPayload, repsValid, startingSets } from '../../quest/payload.ts';
 import { REPS_REST_MS } from '../../quest/rest.ts';
 import { colors, fonts, radius } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
+import { Tap } from '../../ui/Tap.tsx';
 import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
 
@@ -17,9 +18,9 @@ const T = PLAY_TEXT.reps;
 
 export function Step({ text, label, onPress }: { text: string; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
+    <Tap accessibilityRole="button" accessibilityLabel={label} onPress={onPress} radius={radius.control} style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
       <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.display, fontSize: 22, color: colors.chalk }}>{text}</Text>
-    </Pressable>
+    </Tap>
   );
 }
 

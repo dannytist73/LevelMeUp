@@ -7,7 +7,9 @@ export type IconName =
   // M10c: rows that open in place, the portrait's switch, a set done.
   | 'chevronDown' | 'chevronUp' | 'switch' | 'check'
   // M11: the Story Deck's close, arrows, keep and share.
-  | 'close' | 'arrowLeft' | 'arrowRight' | 'bookmark' | 'share';
+  | 'close' | 'arrowLeft' | 'arrowRight' | 'bookmark' | 'share'
+  // M12: the Library tab, offline and failed states, the reminder offer.
+  | 'book' | 'cloudOff' | 'alert' | 'bell';
 
 const GEAR =
   'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z';
@@ -51,6 +53,14 @@ function shapes(name: IconName) {
       return [<Path key="p" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />];
     case 'share':
       return [<Path key="p" d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />];
+    case 'book':
+      return [<Path key="l" d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z" />, <Path key="r" d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z" />];
+    case 'cloudOff':
+      return [<Path key="x" d="M2 2l20 20" />, <Path key="a" d="M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.2" />, <Path key="b" d="M21.5 16.5A4.5 4.5 0 0 0 17 10h-1.8A7 7 0 0 0 10 5.1" />];
+    case 'alert':
+      return [<Circle key="c" cx="12" cy="12" r="10" />, <Path key="p" d="M12 8v4M12 16h.01" />];
+    case 'bell':
+      return [<Path key="b" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />, <Path key="c" d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />];
   }
 }
 

@@ -3,13 +3,14 @@
 // only (no notification), counted from timestamps. The checks never change what's logged.
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { moreRest, restClock, restLeft, startRest } from '../../quest/rest.ts';
 import type { Rest } from '../../quest/rest.ts';
 import { colors, radius, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { buzz } from '../../ui/haptics.ts';
 import { Icon } from '../../ui/icons.tsx';
+import { Tap } from '../../ui/Tap.tsx';
 import { Heading, Small } from '../../ui/Text.tsx';
 
 const T = PLAY_TEXT.rest;
@@ -67,16 +68,17 @@ export function RestBar({ rest, over, now, onMore, onSkip }: { rest: Rest; over:
 /** A set's Done check: a checkbox, at least 48 square. */
 export function SetDone({ n, done, onPress }: { n: number; done: boolean; onPress: () => void }) {
   return (
-    <Pressable
+    <Tap
       accessibilityRole="checkbox"
       accessibilityLabel={fillText(T.done, { n })}
       accessibilityState={{ checked: done }}
       onPress={onPress}
+      radius={radius.pill}
       style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
     >
-      <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: done ? colors.commit : colors.line, backgroundColor: done ? colors.commit : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: done ? colors.commit : colors.lineStrong, backgroundColor: done ? colors.commit : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
         {done && <Icon name="check" size={18} color={colors.onAccent} />}
       </View>
-    </Pressable>
+    </Tap>
   );
 }

@@ -7,7 +7,7 @@ describe('the Lantern colours (M11, Moonlight)', () => {
     expect(colors).toMatchObject({
       night: '#171A2B', panel: '#222640', halftone: '#1E2236', line: '#383F63', divider: '#2A2F4A', paper: '#EEF0FA',
       ink: '#1B1E31', chalk: '#F1F0F7', ash: '#A4AAC8', ashLight: '#C9CDE2', accent: '#A9B4FF', commit: '#A9B4FF',
-      onAccent: '#161A2B', accentText: '#BAC3FF', accentInk: '#4F5BB8', shadow: '#FF6B7A', void: '#07080F',
+      onAccent: '#161A2B', accentText: '#BAC3FF', accentInk: '#4F5BB8', shadow: '#FF6B7A', void: '#07080F', lineStrong: '#6A73A0',
     });
   });
 
@@ -37,6 +37,11 @@ describe('the Lantern colours (M11, Moonlight)', () => {
     ['panel', 'chalk'], ['panel', 'ash'], ['panel', 'ashLight'], ['panel', 'accentText'], ['panel', 'shadow'],
     ['halftone', 'chalk'], ['halftone', 'ash'], ['void', 'shadow'], ['accentInk', 'white'],
   ];
+
+  // M12 (audit 13): what you can press or type in has an edge of 3:1 on the surfaces it sits on.
+  it.each([['night', 'lineStrong'], ['panel', 'lineStrong'], ['halftone', 'lineStrong']] as [ColorName, ColorName][])('an interactive edge on %s (%s) reaches 3:1', (back, edge) => {
+    expect(contrast(colors[back], colors[edge])).toBeGreaterThanOrEqual(3);
+  });
 
   it.each(pairs)('%s text pairing with %s reaches 4.5:1', (back, text) => {
     expect(contrast(colors[back], colors[text])).toBeGreaterThanOrEqual(4.5);

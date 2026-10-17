@@ -10,8 +10,13 @@ export const colors = {
   panel: '#222640',
   /** Headers and scenes: a shade above the night. */
   halftone: '#1E2236',
-  /** Quiet borders, unselected options. */
+  /** Quiet borders: decoration only (dividers inside cards, chips, art frames). */
   line: '#383F63',
+  /**
+   * M12 (audit 13): the edge of anything you can press or type in (fields, unselected options, outline buttons,
+   * steppers): 3.75:1 on the night, 3.22:1 on a panel (WCAG 1.4.11 asks 3:1).
+   */
+  lineStrong: '#6A73A0',
   /** List row separators. */
   divider: '#2A2F4A',
   /** The light "moon" surface: reading cards, the System's box, selected options, solid chips. */
@@ -53,6 +58,10 @@ export const colors = {
   segmentNext: '#2E3352',
   /** A bar's empty track on paper. */
   trackOnPaper: '#D9DDF2',
+  /** M12 (audit 4): the ripple of a press on the night or a panel, on paper, and on an accent button. */
+  rippleNight: '#A9B4FF33',
+  ripplePaper: '#1B1E311F',
+  rippleAccent: '#161A2B2E',
 } as const;
 
 export type ColorName = keyof typeof colors;
@@ -77,28 +86,31 @@ type TypeSpec = {
   lineHeight: number;
   /** Letter spacing in em. */
   tracking: number;
-  /** Cap on the phone's font scale (decision 9 of the M4 plan): text grows, layouts wrap, nothing truncates. */
+  /**
+   * Cap on the phone's font scale (decision 9 of the M4 plan): text grows, layouts wrap, nothing truncates. M12 (audit
+   * 6): body, labels and small text follow the phone up to 2× (Android's largest); titles to 1.5×.
+   */
   maxScale: number;
   uppercase: boolean;
 };
 
 export const type: Readonly<Record<TypeVariant, TypeSpec>> = {
-  display: { family: fonts.display, size: 54, lineHeight: 1.05, tracking: 0, maxScale: 1.15, uppercase: false },
-  title: { family: fonts.display, size: 30, lineHeight: 1.15, tracking: 0, maxScale: 1.15, uppercase: false },
-  heading: { family: fonts.display, size: 21, lineHeight: 1.25, tracking: 0, maxScale: 1.2, uppercase: false },
+  display: { family: fonts.display, size: 54, lineHeight: 1.05, tracking: 0, maxScale: 1.3, uppercase: false },
+  title: { family: fonts.display, size: 30, lineHeight: 1.15, tracking: 0, maxScale: 1.5, uppercase: false },
+  heading: { family: fonts.display, size: 21, lineHeight: 1.25, tracking: 0, maxScale: 1.5, uppercase: false },
   // Lantern: labels in sentence case, in the body's bold, not shouted.
-  label: { family: fonts.bodyBold, size: 14, lineHeight: 1.35, tracking: 0.01, maxScale: 1.3, uppercase: false },
-  body: { family: fonts.body, size: 16, lineHeight: 1.55, tracking: 0, maxScale: 1.5, uppercase: false },
-  small: { family: fonts.body, size: 14, lineHeight: 1.5, tracking: 0, maxScale: 1.5, uppercase: false },
-  meta: { family: fonts.body, size: 13, lineHeight: 1.45, tracking: 0, maxScale: 1.5, uppercase: false },
-  caption: { family: fonts.body, size: 12, lineHeight: 1.4, tracking: 0, maxScale: 1.5, uppercase: false },
+  label: { family: fonts.bodyBold, size: 14, lineHeight: 1.35, tracking: 0.01, maxScale: 2, uppercase: false },
+  body: { family: fonts.body, size: 16, lineHeight: 1.55, tracking: 0, maxScale: 2, uppercase: false },
+  small: { family: fonts.body, size: 14, lineHeight: 1.5, tracking: 0, maxScale: 2, uppercase: false },
+  meta: { family: fonts.body, size: 13, lineHeight: 1.45, tracking: 0, maxScale: 2, uppercase: false },
+  caption: { family: fonts.body, size: 12, lineHeight: 1.4, tracking: 0, maxScale: 2, uppercase: false },
 };
 
 export const space = {
   /** Side gutter. */
   gutter: 20,
-  /** Minimum touch target. */
-  touch: 44,
+  /** Minimum touch target (M12, audit 14: Material's 48 dp). */
+  touch: 48,
   /** Borders: quiet lines. */
   border: 1.5,
   /** The card you act on now, outlined in the accent. */

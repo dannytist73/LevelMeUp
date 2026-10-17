@@ -1,9 +1,10 @@
 // A row that takes you somewhere (M10c decision 5): another screen (a chevron), or more of this one opened in place (a
 // chevron that turns). Buttons stay for actions, so a place never looks like something you'd send. At least 56 high;
-// the label and its line wrap at any font size.
-import { Pressable, View } from 'react-native';
+// the label and its line wrap at any font size. M12: a ripple, and an edge you can see (audit 4, 13).
+import { View } from 'react-native';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Icon } from './icons.tsx';
+import { Tap } from './Tap.tsx';
 import { Body, Small } from './Text.tsx';
 
 export type RowLinkProps = {
@@ -18,11 +19,12 @@ export type RowLinkProps = {
 export function RowLink({ label, line, onPress, open }: RowLinkProps) {
   const inPlace = open !== undefined;
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       accessibilityLabel={line === undefined ? label : `${label}. ${line}`}
       accessibilityState={inPlace ? { expanded: open } : undefined}
       onPress={onPress}
+      radius={radius.control}
       style={({ pressed }) => ({
         minHeight: 56,
         flexDirection: 'row',
@@ -31,7 +33,7 @@ export function RowLink({ label, line, onPress, open }: RowLinkProps) {
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderWidth: space.border,
-        borderColor: colors.line,
+        borderColor: colors.lineStrong,
         borderRadius: radius.control,
         backgroundColor: pressed ? colors.divider : colors.panel,
       })}
@@ -41,6 +43,6 @@ export function RowLink({ label, line, onPress, open }: RowLinkProps) {
         {line !== undefined && <Small>{line}</Small>}
       </View>
       <Icon name={!inPlace ? 'chevronRight' : open ? 'chevronUp' : 'chevronDown'} size={20} color={colors.ashLight} />
-    </Pressable>
+    </Tap>
   );
 }

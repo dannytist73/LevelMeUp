@@ -1,5 +1,6 @@
 // A labelled text input (visual spec §3: real inputs with labels; Lantern, M11: rounded). It grows with the phone's font
-// size.
+// size. M12 (audit 13, board R3-8): an edge you can see, and the accent's edge while you type.
+import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { colors, fonts, radius, space } from '../theme/tokens.ts';
 import { Label } from './Text.tsx';
@@ -16,6 +17,7 @@ export type TextFieldProps = {
 
 export function TextField({ label, value, onChangeText, maxLength, multiline = false, on = 'night' }: TextFieldProps) {
   const paper = on === 'paper';
+  const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: 8 }}>
       <Label tone={paper ? 'accentInk' : 'ash'}>{label}</Label>
@@ -25,11 +27,14 @@ export function TextField({ label, value, onChangeText, maxLength, multiline = f
         onChangeText={onChangeText}
         maxLength={maxLength}
         multiline={multiline}
-        maxFontSizeMultiplier={1.5}
+        maxFontSizeMultiplier={2}
         selectionColor={colors.accent}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={{
-          minHeight: 52, paddingHorizontal: 16, paddingVertical: 12, borderWidth: space.border, borderRadius: radius.control,
-          borderColor: paper ? colors.inkMuted : colors.line, backgroundColor: paper ? colors.white : colors.panel,
+          minHeight: 52, paddingHorizontal: 16, paddingVertical: 12, borderWidth: focused ? space.heroBorder : space.border, borderRadius: radius.control,
+          borderColor: focused ? (paper ? colors.accentInk : colors.accent) : paper ? colors.inkMuted : colors.lineStrong,
+          backgroundColor: paper ? colors.white : colors.panel,
           color: paper ? colors.ink : colors.chalk, fontFamily: fonts.bodyMedium, fontSize: 18,
         }}
       />
