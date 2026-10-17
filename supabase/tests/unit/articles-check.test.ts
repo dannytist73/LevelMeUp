@@ -51,7 +51,7 @@ describe('checkArticle (spec §4.1 step 3)', () => {
   });
 
   it('refuses a System note that announces something in the game; a quest in a paragraph is fine (M11 deploy)', () => {
-    for (const note of ['System: Daily quest added. Three lines.', 'System: Missed day detected. Comeback bonus available.', 'System: Same XP, bigger reward.']) {
+    for (const note of ['System: Daily quest added. Three lines.', 'System: Missed day detected. Comeback bonus available.', 'System: Same XP, bigger reward.', 'System: Reflection detected. Learning efficiency increased.', 'System: No hidden reset button detected.', 'System: Progress logged. Streak started.', 'System: Environment modifier active.']) {
       const a = draft();
       a.sections[2]!.systemNote = note;
       expect(checkArticle(a, BRIEF)).toContain('a System note announces something in the game, which only the app does');

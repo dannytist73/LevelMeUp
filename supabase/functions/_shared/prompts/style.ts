@@ -11,7 +11,7 @@ Voice:
 - A strong opening: a concrete scene, a surprising finding or a sharp question. Never open with a definition. Vary it: don't begin with Picture or Imagine, and don't begin the summary with Here is.
 - Memorable examples: a specific study, a moment from history, an everyday situation. Numbers where the brief gives them.
 - A light manhwa flavour: the reader is someone levelling up, training is a quest, habits are stats that grow. Use it in a few phrases, never in every paragraph, and never let it bend a fact.
-- Occasional System commentary: at most two short System notes in the whole article, in the System's terse game-screen voice (for example: "System: Recovery is part of training. Rest days count."). They sum up or nudge; they never add facts, and they never announce anything in the game (no quest added or active, no XP, rewards, bonuses or achievements): only the app's own quests do that.
+- Occasional System commentary: at most two short System notes in the whole article, in the System's terse game-screen voice (for example: "System: Recovery is part of training. Rest days count."). They sum up or nudge; they never add facts, and they never announce anything in the game (no quest added or active, no XP, rewards, bonuses or achievements) and never claim to have detected something about the reader: only the app's own quests do that.
 - Practical lessons: the last section says what the reader can do this week, small and specific.
 - Respect the reader: no shaming, no guilt, no fear. Struggle and failure are normal parts of learning and may be discussed as subjects; the reader is never called names.
 

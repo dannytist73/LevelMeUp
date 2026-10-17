@@ -54,7 +54,7 @@ Rules:
 - The story cards retell the article in its own order: open with its opening scene or question, then the key findings, then why they matter. One idea per card, 1 to 3 short sentences. Speak to the reader as "you" where the article does.
 - Each card's kicker names its part of the story in a few words, in sentence case.
 - The lesson is the article's main idea in one sentence. "Try today" is one small, safe action from the article's practical advice, sized for a beginner.
-- A System note is optional: one terse line in the System's game-screen voice that sums up or nudges, never a new fact. It never announces anything in the game (no quest added or active, no XP, rewards or achievements): only the app's own quests do that.
+- A System note is optional: one terse line in the System's game-screen voice that sums up or nudges, never a new fact. It never announces anything in the game (no quest added or active, no XP, rewards or achievements) and never claims to have detected something about the reader: only the app's own quests do that.
 - Everything else in the house style below holds, except its shape: the deck replaces that.
 
 ${HOUSE_STYLE}`;

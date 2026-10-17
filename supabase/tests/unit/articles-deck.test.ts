@@ -79,7 +79,7 @@ describe('the Story Deck (M11)', () => {
   });
 
   it('refuses a System note that announces something in the game (M11 deploy: "Daily quest added")', () => {
-    for (const note of ['Daily quest added. Protect the last cycle.', 'Quest active: phone out of reach.', 'Bonus XP for rest days.']) {
+    for (const note of ['Daily quest added. Protect the last cycle.', 'Quest active: phone out of reach.', 'Bonus XP for rest days.', 'Reflection detected. Keep writing.']) {
       expect(checkDeck(parseDeck(deckJson({ system_note: note }))!, ARTICLE, [])).toContain('the System note announces something in the game, which only the app does');
     }
     expect(checkDeck(parseDeck(deckJson({ system_note: 'Protect the last cycle. Rest days count.' }))!, ARTICLE, [])).toEqual([]);

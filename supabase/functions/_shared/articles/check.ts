@@ -77,10 +77,12 @@ const DOMAIN = /(?<![\p{L}\p{N}.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9-]+)*\
 
 /**
  * A System note that names these claims something happened in the game ("Daily quest added", "Comeback bonus
- * available"), which it didn't: only the app's own quests do that (M11 deploy). Checked on System notes only; an
- * article's paragraphs may still call training a quest.
+ * available"), which it didn't: only the app's own quests do that (M11 deploy). "Detected" and "logged" claim the app
+ * sensed or recorded something about the reader ("Reflection detected", "Progress logged. Streak started."), which it
+ * can't; a "modifier" claims a game state. Checked on System notes only; an article's paragraphs may still call
+ * training a quest.
  */
-export const GAME_WORDS = /\b(quests?|missions?|xp|rewards?|achievements?|unlocked|bonus)\b/i;
+export const GAME_WORDS = /\b(quests?|missions?|xp|rewards?|achievements?|unlocked|bonus|detect(?:s|ed|ing|ion)?|logged|modifiers?|streaks? (?:started|extended|saved|restored|kept))\b/i;
 
 /** Why an article can't be published, or nothing. */
 export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
