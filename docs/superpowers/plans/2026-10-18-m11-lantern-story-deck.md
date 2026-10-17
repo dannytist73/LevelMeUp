@@ -151,7 +151,7 @@ are fixed and tested, except the one known limit below.
   finds none left. Phones that already hold one of these articles keep the old note until the body is sent again
   (0.6.0 sends deckless bodies again). Two other notes say "detected" ("No hidden reset button detected", "Reflection
   detected"), which the check doesn't catch: left for the owner.
-  *Fixed at the owner's yes ("fix the two detected notes the same way"), 2026-10-18 23:10 UTC:* `GAME_WORDS` now also
+  *Fixed at the owner's yes ("fix the two detected notes the same way"), 2026-10-17 23:10 UTC:* `GAME_WORDS` now also
   refuses notes that claim the app sensed or recorded something ("detected", "logged", "streak started") or a game state
   ("modifier"); the house style and the deck prompt say so (deployed: sync v24, tick v12). Reading every System note in
   the library found 6 such notes in 5 articles, not 2: article-24 ("Two inventories detected"), article-30, article-34,
