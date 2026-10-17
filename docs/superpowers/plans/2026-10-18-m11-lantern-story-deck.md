@@ -144,6 +144,13 @@ are fixed and tested, except the one known limit below.
 - **Found, not fixed (the owner's call):** 12 of the 18 articles carry the same kind of System note in their own
   sections ("Daily quest added", "Comeback bonus available", "New quest unlocked"), and players see these in today's
   reader. Proposed: the same check in `checkArticle` for new articles, and a correction of the 12 notes.
+  *Fixed at the owner's yes:* `checkArticle` and the house style refuse such notes (shared `GAME_WORDS`; deployed
+  22:31 UTC, sync v23, tick v11). Two subagents rewrote the 12 notes (for example "Missed day detected. Comeback bonus
+  available." became "Missed days happen. The return is the move worth counting."). Each corrected article passed
+  `checkArticle` against its brief before a guarded update (only if its sections were unchanged) stored it; a rescan
+  finds none left. Phones that already hold one of these articles keep the old note until the body is sent again
+  (0.6.0 sends deckless bodies again). Two other notes say "detected" ("No hidden reset button detected", "Reflection
+  detected"), which the check doesn't catch: left for the owner.
 
 ## Not in M11
 
