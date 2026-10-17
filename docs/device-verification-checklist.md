@@ -640,3 +640,24 @@ the Find X9 is the owner's.
   `d49722ad` is versionCode 5, and this system image refuses a downgrade (`ro.debuggable` 0); uninstalling would lose
   Vera. The next development build must be 0.5.1 or newer to install over it. Vera on day 2 (nothing logged today); font
   1.0.
+
+## M11 — Lantern look and the Story Deck (branch `m11-lantern-deck`, 2026-10-18)
+
+Plan: `docs/superpowers/plans/2026-10-18-m11-lantern-story-deck.md`. Needs, each at the owner's yes: migration 0016 +
+the functions deployed (the decks then fill in by cron, about $1 for the published library), and an EAS development build
+0.6.0 (versionCode 7) for the emulator; then a preview APK for the Find X9. The typeface (M PLUS Rounded 1c) waits for
+the owner's yes to download its files.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Lantern: Today, Character, Chronicle, Settings, the onboarding and the Shadow scene in the navy and periwinkle look; rounded cards and pill buttons; labels in sentence case; nothing cut off at font scale 1.0 and 2.0. | |
+| 2 | Red only for the Shadow: its box, its mark, the Trial panel, the portrait's creep and the painting's glow; no red anywhere else (stamps, XP bars, the tab bar, buttons are periwinkle). | |
+| 3 | Today's reading opens the deck: cover → story cards → lesson and Try it today → Your turn → claim → Quest cleared with the XP. | |
+| 4 | A sideways swipe, a quick tap on the cover or a story card, and Previous/Next each move one card; a long card still scrolls up and down. | |
+| 5 | Remove animations (Android setting): cards change without moving. | |
+| 6 | TalkBack: each card is announced with its number ("Card 3 of 7: …"). | |
+| 7 | Keep a lesson: it shows in the Codex (Character → Codex) and is still there after the app restarts; Take out removes it. | |
+| 8 | "Read the full article" shows the article with its sources; "Back to the cards" returns. | |
+| 9 | A past reading (Chronicle) opens its deck; Your turn shows the line written that day. | |
+| 10 | An article with no deck (before the cron writes it) opens the full reader and clears as before; after its deck arrives, the next sync brings it. | |
+| 11 | The home-screen widget in the new colours. | |
