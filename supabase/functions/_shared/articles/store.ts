@@ -7,6 +7,7 @@ import { lmuCode, one } from '../db.ts';
 import type { Sql } from '../db.ts';
 import { ARTICLE_MODEL } from '../prompts/articles.ts';
 import type { Brief } from './brief.ts';
+import type { ArticleSection } from './check.ts';
 import type { Job, JobStatus, Store } from './pipeline.ts';
 
 type JobRow = {
@@ -65,5 +66,22 @@ export function sqlStore(sql: Sql): Store {
     async store(jobId, article, sources) {
       return one(await sql<{ id: string }[]>`select levelmeup.article_store(${jobId}::bigint, ${j(article)}::jsonb, ${j(sources)}::jsonb) as id`).id;
     },
+    async decksDue(limit) {
+      const rows = await sql<DueRow[]>`select * from levelmeup.article_decks_due(${limit}::int)`;
+      return rows.map((r) => ({
+        id: r.id,
+        jobId: Number(r.job_id),
+        draft: { title: r.title, summary: r.summary, sections: r.sections, takeaways: r.takeaways, reflectionQuestion: r.reflection_question },
+        excerpts: Array.isArray(r.excerpts) ? r.excerpts.filter((e): e is string => typeof e === 'string') : [],
+      }));
+    },
+    async saveDeck(articleId, deck, error) {
+      await sql`select levelmeup.article_set_deck(${articleId}, ${deck === null ? null : j(deck)}::jsonb, ${error})`;
+    },
   };
 }
+
+type DueRow = {
+  id: string; job_id: string; title: string; summary: string; sections: ArticleSection[]; takeaways: string[]; reflection_question: string;
+  excerpts: unknown;
+};

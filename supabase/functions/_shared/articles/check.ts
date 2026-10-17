@@ -102,20 +102,29 @@ export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
   if (a.sections.filter((s) => s.sourceIds.length > 0).length * 2 < a.sections.length) problems.push('at least half the sections cite a source');
 
   const texts = articleTexts(a);
-  for (const t of texts) {
-    if (hasBrokenCharacters(t)) problems.push('control characters or half an emoji');
-    const prose = t.replace(MEASURE, '');
-    for (const m of prose.matchAll(QUOTED)) {
-      const quoted = m[1] ?? m[2] ?? m[3] ?? '';
-      if (wordCount(quoted) >= QUOTE_WORDS) problems.push(`no quotations: "${clip(quoted, 40)}"`);
-    }
-    if (OPEN_QUOTE.test(prose.replace(QUOTED, ''))) problems.push(`an unclosed quotation mark: "${clip(t, 40)}"`);
-    if (MARKUP.test(t) || DOMAIN.test(t)) problems.push(`no links, markdown or reference numbers: "${clip(t, 40)}"`);
-    problems.push(...lintArticle(t));
-  }
-  const excerpts = new Set(brief.excerpts.flatMap((e) => shingles(e, COPY_RUN)));
-  // The words themselves go in the reason: the rewrite is told what to change, and the owner can see it (M8a spike).
-  const copied = texts.flatMap((t) => shingles(t, COPY_RUN)).find((run) => excerpts.has(run));
-  if (copied !== undefined) problems.push(`repeats ${COPY_RUN} or more words of a source: "${clip(copied, 80)}"`);
+  for (const t of texts) problems.push(...textProblems(t));
+  problems.push(...copyProblems(texts, brief.excerpts));
   return [...new Set(problems)];
+}
+
+/** Why one piece of text a reader sees can't be shown: broken characters, quotations, links or markup, the lint. */
+export function textProblems(t: string): string[] {
+  const problems: string[] = [];
+  if (hasBrokenCharacters(t)) problems.push('control characters or half an emoji');
+  const prose = t.replace(MEASURE, '');
+  for (const m of prose.matchAll(QUOTED)) {
+    const quoted = m[1] ?? m[2] ?? m[3] ?? '';
+    if (wordCount(quoted) >= QUOTE_WORDS) problems.push(`no quotations: "${clip(quoted, 40)}"`);
+  }
+  if (OPEN_QUOTE.test(prose.replace(QUOTED, ''))) problems.push(`an unclosed quotation mark: "${clip(t, 40)}"`);
+  if (MARKUP.test(t) || DOMAIN.test(t)) problems.push(`no links, markdown or reference numbers: "${clip(t, 40)}"`);
+  problems.push(...lintArticle(t));
+  return problems;
+}
+
+/** A run of COPY_RUN words shared with a source's excerpt, named so a rewrite knows what to change (M8a spike). */
+export function copyProblems(texts: readonly string[], sourceExcerpts: readonly string[]): string[] {
+  const excerpts = new Set(sourceExcerpts.flatMap((e) => shingles(e, COPY_RUN)));
+  const copied = texts.flatMap((t) => shingles(t, COPY_RUN)).find((run) => excerpts.has(run));
+  return copied === undefined ? [] : [`repeats ${COPY_RUN} or more words of a source: "${clip(copied, 80)}"`];
 }

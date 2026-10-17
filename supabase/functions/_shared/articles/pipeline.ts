@@ -11,6 +11,8 @@ import { buildBrief, checkBrief } from './brief.ts';
 import type { Brief } from './brief.ts';
 import { articleWords, checkArticle, parseArticle, readingMinutes } from './check.ts';
 import type { ArticleDraft } from './check.ts';
+import { checkDeck, parseDeck } from './deck.ts';
+import type { ArticleDeck } from './deck.ts';
 import { clip } from './text.ts';
 import { chooseTopics } from './topics.ts';
 import type { UsedTopic } from './topics.ts';
@@ -29,6 +31,8 @@ export const BATCH_GIVE_UP_MS = 25 * 60 * 60 * 1000;
 export const SUBMIT_STALE_MS = 60 * 60 * 1000;
 /** A batch the API still can't show after this is given up: its jobs keep their estimates and use their attempts. */
 export const BATCH_LOST_MS = 48 * 60 * 60 * 1000;
+/** M11: decks written per cron tick (two calls side by side fit the function's time limit). */
+export const DECKS_PER_TICK = 2;
 
 export type JobStatus = 'queued' | 'researching' | 'researched' | 'writing' | 'retry' | 'done' | 'failed';
 export type Job = {
@@ -64,6 +68,17 @@ export interface Store {
   reserve(jobId: number, estimateUsd: number): Promise<number | 'budget'>;
   finish(aiCallId: number, finish: Finish): Promise<void>;
   store(jobId: number, article: StoredArticle, sources: readonly StoredSource[]): Promise<string>;
+  /** M11: published or waiting articles with no deck and fewer than two tries, newest first. */
+  decksDue(limit: number): Promise<DeckSource[]>;
+  /** M11: the deck, or why there is none; either way it counts as a try. */
+  saveDeck(articleId: string, deck: ArticleDeck | null, error: string | null): Promise<void>;
+}
+
+/** M11: an article to deck, with its job (the budget's row) and its brief's excerpts (the copying check). */
+export type DeckSource = { id: string; jobId: number; draft: ArticleDraft; excerpts: string[] };
+export type DeckAnswer = { value: unknown; usage: Usage } | { error: string; usage: Usage | null; maybeBilled: boolean };
+export interface Decks {
+  write(source: DeckSource): Promise<DeckAnswer>;
 }
 
 export type BatchMessage = { content: readonly unknown[]; stop_reason: string | null; usage: Usage };
@@ -92,6 +107,8 @@ export interface Batches {
 export type TickReport = {
   ran: boolean; queued: number; submitted: number; collected: number; published: string[]; review: string[]; retry: number; failed: number;
   budget: boolean; errors: number;
+  /** M11: the articles given a deck this tick, and those whose deck was refused. */
+  decked: string[]; deckFailed: string[];
 };
 
 /** The UTC date whose night has begun by `nowMs`, or null before 18:00 UTC. */
@@ -102,10 +119,13 @@ export function nightOf(nowMs: number): string | null {
 
 /**
  * One step of the pipeline. `nights: false` (the owner's manual tick) only moves the jobs along: it never queues the
- * night's articles or requeues retries, so a manual tick spends nothing the owner didn't queue (M8a deploy).
+ * night's articles or requeues retries, so a manual tick spends nothing the owner didn't queue (M8a deploy). M11: with
+ * `decks`, a cron tick also writes the Story Decks of up to DECKS_PER_TICK articles that have none; a manual tick never.
  */
-export async function tick(store: Store, batches: Batches, nowMs: number, options: { nights: boolean } = { nights: true }): Promise<TickReport> {
-  const report: TickReport = { ran: false, queued: 0, submitted: 0, collected: 0, published: [], review: [], retry: 0, failed: 0, budget: false, errors: 0 };
+export async function tick(store: Store, batches: Batches, nowMs: number, options: { nights: boolean; decks?: Decks } = { nights: true }): Promise<TickReport> {
+  const report: TickReport = {
+    ran: false, queued: 0, submitted: 0, collected: 0, published: [], review: [], retry: 0, failed: 0, budget: false, errors: 0, decked: [], deckFailed: [],
+  };
   if (!(await store.begin(LEASE_SECONDS))) return report;
   report.ran = true;
   try {
@@ -114,10 +134,47 @@ export async function tick(store: Store, batches: Batches, nowMs: number, option
     // Writing first: near the cap, a brief already paid for gets the budget before new research does (M8a review).
     await submit(store, batches, nowMs, report, 'researched');
     await submit(store, batches, nowMs, report, 'queued');
+    if (options.nights && options.decks !== undefined) await writeDecks(store, options.decks, report);
   } finally {
     await store.end();
   }
   return report;
+}
+
+/** M11 decision 4: decks for the newest articles that have none, each reserved against the cap like every call. */
+async function writeDecks(store: Store, decks: Decks, report: TickReport): Promise<void> {
+  if (report.budget) return;
+  const due = await store.decksDue(DECKS_PER_TICK);
+  const reserved: { source: DeckSource; aiCallId: number }[] = [];
+  for (const source of due) {
+    const id = await store.reserve(source.jobId, ESTIMATE_USD.deck);
+    if (id === 'budget') {
+      report.budget = true;
+      break;
+    }
+    reserved.push({ source, aiCallId: id });
+  }
+  await Promise.all(reserved.map(async ({ source, aiCallId }) => {
+    try {
+      const answer = await decks.write(source).catch((error: unknown): DeckAnswer => ({ error: clip(String(error), 200), usage: null, maybeBilled: true }));
+      const deck = 'value' in answer ? parseDeck(answer.value) : null;
+      const problems = 'error' in answer ? [answer.error] : deck === null ? ['the deck does not match its schema'] : checkDeck(deck, source.draft, source.excerpts);
+      const usage = answer.usage;
+      await store.finish(aiCallId, {
+        status: problems.length === 0 ? 'ok' : 'failed',
+        usage,
+        costUsd: usage !== null ? costUsd(ARTICLE_MODEL, usage, false) : 'maybeBilled' in answer && answer.maybeBilled ? ESTIMATE_USD.deck : 0,
+        error: problems.length === 0 ? null : clip(problems.join('; '), 1000),
+      });
+      await store.saveDeck(source.id, problems.length === 0 ? deck : null, problems.length === 0 ? null : clip(problems.join('; '), 1000));
+      (problems.length === 0 ? report.decked : report.deckFailed).push(source.id);
+    } catch (error) {
+      // One deck that breaks something must not stop the tick; it uses its try, so it can't be paid for every tick.
+      report.errors++;
+      console.error(`article deck ${source.id}`, error);
+      await store.saveDeck(source.id, null, `internal: ${clip(String(error), 200)}`).catch(() => {});
+    }
+  }));
 }
 
 async function queueNight(store: Store, nowMs: number): Promise<number> {

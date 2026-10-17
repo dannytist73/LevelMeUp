@@ -5,6 +5,7 @@ import { ARTICLE_CLUSTERS, CLASS_CLUSTERS, GOAL_CLUSTERS } from '../../../packag
 import type { ArticleCluster } from '../../../packages/content/src/index.ts';
 import { abilityUnlocked, questDayDate } from '../../../packages/rules/src/index.ts';
 import type { ClassId, Goal } from '../../../packages/rules/src/index.ts';
+import type { ArticleDeck } from './articles/deck.ts';
 
 /** A published article as the chooser sees it, with the last quest day it was given to this player (null: unread). */
 export type CandidateRow = {
@@ -137,6 +138,8 @@ export type ArticleRow = {
   takeaways: string[];
   reflection_question: string;
   reading_minutes: number;
+  /** M11: the Story Deck, once the tick has written it (null before, and for older rows). */
+  deck?: ArticleDeck | null;
 };
 
 export type SourceRow = { article_id: string; idx: number; url: string; title: string };
@@ -148,6 +151,8 @@ export type ArticleBody = ArticleSummary & {
   takeaways: string[];
   question: string;
   sources: { n: number; title: string; url: string; host: string }[];
+  /** M11: the cards the reading opens on; null when the article has none yet (the phone shows the article). */
+  deck: ArticleDeck | null;
 };
 
 function hostOf(url: string): string {
@@ -177,6 +182,7 @@ export function articleBody(row: ArticleRow, sources: readonly SourceRow[]): Art
     takeaways: row.takeaways,
     question: row.reflection_question,
     sources: ordered.map((s, i) => ({ n: i + 1, title: s.title, url: s.url, host: hostOf(s.url) })),
+    deck: row.deck ?? null,
   };
 }
 

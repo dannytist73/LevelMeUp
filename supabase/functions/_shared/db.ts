@@ -148,7 +148,7 @@ export async function loadBodies(tx: Tx, userId: string, ids: readonly string[])
   await asPlayer(tx, userId);
   try {
     const rows = await tx<ArticleRow[]>`
-      select id, cluster, title, summary, sections, takeaways, reflection_question, reading_minutes
+      select id, cluster, title, summary, sections, takeaways, reflection_question, reading_minutes, deck
       from levelmeup.articles where id in ${tx(ids)}`;
     const sources = await tx<SourceRow[]>`
       select article_id, idx, url, title from levelmeup.article_sources where article_id in ${tx(ids)}`;

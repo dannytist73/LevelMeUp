@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ARTICLE_TOPICS } from '../../../packages/content/src/index.ts';
 import type { ArticleCluster } from '../../../packages/content/src/index.ts';
-import { BATCH_GIVE_UP_MS, BATCH_LOST_MS, SubmitError, nightOf, tick } from '../../functions/_shared/articles/pipeline.ts';
-import type { BatchResult, Batches, Finish, Job, JobSet, JobStatus, Store, StoredArticle, StoredSource } from '../../functions/_shared/articles/pipeline.ts';
+import { parseArticle } from '../../functions/_shared/articles/check.ts';
+import type { ArticleDraft } from '../../functions/_shared/articles/check.ts';
+import type { ArticleDeck } from '../../functions/_shared/articles/deck.ts';
+import { BATCH_GIVE_UP_MS, BATCH_LOST_MS, DECKS_PER_TICK, SubmitError, nightOf, tick } from '../../functions/_shared/articles/pipeline.ts';
+import type {
+  BatchResult, Batches, DeckAnswer, DeckSource, Decks, Finish, Job, JobSet, JobStatus, Store, StoredArticle, StoredSource,
+} from '../../functions/_shared/articles/pipeline.ts';
 import type { BatchRequest } from '../../functions/_shared/prompts/articles.ts';
 import { BRIEF, articleJson } from './articles-fixtures.ts';
 
@@ -67,6 +72,18 @@ class FakeStore implements Store {
     return id;
   }
   job(id: number) { return this.jobs.find((j) => j.id === id)!; }
+  /** M11: articles and their decks, as 0016's functions keep them. */
+  decks: { id: string; jobId: number; draft: ArticleDraft; excerpts: string[]; deck: ArticleDeck | null; attempts: number; error: string | null }[] = [];
+  async decksDue(limit: number): Promise<DeckSource[]> {
+    return this.decks.filter((d) => d.deck === null && d.attempts < 2).slice(0, limit).map(({ id, jobId, draft, excerpts }) => ({ id, jobId, draft, excerpts }));
+  }
+  async saveDeck(id: string, deck: ArticleDeck | null, error: string | null) {
+    const d = this.decks.find((x) => x.id === id)!;
+    if (d.deck !== null || d.attempts >= 2) return;
+    d.deck = deck;
+    d.attempts++;
+    d.error = deck === null ? error : null;
+  }
 }
 
 /** The Batch API: submissions are kept; each batch ends when the test gives it results. */
@@ -369,5 +386,90 @@ describe('tick (architecture §5.2)', () => {
     batches.finishLast(() => ({ ...researchAnswer(), message: { ...researchAnswer().message!, stop_reason: 'pause_turn' } }));
     await run(NIGHT + HOUR);
     expect(store.job(1)).toMatchObject({ status: 'retry', error: 'stop_reason pause_turn' });
+  });
+});
+
+/** M11: a deck writer whose answers the test sets, per article. */
+class FakeDecks implements Decks {
+  answers = new Map<string, DeckAnswer | Error>();
+  written: string[] = [];
+  async write(source: DeckSource): Promise<DeckAnswer> {
+    this.written.push(source.id);
+    const answer = this.answers.get(source.id) ?? { value: DECK, usage: DECK_USAGE };
+    if (answer instanceof Error) throw answer;
+    return answer;
+  }
+}
+
+const DECK_USAGE = { input_tokens: 3_000, output_tokens: 800 };
+const DECK = {
+  story: [
+    { kicker: 'The story', text: 'You finish a hard week of training and feel worse, not better. The work was real, so where did the progress go?' },
+    { kicker: 'What is really happening', text: 'Training breaks the body down a little, and the building happens later, while you sleep and rest between sessions.' },
+    { kicker: 'Why it matters', text: 'Skip the rest and you skip the part where the change is made. Rest days are part of the plan, not a break from it.' },
+  ],
+  system_note: 'Rest days count. They are part of training.',
+  lesson: 'Rest is when training turns into strength.',
+  try_today: 'Pick one rest day this week and write it in your plan.',
+};
+
+describe('the Story Deck step (M11 decision 4)', () => {
+  const draft = parseArticle(articleJson())!;
+  function withArticles(n: number) {
+    const { store, batches } = setup();
+    store.short = 0; // no new night's articles: only the decks run
+    for (let i = 1; i <= n; i++) store.decks.push({ id: `article-${i}`, jobId: i, draft, excerpts: BRIEF.excerpts, deck: null, attempts: 0, error: null });
+    const decks = new FakeDecks();
+    return { store, decks, run: (options: { nights: boolean; decks?: Decks } = { nights: true, decks }) => tick(store, batches, NIGHT, options) };
+  }
+
+  it('a cron tick decks up to two articles, each reserved first and booked at its real cost', async () => {
+    const { store, decks, run } = withArticles(3);
+    const report = await run();
+    expect(DECKS_PER_TICK).toBe(2);
+    expect(report).toMatchObject({ decked: ['article-1', 'article-2'], deckFailed: [] });
+    expect(store.decks.map((d) => d.deck === null)).toEqual([false, false, true]);
+    expect(store.decks[0]!.deck!.systemNote).toBe('Rest days count. They are part of training.');
+    expect(store.calls.map((c) => [c.jobId, c.estimate, c.finish!.status, c.finish!.costUsd])).toEqual([[1, 0.08, 'ok', 0.028], [2, 0.08, 'ok', 0.028]]);
+    expect((await run()).decked).toEqual(['article-3']);
+    expect((await run()).decked).toEqual([]);
+  });
+
+  it('the owner\'s manual tick never decks, and neither does a tick without a writer', async () => {
+    const { store, decks, run } = withArticles(1);
+    expect((await run({ nights: false, decks })).decked).toEqual([]);
+    expect((await run({ nights: true })).decked).toEqual([]);
+    expect(decks.written).toEqual([]);
+    expect(store.calls).toEqual([]);
+  });
+
+  it('a refused deck uses one of its two tries and says why; after two it is left to the full article', async () => {
+    const { store, decks, run } = withArticles(1);
+    decks.answers.set('article-1', { value: { ...DECK, lesson: 'Rest for 66 days and you will be strong.' }, usage: DECK_USAGE });
+    expect((await run()).deckFailed).toEqual(['article-1']);
+    expect(store.decks[0]).toMatchObject({ deck: null, attempts: 1, error: 'the number 66 is not in the article' });
+    expect(store.calls[0]!.finish).toMatchObject({ status: 'failed', costUsd: 0.028 });
+    decks.answers.set('article-1', { value: { story: 'nope' }, usage: DECK_USAGE });
+    expect((await run()).deckFailed).toEqual(['article-1']);
+    expect(store.decks[0]).toMatchObject({ attempts: 2, error: 'the deck does not match its schema' });
+    expect((await run()).deckFailed).toEqual([]);
+    expect(decks.written).toHaveLength(2);
+  });
+
+  it('a call that never answered, or threw, books the estimate and uses its try', async () => {
+    const { store, decks, run } = withArticles(2);
+    decks.answers.set('article-1', { error: 'TypeError: network', usage: null, maybeBilled: true });
+    decks.answers.set('article-2', new Error('boom'));
+    const report = await run();
+    expect(report.deckFailed).toEqual(['article-1', 'article-2']);
+    expect(store.calls.map((c) => [c.finish!.costUsd, c.finish!.error])).toEqual([[0.08, 'TypeError: network'], [0.08, 'Error: boom']]);
+    expect(store.decks.map((d) => d.attempts)).toEqual([1, 1]);
+  });
+
+  it('stops at the monthly cap without calling', async () => {
+    const { store, decks, run } = withArticles(2);
+    store.budgetLeft = 0.05;
+    expect(await run()).toMatchObject({ budget: true, decked: [] });
+    expect(decks.written).toEqual([]);
   });
 });

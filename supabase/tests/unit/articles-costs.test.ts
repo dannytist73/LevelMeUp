@@ -23,6 +23,6 @@ describe('costUsd (spec §4.1, prices of 2026-10-12)', () => {
 
   it('keeps the cap and generous estimates', () => {
     expect(MONTHLY_CAP_USD).toBe(25);
-    expect(ESTIMATE_USD).toEqual({ reveal: 0.05, research: 0.4, write: 0.25 });
+    expect(ESTIMATE_USD).toEqual({ reveal: 0.05, research: 0.4, write: 0.25, deck: 0.08 });
   });
 });

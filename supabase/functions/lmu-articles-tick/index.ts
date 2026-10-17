@@ -7,6 +7,7 @@ import { db } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { tickAllowed } from '../_shared/articles/auth.ts';
 import { claudeBatches } from '../_shared/articles/batches.ts';
+import { claudeDecks } from '../_shared/articles/deckCalls.ts';
 import { tick } from '../_shared/articles/pipeline.ts';
 import { sqlStore } from '../_shared/articles/store.ts';
 
@@ -19,7 +20,8 @@ Deno.serve(async (req) => {
   // The cron sends {}; the owner's manual tick sends { nights: false } so it never queues a night's articles.
   const nights = !(isObject(body) && body.nights === false);
   try {
-    return json(200, await tick(sqlStore(db()), claudeBatches(), Date.now(), { nights }));
+    // M11: the cron's ticks also write the Story Decks; the owner's manual tick never does (it spends only what was queued).
+    return json(200, await tick(sqlStore(db()), claudeBatches(), Date.now(), { nights, decks: nights ? claudeDecks() : undefined }));
   } catch (error) {
     console.error('lmu-articles-tick failed', error);
     return problemResponse(problem(500, 'internal'));
