@@ -647,7 +647,8 @@ Plan: `docs/superpowers/plans/2026-10-18-m11-lantern-story-deck.md`. Needs, each
 the functions deployed (the decks then fill in by cron, about $1 for the published library), and an EAS development build
 0.6.0 (versionCode 7) for the emulator; then a preview APK for the Find X9. The typeface (M PLUS Rounded 1c) waits for
 the owner's yes to download its files. Deploy order: migration 0016 first, then the functions (the sync reads the new
-`deck` column).
+`deck` column). *Done 2026-10-18: the typeface is in (M PLUS Rounded 1c), 0016 and the functions are deployed (sync v22,
+tick v10) and the cron is writing the decks; the EAS development build is next, at the owner's yes.*
 
 | # | Check | Result |
 |---|---|---|
