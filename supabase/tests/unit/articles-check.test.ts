@@ -50,6 +50,15 @@ describe('checkArticle (spec §4.1 step 3)', () => {
     expect(checkArticle(draft(), BRIEF)).toEqual([]);
   });
 
+  it('refuses a System note that announces something in the game; a quest in a paragraph is fine (M11 deploy)', () => {
+    for (const note of ['System: Daily quest added. Three lines.', 'System: Missed day detected. Comeback bonus available.', 'System: Same XP, bigger reward.']) {
+      const a = draft();
+      a.sections[2]!.systemNote = note;
+      expect(checkArticle(a, BRIEF)).toContain('a System note announces something in the game, which only the app does');
+    }
+    expect(checkArticle(withParagraph(`Training is a quest you choose each morning. ${paragraph(0, 80)}`), BRIEF)).toEqual([]);
+  });
+
   it('needs 800–1,200 words', () => {
     const short = draft();
     short.sections.forEach((s) => s.paragraphs.splice(1));

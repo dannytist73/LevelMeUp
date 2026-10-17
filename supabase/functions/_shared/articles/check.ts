@@ -75,6 +75,13 @@ const MARKUP = /https?:\/\/|www\.|[*_`]|##|^#|\]\(|\[\s*\d[\d,\s–-]*\]|<\/?[a-
 /** A bare domain or an email address: a name, a dot and an ending of 2 or more letters (not "e.g." or "U.S."). */
 const DOMAIN = /(?<![\p{L}\p{N}.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,24}(?![\p{L}\p{N}])/u;
 
+/**
+ * A System note that names these claims something happened in the game ("Daily quest added", "Comeback bonus
+ * available"), which it didn't: only the app's own quests do that (M11 deploy). Checked on System notes only; an
+ * article's paragraphs may still call training a quest.
+ */
+export const GAME_WORDS = /\b(quests?|missions?|xp|rewards?|achievements?|unlocked|bonus)\b/i;
+
 /** Why an article can't be published, or nothing. */
 export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
   const problems: string[] = [];
@@ -87,6 +94,7 @@ export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
       problems.push(`section "${clip(s.heading, 40)}" needs 1–5 paragraphs of 20–1,200 characters`);
     }
     if (s.systemNote !== null && !between(s.systemNote, 10, 300)) problems.push('a System note must be 10–300 characters');
+    if (s.systemNote !== null && GAME_WORDS.test(s.systemNote)) problems.push('a System note announces something in the game, which only the app does');
   }
   if (a.takeaways.length < 2 || a.takeaways.length > 4 || a.takeaways.some((t) => !between(t, 10, 200))) problems.push('2–4 takeaways of 10–200 characters');
   if (!between(a.reflectionQuestion, 10, 200) || !a.reflectionQuestion.endsWith('?')) {

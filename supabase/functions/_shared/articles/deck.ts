@@ -6,7 +6,7 @@ import { isObject } from '../http.ts';
 import { ARTICLE_MODEL } from '../prompts/articles.ts';
 import { HOUSE_STYLE } from '../prompts/style.ts';
 import type { ArticleDraft } from './check.ts';
-import { articleTexts, copyProblems, textProblems } from './check.ts';
+import { GAME_WORDS, articleTexts, copyProblems, textProblems } from './check.ts';
 import { clip } from './text.ts';
 
 export type DeckCard = { kicker: string; text: string };
@@ -155,8 +155,6 @@ function spelledNumbers(t: string): number[] {
 }
 
 const between = (s: string, [min, max]: readonly [number, number]): boolean => s.length >= min && s.length <= max;
-/** A System note that names these claims something happened in the game ("Daily quest added"), which it didn't (M11 deploy). */
-const GAME_WORDS = /\b(quests?|missions?|xp|rewards?|achievements?|unlocked|bonus)\b/i;
 
 /** Why a deck can't be shown with its article, or nothing. */
 export function checkDeck(d: ArticleDeck, article: ArticleDraft, excerpts: readonly string[]): string[] {
