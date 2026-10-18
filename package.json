@@ -25,6 +25,8 @@
     "articles": "node scripts/articles.ts",
     "pilot": "node scripts/pilot.ts",
     "plus": "node scripts/plus.ts",
+    "site:build": "node site/build.mjs",
+    "site:deploy": "node site/build.mjs && npx --yes wrangler@4.146.0 deploy --config site/wrangler.jsonc",
     "test:live": "npm -w supabase run test:live",
     "app": "npm -w @levelmeup/mobile run start",
     "check:bundle": "npm -w @levelmeup/mobile run check:bundle"

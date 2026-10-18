@@ -1,0 +1,9 @@
+// levelmeup.dannytist.com: the public pages (site/dist), served by Cloudflare as static files on the owner's own
+// domain (its DNS is on Cloudflare). Publishing needs the owner's yes: `npm run site:deploy` (build, then wrangler).
+{
+  "name": "levelmeup-site",
+  "compatibility_date": "2026-09-01",
+  "assets": { "directory": "./dist", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page" },
+  "routes": [{ "pattern": "levelmeup.dannytist.com", "custom_domain": true }],
+  "workers_dev": false
+}

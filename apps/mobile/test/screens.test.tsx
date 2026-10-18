@@ -1,7 +1,7 @@
 import {
   ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, PLAY_TEXT, TODAY_TEXT, fillText,
 } from '@levelmeup/content';
-import { EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
+import { ABOUT_TEXT, EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
@@ -351,7 +351,7 @@ describe('Settings', () => {
     expect(screen.getByText('Playing as a guest.')).toBeTruthy();
     expect(screen.getByText('Last synced 20:30')).toBeTruthy();
     expect(screen.getByText('2 waiting')).toBeTruthy();
-    expect(screen.getByText('LevelMeUp is not medical advice.')).toBeTruthy();
+    expect(screen.getByText(ABOUT_TEXT.notMedical)).toBeTruthy();
     expect(screen.getByText('Version 0.1.0')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Sync now' }));
     expect(store.getState().syncNow).toHaveBeenCalled();

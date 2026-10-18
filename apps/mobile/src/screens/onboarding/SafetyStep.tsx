@@ -1,6 +1,6 @@
 // O04 the safety check (spec §3.4; owner decision 2), its own step since M12 (audit 8, board R3-7): seven yes-or-no
 // questions, never stored, only whether to start gently. Continue says how many are left.
-import { ONBOARDING_TEXT, SAFETY_CHECK, fillText } from '@levelmeup/content';
+import { ABOUT_TEXT, ONBOARDING_TEXT, SAFETY_CHECK, fillText } from '@levelmeup/content';
 import { SAFETY_QUESTIONS } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { complete, gentleStart, nextPath, safetyLeft } from '../../onboarding/flow.ts';
@@ -24,6 +24,7 @@ export function SafetyStep({ onNavigate, onBack }: StepProps) {
       <View style={{ gap: 14 }}>
         <Label>{T.safety}</Label>
         <Small>{T.safetyNote}</Small>
+        <Small>{ABOUT_TEXT.notMedical}</Small>
         {SAFETY_CHECK.map((question, i) => (
           <View key={question} style={{ gap: 8 }}>
             <Body>{question}</Body>

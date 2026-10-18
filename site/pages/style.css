@@ -1,0 +1,27 @@
+/* levelmeup.dannytist.com: the app's Moonlight look (navy, periwinkle), plain and readable. */
+:root {
+  --night: #171A2B; --panel: #222640; --line: #383F63; --chalk: #F1F0F7; --ash: #A4AAC8; --accent: #A9B4FF; --accentText: #BAC3FF;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--night); color: var(--chalk);
+  font: 400 1.0625rem/1.65 "M PLUS Rounded 1c", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+header { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 2rem; }
+.brand { color: var(--accentText); font-weight: 800; text-decoration: none; letter-spacing: .01em; }
+h1 { font-weight: 800; font-size: 2rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+h2 { font-weight: 800; font-size: 1.25rem; line-height: 1.3; margin: 2.25rem 0 .5rem; }
+p, li { color: var(--chalk); }
+.lead, .meta { color: var(--ash); }
+.meta { font-size: .9rem; }
+ul { padding-left: 1.25rem; }
+li { margin: .35rem 0; }
+a { color: var(--accentText); text-underline-offset: 3px; }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 18px; padding: 1rem 1.25rem; margin: 1rem 0; }
+.card p { margin: .4rem 0; }
+nav { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-top: 3rem; padding-top: 1.25rem; border-top: 1.5px solid var(--line); }
+code { background: var(--panel); padding: .1rem .35rem; border-radius: 6px; }

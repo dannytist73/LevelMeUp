@@ -3,7 +3,8 @@
 // sent, on each reveal up to the cap of three), what Google's sign-in carries and that deleting keeps it
 // (lmu-account-delete), Supabase Pro's 7-day logs (the auth audit table is empty), and the pilot report.
 export const ABOUT_TEXT = {
-  notMedical: 'LevelMeUp is not medical advice.',
+  // M13: Google Play's health apps rule asks for this in the app and the store listing (research §6).
+  notMedical: 'LevelMeUp is not a medical device or medical advice. Talk to a health professional before starting a new exercise routine.',
 } as const;
 
 export const PRIVACY_TEXT = {
