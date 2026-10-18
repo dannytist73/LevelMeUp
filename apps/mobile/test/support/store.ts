@@ -44,6 +44,8 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     theme: 'moonlight',
     frame: 'none',
     themeReturn: false,
+    look: 'moonlight',
+    lookReady: true,
     setTheme: jest.fn(async (theme) => set({ theme })),
     setFrame: jest.fn(async (frame) => set({ frame })),
     clearThemeReturn: jest.fn(),

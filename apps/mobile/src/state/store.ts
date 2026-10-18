@@ -34,9 +34,9 @@ import { planInput, planLive, planNotes } from '../notify/plan.ts';
 import { DEFAULT_NOTIFY, NOTIFY_KEY, readNotify } from '../notify/settings.ts';
 import type { NoteOs, NotifySettings, Permission, PlannedNote } from '../notify/types.ts';
 import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
-import { buy, purchasesSetUp, restore, shop, storeSaysPlus } from '../plus/purchases.ts';
+import { buy, forgetPurchases, purchasesSetUp, restore, shop, storeSaysPlus } from '../plus/purchases.ts';
 import type { Plan, Shop } from '../plus/purchases.ts';
-import { asFrame, plusOf } from '../plus/plus.ts';
+import { asFrame, plusOf, shownTheme } from '../plus/plus.ts';
 import type { FrameName } from '../plus/plus.ts';
 import { asTheme } from '../theme/palettes.ts';
 import type { ThemeName } from '../theme/palettes.ts';
@@ -120,7 +120,7 @@ export const FRAME_KEY = 'lmu.frame';
  * M13: what a purchase or a restore came to. `on`: the server confirmed Plus. `server_late`: Google Play took it but the
  * System couldn't confirm yet (it asks again at the next launch). `none`: a restore found nothing.
  */
-export type PlusOutcome = 'on' | 'pending' | 'cancelled' | 'none' | 'failed' | 'not_set_up' | 'server_late';
+export type PlusOutcome = 'on' | 'pending' | 'cancelled' | 'none' | 'failed' | 'not_set_up' | 'server_late' | 'owned';
 
 /**
  * The one-time offers (M12): each shows once, then lives in Settings. `setup` marks a character that onboarded after M12,
@@ -255,6 +255,12 @@ export type GameState = {
   frame: FrameName;
   /** M13: a new look redraws the whole app from Today; this sends the player back to Your look once (Look's own flag). */
   themeReturn: boolean;
+  /**
+   * M13 (review): the look the app is drawn in. Set once at launch (from the stored choice and Plus) and when the
+   * player picks one, never in the middle of a screen because Plus started or ended; `lookReady` once it is known.
+   */
+  look: ThemeName;
+  lookReady: boolean;
   setTheme: (theme: ThemeName) => Promise<void>;
   setFrame: (frame: FrameName) => Promise<void>;
   clearThemeReturn: () => void;
@@ -449,6 +455,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     const confirmPlus = async (): Promise<PlusOutcome> => {
       const checked = await deps.api.plus().catch(() => null);
       if (checked === null || !checked.ok) return 'server_late';
+      // Shown at once (review): the sync that follows brings the rest of the state.
+      const view = get().view;
+      if (view !== null) set({ view: { ...view, plus: checked.body.plus } });
       void scheduler.request();
       return checked.body.plus.active ? 'on' : 'server_late';
     };
@@ -476,6 +485,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       deckAsked.clear();
       await deps.local.wipe();
       await deps.signOut();
+      await forgetPurchases(); // M13 (review): RevenueCat no longer speaks for the deleted player
       await deps.kv.removeItem(DRAFT_KEY);
       await deps.kv.removeItem(VOW_KEY); // the next player on this phone never sees it (M5 review)
       await deps.kv.removeItem(TIMERS_KEY);
@@ -596,6 +606,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       theme: 'moonlight',
       frame: 'none',
       themeReturn: false,
+      look: 'moonlight',
+      lookReady: false,
 
       boot: async () => {
         const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText] = await Promise.all([
@@ -623,7 +635,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         setSounding(sounds);
         set({ notify: readNotify(notifyText), permission, haptics, sounds });
         notifyLoaded = true;
-        await refresh();
+        try {
+          await refresh();
+        } finally {
+          // M13: the look is known before anything is drawn in it, even if the phone's records can't be read.
+          set({ look: shownTheme(asTheme(themeText), plusOf(get().view)), lookReady: true });
+        }
         confirmedLevel = get().cached?.state.character.level ?? null;
         const holding = get().cached !== null;
         // A character already exists, so the onboarding is over: its draft (a name, goals, limits) isn't kept (M5 review).
@@ -733,7 +750,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       setTheme: async (theme) => {
-        set({ theme, themeReturn: theme !== get().theme });
+        const look = shownTheme(theme, plusOf(get().view));
+        set({ theme, look, themeReturn: look !== get().look });
         await deps.kv.setItem(THEME_KEY, theme).catch(() => {});
       },
 
@@ -796,6 +814,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       reopen: () => {
         set({ checkinLater: null });
         void get().checkNotify(); // M7d: the permission may have changed in the phone's settings
+        void checkPlus(); // M13 (review): a renewal, a refund or a pending payment that finished while away
       },
 
       dismissCheckinResult: async (checkinId) => {

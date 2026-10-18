@@ -26,7 +26,9 @@ describe('LevelMeUp Plus words (M13)', () => {
   });
 
   it('never show the yearly plan as a monthly figure', () => {
-    expect(PLUS_TEXT.price.yearly).toBe('{price} a year');
+    expect(PLUS_TEXT.price.yearly).toBe('{price} a year, renews automatically');
+    expect(PLUS_TEXT.trialLine).toMatch(/renews automatically/);
+    expect(PLUS_TEXT.settings.status.trial).toMatch(/unless you cancel/);
     expect(strings(PLUS_TEXT).join(' ')).not.toMatch(/per month.*year|a month, billed/);
   });
 

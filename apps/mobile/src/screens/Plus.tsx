@@ -27,7 +27,7 @@ const REMIND_BEFORE_DAYS = 2;
 
 const OUTCOME: Partial<Record<PlusOutcome, string>> = {
   on: PLUS_TEXT.thanks, pending: PLUS_TEXT.pending, failed: PLUS_TEXT.failed, not_set_up: PLUS_TEXT.notSetUp,
-  server_late: PLUS_TEXT.serverLate, none: PLUS_TEXT.nothingToRestore,
+  server_late: PLUS_TEXT.serverLate, none: PLUS_TEXT.nothingToRestore, owned: PLUS_TEXT.owned,
 };
 
 function priceLine(plan: Plan): string {

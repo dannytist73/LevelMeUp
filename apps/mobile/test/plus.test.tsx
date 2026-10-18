@@ -27,7 +27,7 @@ const NOW = Date.UTC(2026, 9, 10, 13);
 const LATER = new Date(Date.UTC(2026, 10, 20));
 const row = (over: Partial<EntitlementRow> = {}): EntitlementRow => ({
   source: 'play', product: 'plus_yearly', starts_at: new Date(Date.UTC(2026, 9, 1)), ends_at: LATER, trial: false, will_renew: true,
-  manage_url: null, ...over,
+  manage_url: null, checked_at: new Date(Date.UTC(2026, 9, 10)), ...over,
 });
 const FOUNDER = row({ source: 'beta_founder', product: null, ends_at: null, will_renew: null });
 const viewWith = (rows: EntitlementRow[] = [], done: ('core' | 'side1')[] = []): Shown => project(serverState(done, {}, rows), []);
@@ -44,7 +44,7 @@ describe('Plus as the screens read it (plus.ts)', () => {
     const zone = 'Asia/Manila';
     expect(statusLine(NOT_PLUS, zone)).toBe(PLUS_TEXT.settings.free);
     expect(statusLine(plusOn(), zone)).toBe('Plus, yearly: renews Fri 20 Nov');
-    expect(statusLine(plusOn({ trial: true }), zone)).toBe('Plus, free trial: ends Fri 20 Nov');
+    expect(statusLine(plusOn({ trial: true }), zone)).toBe('Plus, free trial: ends Fri 20 Nov, then yearly unless you cancel');
     expect(statusLine(plusOn({ product: 'plus_monthly', willRenew: false }), zone)).toBe('Plus, monthly: ends Fri 20 Nov, cancelled');
     expect(statusLine(plusOn({ product: 'plus_lifetime', endsAt: null, willRenew: null }), zone)).toBe(PLUS_TEXT.settings.status.lifetime);
     expect(statusLine(plusOn({ source: 'beta_founder', product: null, endsAt: null }), zone)).toBe(PLUS_TEXT.settings.status.founder);
@@ -94,8 +94,8 @@ describe('the offer screen (Google Play subscription rules)', () => {
   it('lists the plans with Google Play\'s prices, the yearly trial and its timeline, and buys the chosen plan', async () => {
     const store = testStore({ view: viewWith(), plusShop: jest.fn(async () => ({ ok: true as const, plans: PLANS })) });
     await render(withStore(store, <Plus onClose={jest.fn()} />));
-    expect(await screen.findByText('7 days free, then ₱699.00 a year.')).toBeTruthy();
-    expect(screen.getByText('₱129.00 a month')).toBeTruthy();
+    expect(await screen.findByText('7 days free, then ₱699.00 a year, renews automatically.')).toBeTruthy();
+    expect(screen.getByText('₱129.00 a month, renews automatically')).toBeTruthy();
     expect(screen.getByText('₱1,490.00, paid once')).toBeTruthy();
     expect(screen.getByText('Day 5: we remind you, if notifications are on.')).toBeTruthy();
     expect(screen.getByText('Day 7: ₱699.00 is charged unless you cancel before then.')).toBeTruthy();
@@ -108,7 +108,7 @@ describe('the offer screen (Google Play subscription rules)', () => {
   it('never shows the yearly plan as a monthly amount, and its two buttons are the same kind of full-width button', async () => {
     const store = testStore({ view: viewWith(), plusShop: jest.fn(async () => ({ ok: true as const, plans: PLANS })) });
     await render(withStore(store, <Plus onClose={jest.fn()} />));
-    await screen.findByText('₱129.00 a month');
+    await screen.findByText('₱129.00 a month, renews automatically');
     expect(screen.queryByText(/₱699\.00 a month|58\.25/)).toBeNull();
     await fireEvent.press(screen.getByRole('radio', { name: /Monthly/ }));
     expect(screen.getByRole('button', { name: 'Buy monthly' })).toBeTruthy();
@@ -274,5 +274,18 @@ describe('the trial reminder\'s words', () => {
   it('say when it ends and that cancelling is in Google Play', () => {
     expect(NOTIFY_TEXT.trial.title).toMatch(/2 days/);
     expect(NOTIFY_TEXT.trial.body).toMatch(/cancel in Google Play/);
+  });
+});
+
+describe('Settings → Restore purchases (review)', () => {
+  it('asks the store, then says what it found', async () => {
+    const store = testStore({ view: viewWith(), restorePlus: jest.fn(async () => 'none' as const) });
+    await render(withStore(store, (
+      <Settings onBack={jest.fn()} onTraining={jest.fn()} onGame={jest.fn()} onDelete={jest.fn()} version="0.6.0" deviceZone="Asia/Manila"
+        onPlus={jest.fn()} onLook={jest.fn()} />
+    )));
+    await fireEvent.press(screen.getByRole('button', { name: PLUS_TEXT.restore }));
+    expect(store.getState().restorePlus).toHaveBeenCalled();
+    expect(await screen.findByText(PLUS_TEXT.nothingToRestore)).toBeTruthy();
   });
 });

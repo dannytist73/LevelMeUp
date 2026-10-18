@@ -52,8 +52,24 @@ describe('RevenueCat on the phone (M13)', () => {
     expect(await P.buy('player-1', plan)).toBe('cancelled');
     RC.purchasePackage!.mockRejectedValueOnce({ code: '20', userCancelled: false });
     expect(await P.buy('player-1', plan)).toBe('pending');
+    RC.purchasePackage!.mockRejectedValueOnce({ code: '6', userCancelled: false });
+    expect(await P.buy('player-1', plan)).toBe('owned');
     RC.purchasePackage!.mockRejectedValueOnce(new Error('billing unavailable'));
     expect(await P.buy('player-1', plan)).toBe('failed');
+  });
+
+  it('a new player logs in to RevenueCat; after a deletion, RevenueCat is signed out first (review)', async () => {
+    RC.getOfferings!.mockResolvedValue({ current: null });
+    await P.shop('player-1');
+    await P.shop('player-2');
+    expect(RC.logIn).toHaveBeenCalledWith('player-2');
+    await P.forgetPurchases();
+    expect(RC.logOut).toHaveBeenCalledTimes(1);
+    await P.forgetPurchases();
+    expect(RC.logOut).toHaveBeenCalledTimes(1);
+    await P.shop('player-3');
+    expect(RC.logIn).toHaveBeenLastCalledWith('player-3');
+    expect(RC.configure).not.toHaveBeenCalled();
   });
 
   it('restore: found or none', async () => {

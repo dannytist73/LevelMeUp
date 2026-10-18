@@ -18,6 +18,7 @@ import { manageUrl } from '../plus/purchases.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
+import { LinkButton } from '../ui/LinkButton.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
@@ -51,6 +52,20 @@ export function Settings({
   const view = useGame((s) => s.view);
   const plus = plusOf(view);
   const theme = useGame((s) => shownTheme(s.theme, plusOf(s.view)));
+  const restorePlus = useGame((s) => s.restorePlus);
+  const [restoring, setRestoring] = useState(false);
+  const [plusNote, setPlusNote] = useState<string | null>(null);
+  const restore = async () => {
+    setRestoring(true);
+    setPlusNote(null);
+    const outcome = await restorePlus();
+    setRestoring(false);
+    const words: Partial<Record<typeof outcome, string>> = {
+      on: PLUS_TEXT.restored, none: PLUS_TEXT.nothingToRestore, not_set_up: PLUS_TEXT.notSetUp, server_late: PLUS_TEXT.serverLate,
+      failed: PLUS_TEXT.unavailable,
+    };
+    setPlusNote(words[outcome] ?? null);
+  };
   const frame = useGame((s) => shownFrame(s.frame, plusOf(s.view)));
   const notify = useGame((s) => s.notify);
   const permission = useGame((s) => s.permission);
@@ -137,6 +152,10 @@ export function Settings({
             {canManage(plus) && (
               <Button label={PLUS_TEXT.settings.manage} variant="secondary" onPress={() => void Linking.openURL(manageUrl(plus.product)).catch(() => {})} />
             )}
+            {plus.source !== 'beta_founder' && (
+              <LinkButton label={PLUS_TEXT.restore} tone="accentText" disabled={restoring} onPress={() => void restore()} />
+            )}
+            {plusNote !== null && <View accessibilityLiveRegion="polite"><Small>{plusNote}</Small></View>}
           </NightCard>
           <RowLink label={PLUS_TEXT.settings.look} line={`${PLUS_TEXT.themes[theme].name} · ${PLUS_TEXT.frames[frame]}`} onPress={onLook} />
         </View>

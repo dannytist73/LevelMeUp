@@ -11,7 +11,7 @@ export type PlanKind = 'yearly' | 'monthly' | 'lifetime';
 /** One plan as Google Play prices it for this player (their currency, their taxes). */
 export type Plan = { kind: PlanKind; price: string; trialDays: number | null; pkg: unknown };
 export type Shop = { ok: true; plans: Plan[] } | { ok: false; reason: 'not_set_up' | 'unavailable' };
-export type Bought = 'bought' | 'cancelled' | 'pending' | 'failed' | 'not_set_up';
+export type Bought = 'bought' | 'cancelled' | 'pending' | 'owned' | 'failed' | 'not_set_up';
 export type Restored = 'found' | 'none' | 'failed' | 'not_set_up';
 
 const ENTITLEMENT = 'plus';
@@ -25,11 +25,14 @@ export const purchasesSetUp = (): boolean => Platform.OS === 'android' && REVENU
 
 let configuredFor: string | null = null;
 
+let configured = false;
+
 async function ready(playerId: string): Promise<boolean> {
   if (!purchasesSetUp()) return false;
   try {
-    if (configuredFor === null) {
+    if (!configured) {
       Purchases.configure({ apiKey: REVENUECAT_ANDROID_KEY, appUserID: playerId });
+      configured = true;
     } else if (configuredFor !== playerId) {
       await Purchases.logIn(playerId);
     }
@@ -76,9 +79,24 @@ export async function buy(playerId: string, plan: Plan): Promise<Bought> {
     return customerInfo.entitlements.active[ENTITLEMENT] !== undefined ? 'bought' : 'pending';
   } catch (error) {
     if ((error as { userCancelled?: boolean | null }).userCancelled === true) return 'cancelled';
+    const code = (error as { code?: unknown }).code;
+    if (typeof code !== 'string') return 'failed';
     // Google's "pending" payments (cash, some cards) finish later; RevenueCat reports them as this code.
-    if ((error as { code?: string }).code === PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR) return 'pending';
+    if (code === PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR) return 'pending';
+    // This Google account already has it (review): Restore brings it to this character.
+    if (code === PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR) return 'owned';
     return 'failed';
+  }
+}
+
+/** After a character is deleted (review): RevenueCat stops speaking for that player; the next one logs in afresh. */
+export async function forgetPurchases(): Promise<void> {
+  if (configuredFor === null) return;
+  configuredFor = null;
+  try {
+    await Purchases.logOut();
+  } catch {
+    // Already anonymous, or RevenueCat unreachable: nothing of the deleted player is left to speak for.
   }
 }
 

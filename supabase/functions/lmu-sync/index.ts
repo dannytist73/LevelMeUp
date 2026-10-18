@@ -17,7 +17,8 @@ import { isProblem, json, problem, problemResponse, readJson } from '../_shared/
 import { provisionalClock, sameQuests } from '../_shared/offline.ts';
 import { bodiesToSend, planInsight } from '../_shared/reading.ts';
 import { authenticate } from '../_shared/session.ts';
-import { plusView } from '../_shared/plus.ts';
+import { playRecheckDue, plusView } from '../_shared/plus.ts';
+import { refreshPlay, revenueCatKey } from '../_shared/revenuecat.ts';
 import { achievementProgress, characterView, ladderMap, stateView } from '../_shared/state.ts';
 import { dayOffers, openDay } from '../_shared/today.ts';
 import { tooOld } from '../_shared/version.ts';
@@ -292,6 +293,16 @@ async function awardAchievements(userId: string): Promise<string[]> {
   });
 }
 
+/**
+ * M13 (review): a Play row whose period ended since RevenueCat was last asked (a renewal, a trial turned paid, a lapse)
+ * or that wasn't checked for a week is asked about before the state is read. Briefly, and never failing the sync.
+ */
+async function recheckPlus(userId: string, s: Snapshot): Promise<void> {
+  const key = revenueCatKey();
+  if (key === null || !playRecheckDue(s.entitlements, s.readAt)) return;
+  await refreshPlay(db(), key, userId, 4_000).catch((error) => console.error('lmu-sync: the Plus recheck failed', error));
+}
+
 Deno.serve(async (req) => {
   // M9b decision 5: an app too old for this server updates first; nothing it sent is read.
   const old = tooOld(req);
@@ -312,6 +323,7 @@ Deno.serve(async (req) => {
     for (const i of applyOrder(request.events)) results[i] = await applyEvent(player.userId, request.events[i]!, request.timeZone);
     await advance(player.userId, request.timeZone);
     const newAchievementIds = await awardAchievements(player.userId);
+    await recheckPlus(player.userId, started);
     const { state, articles } = await db().begin(async (tx) => {
       const snapshot = (await loadSnapshot(tx, player.userId))!;
       const history = await loadHistory(tx, player.userId, snapshot.profile.book, plusView(snapshot.entitlements, snapshot.readAt).active);

@@ -1175,19 +1175,27 @@ describe('LevelMeUp Plus in the store (M13)', () => {
   const PLAN = { kind: 'yearly' as const, price: '₱699.00', trialDays: 7, pkg: {} };
   const SUBSCRIBED = serverState([], {}, [{
     source: 'play', product: 'plus_yearly', starts_at: new Date(NOW - 86_400_000), ends_at: new Date(NOW + 30 * 86_400_000), trial: false,
-    will_renew: true, manage_url: null,
+    will_renew: true, manage_url: null, checked_at: new Date(NOW),
   }]);
 
   it('a look is the phone\'s and stays for the next character; a frame is the character\'s and goes with it', async () => {
-    const { store, kv } = await setup([ok(SERVER)]);
+    const { store, kv } = await setup([ok(SUBSCRIBED)]);
     await store.getState().boot();
     await store.getState().setTheme('mintNight');
     await store.getState().setFrame('moon');
-    expect(store.getState()).toMatchObject({ theme: 'mintNight', frame: 'moon', themeReturn: true });
+    expect(store.getState()).toMatchObject({ theme: 'mintNight', look: 'mintNight', frame: 'moon', themeReturn: true });
     expect([kv.get(THEME_KEY), kv.get(FRAME_KEY)]).toEqual(['mintNight', 'moon']);
     await store.getState().startOver();
     expect(store.getState()).toMatchObject({ theme: 'mintNight', frame: 'none' });
     expect(kv.has(FRAME_KEY)).toBe(false);
+    store.getState().stop();
+  });
+
+  it('without Plus, a picked Plus look is kept for later but the app stays in Moonlight (review)', async () => {
+    const { store } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    await store.getState().setTheme('systemBlue');
+    expect(store.getState()).toMatchObject({ theme: 'systemBlue', look: 'moonlight', themeReturn: false, lookReady: true });
     store.getState().stop();
   });
 

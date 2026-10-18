@@ -3,6 +3,7 @@
 // in constant time (M8a decision 8): players get a 401 like anyone else. Off until LMU_TICK_SECRET and
 // LMU_ANTHROPIC_API_KEY are both set.
 import { claudeConfigured } from '../_shared/claude.ts';
+import { retryForgotten, revenueCatKey } from '../_shared/revenuecat.ts';
 import { db } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { tickAllowed } from '../_shared/articles/auth.ts';
@@ -14,6 +15,8 @@ import { sqlStore } from '../_shared/articles/store.ts';
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return problemResponse(problem(405, 'method_not_allowed'));
   if (!tickAllowed(req.headers.get('x-lmu-tick'), Deno.env.get('LMU_TICK_SECRET') ?? '')) return problemResponse(problem(401, 'unauthorized'));
+  // M13: RevenueCat customers of deleted characters that RevenueCat couldn't take at the time; never stops the tick.
+  await retryForgotten(db(), revenueCatKey()).catch((error) => console.error('lmu-articles-tick: RevenueCat retries failed', error));
   if (!claudeConfigured()) return problemResponse(problem(503, 'off'));
   const body = await readJson(req);
   if (isProblem(body)) return problemResponse(body);

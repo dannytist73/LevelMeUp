@@ -88,7 +88,7 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
     const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
     // M13: LevelMeUp Plus grants (the Founder grant, a Play purchase).
     const entitlements = await tx<EntitlementRow[]>`
-      select source, product, starts_at, ends_at, trial, will_renew, manage_url from levelmeup.entitlements where user_id = ${userId}`;
+      select source, product, starts_at, ends_at, trial, will_renew, manage_url, checked_at from levelmeup.entitlements where user_id = ${userId}`;
     const { pain } = one(await tx<{ pain: number }[]>`
       select count(*)::int as pain from levelmeup.events
       where user_id = ${userId} and type = 'pain' and applied_at > now() - make_interval(secs => ${PAIN_WINDOW_MS / 1000})`);

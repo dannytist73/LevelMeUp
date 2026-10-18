@@ -63,3 +63,21 @@ begin
   return next is((select count(*)::int from levelmeup.entitlements where user_id = a), 0, 'the deleted player''s Plus row is gone');
   return next is((select count(*)::int from levelmeup.entitlements where user_id = b), 1, 'other players keep theirs');
 end $$;
+
+create function lmu_test.test_revenuecat_forget() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.uid(41);
+  b uuid := lmu_test.uid(42);
+begin
+  perform levelmeup.revenuecat_forget_add(a);
+  perform levelmeup.revenuecat_forget_add(b);
+  perform levelmeup.revenuecat_forget_add(a);
+  return next is((select tries from levelmeup.revenuecat_forget where app_user_id = a), 2, 'a second failure counts a second try');
+  return next ok((select array_agg(x) from levelmeup.revenuecat_forget_due(10) x) @> array[a, b], 'both wait for the tick');
+  perform levelmeup.revenuecat_forget_done(a);
+  return next ok(not exists (select 1 from levelmeup.revenuecat_forget where app_user_id = a), 'a done deletion leaves the list');
+  update levelmeup.revenuecat_forget set tries = 50 where app_user_id = b;
+  return next ok(not exists (select 1 from levelmeup.revenuecat_forget_due(10) x where x = b), 'after 50 tries it is left for the owner');
+  return next is(lmu_test.try_service(format('select levelmeup.revenuecat_forget_add(%L)', a)), null, 'lmu_service adds through the function');
+  return next matches(lmu_test.try_service('select count(*) from levelmeup.revenuecat_forget'), '^42501', 'and cannot read the table');
+end $$;

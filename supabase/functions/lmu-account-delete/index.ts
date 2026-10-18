@@ -3,11 +3,12 @@
 // account, or a wedding guest's, may belong to the wedding site too (M3 plan, decision 9; owner question 2).
 // The sign-in goes first, so a failure leaves everything in place for a retry; deleting it removes every LevelMeUp
 // row (each table cascades from auth.users), and delete_player then sweeps whatever remains.
-// M13: the player's RevenueCat customer (their purchase history there) goes first of all, when purchases are set up.
-// Deleting never cancels a Google Play subscription; the app and the deletion page say so.
+// M13: then the player's RevenueCat customer (their purchase history there), when purchases are set up; if RevenueCat
+// can't be reached, its id waits for the cron's tick (review: an outage never blocks a deletion). Deleting never
+// cancels a Google Play subscription; the app and the deletion page say so.
 import { asPlayer, asService, db, one } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
-import { deleteRevenueCatCustomer, revenueCatKey } from '../_shared/revenuecat.ts';
+import { forgetCustomer, revenueCatKey } from '../_shared/revenuecat.ts';
 import { authenticate } from '../_shared/session.ts';
 
 type Counts = Record<string, number>;
@@ -36,6 +37,15 @@ async function deleteSignIn(userId: string): Promise<boolean> {
   return res.ok || res.status === 404;
 }
 
+/** The character is already gone: a RevenueCat problem is logged and retried by the tick, never reported as a failure. */
+async function forgetPurchases(userId: string): Promise<void> {
+  try {
+    await forgetCustomer(db(), revenueCatKey(), userId);
+  } catch (error) {
+    console.error('lmu-account-delete: the RevenueCat customer waits', error);
+  }
+}
+
 Deno.serve(async (req) => {
   const player = await authenticate(req);
   if (isProblem(player)) return problemResponse(player);
@@ -44,17 +54,15 @@ Deno.serve(async (req) => {
   if (!isObject(body) || body.confirm !== 'DELETE') return problemResponse(problem(400, 'confirm', 'send { "confirm": "DELETE" }'));
 
   try {
-    const key = revenueCatKey();
-    if (key !== null && !(await deleteRevenueCatCustomer(key, player.userId))) {
-      return problemResponse(problem(502, 'purchases_not_deleted', 'nothing was deleted; try again'));
-    }
     const before = await countRows(player.userId);
     if (player.anonymous && before.profile === 1) {
       if (!(await deleteSignIn(player.userId))) return problemResponse(problem(502, 'sign_in_not_deleted', 'nothing was deleted; try again'));
       await db()`select levelmeup.delete_player(${player.userId}::uuid)`;
+      await forgetPurchases(player.userId);
       return json(200, { deleted: before, signIn: 'deleted' });
     }
     const { counts } = one(await db()<{ counts: Counts }[]>`select levelmeup.delete_player(${player.userId}::uuid) as counts`);
+    await forgetPurchases(player.userId);
     return json(200, { deleted: counts, signIn: 'kept' });
   } catch (error) {
     console.error('lmu-account-delete failed', error);

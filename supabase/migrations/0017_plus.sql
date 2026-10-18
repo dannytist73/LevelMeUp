@@ -3,6 +3,8 @@
 -- 1. One row per grant: the beta's Founder grant (Plus for life, given by the owner) or a Google Play purchase, as
 --    RevenueCat reports it to lmu-plus. The phone never writes it; the server reads it into state.plus.
 -- 2. delete_player removes the grants with the character.
+-- 3. RevenueCat customers whose deletion failed (RevenueCat down) wait here for the cron's tick (review: an outage never
+--    blocks a deletion). Ids only: the character is already gone.
 
 create table levelmeup.entitlements (
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -63,6 +65,30 @@ begin
   return me;
 end $$;
 
+create table levelmeup.revenuecat_forget (
+  app_user_id uuid primary key,
+  failed_at timestamptz not null default now(),
+  tries int not null default 1
+);
+alter table levelmeup.revenuecat_forget enable row level security;
+
+create function levelmeup.revenuecat_forget_add(p_user uuid)
+returns void language sql security definer set search_path = levelmeup, pg_temp as $$
+  insert into levelmeup.revenuecat_forget (app_user_id) values (p_user)
+  on conflict (app_user_id) do update set failed_at = now(), tries = levelmeup.revenuecat_forget.tries + 1
+$$;
+
+-- The oldest waiting ids first; ones tried 50 times (about a day of ticks) are left for the owner to look at.
+create function levelmeup.revenuecat_forget_due(p_limit int)
+returns setof uuid language sql stable security definer set search_path = levelmeup, pg_temp as $$
+  select app_user_id from levelmeup.revenuecat_forget where tries < 50 order by failed_at limit greatest(p_limit, 0)
+$$;
+
+create function levelmeup.revenuecat_forget_done(p_user uuid)
+returns void language sql security definer set search_path = levelmeup, pg_temp as $$
+  delete from levelmeup.revenuecat_forget where app_user_id = p_user
+$$;
+
 create or replace function levelmeup.delete_player(p_user uuid)
 returns jsonb language plpgsql security definer set search_path = levelmeup, pg_temp as $$
 declare
@@ -87,3 +113,6 @@ end $$;
 
 revoke all on all functions in schema levelmeup from public, anon, authenticated;
 grant execute on function levelmeup.set_play_plus(uuid, text, timestamptz, boolean, boolean, text) to lmu_service;
+grant execute on function levelmeup.revenuecat_forget_add(uuid) to lmu_service;
+grant execute on function levelmeup.revenuecat_forget_due(int) to lmu_service;
+grant execute on function levelmeup.revenuecat_forget_done(uuid) to lmu_service;

@@ -696,3 +696,32 @@ character (the onboarding and the cards of days 1 to 3); never Vera.
 | 21 | Live rest: a set's Done check starts the rest; the shade counts it down; Skip removes it; it goes at zero. Without the notification permission, nothing shows and nothing breaks. | |
 | 22 | The first timer started without timer notes offers "Show this timer in your notifications?" once; Show it asks Android, then the countdown appears. | |
 | 23 | Sounds (once expo-audio is in): a claim, the XP stamp, a rank, the streak, a level, an achievement, a rest or timer over, a card turned, a lesson kept, the day done, the Shadow and the vow each sound; music playing in another app keeps playing; Settings → Your game's Sounds switch silences them. | |
+
+## M13 — LevelMeUp Plus (branch `m13-plus`, 2026-10-18)
+
+Plan: `docs/superpowers/plans/2026-10-18-m13-plus.md`; launch steps: `docs/launch/google-play-launch.md`. Joins M11 and M12
+in the development build 0.6.0 (versionCode 7), built on this PC (`eas build --local` in the WSL distro `lmu-build`).
+Rows 1–8 need no server change; rows 9–14 need migration 0017 and `lmu-plus` deployed (owner's yes); rows 15–18 need
+RevenueCat set up (the owner's steps 5 and 7) and a build with the public key; row 19 is Play's own.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | With no RevenueCat key: Settings shows "LevelMeUp Plus · Not on Plus" and See Plus; the offer screen says Plus isn't on sale yet, with Not now. Nothing crashes. | |
+| 2 | Your look: System Blue and Mint Night show their colours and "Plus"; tapping either opens the offer and changes nothing; Moonlight stays. | |
+| 3 | Chronicle: the all-time stats card is locked with See Plus. | |
+| 4 | The reveal's Accept goes straight to Today while Plus isn't on sale (no offer screen). | |
+| 5 | Settings → Your data shows the Plus purchases section; the safety step shows the not-a-medical-device line. | |
+| 6 | The built manifest (aapt2) has no SYSTEM_ALERT_WINDOW, storage or biometric permissions; it has BILLING. | |
+| 7 | Every arm64 library is 16 KB aligned (scratchpad m13/elf16k.sh) and `zipalign -c -P 16` passes. | |
+| 8 | Delete my character still deletes (a NEW test character, never Vera). | |
+| 9 | After 0017: a Founder grant (`npm run plus -- founder <test Google email>`) shows "Plus for life, as a Founder of the beta" in Settings; Your look offers the Founder frame. | |
+| 10 | Picking Mint Night redraws the whole app in it and comes back to Your look; the tab bar, cards, buttons and the Shadow's red all read; Back works. | |
+| 11 | The portrait frames (Moon ring, Runes, Crest, Founder) draw around the portrait on Character, in the look's colours. | |
+| 12 | Chronicle's all-time stats draw one stat at a time; tapping a stat switches it; TalkBack reads "Strength: 7 to 9 over 2 weeks." | |
+| 13 | Removing the grant (owner SQL) puts the app back to Moonlight and no frame at the next sync; nothing else changes. | |
+| 14 | Deleting a character with a Plus row removes the row (db check) and the screen showed no subscription warning for a Founder. | |
+| 15 | With RevenueCat + a license tester: the offer lists the three plans with Google Play's prices in pesos, the yearly plan as "7 days free, then ₱699.00 a year", the day 5 and day 7 lines. | |
+| 16 | Start 7 days free → Google's sheet → back in the app: "Plus is on"; Settings shows the trial's end; a notification is planned 2 days before it; Manage subscription opens Play's subscription page for Plus. | |
+| 17 | Restore purchases on a new character with the same Google account brings Plus back; on an account that never bought, it says none was found. | |
+| 18 | Cancel in Play: at the next launch Settings says "ends …, cancelled"; after the end (license testers' periods are minutes), Plus is gone and the look returns to Moonlight. | |
+| 19 | Play Console's App bundle explorer shows the AAB targets API 36 and supports 16 KB pages; the pre-launch report has no crash. | |

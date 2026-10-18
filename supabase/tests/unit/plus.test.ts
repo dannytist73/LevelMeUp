@@ -1,8 +1,9 @@
 // M13: what RevenueCat's answer means for Plus, and whether the player is Plus now (_shared/plus.ts).
 import { describe, expect, it } from 'vitest';
 import { statPoints } from '../../../packages/rules/src/index.ts';
-import { NOT_PLUS, playFromSubscriber, plusView, statWeeks } from '../../functions/_shared/plus.ts';
-import type { EntitlementRow } from '../../functions/_shared/plus.ts';
+import { NOT_PLUS, PLAY_RECHECK_MS, playFromSubscriber, playRecheckDue, plusView, statWeeks } from '../../functions/_shared/plus.ts';
+import type { EntitlementRow, PlayPlus } from '../../functions/_shared/plus.ts';
+import { founderEmail } from '../../../scripts/lib/plus.ts';
 
 const NOW = new Date('2026-11-10T00:00:00Z');
 const subscriber = (entitlements: unknown, more: Record<string, unknown> = {}) => ({ subscriber: { entitlements, subscriptions: {}, ...more } });
@@ -33,23 +34,27 @@ describe('playFromSubscriber (RevenueCat GET /v1/subscribers)', () => {
     });
   });
 
-  it('no Plus entitlement, an unknown product, a bad date or a strange body: nothing', () => {
+  it('no Plus entitlement at all: none (a refund ends the stored row)', () => {
     expect(playFromSubscriber(subscriber({}))).toBeNull();
-    expect(playFromSubscriber(subscriber({ plus: { product_identifier: 'other_app_pro', expires_date: null } }))).toBeNull();
-    expect(playFromSubscriber(subscriber({ plus: { product_identifier: 'plus_yearly', expires_date: 'soon' } }))).toBeNull();
-    expect(playFromSubscriber({ subscriber: 'x' })).toBeNull();
-    expect(playFromSubscriber(null)).toBeNull();
+  });
+
+  it('an answer it does not understand changes nothing (review): a promo grant, a bad date, a strange body', () => {
+    expect(playFromSubscriber(subscriber({ plus: { product_identifier: 'rc_promo_plus_lifetime', expires_date: null } }))).toBe('unknown');
+    expect(playFromSubscriber(subscriber({ plus: { product_identifier: 'plus_yearly', expires_date: 'soon' } }))).toBe('unknown');
+    expect(playFromSubscriber({ subscriber: { entitlements: 'x' } })).toBe('unknown');
+    expect(playFromSubscriber({ subscriber: 'x' })).toBe('unknown');
+    expect(playFromSubscriber(null)).toBe('unknown');
   });
 
   it('keeps only an https management link', () => {
     const body = subscriber({ plus: { product_identifier: 'plus_yearly', expires_date: '2027-01-01T00:00:00Z' } }, { management_url: 'javascript:alert(1)' });
-    expect(playFromSubscriber(body)?.manageUrl).toBeNull();
+    expect((playFromSubscriber(body) as PlayPlus).manageUrl).toBeNull();
   });
 });
 
 const row = (over: Partial<EntitlementRow>): EntitlementRow => ({
   source: 'play', product: 'plus_yearly', starts_at: new Date('2026-11-01T00:00:00Z'), ends_at: new Date('2026-11-17T00:00:00Z'),
-  trial: true, will_renew: true, manage_url: null, ...over,
+  trial: true, will_renew: true, manage_url: null, checked_at: new Date('2026-11-08T00:00:00Z'), ...over,
 });
 
 describe('plusView (state.plus)', () => {
@@ -73,6 +78,32 @@ describe('plusView (state.plus)', () => {
   it('a running Play plan comes first, so Settings can offer to manage it', () => {
     const founder = row({ source: 'beta_founder', product: null, ends_at: null, trial: false, will_renew: null });
     expect(plusView([founder, row({})], NOW).source).toBe('play');
+  });
+});
+
+describe('playRecheckDue (a sync asks RevenueCat again; review)', () => {
+  it('once a Play period has ended since RevenueCat was last asked (a renewal, a trial turned paid, a lapse)', () => {
+    expect(playRecheckDue([row({ ends_at: new Date('2026-11-09T00:00:00Z') })], NOW)).toBe(true);
+    expect(playRecheckDue([row({ ends_at: new Date('2026-11-09T00:00:00Z'), checked_at: new Date('2026-11-09T12:00:00Z') })], NOW)).toBe(false);
+    expect(playRecheckDue([row({})], NOW)).toBe(false);
+  });
+
+  it('and at least once a week, Lifetime included (a refund or a moved purchase)', () => {
+    const week = new Date(NOW.getTime() - PLAY_RECHECK_MS);
+    expect(playRecheckDue([row({ product: 'plus_lifetime', ends_at: null, checked_at: week })], NOW)).toBe(true);
+    expect(playRecheckDue([row({ source: 'beta_founder', product: null, ends_at: null, checked_at: week })], NOW)).toBe(false);
+    expect(playRecheckDue([], NOW)).toBe(false);
+  });
+});
+
+describe("the Founder command's email check (review)", () => {
+  it('takes real emails and nothing that could break its SQL', () => {
+    expect(founderEmail('tester.one@example.com')).toBe(true);
+    expect(founderEmail('a@b.co')).toBe(true);
+    expect(founderEmail("o'brien@example.com")).toBe(false);
+    expect(founderEmail('back\\slash@example.com')).toBe(false);
+    expect(founderEmail('two words@example.com')).toBe(false);
+    expect(founderEmail('nobody')).toBe(false);
   });
 });
 

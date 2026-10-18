@@ -2,7 +2,7 @@
 // notification taps. M10c: the home-screen widget follows the game. A screen that fails shows Crashed (audit 2026-10-15).
 import { useFonts } from 'expo-font';
 import * as Network from 'expo-network';
-import { Stack, router } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -14,7 +14,6 @@ import { NoteTaps } from '../src/notify/NoteTaps.tsx';
 import { Celebration } from '../src/screens/Celebration.tsx';
 import { Crashed } from '../src/screens/Crashed.tsx';
 import { createAppStore } from '../src/state/appStore.ts';
-import { plusOf, shownTheme } from '../src/plus/plus.ts';
 import { GameProvider, useGame } from '../src/state/store.ts';
 import type { GameState } from '../src/state/store.ts';
 import { appliedTheme, applyTheme } from '../src/theme/palettes.ts';
@@ -32,9 +31,12 @@ export const ErrorBoundary = Crashed;
  * the whole app: screens read the colours as they draw, and a navigator keeps its screens.
  */
 function Themed({ children }: { children: ReactNode }) {
-  const theme = useGame((s) => shownTheme(s.theme, plusOf(s.view)));
-  if (appliedTheme() !== theme) applyTheme(theme);
-  return <View key={theme} style={{ flex: 1, backgroundColor: colors.night }}>{children}</View>;
+  const look = useGame((s) => s.look);
+  const ready = useGame((s) => s.lookReady);
+  // Review: nothing is drawn before the look is known, so a launch never redraws itself.
+  if (!ready) return <View style={{ flex: 1, backgroundColor: colors.night }} />;
+  if (appliedTheme() !== look) applyTheme(look);
+  return <View key={look} style={{ flex: 1, backgroundColor: colors.night }}>{children}</View>;
 }
 
 /** Drawn inside Themed, so the screens' background is the new look's. */
@@ -46,15 +48,22 @@ function Screens() {
 function ThemeReturn() {
   const back = useGame((s) => s.themeReturn);
   const clear = useGame((s) => s.clearThemeReturn);
+  const path = usePathname();
   useEffect(() => {
     if (!back) return;
-    clear();
+    // If the redrawn app kept its screens, the player is still on Your look: nothing to reopen.
+    if (path === '/look') {
+      clear();
+      return;
+    }
+    // Cleared inside the timer (review): clearing first re-ran this effect, whose cleanup cancelled the timer.
     const t = setTimeout(() => {
+      clear();
       router.push('/settings');
       router.push('/look');
     }, 0);
     return () => clearTimeout(t);
-  }, [back, clear]);
+  }, [back, clear, path]);
   return null;
 }
 

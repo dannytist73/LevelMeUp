@@ -21,6 +21,8 @@ export type EntitlementRow = {
   trial: boolean;
   will_renew: boolean | null;
   manage_url: string | null;
+  /** When RevenueCat was last asked about it. */
+  checked_at: Date;
 };
 
 /** What RevenueCat says the player holds from Play, ready for levelmeup.set_play_plus. */
@@ -42,20 +44,23 @@ const dateOrNull = (v: unknown): string | null | undefined => {
 };
 
 /**
- * Plus as RevenueCat's GET /v1/subscribers/{app_user_id} reports it: null when the player has never held it (or the
- * answer isn't one we understand, which stores nothing new). A subscription's end is the later of its expiry and a
- * billing grace period; Lifetime has none. Play's subscription ids arrive alone or as `id:basePlan`.
+ * Plus as RevenueCat's GET /v1/subscribers/{app_user_id} reports it: null when the player holds no Plus entitlement
+ * at all (a refund or a revoke ends a stored row); `unknown` when the answer isn't one we understand (a product we
+ * don't sell, a promotional grant, a changed format), which stores nothing (review). A subscription's end is the later
+ * of its expiry and a billing grace period; Lifetime has none. Play's subscription ids arrive alone or as `id:basePlan`.
  */
-export function playFromSubscriber(body: unknown): PlayPlus | null {
-  if (!isRecord(body) || !isRecord(body.subscriber)) return null;
+export function playFromSubscriber(body: unknown): PlayPlus | null | 'unknown' {
+  if (!isRecord(body) || !isRecord(body.subscriber)) return 'unknown';
   const sub = body.subscriber;
-  const entitlement = isRecord(sub.entitlements) ? sub.entitlements[PLUS_ENTITLEMENT] : undefined;
-  if (!isRecord(entitlement) || typeof entitlement.product_identifier !== 'string') return null;
+  if (!isRecord(sub.entitlements)) return 'unknown';
+  const entitlement = sub.entitlements[PLUS_ENTITLEMENT];
+  if (entitlement === undefined) return null;
+  if (!isRecord(entitlement) || typeof entitlement.product_identifier !== 'string') return 'unknown';
   const product = entitlement.product_identifier.split(':')[0] as PlusProduct;
-  if (!PLUS_PRODUCTS.includes(product)) return null;
+  if (!PLUS_PRODUCTS.includes(product)) return 'unknown';
   const expires = dateOrNull(entitlement.expires_date);
   const grace = dateOrNull(entitlement.grace_period_expires_date);
-  if (expires === undefined || grace === undefined) return null;
+  if (expires === undefined || grace === undefined) return 'unknown';
   const manageUrl = typeof sub.management_url === 'string' && sub.management_url.startsWith('https://') && sub.management_url.length <= 500
     ? sub.management_url
     : null;
@@ -103,6 +108,20 @@ export function plusView(rows: readonly EntitlementRow[], now: Date): PlusView {
   if (founder !== undefined && live(founder, now)) return view(founder, true);
   if (play !== undefined) return view(play, false);
   return NOT_PLUS;
+}
+
+/** A Play row is asked about again at least this often (a refund or a moved Lifetime purchase shows within a week). */
+export const PLAY_RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a sync should ask RevenueCat about the player's Play row first (review: renewals and trials that convert
+ * while the app is closed): its period has ended since RevenueCat was last asked, or it hasn't been asked for a week.
+ */
+export function playRecheckDue(rows: readonly EntitlementRow[], now: Date): boolean {
+  const play = rows.find((r) => r.source === 'play');
+  if (play === undefined) return false;
+  if (play.ends_at !== null && play.ends_at <= now && play.checked_at < play.ends_at) return true;
+  return now.getTime() - play.checked_at.getTime() >= PLAY_RECHECK_MS;
 }
 
 /** One week of the all-time stat chart (Plus): each stat's points at the week's end. */

@@ -13,9 +13,10 @@ export const PLUS_TEXT = {
   ],
   free: 'Free for everyone, always: every quest, class, stat, streak and ability, rest days and the pain route, the Shadow pact, reminders, saving and deleting, and every reading.',
   plans: { yearly: 'Yearly', monthly: 'Monthly', lifetime: 'Lifetime' },
-  price: { yearly: '{price} a year', monthly: '{price} a month', lifetime: '{price}, paid once' },
+  // Review (Play's subscription rules): that it renews sits beside the price, not only in the small print.
+  price: { yearly: '{price} a year, renews automatically', monthly: '{price} a month, renews automatically', lifetime: '{price}, paid once' },
   trialBadge: '{days} days free',
-  trialLine: '{days} days free, then {price} a year.',
+  trialLine: '{days} days free, then {price} a year, renews automatically.',
   timeline: {
     today: 'Today: Plus starts.',
     reminder: 'Day {day}: we remind you, if notifications are on.',
@@ -38,7 +39,8 @@ export const PLUS_TEXT = {
   pending: "Google Play is still processing the payment. Plus starts once it's done.",
   restored: 'Plus is back on.',
   nothingToRestore: 'No Plus purchase was found for the Google account on this phone.',
-  failed: "That didn't go through, and nothing was charged. Try again in a moment.",
+  failed: "That didn't go through. Try again in a moment; if Google Play did charge you, Restore purchases brings Plus here.",
+  owned: 'This Google account already has Plus. Tap Restore purchases to bring it to this character.',
   serverLate: 'Google Play took the payment, but the System has not heard yet. It checks again each time you open the app.',
   settings: {
     section: 'LevelMeUp Plus',
@@ -48,7 +50,7 @@ export const PLUS_TEXT = {
     look: 'Your look',
     status: {
       renews: 'Plus, {plan}: renews {date}',
-      trial: 'Plus, free trial: ends {date}',
+      trial: 'Plus, free trial: ends {date}, then yearly unless you cancel',
       ends: 'Plus, {plan}: ends {date}, cancelled',
       lifetime: 'Plus, lifetime',
       founder: 'Plus for life, as a Founder of the beta',

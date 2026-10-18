@@ -13,11 +13,11 @@ jest.mock('../../src/ui/sound.ts', () => ({ ...jest.requireActual('../../src/ui/
 jest.mock('react-native-purchases', () => ({
   __esModule: true,
   default: {
-    configure: jest.fn(), logIn: jest.fn(async () => ({})), getOfferings: jest.fn(async () => ({ current: null })),
+    configure: jest.fn(), logIn: jest.fn(async () => ({})), logOut: jest.fn(async () => ({})), getOfferings: jest.fn(async () => ({ current: null })),
     purchasePackage: jest.fn(), restorePurchases: jest.fn(), getCustomerInfo: jest.fn(),
   },
   PACKAGE_TYPE: { ANNUAL: 'ANNUAL', MONTHLY: 'MONTHLY', LIFETIME: 'LIFETIME', WEEKLY: 'WEEKLY' },
-  PURCHASES_ERROR_CODE: { PAYMENT_PENDING_ERROR: '20' },
+  PURCHASES_ERROR_CODE: { PAYMENT_PENDING_ERROR: '20', PRODUCT_ALREADY_PURCHASED_ERROR: '6' },
 }));
 // M10c: the home-screen widget library is native; its primitives draw as plain views and text here.
 jest.mock('react-native-android-widget', () => {
