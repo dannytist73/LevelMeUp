@@ -8,14 +8,13 @@ import type * as ExpoAudio from 'expo-audio';
 const lib = (): typeof ExpoAudio => require('expo-audio');
 
 export type Cue =
-  | 'claim' | 'xp' | 'rank' | 'streak' | 'level' | 'achievement' | 'timerStart' | 'timerDone' | 'cardTurn' | 'keep'
+  | 'claim' | 'rank' | 'streak' | 'level' | 'achievement' | 'timerStart' | 'timerDone' | 'cardTurn' | 'keep'
   | 'dayDone' | 'shadow' | 'sworn' | 'undo';
 
 /** Each cue's file. Literal requires, so the bundler packs them; loaded only when a cue first plays. */
 function source(cue: Cue): number {
   switch (cue) {
     case 'claim': return require('../../assets/sounds/claim.wav');
-    case 'xp': return require('../../assets/sounds/xp.wav');
     case 'rank': return require('../../assets/sounds/rank.wav');
     case 'streak': return require('../../assets/sounds/streak.wav');
     case 'level': return require('../../assets/sounds/level.wav');

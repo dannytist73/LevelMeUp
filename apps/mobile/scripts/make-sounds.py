@@ -101,12 +101,6 @@ place(b, pluck(note('E5'), 0.4, 0.18), 0)
 place(b, pluck(note('B5'), 0.5, 0.25), 0.085)
 write('claim', room(b))
 
-# xp: the XP stamp lands. A soft low thump and a sparkle on top.
-x = t(0.4)
-thump = np.sin(2 * np.pi * (140 * np.exp(-x / 0.05) + 70) * x) * env(len(x), 0.002, 0.09)
-b = thump + 0.35 * place(np.zeros(len(x)), bell(note('E6'), 0.35, 0.18), 0.03)
-write('xp', room(b, 0.3, 0.12), -8)
-
 # rank: a stat goes up. Three quick notes up a major triad.
 b = np.zeros(int(SR * 0.7))
 for i, n in enumerate(['G5', 'B5', 'D6']):
