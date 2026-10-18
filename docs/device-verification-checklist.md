@@ -663,3 +663,36 @@ tick v10) and the cron is writing the decks; the EAS development build is next, 
 | 9 | A past reading (Chronicle) opens its deck; Your turn shows the line written that day. One read before its deck existed opens the full article, then its cards once the sync it asks for brings them (about a second). | |
 | 10 | An article with no deck (before the cron writes it) opens the full reader and clears as before; after its deck arrives, the next sync brings it. | |
 | 11 | The home-screen widget in the new colours. | |
+
+## M12 — Round 3 (UI/UX Pro Max), sounds and live timers (branch `m12-round3`, 2026-10-18)
+
+Plan: `docs/superpowers/plans/2026-10-18-m12-round3.md`. No server change. Joins M11 in the next development build 0.6.0
+(versionCode 7), at the owner's yes: the build compiles LevelMeUp's own live-timer module (`modules/lmu-live-timer`) for
+the first time, and the sounds need expo-audio (the owner's yes to download it). Rows 7 and 15 to 19 need a fresh test
+character (the onboarding and the cards of days 1 to 3); never Vera.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Every tap answers: buttons, rows, cards, the tabs, steppers, options and the check circle show Android's ripple inside their rounded shape. | |
+| 2 | Four tabs: Today, Library, Character, Chronicle; the one you're on has a filled periwinkle pill with a navy icon. Labels never cut off at font scale 2.0. | |
+| 3 | Today: one bright button only (Up next); the header is tight; notices come one at a time in one strip. The other open quests are quiet rows under "Then · n left". | |
+| 4 | A check-off quest's circle clears it; "Undo" shows for 5 seconds at the bottom and takes it back. | |
+| 5 | The day is done once the core quest and today's reading are (side quests then show under "If you want more · Optional"); the day-done panel shows the XP, the level and when the next day starts; "Done today · n" opens the cleared quests. The widget says "Day cleared" at the same moment. | |
+| 6 | The first day done offers "A nudge tomorrow?" once: Remind me asks Android's permission and turns the morning briefing on (Settings → Notifications shows it on); Not now never asks again. | |
+| 7 | Quest screen: title, target, then the log; the button is fixed at the bottom ("Log 2 sets · +10 XP"); How to do it (with the picture) and Why this quest fold; Safety stays open with I felt pain. With the keyboard open on a one-sentence quest, the bar sits above the keyboard. | |
+| 8 | Cleared: no rating selected until a tap; "Next: today's reading · 6 cards · about 3 min" opens the deck in place of Cleared; Back to Today goes back. | |
+| 9 | The Story Deck: close it while typing your line on Your turn, open it again: the line is still there. With the keyboard open, Claim is visible above it. | |
+| 10 | Library: today's reading ("Open the cards"), kept lessons (each opens its reading), past readings with "your line saved". The Codex (See all): Take out shows Undo, which brings the lesson back. | |
+| 11 | Character: "Achievements · n earned", the latest three, See all, and "Within reach" with progress bars (quests, level, best streak). | |
+| 12 | Loading shows grey shapes that breathe (still with Remove animations); offline and a failed sync each say what they are, with Try again. Turning Remove animations on mid-session stills the next Cleared moment. | |
+| 13 | Every inner screen (Settings, Notifications, Privacy, Training, Your game, Swap, Pain, Vanish, Book, Class, Delete, a reading) has the same top bar: a 48 dp back arrow, the title read as a heading by TalkBack. | |
+| 14 | The Shadow's scene: one bright button (take the day back); Done is the close at the top; the Pact is a link. | |
+| 15 | A new character: three chapters (You, Your body, Your day) with Back on every step after the first; the safety check is its own step and Continue says "5 of 7 left"; then the analysis and the reveal; Accept goes straight to Day 1. Under 90 seconds to the first quest. | |
+| 16 | Day 1 after the core quest: "Save your progress" (a guest only), then "Choose your guide's voice" (opens Your game); each once. | |
+| 17 | Day 2 after the core quest: "Set up equipment" (opens Training), then "When you slip" (the screen: the four answers, Read the pact for real stakes, What gets in the way? with its tips). | |
+| 18 | Day 3 after the core quest: "Write your vow": Why now? fills the words; the sworn vow shows on Character. | |
+| 19 | A character restored with Google never sees the day 1 to 3 cards. | |
+| 20 | Live timer: start a timer quest with notifications allowed: the shade and the lock screen show its countdown; it keeps counting with the app closed; pausing removes it; it goes at its time and M7d's timer note comes with a sound. | |
+| 21 | Live rest: a set's Done check starts the rest; the shade counts it down; Skip removes it; it goes at zero. Without the notification permission, nothing shows and nothing breaks. | |
+| 22 | The first timer started without timer notes offers "Show this timer in your notifications?" once; Show it asks Android, then the countdown appears. | |
+| 23 | Sounds (once expo-audio is in): a claim, the XP stamp, a rank, the streak, a level, an achievement, a rest or timer over, a card turned, a lesson kept, the day done, the Shadow and the vow each sound; music playing in another app keeps playing; Settings → Your game's Sounds switch silences them. | |
