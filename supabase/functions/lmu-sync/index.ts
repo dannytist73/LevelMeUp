@@ -17,6 +17,7 @@ import { isProblem, json, problem, problemResponse, readJson } from '../_shared/
 import { provisionalClock, sameQuests } from '../_shared/offline.ts';
 import { bodiesToSend, planInsight } from '../_shared/reading.ts';
 import { authenticate } from '../_shared/session.ts';
+import { plusView } from '../_shared/plus.ts';
 import { achievementProgress, characterView, ladderMap, stateView } from '../_shared/state.ts';
 import { dayOffers, openDay } from '../_shared/today.ts';
 import { tooOld } from '../_shared/version.ts';
@@ -313,7 +314,7 @@ Deno.serve(async (req) => {
     const newAchievementIds = await awardAchievements(player.userId);
     const { state, articles } = await db().begin(async (tx) => {
       const snapshot = (await loadSnapshot(tx, player.userId))!;
-      const history = await loadHistory(tx, player.userId, snapshot.profile.book);
+      const history = await loadHistory(tx, player.userId, snapshot.profile.book, plusView(snapshot.entitlements, snapshot.readAt).active);
       const state = stateView(snapshot, dayOffers(snapshot, LIBRARY), history);
       // M8b decision 3: today's and the next day's articles and those asked for, unless the phone holds them.
       const ids = bodiesToSend([state.today?.article?.id ?? null, state.nextArticle?.id ?? null, ...request.want], request.have);

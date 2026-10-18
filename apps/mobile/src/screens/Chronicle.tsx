@@ -18,6 +18,7 @@ import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { Calendar } from './chronicle/Calendar.tsx';
+import { StatChart } from './chronicle/StatChart.tsx';
 import { lastSynced } from './syncLine.ts';
 
 const C = CHRONICLE_TEXT;
@@ -63,7 +64,10 @@ function Growth({ growth }: { growth: ServerState['growth'] }) {
   );
 }
 
-export function Chronicle() {
+/** M13: the all-time chart's way to the Plus offer. */
+export type ChronicleProps = { onPlus?: () => void };
+
+export function Chronicle({ onPlus = () => {} }: ChronicleProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const status = useGame((s) => s.status);
@@ -98,6 +102,7 @@ export function Chronicle() {
               todayLook={view.today === null ? 'none' : todayMark(view.today)}
             />
             <Growth growth={view.growth} />
+            <StatChart weeks={view.statWeeks ?? null} onPlus={onPlus} />
           </>
         )}
         {stale && <Caption>{lastSynced(lastSyncedAt, view?.profile.timeZone ?? 'UTC')}</Caption>}

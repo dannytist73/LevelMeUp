@@ -10,6 +10,7 @@ import { parseOnboarding, parseReveal, revealFacts, startArgs, templateReveal } 
 import type { Choices, Reveal } from '../_shared/onboarding.ts';
 import { bodiesToSend } from '../_shared/reading.ts';
 import { authenticate } from '../_shared/session.ts';
+import { plusView } from '../_shared/plus.ts';
 import { stateView } from '../_shared/state.ts';
 import { dayOffers } from '../_shared/today.ts';
 import { tooOld } from '../_shared/version.ts';
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
           ${j(args.ladders)}::jsonb, ${j(args.day)}::jsonb)`;
       }
       const snapshot = (await loadSnapshot(tx, player.userId))!;
-      const history = await loadHistory(tx, player.userId, snapshot.profile.book);
+      const history = await loadHistory(tx, player.userId, snapshot.profile.book, plusView(snapshot.entitlements, snapshot.readAt).active);
       const state = stateView(snapshot, dayOffers(snapshot, LIBRARY), history);
       const ids = bodiesToSend([state.today?.article?.id ?? null, state.nextArticle?.id ?? null], []);
       return { state, articles: await loadBodies(tx, player.userId, ids) };

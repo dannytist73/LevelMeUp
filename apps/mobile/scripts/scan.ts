@@ -1,4 +1,4 @@
-// What must never be in the app bundle (architecture §8): model-provider keys, Supabase secret or service-role keys,
+// What must never be in the app bundle (architecture §8): model-provider keys, Supabase secret or service-role keys, RevenueCat's secret key,
 // database URLs with passwords, and any JWT that isn't the public anon key. The publishable key is expected.
 
 export type Hit = { kind: string; sample: string };
@@ -7,6 +7,8 @@ const PATTERNS: readonly [string, RegExp][] = [
   // A key starts a token: in a bundle it follows a quote, never a letter.
   ['Anthropic key', /(?<![A-Za-z0-9_])sk-ant-[A-Za-z0-9_-]{10,}/g],
   ['Supabase secret key', /(?<![A-Za-z0-9_])sb_secret_[A-Za-z0-9_-]{10,}/g],
+  // M13: RevenueCat's secret key stays on the server (LMU_REVENUECAT_SECRET); only the public goog_ key ships.
+  ['RevenueCat secret key', /(?<![A-Za-z0-9_])sk_[A-Za-z0-9]{20,}/g],
   ['database URL with a password', /postgres(?:ql)?:\/\/[^:\s/'"`]+:[^@\s'"`$]{8,}@/g],
 ];
 const JWT = /eyJ[A-Za-z0-9_-]{10,}\.(eyJ[A-Za-z0-9_-]{10,})\.[A-Za-z0-9_-]*/g;

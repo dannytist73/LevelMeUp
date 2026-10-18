@@ -7,7 +7,12 @@ import { colors } from '../theme/tokens.ts';
 /** The surface under the press: the ripple is a tint that reads on it. */
 export type TapSurface = 'night' | 'paper' | 'accent';
 
-export const RIPPLE: Readonly<Record<TapSurface, string>> = { night: colors.rippleNight, paper: colors.ripplePaper, accent: colors.rippleAccent };
+// Read when a Tap draws, so a Plus look's ripple follows it (M13).
+export const RIPPLE: Readonly<Record<TapSurface, string>> = {
+  get night() { return colors.rippleNight; },
+  get paper() { return colors.ripplePaper; },
+  get accent() { return colors.rippleAccent; },
+};
 
 export type TapProps = Omit<PressableProps, 'style' | 'android_ripple'> & {
   on?: TapSurface;

@@ -23,13 +23,14 @@ begin
   insert into levelmeup.events (user_id, client_event_id, type, payload, result) values (me, gen_random_uuid(), 'complete', '{}', '{}');
   insert into levelmeup.checkins (user_id, gap_from, gap_to) values (me, 2, 3);
   insert into levelmeup.achievements_earned (user_id, achievement_id) values (me, 'first-quest');
+  insert into levelmeup.entitlements (user_id, source) values (me, 'beta_founder');
   insert into levelmeup.ai_generations (user_id, kind, model, status) values (me, 'onboarding', 'claude-opus-5-5', 'fallback');
   return me;
 end $$;
 
 create function lmu_test.player_tables() returns setof text language sql as $$
   select unnest(array['profiles', 'character_state', 'ladder_states', 'quest_days', 'quest_instances', 'xp_ledger',
-    'events', 'checkins', 'achievements_earned'])
+    'events', 'checkins', 'achievements_earned', 'entitlements'])
 $$;
 
 create function lmu_test.test_rls_everywhere() returns setof text language plpgsql as $$

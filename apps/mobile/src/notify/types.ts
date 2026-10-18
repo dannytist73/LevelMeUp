@@ -13,7 +13,7 @@ export type NotifySettings = {
   optedIn: boolean;
 };
 
-export type NoteKind = 'briefing' | 'evening' | 'shadow' | 'timer';
+export type NoteKind = 'briefing' | 'evening' | 'shadow' | 'timer' | 'trial';
 
 /** One notification the phone should hold: `id` names its slot and day (`briefing:12`, `timer:201`). */
 export type PlannedNote = {

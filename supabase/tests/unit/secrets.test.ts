@@ -28,6 +28,7 @@ describe('no secrets in the repository (architecture §8)', () => {
     ['a JWT (Supabase anon or service-role key)', /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}/],
     ['a Supabase secret key', /sb_secret_[A-Za-z0-9_-]{10,}/],
     ['an Anthropic key', /sk-ant-[A-Za-z0-9_-]{10,}/],
+    ['a RevenueCat secret key (M13)', /sk_[A-Za-z0-9]{20,}/],
     ['a database URL with a password', /postgres(?:ql)?:\/\/[^:\s/'"`]+:[^@\s'"`$]{8,}@/],
   ])('no file in git contains %s', (_, pattern) => {
     const hits = tracked.filter((file) => {

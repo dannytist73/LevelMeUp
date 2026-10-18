@@ -22,6 +22,8 @@ export type InsightView = NonNullable<ServerState['insight']>;
 export type { OnboardingBody, PhoneEvent, ProvisionalDayEvent, Rating, Reveal, SlotRef };
 
 export type EventResult = { id: string; ok: true; result: unknown; notice?: string } | { id: string | null; ok: false; code: string };
+/** M13: lmu-plus's answer, as state.plus has it. */
+export type PlusResponse = { plus: ServerState['plus'] };
 export type SyncResponse = {
   results: EventResult[];
   rejected: { id: string | null; code: string }[];

@@ -6,10 +6,10 @@
 // M12 (Round 3, boards R3-1 and R3-4; audit 1, 3, 11, 12): a tighter header, the notices in one strip, "Up next" with the
 // screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
 // the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
-import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
+import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
 import { isExercise, isResting } from '../game/adjust.ts';
@@ -23,7 +23,9 @@ import type { ShadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { dayCleared, dayOff, openQuests, quickClearable, shownStreak, upNext } from '../game/today.ts';
 import type { QuestView, TodayView } from '../game/types.ts';
-import { dayLabel } from '../lib/dates.ts';
+import { dateLine, dayLabel } from '../lib/dates.ts';
+import { plusCard, plusOf } from '../plus/plus.ts';
+import { manageUrl, purchasesSetUp } from '../plus/purchases.ts';
 import { useGame } from '../state/store.ts';
 import type { Status } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
@@ -78,6 +80,8 @@ export type TodayProps = {
   onGame?: () => void;
   onSlip?: () => void;
   onVow?: () => void;
+  /** M13: the Plus offer, from the one-time "a week in" card. */
+  onPlus?: () => void;
   /** Whether Today is in front: the route passes its focus (M10b review). */
   shown?: boolean;
   now?: () => number;
@@ -143,7 +147,7 @@ function TrialPanel({ onTrial }: { onTrial: () => void }) {
 
 export function Today({
   onSettings, onOpenQuest, onOpenReading, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {},
-  onGame = () => {}, onSlip = () => {}, onVow = () => {}, shown = true, now = Date.now,
+  onGame = () => {}, onSlip = () => {}, onVow = () => {}, onPlus = () => {}, shown = true, now = Date.now,
 }: TodayProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
@@ -194,6 +198,23 @@ export function Today({
   // M12 decision 8: one set-up card at a time, after the System's notices.
   const card = view === null ? null : setupCard({ view, offers, saved, vow });
   if (card !== null) strip.push(setupNotice(card, (go) => { void markOffer(`setup:${card}`); go?.(); }, { onSettings, onGame, onTraining, onSlip, onVow }));
+  // M13: Plus's one-time cards (a week in; a free trial's last two days), never while a set-up card waits.
+  const plusNote = card !== null || view === null ? null : plusCard(view, offers, now(), purchasesSetUp());
+  if (plusNote !== null && view !== null) {
+    const P = PLUS_TEXT;
+    const plus = plusOf(view);
+    const done = (go?: () => void) => { void markOffer(`plus:${plusNote}`); go?.(); };
+    strip.push(plusNote === 'day7'
+      ? { key: 'plus:day7', text: `${P.day7.title}. ${P.day7.line}`, actions: [{ label: P.day7.see, onPress: () => done(onPlus) }, { label: P.day7.later, onPress: () => done() }] }
+      : {
+          key: 'plus:trial',
+          text: `${fillText(P.trialCard.title, { date: dateLine(Date.parse(plus.endsAt!), view.profile.timeZone) })}. ${P.trialCard.line}`,
+          actions: [
+            { label: P.trialCard.manage, onPress: () => done(() => void Linking.openURL(manageUrl(plus.product)).catch(() => {})) },
+            { label: P.trialCard.later, onPress: () => done() },
+          ],
+        });
+  }
 
   /** M12 decision 3: a check circle clears a check-off quest as the quest screen's Mark cleared does; Undo takes it back. */
   const check = (q: QuestView, title: string) => {

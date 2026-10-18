@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { NOTE_LINES, SHADOW_LINES, authoredTemplate } from '@levelmeup/content';
+import { NOTE_LINES, NOTIFY_TEXT, SHADOW_LINES, authoredTemplate } from '@levelmeup/content';
 import { elapsedMs } from '@levelmeup/rules';
 import { timerTargetMs } from '../../../supabase/functions/_shared/events.ts';
 import { project } from '../src/game/project.ts';
@@ -24,10 +24,25 @@ const BASE: PlanInput = {
   restTomorrow: false,
   shadowEvening: false,
   timers: [],
+  trialEndsAt: null,
 };
 const BRIEFING = { ...OPTED, briefing: { on: true, minutes: 7 * 60 + 30 } };
 const EVENING = { ...OPTED, evening: { on: true, minutes: 20 * 60 } };
 const ids = (input: PlanInput) => planNotes(input).map((n) => n.id);
+
+describe('the Plus free trial reminder (M13)', () => {
+  it('comes two days before the trial ends, opening Settings, whatever the briefing and evening switches say', () => {
+    const ends = NOW + 7 * 24 * HOUR;
+    const note = planNotes({ ...BASE, trialEndsAt: ends }).find((n) => n.id === 'trial');
+    expect(note).toMatchObject({ kind: 'trial', at: ends - 2 * 24 * HOUR, url: '/settings', channel: 'reminders', title: NOTIFY_TEXT.trial.title });
+  });
+
+  it('never without notifications turned on, and never once its time has passed', () => {
+    const ends = NOW + 7 * 24 * HOUR;
+    expect(ids({ ...BASE, settings: DEFAULT_NOTIFY, trialEndsAt: ends })).toEqual([]);
+    expect(ids({ ...BASE, trialEndsAt: NOW + 24 * HOUR })).not.toContain('trial');
+  });
+});
 
 describe('the notification planner (M7d decision 4)', () => {
   it('plans nothing until a reminder is on', () => {

@@ -7,6 +7,7 @@ const b64url = (value: object) => Buffer.from(JSON.stringify(value)).toString('b
 const jwt = (payload: object) => `${b64url({ alg: 'HS256', typ: 'JWT' })}.${b64url(payload)}.${'s'.repeat(43)}`;
 const anthropic = 'sk-' + 'ant-' + 'api03-' + 'x'.repeat(24);
 const supabaseSecret = 'sb_' + 'secret_' + 'y'.repeat(24);
+const revenueCatSecret = 'sk' + '_' + 'Q'.repeat(28);
 const dbUrl = 'postgres' + 'ql://' + 'lmu_service.ref' + ':' + 'p'.repeat(16) + '@aws-0.pooler.supabase.com:6543/postgres';
 
 describe('the app bundle scan (architecture §8)', () => {
@@ -14,6 +15,7 @@ describe('the app bundle scan (architecture §8)', () => {
     ['an Anthropic key', `const k="${anthropic}";`],
     ['a Supabase secret key', `apikey:"${supabaseSecret}"`],
     ['a database URL with a password', `"${dbUrl}"`],
+    ['a RevenueCat secret key (M13)', `key:"${revenueCatSecret}"`],
     ['a service-role JWT', `x="${jwt({ role: 'service_role', iss: 'supabase' })}"`],
     ['a user JWT', `x="${jwt({ role: 'authenticated', sub: 'u' })}"`],
   ])('flags %s', (_, text) => {
@@ -29,6 +31,8 @@ describe('the app bundle scan (architecture §8)', () => {
   it('allows the publishable key and the anon JWT, which are public by design', () => {
     const publishable = 'sb_' + 'publishable_' + 'z'.repeat(24);
     expect(findSecrets(`url:"https://x.supabase.co",key:"${publishable}",legacy:"${jwt({ role: 'anon', iss: 'supabase' })}"`)).toEqual([]);
+    // M13: RevenueCat's public SDK key is meant for apps.
+    expect(findSecrets(`apiKey:"${'goog' + '_' + 'R'.repeat(28)}"`)).toEqual([]);
   });
 
   it('does not take a key-like run inside a longer token for a key', () => {

@@ -1,6 +1,7 @@
 // An answer on the onboarding, check-in and Pact screens (Lantern, M11): unselected is the panel with a quiet line;
 // selected is paper with ink text and the accent's border. A real radio or checkbox. M12: a ripple, and an unselected
 // edge you can see (audit 4, 13).
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Tap } from './Tap.tsx';
@@ -16,9 +17,11 @@ export type OptionCardProps = {
   disabled?: boolean;
   /** What a screen reader says, when the label alone needs context (a safety question's "Yes"). */
   accessibilityLabel?: string;
+  /** M13: something drawn under the words (a look's colours, a Plus tag), hidden from screen readers. */
+  aside?: ReactNode;
 };
 
-export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel }: OptionCardProps) {
+export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel, aside }: OptionCardProps) {
   return (
     <Tap
       accessibilityRole={kind}
@@ -39,6 +42,7 @@ export function OptionCard({ label, detail, selected, onPress, kind = 'radio', d
       >
         <Body weight="bold" tone={selected ? 'ink' : 'chalk'}>{label}</Body>
         {detail !== undefined && <Small tone={selected ? 'inkSoft' : 'ashLight'}>{detail}</Small>}
+        {aside !== undefined && <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ marginTop: 6 }}>{aside}</View>}
       </View>
     </Tap>
   );

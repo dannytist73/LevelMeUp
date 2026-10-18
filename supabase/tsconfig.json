@@ -30,6 +30,7 @@
     "functions/_shared/session.ts",
     "functions/_shared/articles/store.ts",
     "functions/_shared/articles/batches.ts",
-    "functions/_shared/articles/deckCalls.ts"
+    "functions/_shared/articles/deckCalls.ts",
+    "functions/_shared/revenuecat.ts"
   ]
 }

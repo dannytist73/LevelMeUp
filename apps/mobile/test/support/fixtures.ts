@@ -5,6 +5,7 @@ import type { Rating, Slot } from '@levelmeup/rules';
 import { stateView } from '../../../../supabase/functions/_shared/state.ts';
 import type { CharacterRow, Consequence, DayRow, PendingCheckin, Snapshot } from '../../../../supabase/functions/_shared/state.ts';
 import { dayOffers } from '../../../../supabase/functions/_shared/today.ts';
+import type { EntitlementRow } from '../../../../supabase/functions/_shared/plus.ts';
 import {
   DAY1, DAY_TWO_SLOTS, HOUR, ONBOARDED, characterRow, claimedSnapshot, dayRow, dayTwoSnapshot, historyOf, instanceRows, ladderRows,
   manilaDay, pendingCheckin, profileRow,
@@ -16,7 +17,7 @@ import type { Draft } from '../../src/onboarding/flow.ts';
 export { DAY1, DAY_TWO_SLOTS, characterRow, ladderRows, profileRow };
 
 /** Day 1 of the server fixtures' player, with the given slots already cleared and their XP counted. */
-export function serverState(done: readonly Slot[] = [], character: Partial<CharacterRow> = {}): ServerState {
+export function serverState(done: readonly Slot[] = [], character: Partial<CharacterRow> = {}, entitlements: EntitlementRow[] = []): ServerState {
   const earned: Partial<CharacterRow> = {};
   for (const q of DAY1.quests.filter((q) => done.includes(q.slot))) {
     for (const s of STATS) earned[`xp_${s}`] = (earned[`xp_${s}`] ?? 0) + (q.xp[s] ?? 0);
@@ -36,6 +37,7 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     painReports: 0,
     workoutsDone: 0,
     articles: [],
+    entitlements,
   };
   return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
 }

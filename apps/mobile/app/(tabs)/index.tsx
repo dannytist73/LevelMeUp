@@ -35,6 +35,7 @@ export default function TodayRoute() {
       onGame={() => router.push('/game')}
       onSlip={() => router.push('/slip')}
       onVow={() => router.push('/vow')}
+      onPlus={() => router.push('/plus')}
       shown={shown}
     />
   );

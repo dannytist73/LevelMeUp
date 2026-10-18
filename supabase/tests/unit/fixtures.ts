@@ -140,6 +140,7 @@ export function dayTwoSnapshot(
     painReports: 0,
     workoutsDone: 0,
     articles: [],
+    entitlements: [],
     ...over,
   };
 }
@@ -148,7 +149,7 @@ export function dayTwoSnapshot(
 export function historyOf(s: Snapshot): History {
   const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
   const one = days.find((d) => d.day_number === 1);
-  return { days, dayOne: one === undefined ? null : one, newRungs: 0, reading: { sessions: 0, minutes: 0 }, readings: [] };
+  return { days, dayOne: one === undefined ? null : one, newRungs: 0, reading: { sessions: 0, minutes: 0 }, readings: [], statWeeks: null };
 }
 
 export { DAY_MS };

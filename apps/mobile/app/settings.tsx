@@ -14,6 +14,8 @@ export default function SettingsRoute() {
       onPact={() => router.push('/pact')}
       onNotifications={() => router.push('/notifications')}
       onPrivacy={() => router.push('/privacy')}
+      onPlus={() => router.push('/plus')}
+      onLook={() => router.push('/look')}
       version={APP_VERSION ?? 'unknown'}
       deviceZone={deviceZone()}
     />

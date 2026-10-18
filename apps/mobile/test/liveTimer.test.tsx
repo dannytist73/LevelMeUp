@@ -69,6 +69,7 @@ describe('live timers', () => {
       settings: { ...DEFAULT_NOTIFY, optedIn: true }, voice: 'system' as const, nowMs: NOW, boundaryMinutes: 240,
       today: { dayNumber: 1, window: { startsAt: NOW - 1, endsAt: NOW + 86_400_000, timeZone: 'UTC' }, restDay: false, settled: false },
       restTomorrow: false, shadowEvening: false, timers: [{ questId: 7, title: 'Read', doneAt: NOW + 60_000 }, { questId: 8, title: 'Done', doneAt: NOW - 1 }],
+      trialEndsAt: null,
     };
     expect(planLive(input)).toEqual([{ id: 1007, title: 'Read', text: NOTIFY_TEXT.live.timer, at: NOW + 60_000 }]);
     expect(planLive({ ...input, settings: { ...input.settings, timers: false } })).toEqual([]);

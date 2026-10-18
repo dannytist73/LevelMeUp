@@ -8,6 +8,7 @@ import type { DayWindow } from '@levelmeup/rules';
 import { timerTargetMs } from '../../../../supabase/functions/_shared/events.ts';
 import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
+import { plusOf } from '../plus/plus.ts';
 import type { TimerState } from '../quest/timer.ts';
 import type { NotifySettings, PlannedNote } from './types.ts';
 import { liveId } from './live.ts';
@@ -24,6 +25,8 @@ const MINUTE = 60_000;
  */
 export const SHADOW_AFTER_MS = 60 * MINUTE;
 export const SHADOW_LAST_MS = 30 * MINUTE;
+/** M13: a Plus free trial's reminder comes two days before it ends ("Day 5" of seven, on the offer screen). */
+export const TRIAL_NOTE_BEFORE_MS = 2 * 24 * 60 * MINUTE;
 
 export type PlanTimer = { questId: number; title: string; doneAt: number };
 
@@ -53,6 +56,8 @@ export type PlanInput = {
   shadowEvening: boolean;
   /** Running timers of today's open quests. */
   timers: readonly PlanTimer[];
+  /** M13: when a Plus free trial ends, or null without one. */
+  trialEndsAt: number | null;
 };
 
 /** The first time `minutes` after local midnight shows at or after the day starts; null when the day ends first. */
@@ -91,6 +96,9 @@ export function planNotes(p: PlanInput): PlannedNote[] {
       }
     }
   }
+  if (p.trialEndsAt !== null) {
+    push({ id: 'trial', kind: 'trial', at: p.trialEndsAt - TRIAL_NOTE_BEFORE_MS, ...NOTIFY_TEXT.trial, url: '/settings', channel: 'reminders' });
+  }
   if (p.settings.timers) {
     for (const t of p.timers) {
       push({
@@ -113,7 +121,7 @@ export function shadowClock(eveningMinutes: number, boundaryMinutes: number): nu
 
 /** The planner's input from what the phone shows; null without a quest day (before the onboarding ends). */
 export function planInput(
-  view: Pick<Shown, 'profile' | 'today' | 'checkin' | 'character'>,
+  view: Pick<Shown, 'profile' | 'today' | 'checkin' | 'character' | 'plus'>,
   timers: Readonly<Record<number, TimerState>>,
   settings: NotifySettings,
   nowMs: number,
@@ -124,6 +132,7 @@ export function planInput(
   const hold = shadowHold(view, nowMs);
   const core = today.quests.find((q) => q.slot === 'core');
   const endsAt = Date.parse(today.endsAt);
+  const plus = plusOf(view);
   return {
     settings,
     voice,
@@ -146,5 +155,6 @@ export function planInput(
         ? [{ questId: q.id, title: authoredTemplate(q.templateId).voice[voice].title, doneAt }]
         : [];
     }),
+    trialEndsAt: plus.active && plus.trial && plus.endsAt !== null ? Date.parse(plus.endsAt) : null,
   };
 }

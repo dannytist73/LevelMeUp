@@ -2,8 +2,10 @@
 // rounded cards and one calm accent, "Moonlight" (navy + periwinkle), chosen from the proposals canvas on 2026-10-18.
 // Dark only. Every colour on a screen comes from here, so another palette (System Blue, Mint Night) is a change to
 // this table alone. Red belongs to the Shadow and nothing else. Replaces the Ink Panel tokens (visual spec §1).
+// M13: Moonlight is the free look; `colors` holds the look in use (theme/palettes.ts applyTheme swaps it), so screens
+// read it while they draw, never into a constant at load.
 
-export const colors = {
+export const MOONLIGHT = {
   /** App background. */
   night: '#171A2B',
   /** Cards on the night. */
@@ -64,7 +66,11 @@ export const colors = {
   rippleAccent: '#161A2B2E',
 } as const;
 
-export type ColorName = keyof typeof colors;
+export type ColorName = keyof typeof MOONLIGHT;
+export type Palette = Readonly<Record<ColorName, string>>;
+
+/** The look in use: Moonlight until applyTheme says otherwise. */
+export const colors: Record<ColorName, string> = { ...MOONLIGHT };
 
 /**
  * Font families as loaded by `useFonts` in app/_layout.tsx (the Latin subsets in assets/fonts). Lantern (M11): M PLUS

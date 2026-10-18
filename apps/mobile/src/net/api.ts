@@ -2,12 +2,12 @@
 // Node against the deployed functions (supabase/tests/live/client.test.ts).
 import { FunctionRegion, FunctionsHttpError } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { DeleteResponse, OnboardingBody, OnboardingResponse, PhoneEvent, SyncResponse } from '../game/types.ts';
+import type { DeleteResponse, OnboardingBody, OnboardingResponse, PhoneEvent, PlusResponse, SyncResponse } from '../game/types.ts';
 
 /** `status 0` with `code 'network'` covers no connection, timeouts and relay failures: try again later. */
 export type Call<T> = { ok: true; body: T } | { ok: false; status: number; code: string };
 
-const TIMEOUT_MS = { 'lmu-sync': 20_000, 'lmu-onboarding': 30_000, 'lmu-account-delete': 20_000 } as const;
+const TIMEOUT_MS = { 'lmu-sync': 20_000, 'lmu-onboarding': 30_000, 'lmu-account-delete': 20_000, 'lmu-plus': 20_000 } as const;
 export type FunctionName = keyof typeof TIMEOUT_MS;
 
 /**
@@ -43,6 +43,8 @@ export function makeApi(client: SupabaseClient, appVersion: string | null) {
       invoke<SyncResponse>(client, 'lmu-sync', body, appVersion),
     onboarding: (body: OnboardingBody) => invoke<OnboardingResponse>(client, 'lmu-onboarding', body, appVersion),
     deleteAccount: () => invoke<DeleteResponse>(client, 'lmu-account-delete', { confirm: 'DELETE' }, appVersion),
+    /** M13: the server asks RevenueCat what the player bought and stores it. */
+    plus: () => invoke<PlusResponse>(client, 'lmu-plus', {}, appVersion),
   };
 }
 

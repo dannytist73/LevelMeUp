@@ -8,6 +8,17 @@ jest.mock('react-native-reanimated', () => ({ ...require('react-native-reanimate
 jest.mock('../../src/ui/haptics.ts', () => ({ ...jest.requireActual('../../src/ui/haptics.ts'), buzz: jest.fn(), setBuzzing: jest.fn() }));
 // M12 (plan decision 11): no test plays a sound either; test/sound.test.ts reaches the real module.
 jest.mock('../../src/ui/sound.ts', () => ({ ...jest.requireActual('../../src/ui/sound.ts'), play: jest.fn(), setSounding: jest.fn() }));
+// M13: RevenueCat is native. With no public key in config.ts (and Jest's iOS), src/plus/purchases.ts never reaches it;
+// test/purchases.test.ts drives it through this fake, and screen tests spy on src/plus/purchases.ts itself.
+jest.mock('react-native-purchases', () => ({
+  __esModule: true,
+  default: {
+    configure: jest.fn(), logIn: jest.fn(async () => ({})), getOfferings: jest.fn(async () => ({ current: null })),
+    purchasePackage: jest.fn(), restorePurchases: jest.fn(), getCustomerInfo: jest.fn(),
+  },
+  PACKAGE_TYPE: { ANNUAL: 'ANNUAL', MONTHLY: 'MONTHLY', LIFETIME: 'LIFETIME', WEEKLY: 'WEEKLY' },
+  PURCHASES_ERROR_CODE: { PAYMENT_PENDING_ERROR: '20' },
+}));
 // M10c: the home-screen widget library is native; its primitives draw as plain views and text here.
 jest.mock('react-native-android-widget', () => {
   const { createElement } = require('react');

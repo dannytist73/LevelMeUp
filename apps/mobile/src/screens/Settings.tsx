@@ -5,14 +5,16 @@
 // under Your game. M10c: places are rows with what's set now (Daily plan, Training, the Pact, Notifications, privacy);
 // Delete my character moves to the end, under its own heading.
 import {
-  ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PRIVACY_TEXT, SETTINGS_TEXT, VOICE_NAMES, fillText,
+  ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PLUS_TEXT, PRIVACY_TEXT, SETTINGS_TEXT, VOICE_NAMES, fillText,
 } from '@levelmeup/content';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pactName, pactStartsNext } from '../game/pact.ts';
 import { clockLabel } from '../lib/dates.ts';
 import type { Permission } from '../notify/types.ts';
+import { canManage, plusOf, shownFrame, shownTheme, statusLine } from '../plus/plus.ts';
+import { manageUrl } from '../plus/purchases.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -32,6 +34,9 @@ export type SettingsProps = {
   deviceZone: string; onPact?: () => void; onNotifications?: () => void;
   /** M9b decision 6: About → Your data and privacy. */
   onPrivacy?: () => void;
+  /** M13: the Plus offer, and Your look (colours and the portrait frame). */
+  onPlus?: () => void;
+  onLook?: () => void;
 };
 
 /** "7:30 AM", "Off", or "Off in your phone's settings" (S1 board's rows). */
@@ -40,8 +45,13 @@ function notifyLine(slot: { on: boolean; minutes: number }, permission: Permissi
   return permission === 'granted' && slot.on ? clockLabel(slot.minutes) : NOTIFY_TEXT.off;
 }
 
-export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, version, deviceZone, onPact, onNotifications, onPrivacy }: SettingsProps) {
+export function Settings({
+  onBack, onDeveloper, onTraining, onGame, onDelete, version, deviceZone, onPact, onNotifications, onPrivacy, onPlus, onLook,
+}: SettingsProps) {
   const view = useGame((s) => s.view);
+  const plus = plusOf(view);
+  const theme = useGame((s) => shownTheme(s.theme, plusOf(s.view)));
+  const frame = useGame((s) => shownFrame(s.frame, plusOf(s.view)));
   const notify = useGame((s) => s.notify);
   const permission = useGame((s) => s.permission);
   const haptics = useGame((s) => s.haptics);
@@ -117,6 +127,20 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
           </>
         )}
       </View>
+
+      {view !== null && onPlus !== undefined && onLook !== undefined && (
+        <View style={{ gap: 12 }}>
+          <SectionTitle title={PLUS_TEXT.settings.section} />
+          <NightCard>
+            <Body weight="bold">{statusLine(plus, zone)}</Body>
+            {!plus.active && <Button label={PLUS_TEXT.settings.see} variant="secondary" onPress={onPlus} />}
+            {canManage(plus) && (
+              <Button label={PLUS_TEXT.settings.manage} variant="secondary" onPress={() => void Linking.openURL(manageUrl(plus.product)).catch(() => {})} />
+            )}
+          </NightCard>
+          <RowLink label={PLUS_TEXT.settings.look} line={`${PLUS_TEXT.themes[theme].name} · ${PLUS_TEXT.frames[frame]}`} onPress={onLook} />
+        </View>
+      )}
 
       {onNotifications !== undefined && (
         <View style={{ gap: 12 }}>

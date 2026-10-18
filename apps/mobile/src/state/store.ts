@@ -34,6 +34,12 @@ import { planInput, planLive, planNotes } from '../notify/plan.ts';
 import { DEFAULT_NOTIFY, NOTIFY_KEY, readNotify } from '../notify/settings.ts';
 import type { NoteOs, NotifySettings, Permission, PlannedNote } from '../notify/types.ts';
 import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
+import { buy, purchasesSetUp, restore, shop, storeSaysPlus } from '../plus/purchases.ts';
+import type { Plan, Shop } from '../plus/purchases.ts';
+import { asFrame, plusOf } from '../plus/plus.ts';
+import type { FrameName } from '../plus/plus.ts';
+import { asTheme } from '../theme/palettes.ts';
+import type { ThemeName } from '../theme/palettes.ts';
 import type { Draft } from '../onboarding/flow.ts';
 import { readLastSets } from '../quest/lastSets.ts';
 import { readCodex, toggled } from '../reading/codex.ts';
@@ -70,6 +76,8 @@ export type GameDeps = {
   artManifest: () => Promise<unknown>;
   /** M7d: the phone's notifications (`src/notify/os.ts`); the store's only way to them. */
   notes: NoteOs;
+  /** M13: the signed-in player's id (RevenueCat's customer id for them), or null without a sign-in. */
+  playerId: () => Promise<string | null>;
 };
 
 /** `loading`: nothing cached yet; `not_started`: signed in, but no character. */
@@ -103,12 +111,22 @@ export const LAST_SETS_KEY = 'lmu.lastSets';
 export const CODEX_KEY = 'lmu.codex';
 /** M12 decisions 8–9: the one-time offers already shown (the reminder, the set-up cards), as a JSON list of names. */
 export const OFFERS_KEY = 'lmu.offers';
+/** M13: the look picked (a Plus theme shows only while Plus is on). The phone's, like Haptics: it stays for the next character. */
+export const THEME_KEY = 'lmu.theme';
+/** M13: the portrait frame picked: the character's, so it goes with it. */
+export const FRAME_KEY = 'lmu.frame';
+
+/**
+ * M13: what a purchase or a restore came to. `on`: the server confirmed Plus. `server_late`: Google Play took it but the
+ * System couldn't confirm yet (it asks again at the next launch). `none`: a restore found nothing.
+ */
+export type PlusOutcome = 'on' | 'pending' | 'cancelled' | 'none' | 'failed' | 'not_set_up' | 'server_late';
 
 /**
  * The one-time offers (M12): each shows once, then lives in Settings. `setup` marks a character that onboarded after M12,
  * so only it gets the set-up cards of days 1 to 3 (an older character answered them in its onboarding).
  */
-export type Offer = 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}` | 'live-timer';
+export type Offer = 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}` | 'live-timer' | `plus:${'intro' | 'day7' | 'trial'}`;
 
 const readOffers = (text: string | null): Offer[] => {
   try {
@@ -232,6 +250,18 @@ export type GameState = {
   allowNotify: () => Promise<Permission>;
   /** M7d: reads the permission again and plans again (the app came back to the foreground). */
   checkNotify: () => Promise<void>;
+  /** M13: the look picked, and the portrait frame (shown only while they are the player's to use: plus.ts). */
+  theme: ThemeName;
+  frame: FrameName;
+  /** M13: a new look redraws the whole app from Today; this sends the player back to Your look once (Look's own flag). */
+  themeReturn: boolean;
+  setTheme: (theme: ThemeName) => Promise<void>;
+  setFrame: (frame: FrameName) => Promise<void>;
+  clearThemeReturn: () => void;
+  /** M13: Plus's plans as Google Play prices them for this player. */
+  plusShop: () => Promise<Shop>;
+  buyPlus: (plan: Plan) => Promise<PlusOutcome>;
+  restorePlus: () => Promise<PlusOutcome>;
   stop: () => void;
 };
 
@@ -415,6 +445,29 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     };
 
     /** Forgets this phone's data, sign-in and interview; the onboarding makes the next guest. */
+    /** M13: after Google Play takes a purchase, the server asks RevenueCat and stores it; then a sync brings state.plus. */
+    const confirmPlus = async (): Promise<PlusOutcome> => {
+      const checked = await deps.api.plus().catch(() => null);
+      if (checked === null || !checked.ok) return 'server_late';
+      void scheduler.request();
+      return checked.body.plus.active ? 'on' : 'server_late';
+    };
+
+    /**
+     * M13: once a launch, when RevenueCat's word on this phone and the server's differ (a renewal, a refund, a purchase
+     * the server never heard of), the server asks RevenueCat again. A Founder's Plus is the server's own, never checked.
+     */
+    const checkPlus = async (): Promise<void> => {
+      if (!purchasesSetUp() || get().view === null) return;
+      const id = await deps.playerId().catch(() => null);
+      if (id === null) return;
+      const plus = plusOf(get().view);
+      const says = await storeSaysPlus(id);
+      if (says === plus.active || (!says && plus.source === 'beta_founder')) return;
+      const checked = await deps.api.plus().catch(() => null);
+      if (checked !== null && checked.ok) void scheduler.request();
+    };
+
     const forget = async (): Promise<void> => {
       // M7d decision 9: first, so nothing below can keep the last player's notifications on the phone.
       await deps.notes.cancelAll().catch(() => {});
@@ -435,11 +488,13 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(LAST_SETS_KEY); // M10c: the character's workouts, not the phone's
       await deps.kv.removeItem(CODEX_KEY); // M11: the character's kept lessons go with it
       await deps.kv.removeItem(OFFERS_KEY); // M12: the next character gets its own offers
+      await deps.kv.removeItem(FRAME_KEY); // M13: the frame is the character's; the look (theme) is the phone's
       // The Haptics switch stays: it is the phone's, not the character's (M10b plan decision 3).
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, codex: [], offers: [], account: await deps.account(),
+        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, codex: [], offers: [], frame: 'none',
+        account: await deps.account(),
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -538,9 +593,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       lastSets: {},
       codex: [],
       offers: [],
+      theme: 'moonlight',
+      frame: 'none',
+      themeReturn: false,
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -556,6 +614,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(CODEX_KEY).catch(() => null),
           deps.kv.getItem(OFFERS_KEY).catch(() => null),
           deps.kv.getItem(SOUNDS_KEY).catch(() => null),
+          deps.kv.getItem(THEME_KEY).catch(() => null),
+          deps.kv.getItem(FRAME_KEY).catch(() => null),
         ]);
         const haptics = hapticsText !== 'off';
         setBuzzing(haptics);
@@ -572,9 +632,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
           shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
-          offers: readOffers(offersText),
+          offers: readOffers(offersText), theme: asTheme(themeText), frame: asFrame(frameText),
         });
         await scheduler.request();
+        void checkPlus();
       },
 
       enqueue: async (event) => {
@@ -669,6 +730,41 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         setSounding(on);
         set({ sounds: on });
         await deps.kv.setItem(SOUNDS_KEY, on ? 'on' : 'off').catch(() => {});
+      },
+
+      setTheme: async (theme) => {
+        set({ theme, themeReturn: theme !== get().theme });
+        await deps.kv.setItem(THEME_KEY, theme).catch(() => {});
+      },
+
+      setFrame: async (frame) => {
+        set({ frame });
+        await deps.kv.setItem(FRAME_KEY, frame).catch(() => {});
+      },
+
+      clearThemeReturn: () => set({ themeReturn: false }),
+
+      plusShop: async () => {
+        const id = await deps.playerId();
+        return id === null ? { ok: false, reason: purchasesSetUp() ? 'unavailable' : 'not_set_up' } : shop(id);
+      },
+
+      buyPlus: async (plan) => {
+        const id = await deps.playerId();
+        if (id === null) return 'failed';
+        const bought = await buy(id, plan);
+        if (bought !== 'bought') return bought;
+        return confirmPlus();
+      },
+
+      restorePlus: async () => {
+        const id = await deps.playerId();
+        if (id === null) return 'failed';
+        const found = await restore(id);
+        if (found === 'found') return confirmPlus();
+        // Nothing to restore: the server still asks, so a refunded purchase ends there too.
+        if (found === 'none') await deps.api.plus().catch(() => null);
+        return found;
       },
 
       rememberSets: async (sets) => {

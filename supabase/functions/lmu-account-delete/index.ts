@@ -3,8 +3,11 @@
 // account, or a wedding guest's, may belong to the wedding site too (M3 plan, decision 9; owner question 2).
 // The sign-in goes first, so a failure leaves everything in place for a retry; deleting it removes every LevelMeUp
 // row (each table cascades from auth.users), and delete_player then sweeps whatever remains.
+// M13: the player's RevenueCat customer (their purchase history there) goes first of all, when purchases are set up.
+// Deleting never cancels a Google Play subscription; the app and the deletion page say so.
 import { asPlayer, asService, db, one } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
+import { deleteRevenueCatCustomer, revenueCatKey } from '../_shared/revenuecat.ts';
 import { authenticate } from '../_shared/session.ts';
 
 type Counts = Record<string, number>;
@@ -18,7 +21,8 @@ async function countRows(userId: string): Promise<Counts> {
         (select count(*) from levelmeup.checkins)::int as checkins, (select count(*) from levelmeup.events)::int as events,
         (select count(*) from levelmeup.xp_ledger)::int as ledger, (select count(*) from levelmeup.quest_instances)::int as quests,
         (select count(*) from levelmeup.quest_days)::int as days, (select count(*) from levelmeup.ladder_states)::int as ladders,
-        (select count(*) from levelmeup.character_state)::int as character, (select count(*) from levelmeup.profiles)::int as profile`);
+        (select count(*) from levelmeup.character_state)::int as character, (select count(*) from levelmeup.profiles)::int as profile,
+        (select count(*) from levelmeup.entitlements)::int as plus`);
     await asService(tx);
     return row;
   });
@@ -40,6 +44,10 @@ Deno.serve(async (req) => {
   if (!isObject(body) || body.confirm !== 'DELETE') return problemResponse(problem(400, 'confirm', 'send { "confirm": "DELETE" }'));
 
   try {
+    const key = revenueCatKey();
+    if (key !== null && !(await deleteRevenueCatCustomer(key, player.userId))) {
+      return problemResponse(problem(502, 'purchases_not_deleted', 'nothing was deleted; try again'));
+    }
     const before = await countRows(player.userId);
     if (player.anonymous && before.profile === 1) {
       if (!(await deleteSignIn(player.userId))) return problemResponse(problem(502, 'sign_in_not_deleted', 'nothing was deleted; try again'));

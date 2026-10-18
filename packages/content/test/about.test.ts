@@ -15,7 +15,7 @@ describe('About, privacy and the update card (M9b)', () => {
 
   it('name every place the data goes, and what is never kept (decision 6)', () => {
     const privacy = strings(PRIVACY_TEXT).join(' ');
-    for (const fact of ['Singapore', 'Claude', 'Anthropic', 'Google', 'safety questions', 'No ads', 'Delete my character', 'about a week']) {
+    for (const fact of ['Singapore', 'Claude', 'Anthropic', 'Google', 'safety questions', 'No ads', 'Delete my character', 'about a week', 'RevenueCat', 'never sees your card', 'does not cancel a Plus subscription']) {
       expect(privacy).toContain(fact);
     }
   });
@@ -27,7 +27,7 @@ describe('About, privacy and the update card (M9b)', () => {
     expect(privacy).not.toMatch(/sent once/);
   });
 
-  it('say the person running the pilot sees totals, never names or notes', () => {
+  it('say the developer sees totals, never names or notes', () => {
     expect(strings(PRIVACY_TEXT).join(' ')).toMatch(/totals.*never.*names or notes/);
   });
 

@@ -3,6 +3,8 @@
 // can read LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (migration 0004).
 import postgres from 'npm:postgres@3.4.9';
 import { LIGHTER_PLAN_WINDOW_MS, PAIN_WINDOW_MS } from '../../../packages/rules/src/index.ts';
+import { statWeeks } from './plus.ts';
+import type { EntitlementRow } from './plus.ts';
 import { READINGS_SHOWN, articleBody } from './reading.ts';
 import type { ArticleBody, ArticleRow, CandidateRow, ReadingRow, SourceRow } from './reading.ts';
 import { CALENDAR_DAYS } from './state.ts';
@@ -84,6 +86,9 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       where user_id = ${userId} and outcome in ('recovered', 'unbreakable', 'shield', 'reset') and resolved_at > now() - interval '2 days'
       order by resolved_at desc, id desc limit 1`;
     const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
+    // M13: LevelMeUp Plus grants (the Founder grant, a Play purchase).
+    const entitlements = await tx<EntitlementRow[]>`
+      select source, product, starts_at, ends_at, trial, will_renew, manage_url from levelmeup.entitlements where user_id = ${userId}`;
     const { pain } = one(await tx<{ pain: number }[]>`
       select count(*)::int as pain from levelmeup.events
       where user_id = ${userId} and type = 'pain' and applied_at > now() - make_interval(secs => ${PAIN_WINDOW_MS / 1000})`);
@@ -103,14 +108,18 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances],
       earned: earned.map((r) => r.achievement_id), checkin: checkin ?? null, queue: [...queue], answered: [...answered],
       result: result ?? null, readAt: now, painReports: pain, workoutsDone: workouts, articles: [...articles],
+      entitlements: [...entitlements],
     };
   } finally {
     await asService(tx);
   }
 }
 
-/** What only Character and Chronicle need (M6d decision 2), read as the player once per response. */
-export async function loadHistory(tx: Tx, userId: string, book: string | null): Promise<History> {
+/**
+ * What only Character and Chronicle need (M6d decision 2), read as the player once per response. M13: the all-time stat
+ * chart only for a Plus player (`plus`: plusView's answer), in weeks of the player's time zone from their starting points.
+ */
+export async function loadHistory(tx: Tx, userId: string, book: string | null, plus = false): Promise<History> {
   await asPlayer(tx, userId);
   try {
     const days = await tx<CalendarRow[]>`
@@ -136,11 +145,28 @@ export async function loadHistory(tx: Tx, userId: string, book: string | null): 
       left join levelmeup.quest_instances q on q.day_id = d.id and q.slot = 'article' and q.completed_at is not null
       where d.user_id = ${userId}
       order by d.day_number desc limit ${READINGS_SHOWN}`;
-    return { days: [...days], dayOne: dayOne ?? null, newRungs: rungs, reading, readings: [...readings] };
+    const weeks = plus ? await statWeeksOf(tx, userId) : null;
+    return { days: [...days], dayOne: dayOne ?? null, newRungs: rungs, reading, readings: [...readings], statWeeks: weeks };
   } finally {
     await asService(tx);
   }
 }
+
+/** M13: weekly XP by stat over all time (at most STAT_WEEKS weeks, the latest), as running points. Read as the player. */
+async function statWeeksOf(tx: Tx, userId: string) {
+  const [c] = await tx<{ time_zone: string; start_strength: number; start_vitality: number; start_wisdom: number; start_focus: number; start_discipline: number }[]>`
+    select p.time_zone, c.start_strength, c.start_vitality, c.start_wisdom, c.start_focus, c.start_discipline
+    from levelmeup.profiles p join levelmeup.character_state c on c.user_id = p.user_id where p.user_id = ${userId}`;
+  if (c === undefined) return [];
+  const sums = await tx<{ week: string; stat: string; xp: number }[]>`
+    select to_char(date_trunc('week', created_at at time zone ${c.time_zone}), 'YYYY-MM-DD') as week, stat, sum(amount)::int as xp
+    from levelmeup.xp_ledger where user_id = ${userId} group by 1, 2 order by 1`;
+  const start = { strength: c.start_strength, vitality: c.start_vitality, wisdom: c.start_wisdom, focus: c.start_focus, discipline: c.start_discipline };
+  return statWeeks(start, sums).slice(-STAT_WEEKS);
+}
+
+/** M13: the chart's span, about five years. */
+export const STAT_WEEKS = 260;
 
 /** M8b: whole articles, read as the player (row level security: published only), in the order asked. */
 export async function loadBodies(tx: Tx, userId: string, ids: readonly string[]): Promise<ArticleBody[]> {

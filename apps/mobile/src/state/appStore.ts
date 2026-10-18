@@ -51,5 +51,6 @@ export async function createAppStore() {
     },
     artManifest: () => artFetch(ART_MANIFEST_URL).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     notes: expoNotes,
+    playerId: async () => (await supabase.auth.getSession().catch(() => null))?.data.session?.user.id ?? null,
   });
 }

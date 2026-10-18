@@ -7,6 +7,8 @@ import type {
   AbilityId, AchievementProgress, CheckinAnswer, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState,
   Limitation, PastDay, PlayerProfile, ProgramStyle, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, WhyReason, XpByStat,
 } from '../../../packages/rules/src/index.ts';
+import { plusView } from './plus.ts';
+import type { EntitlementRow, StatWeek } from './plus.ts';
 import { insightView, nextArticle, readingsView, summaryOf } from './reading.ts';
 import type { CandidateRow, InsightRow, ReadingRow } from './reading.ts';
 
@@ -172,6 +174,8 @@ export type History = {
   reading: { sessions: number; minutes: number };
   /** M8b: the latest days with an article, newest first, at most READINGS_SHOWN (decision 7). */
   readings: ReadingRow[];
+  /** M13: the all-time stat chart, oldest week first; null when the player isn't Plus. */
+  statWeeks: StatWeek[] | null;
 };
 
 export type CalendarMark = 'open' | 'cleared' | 'hard' | 'rest' | 'paused' | 'none';
@@ -372,6 +376,8 @@ export type Snapshot = {
   workoutsDone: number;
   /** M8b: the published library, each with the last quest day it was given to this player (decision 1). */
   articles: CandidateRow[];
+  /** M13: LevelMeUp Plus grants. */
+  entitlements: EntitlementRow[];
 };
 
 const SLOT_ORDER: readonly Slot[] = ['core', 'side1', 'side2', 'article', 'recovery'];
@@ -506,5 +512,9 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
     ladders: ladderMap(s.ladders),
     history: pastDays(s.days, s.instances),
     workoutsDone: s.workoutsDone,
+    /** M13: whether the player is Plus, decided here from the stored grants (decision 1). */
+    plus: plusView(s.entitlements, s.readAt),
+    /** M13: the all-time stat chart, for Plus only (null otherwise). */
+    statWeeks: history.statWeeks,
   };
 }

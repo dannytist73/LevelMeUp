@@ -11,6 +11,11 @@
       "distribution": "internal",
       "node": "24.16.0",
       "android": { "buildType": "apk" }
+    },
+    "production": {
+      "distribution": "store",
+      "node": "24.16.0",
+      "android": { "buildType": "app-bundle" }
     }
   }
 }

@@ -17,7 +17,7 @@ export const PRIVACY_TEXT = {
         'Your character: the name you chose, your class, stats, level, streaks, achievements and the reveal written for you.',
         'The answers that shape your quests: goals, training, minutes, difficulty, voice, limits, your time zone and when your day ends, the books you name, and your Accountability Pact.',
         'Your days: the quests you were given and what you logged, your check-ins and their answers, your private notes, and the articles you were given.',
-        "It is stored with Supabase, in Singapore. In the app, only your own sign-in can read it. The person running this pilot can see the database and looks only at totals, such as how many players chose each class, and at each character's progress without a name; the pilot's report never shows names or notes.",
+        "It is stored with Supabase, in Singapore. In the app, only your own sign-in can read it. The developer can see the database and looks only at totals, such as how many players chose each class, and at each character's progress without a name; those reports never show names or notes.",
       ],
     },
     {
@@ -40,6 +40,13 @@ export const PRIVACY_TEXT = {
       lines: ['If you save your character with Google, Google shares your email, name and profile picture link with the sign-in, and the System keeps them with it. LevelMeUp shows the email and uses none of the rest.'],
     },
     {
+      title: 'Plus purchases',
+      lines: [
+        'If you buy LevelMeUp Plus, Google Play takes the payment; LevelMeUp never sees your card.',
+        "RevenueCat, the service that checks Google Play's receipts for LevelMeUp, keeps your purchase history under your player number, never your name or email. The System keeps whether you are on Plus, which plan, and until when.",
+      ],
+    },
+    {
       title: 'Nothing else',
       lines: ['No ads, no tracking, no analytics. Like any server, the System keeps short technical logs of requests, such as your IP address, for about a week.'],
     },
@@ -47,12 +54,13 @@ export const PRIVACY_TEXT = {
       title: 'Deleting',
       lines: [
         'Settings, then Delete my character, removes your character and everything kept with it, on the System and on this phone. A guest sign-in is deleted with it.',
-        'A Google sign-in stays: your email, name and picture link remain with it on the System, and with Google. To have it removed from the System, ask the person who invited you to the pilot.',
+        'Deleting also deletes your purchase history at RevenueCat. It does not cancel a Plus subscription: cancel that in Google Play, under Payments and subscriptions.',
+        'A Google sign-in stays: your email, name and picture link remain with it on the System, and with Google. To have it removed from the System too, ask at levelmeup.dannytist.com/delete.',
       ],
     },
     {
       title: 'Questions',
-      lines: ['Ask the person who invited you to the pilot.'],
+      lines: ['The full privacy policy and how to reach us are at levelmeup.dannytist.com/privacy.'],
     },
   ],
 } as const;

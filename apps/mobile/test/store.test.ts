@@ -13,9 +13,11 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, HAPTICS_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
+import { NOT_PLUS } from '../src/plus/plus.ts';
+import * as purchases from '../src/plus/purchases.ts';
 import { setBuzzing } from '../src/ui/haptics.ts';
 import { nodeSql } from './support/nodeSql.ts';
 import { DAY_TWO_NOW, READY_DRAFT, REVEAL, adjustState, serverState } from './support/fixtures.ts';
@@ -72,7 +74,8 @@ async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
     }),
     onboarding: jest.fn(async () => ({ ok: true as const, body: { reveal: REVEAL, state: SERVER } })),
     deleteAccount: jest.fn(async () => ({ ok: true as const, body: { deleted: {}, signIn: 'deleted' as const } })),
-  } as unknown as Api & { sync: jest.Mock; onboarding: jest.Mock; deleteAccount: jest.Mock };
+    plus: jest.fn(async () => ({ ok: true as const, body: { plus: { ...NOT_PLUS, active: true, source: 'play', product: 'plus_yearly' } } })),
+  } as unknown as Api & { sync: jest.Mock; onboarding: jest.Mock; deleteAccount: jest.Mock; plus: jest.Mock };
   const deps: GameDeps = {
     local,
     api,
@@ -87,6 +90,7 @@ async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
     google: { link: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })), signIn: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })) },
     artManifest: jest.fn(async (): Promise<unknown> => ({ version: 1, art: { 'ladder-push': 2 } })),
     notes: fakeNotes(),
+    playerId: jest.fn(async () => '00000000-0000-4000-8000-0000000000aa'),
     ...over,
   };
   const store = createGameStore(deps);
@@ -1164,5 +1168,93 @@ describe('notifications (M7d)', () => {
     expect(notes.replace).toHaveBeenLastCalledWith([]); // nothing of the last player's reaches the phone after the cancel
     expect(kv.has(NOTIFY_KEY)).toBe(false);
     expect(store.getState()).toMatchObject({ notify: DEFAULT_NOTIFY, planned: [] });
+  });
+});
+
+describe('LevelMeUp Plus in the store (M13)', () => {
+  const PLAN = { kind: 'yearly' as const, price: '₱699.00', trialDays: 7, pkg: {} };
+  const SUBSCRIBED = serverState([], {}, [{
+    source: 'play', product: 'plus_yearly', starts_at: new Date(NOW - 86_400_000), ends_at: new Date(NOW + 30 * 86_400_000), trial: false,
+    will_renew: true, manage_url: null,
+  }]);
+
+  it('a look is the phone\'s and stays for the next character; a frame is the character\'s and goes with it', async () => {
+    const { store, kv } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    await store.getState().setTheme('mintNight');
+    await store.getState().setFrame('moon');
+    expect(store.getState()).toMatchObject({ theme: 'mintNight', frame: 'moon', themeReturn: true });
+    expect([kv.get(THEME_KEY), kv.get(FRAME_KEY)]).toEqual(['mintNight', 'moon']);
+    await store.getState().startOver();
+    expect(store.getState()).toMatchObject({ theme: 'mintNight', frame: 'none' });
+    expect(kv.has(FRAME_KEY)).toBe(false);
+    store.getState().stop();
+  });
+
+  it('reads both back at launch, and ignores what it does not know', async () => {
+    const { store, kv } = await setup([ok(SERVER)]);
+    kv.set(THEME_KEY, 'systemBlue');
+    kv.set(FRAME_KEY, 'golden');
+    await store.getState().boot();
+    expect(store.getState()).toMatchObject({ theme: 'systemBlue', frame: 'none', themeReturn: false });
+    store.getState().stop();
+  });
+
+  it('a purchase Google Play completes is confirmed by the server before Plus counts', async () => {
+    jest.spyOn(purchases, 'buy').mockResolvedValue('bought');
+    const { store, api } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    expect(await store.getState().buyPlus(PLAN)).toBe('on');
+    expect(purchases.buy).toHaveBeenCalledWith('00000000-0000-4000-8000-0000000000aa', PLAN);
+    expect(api.plus).toHaveBeenCalledTimes(1);
+    store.getState().stop();
+  });
+
+  it('a cancelled purchase asks the server nothing; one the server can\'t confirm yet says so', async () => {
+    const { store, api } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    jest.spyOn(purchases, 'buy').mockResolvedValue('cancelled');
+    expect(await store.getState().buyPlus(PLAN)).toBe('cancelled');
+    expect(api.plus).not.toHaveBeenCalled();
+    jest.spyOn(purchases, 'buy').mockResolvedValue('bought');
+    api.plus.mockResolvedValueOnce({ ok: false, status: 0, code: 'network' });
+    expect(await store.getState().buyPlus(PLAN)).toBe('server_late');
+    store.getState().stop();
+  });
+
+  it('a restore that finds nothing still lets the server look (a refund ends there too)', async () => {
+    jest.spyOn(purchases, 'restore').mockResolvedValue('none');
+    const { store, api } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    expect(await store.getState().restorePlus()).toBe('none');
+    expect(api.plus).toHaveBeenCalledTimes(1);
+    store.getState().stop();
+  });
+
+  it('at launch, asks the server again only when RevenueCat and the server disagree', async () => {
+    jest.spyOn(purchases, 'purchasesSetUp').mockReturnValue(true);
+    const says = jest.spyOn(purchases, 'storeSaysPlus').mockResolvedValue(true);
+    const agree = await setup([ok(SUBSCRIBED)]);
+    await agree.store.getState().boot();
+    await settle();
+    expect(says).toHaveBeenCalled();
+    expect(agree.api.plus).not.toHaveBeenCalled();
+    agree.store.getState().stop();
+
+    const differ = await setup([ok(SERVER)]);
+    await differ.store.getState().boot();
+    await settle();
+    expect(differ.api.plus).toHaveBeenCalledTimes(1);
+    differ.store.getState().stop();
+  });
+
+  it('never reaches RevenueCat while Plus isn\'t set up', async () => {
+    const says = jest.spyOn(purchases, 'storeSaysPlus');
+    const { store, api } = await setup([ok(SERVER)]);
+    await store.getState().boot();
+    await settle();
+    expect(says).not.toHaveBeenCalled();
+    expect(api.plus).not.toHaveBeenCalled();
+    store.getState().stop();
   });
 });

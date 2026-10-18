@@ -7,7 +7,9 @@ import { Image, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Defs, G, Line, Path, Pattern, Rect } from 'react-native-svg';
 import { portraitUrl } from '../art/portraits.ts';
 import type { Figure } from '../art/portraits.ts';
+import type { FrameName } from '../plus/plus.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
+import { PortraitFrame } from './PortraitFrame.tsx';
 
 const EMBLEM: Record<ClassId, string[]> = {
   warrior: ['M6 18 18 6', 'M15 6h3v3', 'M8 13l3 3', 'M5 19l2-2', 'M4 17l3 3'],
@@ -20,7 +22,11 @@ const EMBLEM: Record<ClassId, string[]> = {
 const EDGE = 3;
 const LAYER = { position: 'absolute', left: 0, top: 0 } as const;
 
-export type PortraitProps = { classId: ClassId; level: number; figure: Figure; label: string; marked?: boolean };
+export type PortraitProps = {
+  classId: ClassId; level: number; figure: Figure; label: string; marked?: boolean;
+  /** M13: a Plus frame (or the Founder's), already checked as the player's to use (plus.ts shownFrame). */
+  frame?: FrameName;
+};
 
 /** The painted picture, inside the frame's ink edge. Keyed by its address, so a new tier or figure, or a figure switched
  * back to, is tried afresh after a failed load (review). */
@@ -33,7 +39,7 @@ function Painting({ uri, w, h }: { uri: string; w: number; h: number }) {
   );
 }
 
-export function Portrait({ classId, level, figure, label, marked = false }: PortraitProps) {
+export function Portrait({ classId, level, figure, label, marked = false, frame = 'none' }: PortraitProps) {
   const { width } = useWindowDimensions();
   const w = Math.min(260, width - 2 * space.gutter - 12);
   const h = Math.round(w * 1.04);
@@ -66,6 +72,7 @@ export function Portrait({ classId, level, figure, label, marked = false }: Port
               <Path d={`M0 ${h * 0.42} C${w * 0.16} ${h * 0.5} ${w * 0.32} ${h * 0.68} ${w * 0.64} ${h}`} fill="none" stroke={colors.shadow} strokeWidth={2.5} />
             </G>
           )}
+          <PortraitFrame frame={frame} w={w} h={h} />
         </Svg>
       </View>
     </View>

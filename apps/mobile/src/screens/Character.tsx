@@ -13,6 +13,7 @@ import { colors, radius, space } from '../theme/tokens.ts';
 import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
+import { plusOf, shownFrame } from '../plus/plus.ts';
 import { Portrait } from '../ui/Portrait.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
@@ -39,6 +40,8 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
   const lastSyncedAt = useGame((s) => s.lastSyncedAt);
   const chosen = useGame((s) => s.portrait);
   const setPortrait = useGame((s) => s.setPortrait);
+  // M13: a frame shows only while it is the player's to use (a lapsed Plus shows none).
+  const frame = useGame((s) => shownFrame(s.frame, plusOf(s.view)));
   const stale = status === 'offline' || status === 'retrying';
 
   if (view === null) {
@@ -74,7 +77,7 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
       <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
         <Label>{T.label}</Label>
         <View style={{ alignSelf: 'center' }}>
-          <Portrait classId={classId} level={level} figure={figure} marked={mark}
+          <Portrait classId={classId} level={level} figure={figure} marked={mark} frame={frame}
             label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
           <Tap accessibilityRole="button" accessibilityLabel={T.switchPortrait} onPress={() => void setPortrait(otherFigure(figure))}
             on="accent" radius={26}

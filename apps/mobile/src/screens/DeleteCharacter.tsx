@@ -1,10 +1,11 @@
 // Settings → Delete your character (spec §4.5; M7b decision 3): what goes, said plainly, and a second explicit tap.
 // lmu-account-delete removes every LevelMeUp row; a guest's sign-in goes with it, a Google sign-in stays (M3 owner
 // decision: the sign-in list is shared), and the screen says which. The store then forgets this phone's data.
-import { SETTINGS_TEXT } from '@levelmeup/content';
+import { PLUS_TEXT, SETTINGS_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { plusOf } from '../plus/plus.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -21,6 +22,11 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
   const insets = useSafeAreaInsets();
   const account = useGame((s) => s.account);
   const deleteCharacter = useGame((s) => s.deleteCharacter);
+  // M13: a running Play subscription isn't cancelled by deleting (Google Play's account deletion rule says so).
+  const subscribed = useGame((s) => {
+    const plus = plusOf(s.view);
+    return plus.active && plus.source === 'play' && plus.product !== 'plus_lifetime' && plus.willRenew !== false;
+  });
   const [sure, setSure] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -45,6 +51,7 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
       <Title>{T.title}</Title>
       <Body>{T.what}</Body>
       <Body>{account.kind === 'saved' ? T.google : T.guest}</Body>
+      {subscribed && <Body weight="bold">{PLUS_TEXT.deleteNote}</Body>}
       <Small>{T.connection}</Small>
       {problem !== null && (
         <View accessibilityLiveRegion="polite">

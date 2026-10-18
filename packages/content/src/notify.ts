@@ -30,6 +30,11 @@ export const NOTIFY_TEXT = {
     allow: 'Show it',
     no: 'Not now',
   },
+  /** M13: the free trial's reminder, two days before it ends (the offer screen's "Day 5"). */
+  trial: {
+    title: 'Your Plus trial ends in 2 days',
+    body: 'It then renews as yearly Plus unless you cancel in Google Play. The game stays the same either way.',
+  },
   briefingAt: 'Briefing time',
   eveningAt: 'Reminder time',
   shadowTitle: "The Shadow's reminder",
