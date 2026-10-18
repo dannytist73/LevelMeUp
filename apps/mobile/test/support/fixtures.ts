@@ -60,11 +60,9 @@ export const completeEvent = (instanceId: number, rating: Rating | null = null):
 export const undoEvent = (instanceId: number): PhoneEvent => ({ id: id(), type: 'undo', instanceId });
 export const rateEvent = (instanceId: number, rating: 'easy' | 'right' | 'too_hard'): PhoneEvent => ({ id: id(), type: 'rate', instanceId, rating });
 
-/** A finished interview: Rin, mentor voice, a stronger body, trains now and then, no limits, no safety flags. */
+/** A finished interview: Rin, a stronger body, trains now and then, no limits, no safety flags (M12: no voice asked). */
 export const READY_DRAFT: Draft = {
-  ...NEW_DRAFT, name: 'Rin', voice: 'mentor', goals: ['body'], training: 'some', noLimits: true,
-  equipment: [], noEquipment: true, programStyle: 'none',
-  safety: Array<boolean>(SAFETY_QUESTIONS).fill(false), slip: 'stakes',
+  ...NEW_DRAFT, name: 'Rin', goals: ['body'], training: 'some', noLimits: true, safety: Array<boolean>(SAFETY_QUESTIONS).fill(false),
 };
 
 export const REVEAL: Reveal = { narrative: 'Rin. Class: Warrior.', strengths: ['Strength'], growth: ['Focus'], source: 'template' };

@@ -6,7 +6,7 @@
 // M12 (Round 3, boards R3-1 and R3-4; audit 1, 3, 11, 12): a tighter header, the notices in one strip, "Up next" with the
 // screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
 // the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
-import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
+import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -17,6 +17,8 @@ import { trainingUnset } from '../game/character.ts';
 import { streakNote } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
 import { marked, sealedQuest, shadowHold } from '../game/pact.ts';
+import { setupCard } from '../game/setup.ts';
+import type { SetupCard } from '../game/setup.ts';
 import type { ShadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { dayCleared, openQuests, quickClearable, shownStreak, upNext } from '../game/today.ts';
@@ -71,6 +73,10 @@ export type TodayProps = {
   onShadow?: () => void;
   /** The Trial of Stillness's focus session (M7c decision 7). */
   onTrial?: () => void;
+  /** M12 decision 8, the set-up cards: Settings → Your game (the voice), the slip question, the vow. */
+  onGame?: () => void;
+  onSlip?: () => void;
+  onVow?: () => void;
   /** Whether Today is in front: the route passes its focus (M10b review). */
   shown?: boolean;
   now?: () => number;
@@ -92,6 +98,23 @@ function NoticeStrip({ items }: { items: readonly Notice[] }) {
       </View>
     </View>
   );
+}
+
+/** A set-up card's words and buttons; `answer` marks it offered, then goes where the button says. */
+function setupNotice(
+  card: SetupCard,
+  answer: (go?: () => void) => void,
+  go: { onSettings: () => void; onGame: () => void; onTraining: () => void; onSlip: () => void; onVow: () => void },
+): Notice {
+  const S = SETUP_TEXT;
+  const later = { label: S.notNow, onPress: () => answer() };
+  switch (card) {
+    case 'save': return { key: card, text: S.save.line, actions: [{ label: S.save.go, onPress: () => answer(go.onSettings) }, later] };
+    case 'voice': return { key: card, text: S.voice.line, actions: [{ label: S.voice.go, onPress: () => answer(go.onGame) }, { label: S.voice.keep, onPress: () => answer() }] };
+    case 'gear': return { key: card, text: S.gear.line, actions: [{ label: S.gear.go, onPress: () => answer(go.onTraining) }, later] };
+    case 'slip': return { key: card, text: S.slip.line, actions: [{ label: S.slip.go, onPress: () => answer(go.onSlip) }, later] };
+    case 'vow': return { key: card, text: S.vow.line, actions: [{ label: S.vow.go, onPress: () => answer(go.onVow) }, later] };
+  }
 }
 
 /** Not a usable day (audit 11): loading is a skeleton; offline, a failed reach and an ended day each say what they are. */
@@ -117,7 +140,7 @@ function TrialPanel({ onTrial }: { onTrial: () => void }) {
 
 export function Today({
   onSettings, onOpenQuest, onOpenReading, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {},
-  shown = true, now = Date.now,
+  onGame = () => {}, onSlip = () => {}, onVow = () => {}, shown = true, now = Date.now,
 }: TodayProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
@@ -136,6 +159,10 @@ export function Today({
   const updateRequired = useGame((s) => s.updateRequired);
   const trainingNoticeSeen = useGame((s) => s.trainingNoticeSeen);
   const dismissTrainingNotice = useGame((s) => s.dismissTrainingNotice);
+  const offers = useGame((s) => s.offers);
+  const markOffer = useGame((s) => s.markOffer);
+  const saved = useGame((s) => s.account.kind === 'saved');
+  const vow = useGame((s) => s.vow);
   /** The quest a check circle just cleared, while its Undo shows. */
   const [snack, setSnack] = useState<{ id: number; title: string } | null>(null);
   const [showDone, setShowDone] = useState(false);
@@ -159,6 +186,9 @@ export function Today({
       : []),
     ...notices.map((n) => ({ key: n.eventId, text: noticeText(n.code), actions: [{ label: TODAY_TEXT.gotIt, onPress: () => void dismissNotice(n.eventId) }] })),
   ];
+  // M12 decision 8: one set-up card at a time, after the System's notices.
+  const card = view === null ? null : setupCard({ view, offers, saved, vow });
+  if (card !== null) strip.push(setupNotice(card, (go) => { void markOffer(`setup:${card}`); go?.(); }, { onSettings, onGame, onTraining, onSlip, onVow }));
 
   /** M12 decision 3: a check circle clears a check-off quest as the quest screen's Mark cleared does; Undo takes it back. */
   const check = (q: QuestView, title: string) => {

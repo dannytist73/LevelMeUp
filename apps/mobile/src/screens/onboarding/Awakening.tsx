@@ -14,6 +14,7 @@ import { SpeedLines } from '../../ui/SpeedLines.tsx';
 import { TextField } from '../../ui/TextField.tsx';
 import { Heading, Label, Small } from '../../ui/Text.tsx';
 import { UpdateNeeded } from '../UpdateNeeded.tsx';
+import { ChapterHead } from './QuestionFrame.tsx';
 import type { StepProps } from './QuestionFrame.tsx';
 
 const T = ONBOARDING_TEXT.awakening;
@@ -66,6 +67,7 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
         <Heading>{T.detected}</Heading>
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
+        <ChapterHead step="awakening" />
         <NarrationBox>{T.line}</NarrationBox>
         <TextField label={T.ask} value={draft.name} onChangeText={(name) => editDraft({ name })} maxLength={NAME_MAX} />
         <Button label={T.go} disabled={!complete(draft, 'awakening')} onPress={() => {

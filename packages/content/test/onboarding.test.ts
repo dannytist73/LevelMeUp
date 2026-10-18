@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CLASSES, GOALS, HABITS, LIMITATIONS, SAFETY_QUESTIONS, SLIPS, TRAININGS, startingLadders, strengthClosed } from '../../rules/src/index.ts';
 import type { Answers, ClassId, PlayerProfile } from '../../rules/src/index.ts';
 import {
-  CLASS_DAYS, DIFFICULTY_CHOICES, FOCUS_CHOICES, GOAL_CHOICES, GOOGLE_ERRORS, LIBRARY, ONBOARDING_TEXT, READING_CHOICES,
+  CLASS_DAYS, DIFFICULTY_CHOICES, FOCUS_CHOICES, GOAL_CHOICES, GOOGLE_ERRORS, LIBRARY, OBSTACLES, ONBOARDING_TEXT, READING_CHOICES, SETUP_TEXT,
   SAFETY_CHECK, SEEDS, SLIP_CHOICES, SLIP_SUGGESTIONS, TRAINING_CHOICES, VOICE_NAMES, VOICE_SAMPLES, VOICES,
   analysisLine, boundaryLine, classStats, goalsCount, lintText, routineLine, voiceLine,
 } from '../src/index.ts';
@@ -25,6 +25,7 @@ describe('the onboarding words', () => {
     ...strings(ONBOARDING_TEXT), ...strings(VOICE_NAMES), ...strings(VOICE_SAMPLES), ...strings(GOAL_CHOICES),
     ...strings(TRAINING_CHOICES), ...strings(READING_CHOICES), ...strings(FOCUS_CHOICES), ...strings(DIFFICULTY_CHOICES),
     ...strings(SLIP_CHOICES), ...strings(SLIP_SUGGESTIONS), ...SAFETY_CHECK, ...strings(CLASS_DAYS), ...strings(GOOGLE_ERRORS),
+    ...strings(SETUP_TEXT), ...strings(OBSTACLES), // M12
     voiceLine('Rin'), analysisLine('Rin'), boundaryLine('4:00 AM'), goalsCount(2),
     ...(Object.keys(CLASSES) as ClassId[]).flatMap((c) => [classStats(CLASSES[c]), routineLine({ stats: CLASSES[c], minutesPerDay: 25, difficulty: 'steady', gentleStart: true })]),
   ];

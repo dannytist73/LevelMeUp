@@ -32,6 +32,9 @@ export default function TodayRoute() {
       onCheckin={() => router.push('/checkin')}
       onShadow={() => router.push('/shadow')}
       onTrial={() => router.push('/trial')}
+      onGame={() => router.push('/game')}
+      onSlip={() => router.push('/slip')}
+      onVow={() => router.push('/vow')}
       shown={shown}
     />
   );

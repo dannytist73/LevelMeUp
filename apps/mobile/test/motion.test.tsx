@@ -10,7 +10,7 @@ import { project } from '../src/game/project.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { Celebration } from '../src/screens/Celebration.tsx';
 import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
-import { Vow } from '../src/screens/onboarding/Vow.tsx';
+import { Vow } from '../src/screens/Vow.tsx';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { Today } from '../src/screens/Today.tsx';

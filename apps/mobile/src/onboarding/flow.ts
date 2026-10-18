@@ -1,24 +1,23 @@
 // The onboarding interview (spec §1.1, boards O01–O06): the answers so far, which screens this player sees, when each
 // screen's answers are complete, and the body `lmu-onboarding` receives. The server computes every number from it.
-// M6c: the Training step (equipment and program style) follows Body when strength work is possible.
+// M12 (Round 3, board R3-7; plan decisions 7–8): three chapters, You (name, goals), Your body (training and limits, then
+// the safety check on its own) and Your day (reading and focus when asked, then the rhythm). The voice, the equipment,
+// the slip question and the vow moved to cards on days 1 to 3: the onboarding sends the System voice and bodyweight
+// training, which those cards change through the events that already exist.
 import { DEFAULT_BOUNDARY_MINUTES, MAX_GOALS, SAFETY_QUESTIONS, boundaryFromSleep, suggestedClass } from '@levelmeup/rules';
-import type { ClassId, Difficulty, Equipment, Goal, Habit, Limitation, PlayerProfile, ProgramStyle, Slip, Training } from '@levelmeup/rules';
+import type { ClassId, Difficulty, Goal, Habit, Limitation, PlayerProfile, Training } from '@levelmeup/rules';
 import type { Voice } from '@levelmeup/content';
 import type { OnboardingBody } from '../game/types.ts';
 
 export type Draft = {
   name: string;
+  /** M12: no longer asked here; null sends the System's (a day 1 card offers the others). */
   voice: Voice | null;
   goals: Goal[];
   training: Training | null;
   limitations: Limitation[];
   /** "Nothing" was picked on the limits row (otherwise "no limits" and "not answered yet" look the same). */
   noLimits: boolean;
-  /** M6c: what the player can train with; empty with `noEquipment` means bodyweight only. */
-  equipment: Equipment[];
-  /** "Just my body" was picked (otherwise no equipment and "not answered yet" look the same). */
-  noEquipment: boolean;
-  programStyle: ProgramStyle | null;
   /** The safety check, one answer per question (null: not yet). Kept in memory only, never written (spec §4.5). */
   safety: (boolean | null)[];
   reading: Habit | null;
@@ -28,7 +27,6 @@ export type Draft = {
   wake: number;
   minutesPerDay: number;
   difficulty: Difficulty;
-  slip: Slip | null;
   /** The class the player picked on the reveal; null takes the rules' suggestion. */
   classId: ClassId | null;
   /** M7c: the pact signed on the reveal (decision 10), sent when the onboarding ends; null when none. */
@@ -36,17 +34,23 @@ export type Draft = {
 };
 
 export const NEW_DRAFT: Draft = {
-  name: '', voice: null, goals: [], training: null, limitations: [], noLimits: false, equipment: [], noEquipment: false, programStyle: null,
+  name: '', voice: null, goals: [], training: null, limitations: [], noLimits: false,
   safety: Array<boolean | null>(SAFETY_QUESTIONS).fill(null), reading: null, focus: null,
-  sleep: 23 * 60, wake: 7 * 60, minutesPerDay: 25, difficulty: 'steady', slip: null, classId: null, pact: null,
+  sleep: 23 * 60, wake: 7 * 60, minutesPerDay: 25, difficulty: 'steady', classId: null, pact: null,
 };
 
-export type Step = 'awakening' | 'voice' | 'goals' | 'body' | 'gear' | 'mind' | 'rhythm' | 'slip';
+/** The voice the onboarding sends: the System's, which narrates the onboarding itself. */
+export const DEFAULT_VOICE: Voice = 'system';
+
+export type Step = 'awakening' | 'goals' | 'body' | 'safety' | 'mind' | 'rhythm';
 
 export const STEP_PATH: Readonly<Record<Step, string>> = {
-  awakening: '/onboarding', voice: '/onboarding/voice', goals: '/onboarding/goals', body: '/onboarding/body', gear: '/onboarding/gear',
-  mind: '/onboarding/mind', rhythm: '/onboarding/rhythm', slip: '/onboarding/slip',
+  awakening: '/onboarding', goals: '/onboarding/goals', body: '/onboarding/body', safety: '/onboarding/safety',
+  mind: '/onboarding/mind', rhythm: '/onboarding/rhythm',
 };
+
+/** M12 (board R3-7): each step's chapter, 1 You, 2 Your body, 3 Your day. */
+export const CHAPTER: Readonly<Record<Step, 1 | 2 | 3>> = { awakening: 1, goals: 1, body: 2, safety: 2, mind: 3, rhythm: 3 };
 export const ANALYSIS_PATH = '/onboarding/analysis';
 export const NAME_MAX = 40;
 const CONTROL = /[\p{Cc}\p{Cf}]/u;
@@ -56,16 +60,12 @@ export function asksMind(draft: Draft): boolean {
   return draft.goals.includes('learn') || draft.goals.includes('focus');
 }
 
-export function asksGear(draft: Draft): boolean {
-  return draft.training !== 'own' && !gentleStart(draft);
+export function stepsFor(draft: Draft): Step[] {
+  return ['awakening', 'goals', 'body', 'safety', ...(asksMind(draft) ? (['mind'] as const) : []), 'rhythm'];
 }
 
-export function stepsFor(draft: Draft): Step[] {
-  return [
-    'awakening', 'voice', 'goals', 'body', ...(asksGear(draft) ? (['gear'] as const) : []),
-    ...(asksMind(draft) ? (['mind'] as const) : []), 'rhythm', 'slip',
-  ];
-}
+/** The safety questions not answered yet ("5 of 7 left"). */
+export const safetyLeft = (draft: Draft): number => draft.safety.filter((a) => a === null).length;
 
 /** Whether a screen's answers are complete (its Continue button). */
 export function complete(draft: Draft, step: Step): boolean {
@@ -74,20 +74,16 @@ export function complete(draft: Draft, step: Step): boolean {
       const name = draft.name.trim();
       return name.length >= 1 && name.length <= NAME_MAX && !CONTROL.test(name);
     }
-    case 'voice':
-      return draft.voice !== null;
     case 'goals':
       return draft.goals.length >= 1 && draft.goals.length <= MAX_GOALS;
     case 'body':
-      return draft.training !== null && (draft.noLimits || draft.limitations.length > 0) && draft.safety.every((a) => a !== null);
-    case 'gear':
-      return draft.programStyle !== null && (draft.noEquipment || draft.equipment.length > 0);
+      return draft.training !== null && (draft.noLimits || draft.limitations.length > 0);
+    case 'safety':
+      return draft.safety.every((a) => a !== null);
     case 'mind':
       return (!draft.goals.includes('learn') || draft.reading !== null) && (!draft.goals.includes('focus') || draft.focus !== null);
     case 'rhythm':
       return draft.sleep !== draft.wake;
-    case 'slip':
-      return draft.slip !== null;
   }
 }
 
@@ -115,13 +111,6 @@ export function toggleLimit(draft: Draft, limit: Limitation | 'nothing'): Pick<D
   return { limitations: has ? draft.limitations.filter((l) => l !== limit) : [...draft.limitations, limit], noLimits: false };
 }
 
-/** "Just my body" and the equipment exclude each other. */
-export function toggleEquipment(draft: Draft, item: Equipment | 'nothing'): Pick<Draft, 'equipment' | 'noEquipment'> {
-  if (item === 'nothing') return { equipment: [], noEquipment: !draft.noEquipment };
-  const has = draft.equipment.includes(item);
-  return { equipment: has ? draft.equipment.filter((e) => e !== item) : [...draft.equipment, item], noEquipment: false };
-}
-
 export function boundaryOf(draft: Draft): number {
   return draft.sleep === draft.wake ? DEFAULT_BOUNDARY_MINUTES : boundaryFromSleep(draft.sleep, draft.wake);
 }
@@ -130,15 +119,16 @@ export function boundaryOf(draft: Draft): number {
 export function toRequest(draft: Draft, timeZone: string, redo: boolean): OnboardingBody {
   return {
     name: draft.name.trim(),
-    voice: draft.voice!,
+    voice: draft.voice ?? DEFAULT_VOICE,
     goals: draft.goals,
     ...(draft.classId === null ? {} : { classId: draft.classId }),
     training: draft.training!,
     reading: draft.goals.includes('learn') ? draft.reading : null,
     focus: draft.goals.includes('focus') ? draft.focus : null,
     limitations: draft.limitations,
-    equipment: asksGear(draft) ? draft.equipment : [],
-    programStyle: asksGear(draft) ? (draft.programStyle ?? 'none') : 'none',
+    // M12: bodyweight until the day 2 card's Training screen says otherwise.
+    equipment: [],
+    programStyle: 'none',
     safety: draft.safety.map((a) => a === true),
     minutesPerDay: draft.minutesPerDay,
     difficulty: draft.difficulty,
@@ -154,7 +144,7 @@ export function draftProfile(draft: Draft): PlayerProfile {
   return {
     classId: draft.classId ?? suggestedClass(goals), level: 1, goals, minutesPerDay: draft.minutesPerDay, difficulty: draft.difficulty,
     limitations: draft.limitations, gentleStart: gentleStart(draft), ownProgram: draft.training === 'own',
-    equipment: asksGear(draft) ? draft.equipment : [], programStyle: asksGear(draft) ? (draft.programStyle ?? 'none') : 'none',
+    equipment: [], programStyle: 'none',
     stats: { strength: 5, vitality: 5, wisdom: 5, focus: 5 }, book: null,
   };
 }

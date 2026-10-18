@@ -11,12 +11,12 @@ import type { StepProps } from './QuestionFrame.tsx';
 
 const T = ONBOARDING_TEXT.goals;
 
-export function GoalsStep({ onNavigate }: StepProps) {
+export function GoalsStep({ onNavigate, onBack }: StepProps) {
   const draft = useGame((s) => s.draft);
   const editDraft = useGame((s) => s.editDraft);
   const full = draft.goals.length >= MAX_GOALS;
   return (
-    <QuestionFrame step="goals" line={T.line} canContinue={complete(draft, 'goals')} onContinue={() => onNavigate(nextPath(draft, 'goals'))}>
+    <QuestionFrame step="goals" line={T.line} canContinue={complete(draft, 'goals')} onContinue={() => onNavigate(nextPath(draft, 'goals'))} onBack={onBack}>
       <Small>{T.note}</Small>
       <View style={{ gap: 12 }}>
         {GOALS.map((goal) => {

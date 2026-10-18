@@ -18,13 +18,13 @@ import type { StepProps } from './QuestionFrame.tsx';
 const T = ONBOARDING_TEXT.rhythm;
 const DIFFICULTIES: readonly Difficulty[] = ['gentle', 'steady', 'hard'];
 
-export function RhythmStep({ onNavigate }: StepProps) {
+export function RhythmStep({ onNavigate, onBack }: StepProps) {
   const draft = useGame((s) => s.draft);
   const editDraft = useGame((s) => s.editDraft);
   const noStrength = draft.training === 'own' && !gentleStart(draft) && strengthClosed(LIBRARY, draftProfile(draft));
   const noWorkouts = draft.training !== 'own' && !gentleStart(draft) && !workoutsFit(LIBRARY, draftProfile(draft));
   return (
-    <QuestionFrame step="rhythm" line={T.line} canContinue={complete(draft, 'rhythm')} onContinue={() => onNavigate(nextPath(draft, 'rhythm'))}>
+    <QuestionFrame step="rhythm" line={T.line} canContinue={complete(draft, 'rhythm')} onContinue={() => onNavigate(nextPath(draft, 'rhythm'))} onBack={onBack}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
         <TimeStepper label={T.wake} minutes={draft.wake} onChange={(wake) => editDraft({ wake })} />
         <TimeStepper label={T.sleep} minutes={draft.sleep} onChange={(sleep) => editDraft({ sleep })} />

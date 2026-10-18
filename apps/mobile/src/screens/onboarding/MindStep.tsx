@@ -12,11 +12,11 @@ import type { StepProps } from './QuestionFrame.tsx';
 
 const T = ONBOARDING_TEXT.mind;
 
-export function MindStep({ onNavigate }: StepProps) {
+export function MindStep({ onNavigate, onBack }: StepProps) {
   const draft = useGame((s) => s.draft);
   const editDraft = useGame((s) => s.editDraft);
   return (
-    <QuestionFrame step="mind" line={T.line} canContinue={complete(draft, 'mind')} onContinue={() => onNavigate(nextPath(draft, 'mind'))}>
+    <QuestionFrame step="mind" line={T.line} canContinue={complete(draft, 'mind')} onContinue={() => onNavigate(nextPath(draft, 'mind'))} onBack={onBack}>
       {draft.goals.includes('learn') && (
         <View style={{ gap: 12 }}>
           <Label>{T.reading}</Label>

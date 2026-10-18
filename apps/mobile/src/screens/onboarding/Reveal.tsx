@@ -1,17 +1,14 @@
 // O08 Character reveal (spec §1.1 beat 9, §4.2): the rules' character in the System's words, the stats labelled game
 // estimates. "Change class" and "Fix an assumption" run the analysis again (the server allows it until the first
 // action). M9a: the class portrait, and Switch portrait (decisions 5, 8). M10a: the lines burst once and the class panel
-// slams in.
-import {
-  CHARACTER_TEXT, CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, PACT_TEXT, SLIP_SUGGESTIONS, STAT_NAMES, classStats, fillText, routineLine,
-} from '@levelmeup/content';
+// slams in. M12 (plan decision 7): the slip question and the Pact moved to day 2's card; Accept ends the onboarding.
+import { CHARACTER_TEXT, CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, STAT_NAMES, classStats, fillText, routineLine } from '@levelmeup/content';
 import { CLASSES, STATS } from '@levelmeup/rules';
 import type { ClassId } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { figureFor, otherFigure } from '../../art/portraits.ts';
-import { pactName } from '../../game/pact.ts';
 import { STEP_PATH, asksMind } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
 import { space } from '../../theme/tokens.ts';
@@ -30,7 +27,7 @@ import { Body, Caption, Display, Heading, Label, Small, Title } from '../../ui/T
 const T = ONBOARDING_TEXT.reveal;
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
 
-export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFix: (path: string) => void; onPact?: () => void }) {
+export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path: string) => void }) {
   const insets = useSafeAreaInsets();
   const reveal = useGame((s) => s.reveal);
   const view = useGame((s) => s.view);
@@ -70,7 +67,6 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
     [T.fixBody, STEP_PATH.body],
     ...(asksMind(draft) ? [[T.fixMind, STEP_PATH.mind] as const] : []),
     [T.fixRhythm, STEP_PATH.rhythm],
-    [T.fixSlip, STEP_PATH.slip],
   ];
 
   let body;
@@ -152,16 +148,6 @@ export function Reveal({ onAccept, onFix, onPact }: { onAccept: () => void; onFi
           <Label>{T.routine}</Label>
           <Body>{routineLine({ stats: CLASSES[profile.classId], minutesPerDay: profile.minutesPerDay, difficulty: profile.difficulty, gentleStart: profile.gentleStart })}</Body>
         </View>
-        {draft.slip !== null && (
-          <NightCard>
-            <Small tone="chalk">{SLIP_SUGGESTIONS[draft.slip]}</Small>
-            {draft.pact !== null && <Small>{fillText(PACT_TEXT.reveal.signed, { name: pactName(draft.pact) })}</Small>}
-            {/* M7c decision 10: board O08's "Read the pact", where the System suggests one. */}
-            {draft.slip === 'stakes' && onPact !== undefined && (
-              <Button label={PACT_TEXT.reveal.read} variant="secondary" onPress={onPact} style={{ alignSelf: 'flex-start' }} />
-            )}
-          </NightCard>
-        )}
         <Button label={T.accept} variant="commitment" disabled={busy} onPress={onAccept} />
         <Button label={T.change} variant="secondary" disabled={busy} onPress={() => setMode('class')} />
         <Button label={T.fix} variant="secondary" disabled={busy} onPress={() => setMode('fix')} />

@@ -96,16 +96,6 @@ describe('the Accountability Pact (board F5)', () => {
     expect(onPact).toHaveBeenCalled();
     expect(screen.getByText(PACT_TEXT.startsNext)).toBeTruthy();
   });
-
-  it('the reveal offers "Read the pact" after "real stakes", and says when a signed one starts', async () => {
-    const onPact = jest.fn();
-    const store = testStore({ view: project(adjustState(), []), reveal: REVEAL, draft: READY_DRAFT });
-    await render(withStore(store, <Reveal onAccept={() => {}} onFix={() => {}} onPact={onPact} />));
-    await fireEvent.press(screen.getByRole('button', { name: PACT_TEXT.reveal.read }));
-    expect(onPact).toHaveBeenCalled();
-    await act(async () => store.setState({ draft: { ...READY_DRAFT, pact: 1 } }));
-    expect(screen.getByText(fillText(PACT_TEXT.reveal.signed, { name: PACT_TEXT.names[1] }))).toBeTruthy();
-  });
 });
 
 describe("the Shadow's scene (board F2)", () => {

@@ -100,8 +100,11 @@ export const CODEX_KEY = 'lmu.codex';
 /** M12 decisions 8–9: the one-time offers already shown (the reminder, the set-up cards), as a JSON list of names. */
 export const OFFERS_KEY = 'lmu.offers';
 
-/** The one-time offers (M12): each shows once, then lives in Settings. */
-export type Offer = 'reminder';
+/**
+ * The one-time offers (M12): each shows once, then lives in Settings. `setup` marks a character that onboarded after M12,
+ * so only it gets the set-up cards of days 1 to 3 (an older character answered them in its onboarding).
+ */
+export type Offer = 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}`;
 
 const readOffers = (text: string | null): Offer[] => {
   try {

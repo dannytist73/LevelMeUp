@@ -127,6 +127,13 @@ export const ONBOARDING_TEXT = {
     restoreOffline: "Signed in with Google, but there's no connection to look for your character. A saved one appears once you're back online.",
   },
   voice: { note: 'You can change this any time in Settings.' },
+  /** M12 (board R3-7, plan decision 7): the three chapters, Back, and what's left before Continue. */
+  chapters: {
+    label: 'Chapter {n} of 3 · {name}',
+    names: { 1: 'You', 2: 'Your body', 3: 'Your day' },
+    left: '{n} of {total} left',
+    continue: 'Continue',
+  },
   goals: { line: 'What are you training for?', note: 'Pick up to two. Your quests are built around them.' },
   body: {
     line: 'Your body. Tell me, so I never push you the wrong way.',
@@ -141,6 +148,8 @@ export const ONBOARDING_TEXT = {
     clear: 'Safety check · No flags',
     gentleTitle: 'Safety check · Gentle start',
     gentle: 'Easy walks and stretches only for now. Please check with a doctor before harder training.',
+    /** M12: the safety check is its own step. */
+    safetyLine: 'A quick safety check, so your first quests are safe.',
   },
   gear: {
     line: 'Your training. I build every workout from what you have.',
@@ -202,12 +211,11 @@ export const ONBOARDING_TEXT = {
     fixBody: 'Training, limits and the safety check',
     fixMind: 'Reading and focus',
     fixRhythm: 'Your day and pace',
-    fixSlip: 'When you slip',
     back: 'Back',
     missing: 'Your character is ready.',
   },
   vow: {
-    line: "One last thing. A vow is a promise to yourself. It's optional, and nothing happens if you skip it.",
+    line: "A vow is a promise to yourself. It's optional, and nothing happens if you skip it.",
     label: 'Your vow',
     default: 'I will clear one quest a day, even a small one.',
     edit: 'Change the words',
@@ -217,7 +225,16 @@ export const ONBOARDING_TEXT = {
     confirm: 'Confirm the vow',
     skip: 'Skip the vow',
     sworn: 'Sworn',
-    next: 'Continue',
+    next: 'Done',
+    /** M12 (monetization research §3, owner's decision 12): an optional "Why now?" that fills the vow's words. */
+    why: 'Why now?',
+    whyNote: 'Optional. Your pick fills the vow; change the words if you like.',
+    reasons: [
+      { name: 'Feel strong in my body', vow: 'I will clear one quest a day to feel strong in my body.' },
+      { name: 'More energy for the people I love', vow: 'I will clear one quest a day for more energy for the people I love.' },
+      { name: 'Prove I can stick with something', vow: 'I will clear one quest a day to prove I can stick with something.' },
+      { name: 'Get my days in order', vow: 'I will clear one quest a day to get my days in order.' },
+    ],
   },
   save: {
     line: 'For now, only this phone can reach your character.',
@@ -233,6 +250,38 @@ export const ONBOARDING_TEXT = {
     begin: 'Begin Day 1',
   },
 } as const;
+
+/**
+ * M12 (plan decision 8): what the onboarding no longer asks, offered once each on days 1 to 3 in Today's notice strip.
+ * Each stays in Settings. The slip question gets its own screen, with the research's optional "What gets in the way?".
+ */
+export const SETUP_TEXT = {
+  notNow: 'Not now',
+  save: { line: 'For now, only this phone can reach your character. Save it with Google in Settings and nothing gets lost.', go: 'Open Settings' },
+  voice: { line: 'I speak as the System for now. Your guide can be the Mentor or the Questmaster instead.', go: 'Choose a voice', keep: 'Keep the System' },
+  gear: { line: 'Workouts use your body alone for now. Tell me what you can train with and I build around it.', go: 'Set up equipment' },
+  slip: {
+    line: 'One question for when a day goes wrong: what gets you back?',
+    go: 'Answer it',
+    title: 'When you slip',
+    pact: 'Read the pact',
+    obstacles: 'What usually gets in the way?',
+    obstaclesNote: 'Optional. It changes the tip below.',
+    done: 'Done',
+  },
+  vow: { line: 'A vow is a promise to yourself, in your own words. Optional, and nothing happens if you skip it.', go: 'Write your vow' },
+} as const;
+
+/** "What usually gets in the way?" (M12): each answer's tip points at what the game already has for it. */
+export const OBSTACLES = [
+  { id: 'forget', name: 'I forget', tip: 'A morning briefing helps. Turn it on in Settings, Notifications.', action: 'Notifications' },
+  { id: 'time', name: 'No time', tip: 'Your quests fit the minutes a day you chose. At 10 or 15 minutes they stay short; change it in Settings, Your game.', action: 'Your game' },
+  { id: 'energy', name: 'Low energy', tip: 'On a low day, open Change today and pick Hard day: lighter quests, and the streak still counts.', action: null },
+  { id: 'interest', name: 'I lose interest', tip: 'When a quest goes stale, open Change today and swap it for another.', action: null },
+  { id: 'pain', name: 'Pain or injury', tip: 'Tap I felt pain under an exercise. It rests until you are ready, and stopping costs you nothing.', action: null },
+] as const;
+
+export type ObstacleId = (typeof OBSTACLES)[number]['id'];
 
 /** What a Google save or sign-in that didn't finish tells the player; the progress is always kept (spec §1.4). */
 export const GOOGLE_ERRORS: Readonly<Record<'cancelled' | 'taken' | 'network' | 'failed', string>> = {
