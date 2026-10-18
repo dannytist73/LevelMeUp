@@ -706,13 +706,13 @@ RevenueCat set up (the owner's steps 5 and 7) and a build with the public key; r
 
 | # | Check | Result |
 |---|---|---|
-| 1 | With no RevenueCat key: Settings shows "LevelMeUp Plus · Not on Plus" and See Plus; the offer screen says Plus isn't on sale yet, with Not now. Nothing crashes. | |
-| 2 | Your look: System Blue and Mint Night show their colours and "Plus"; tapping either opens the offer and changes nothing; Moonlight stays. | |
-| 3 | Chronicle: the all-time stats card is locked with See Plus. | |
+| 1 | With no RevenueCat key: Settings shows "LevelMeUp Plus · Not on Plus" and See Plus; the offer screen says Plus isn't on sale yet, with Not now. Nothing crashes. | **Pass** 2026-10-18, emulator, dev build 0.6.0 vc7 built on this PC (Vera, read-only). Restore purchases shows too. |
+| 2 | Your look: System Blue and Mint Night show their colours and "Plus"; tapping either opens the offer and changes nothing; Moonlight stays. | **Pass** 2026-10-18 (emulator). |
+| 3 | Chronicle: the all-time stats card is locked with See Plus. | **Pass** 2026-10-18 (emulator). |
 | 4 | The reveal's Accept goes straight to Today while Plus isn't on sale (no offer screen). | |
 | 5 | Settings → Your data shows the Plus purchases section; the safety step shows the not-a-medical-device line. | |
-| 6 | The built manifest (aapt2) has no SYSTEM_ALERT_WINDOW, storage or biometric permissions; it has BILLING. | |
-| 7 | Every arm64 library is 16 KB aligned (scratchpad m13/elf16k.sh) and `zipalign -c -P 16` passes. | |
+| 6 | The built manifest (aapt2) has no SYSTEM_ALERT_WINDOW, storage or biometric permissions; it has BILLING. | **Partly** 2026-10-18: the development build has no storage or biometric permissions and has BILLING; it keeps SYSTEM_ALERT_WINDOW, which development builds add for their developer menu. Check again on the production AAB. |
+| 7 | Every arm64 library is 16 KB aligned (scratchpad m13/elf16k.sh) and `zipalign -c -P 16` passes. | **Pass** 2026-10-18 on the Linux compile build: 25/25 libraries, zipalign passes, targetSdk 36. |
 | 8 | Delete my character still deletes (a NEW test character, never Vera). | |
 | 9 | After 0017: a Founder grant (`npm run plus -- founder <test Google email>`) shows "Plus for life, as a Founder of the beta" in Settings; Your look offers the Founder frame. | |
 | 10 | Picking Mint Night redraws the whole app in it and comes back to Your look; the tab bar, cards, buttons and the Shadow's red all read; Back works. | |
