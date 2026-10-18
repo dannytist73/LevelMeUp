@@ -1,7 +1,7 @@
 // Settings → Delete your character (spec §4.5; M7b decision 3): what goes, said plainly, and a second explicit tap.
 // lmu-account-delete removes every LevelMeUp row; a guest's sign-in goes with it, a Google sign-in stays (M3 owner
 // decision: the sign-in list is shared), and the screen says which. The store then forgets this phone's data.
-import { PLAY_TEXT, SETTINGS_TEXT } from '@levelmeup/content';
+import { SETTINGS_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Small, Title } from '../ui/Text.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = SETTINGS_TEXT.delete;
 
@@ -39,8 +40,8 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
   };
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
-      <Button label={PLAY_TEXT.quest.back} variant="secondary" disabled={busy} onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
+      <TopBar onBack={onBack} disabled={busy} />
       <Title>{T.title}</Title>
       <Body>{T.what}</Body>
       <Body>{account.kind === 'saved' ? T.google : T.guest}</Body>

@@ -2,7 +2,7 @@
 // hold is asked for and arrives with the next sync. M11: it opens on its Story Deck when it has one, with the line written
 // that day on the Your turn card; the full article stays one tap away. One held from before its deck existed is asked
 // for again (once a launch), so it gets its cards (review).
-import { PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
+import { READING_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { Body, Label } from '../ui/Text.tsx';
 import { Deck } from './reading/Deck.tsx';
 import { Reader } from './reading/Reader.tsx';
 import { openSource } from './reading/openSource.ts';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const R = READING_TEXT;
 
@@ -68,10 +69,11 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
     );
   }
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
+      <TopBar onBack={onBack} />
       {deck !== null
         ? <Button label={R.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
-        : <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />}
+        : null}
       {article === null ? (
         <NarrationBox>{known ? R.missing : R.gone}</NarrationBox>
       ) : (

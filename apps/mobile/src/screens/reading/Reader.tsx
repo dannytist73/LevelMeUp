@@ -3,7 +3,8 @@
 // takeaway written that day); the sources last, each opening in the browser.
 import { CLUSTER_NAMES, READING_TEXT, fillText } from '@levelmeup/content';
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
+import { Tap } from '../../ui/Tap.tsx';
 import type { ArticleBody } from '../../game/types.ts';
 import { colors, radius } from '../../theme/tokens.ts';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
@@ -63,16 +64,17 @@ export function Reader({ article, label, xp, footer, onOpenSource }: ReaderProps
           {article.sources.map((s) => {
             const line = fillText(R.sourceLine, { n: s.n, title: s.title, host: s.host });
             return (
-              <Pressable
+              <Tap
                 key={s.n}
                 accessibilityRole="link"
                 accessibilityLabel={line}
                 accessibilityHint={fillText(R.sourceHint, { host: s.host })}
                 onPress={() => onOpenSource(s.url)}
-                style={{ minHeight: 44, justifyContent: 'center' }}
+                radius={radius.small}
+                style={{ minHeight: 48, justifyContent: 'center' }}
               >
                 <Small tone="chalk">{line}</Small>
-              </Pressable>
+              </Tap>
             );
           })}
         </View>

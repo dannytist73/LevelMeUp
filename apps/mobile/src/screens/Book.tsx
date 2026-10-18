@@ -15,6 +15,7 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { TextField } from '../ui/TextField.tsx';
 import { useLeavingView } from './leaving.ts';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const B = BOOK_TEXT;
 
@@ -55,8 +56,8 @@ export function Book({ onDone, onBack }: BookProps) {
   };
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
-      <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
+      <TopBar onBack={onBack} />
       <Title>{B.title}</Title>
       {!open ? (
         <NarrationBox>{B.closed}</NarrationBox>

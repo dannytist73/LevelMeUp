@@ -8,23 +8,24 @@ import {
   ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PRIVACY_TEXT, SETTINGS_TEXT, VOICE_NAMES, fillText,
 } from '@levelmeup/content';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pactName, pactStartsNext } from '../game/pact.ts';
 import { clockLabel } from '../lib/dates.ts';
 import type { Permission } from '../notify/types.ts';
 import { useGame } from '../state/store.ts';
-import { colors, radius, space } from '../theme/tokens.ts';
+import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
-import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
+import { Body, Meta, Small } from '../ui/Text.tsx';
 import { Toggle } from '../ui/Toggle.tsx';
 import { SignInLost } from './SignInLost.tsx';
 import { lastSynced, syncMark } from './syncLine.ts';
 import { UpdateNeeded } from './UpdateNeeded.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
 
 export type SettingsProps = {
   onBack: () => void; onDeveloper?: () => void; onTraining: () => void; onGame: () => void; onDelete: () => void; version: string;
@@ -70,18 +71,8 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
   const mark = syncMark(status);
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 24 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={onBack}
-          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.line }}
-        >
-          <Label tone="chalk">Back</Label>
-        </Pressable>
-        <Title>Settings</Title>
-      </View>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: space.gutter, gap: 24 }}>
+      <TopBar title={'Settings'} onBack={onBack} />
 
       <View style={{ gap: 12 }}>
         <SectionTitle title="Account" />
@@ -143,7 +134,8 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
           <Body>{lastSynced(lastSyncedAt, zone)}</Body>
           <Meta>{`${waiting} waiting`}</Meta>
           {mark !== null && <Meta>{mark}</Meta>}
-          {error !== null && <Small>{error}</Small>}
+          {/* M12 (audit 23): plain words, never the server's code. */}
+          {error !== null && <Small>The last sync didn't go through. Sync now tries again.</Small>}
           <Button label="Sync now" variant="secondary" onPress={() => void syncNow()} />
         </NightCard>
       </View>

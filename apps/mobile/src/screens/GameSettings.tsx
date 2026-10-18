@@ -19,6 +19,7 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label, Small, Title } from '../ui/Text.tsx';
 import { TimeStepper } from '../ui/TimeStepper.tsx';
 import { useLeavingView } from './leaving.ts';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = SETTINGS_TEXT.game;
 const R = ONBOARDING_TEXT.rhythm;
@@ -69,8 +70,8 @@ export function GameSettings({ onDone, onBack }: GameSettingsProps) {
   };
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
-      <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
+      <TopBar onBack={onBack} />
       <Title>{T.title}</Title>
       <Body>{T.line}</Body>
       <View style={{ gap: 12 }}>

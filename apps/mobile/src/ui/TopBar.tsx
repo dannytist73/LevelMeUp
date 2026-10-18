@@ -21,18 +21,22 @@ export type TopBarProps = {
   end?: ReactNode;
   /** Draws its own top inset: false inside a screen that already pads for the status bar. */
   inset?: boolean;
+  /** While something can't be left (a deletion on its way). */
+  disabled?: boolean;
 };
 
-export function TopBar({ title, onBack, kind = 'back', backLabel, end, inset = true }: TopBarProps) {
+export function TopBar({ title, onBack, kind = 'back', backLabel, end, inset = true, disabled = false }: TopBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ paddingTop: inset ? insets.top + 6 : 0, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 56 }}>
       <Tap
         accessibilityRole="button"
         accessibilityLabel={backLabel ?? (kind === 'close' ? 'Close' : 'Back')}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
         onPress={onBack}
         radius={radius.pill}
-        style={{ width: 48, height: 48, marginLeft: -8, alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: 48, height: 48, marginLeft: -8, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : 1 }}
       >
         <Icon name={kind === 'close' ? 'close' : 'arrowLeft'} size={24} color={colors.chalk} />
       </Tap>

@@ -1,18 +1,20 @@
-// Dates as the boards show them ("SAT · 10 OCT", "07:40"), in the quest day's own zone. Built on the rules' localParts
-// with fixed English names, so they never depend on the phone's language or on Hermes's locale data.
+// Dates as the boards show them ("Saturday, 10 Oct", "07:40"), in the quest day's own zone. Built on the rules' localParts
+// with fixed English names, so they never depend on the phone's language or on Hermes's locale data. M12 (audit 20):
+// sentence case everywhere, as Lantern's labels are.
 import { localParts } from '@levelmeup/rules';
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] as const;
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const MONTH_NAMES = [
   'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
 ] as const;
 
-/** "SAT · 10 OCT" for a `YYYY-MM-DD` date (Today's header: the quest day's date, rules `questDayDate`). */
+/** "Saturday, 10 Oct" for a `YYYY-MM-DD` date (Today's header: the quest day's date, rules `questDayDate`). */
 export function dayLabel(date: string): string {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
-  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]!;
-  return `${weekday} · ${d} ${MONTHS[m - 1]!}`;
+  const weekday = WEEKDAY_NAMES[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]!;
+  return `${weekday}, ${d} ${titleCase(MONTHS[m - 1]!)}`;
 }
 
 export function clockTime(iso: string, timeZone: string): string {
@@ -43,4 +45,4 @@ export function dateKeyLabel(date: string): string {
 }
 
 /** "OCTOBER 2026" (the calendar's title). */
-export const monthLabel = ({ year, month }: { year: number; month: number }): string => `${MONTH_NAMES[month - 1]!} ${year}`;
+export const monthLabel = ({ year, month }: { year: number; month: number }): string => `${titleCase(MONTH_NAMES[month - 1]!)} ${year}`;

@@ -4,19 +4,20 @@
 // says so and never asks again. The Shadow's reminder has no switch: it belongs to the Pact (decision 4).
 import { NOTIFY_TEXT, fillText } from '@levelmeup/content';
 import { useState } from 'react';
-import { AccessibilityInfo, Pressable, View } from 'react-native';
+import { AccessibilityInfo } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clockLabel } from '../lib/dates.ts';
 import { shadowClock } from '../notify/plan.ts';
 import type { NotifySettings } from '../notify/types.ts';
 import { useGame } from '../state/store.ts';
-import { colors, radius, space } from '../theme/tokens.ts';
+import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Label, Meta, Small, Title } from '../ui/Text.tsx';
+import { Body, Meta, Small } from '../ui/Text.tsx';
 import { TimeStepper } from '../ui/TimeStepper.tsx';
 import { Toggle } from '../ui/Toggle.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = NOTIFY_TEXT;
 type Kind = 'briefing' | 'evening' | 'timers';
@@ -63,19 +64,8 @@ export function Notifications({ onBack, onOpenSettings }: NotificationsProps) {
     );
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: space.gutter, gap: 20 }}>
-      {/* Wraps, so at the largest text the title moves under Back instead of breaking inside the word (emulator). */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={onBack}
-          style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.line }}
-        >
-          <Label tone="chalk">Back</Label>
-        </Pressable>
-        <Title style={{ flexShrink: 1 }}>{T.title}</Title>
-      </View>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: space.gutter, gap: 20 }}>
+      <TopBar title={T.title} onBack={onBack} />
       <Small>{T.lead}</Small>
 
       {denied && (

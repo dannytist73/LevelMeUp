@@ -1,7 +1,7 @@
 // Vanish (Rogue level 10, spec §2.5; M6b decision 11): a planned phone-free block guarded by a timer. The screen stays
 // awake and dark, and the block counts only while LevelMeUp stays open: leaving the app pauses it (calls and other apps
 // always work). Nothing goes to the server: the rules give Vanish no reward. The timer is M6a's timestamps (quest/timer.ts).
-import { ADJUST_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { ADJUST_TEXT, fillText } from '@levelmeup/content';
 import { abilityUnlocked } from '@levelmeup/rules';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useEffect, useRef, useState } from 'react';
@@ -17,6 +17,7 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Display, Title } from '../ui/Text.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = ADJUST_TEXT.vanish;
 export const VANISH_MINUTES = [30, 60, 90] as const;
@@ -63,11 +64,11 @@ export function Vanish({ onBack, now = Date.now }: VanishProps) {
   }, [done, running, now]);
 
   const frame = (children: ReactNode) => (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
       {children}
     </ScreenScroll>
   );
-  const back = <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />;
+  const back = <TopBar onBack={onBack} />;
 
   if (view === null || !abilityUnlocked('vanish', view.profile.classId, view.character.level)) {
     return frame(<>{back}<NarrationBox>{T.locked}</NarrationBox></>);

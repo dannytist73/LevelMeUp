@@ -10,11 +10,10 @@ import { Settings } from '../src/screens/Settings.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { Trial, clock } from '../src/screens/Trial.tsx';
-import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
 import { Portrait } from '../src/ui/Portrait.tsx';
 import { ShadowBox } from '../src/ui/ShadowBox.tsx';
 import { ShadowMark } from '../src/ui/ShadowMark.tsx';
-import { DAY_TWO_NOW, READY_DRAFT, REVEAL, adjustState, claimedState, profileRow } from './support/fixtures.ts';
+import { DAY_TWO_NOW, READY_DRAFT, adjustState, claimedState, profileRow } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 jest.mock('expo-keep-awake', () => ({

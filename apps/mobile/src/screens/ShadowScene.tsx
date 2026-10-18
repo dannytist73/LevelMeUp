@@ -14,6 +14,7 @@ import { dateKeyLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
+import { LinkButton } from '../ui/LinkButton.tsx';
 import { MOMENTS } from '../ui/motion.ts';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { ShadowArt } from '../ui/ShadowArt.tsx';
@@ -23,6 +24,7 @@ import { MarkStamp } from '../ui/Stamp.tsx';
 import { TextField } from '../ui/TextField.tsx';
 import { Body, Label, Small } from '../ui/Text.tsx';
 import { Thud } from '../ui/Thud.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = SHADOW_TEXT;
 /** Control characters other than a line break: the System refuses them in a note, so a pasted tab becomes a space. */
@@ -92,23 +94,23 @@ export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.no
     }
   };
 
+  // M12 (audit 21): one main button, taking the day back; Done closes from the top; the Pact's settings are a link.
+  const recovery = !hold.cleared && hold.recovery !== null ? hold.recovery : null;
   return frame(
     <>
+      <TopBar kind="close" backLabel={T.done} onBack={onDone} inset={false} />
       <Label tone="shadow">{fillText(T.pactLabel, { level: hold.kind === 'trial' ? 2 : 1 })}</Label>
       <ShadowArt />
       {claimed !== null && (
         <Thud delay={MOMENTS.shadow.stamp} testID="claimed-thud" style={{ alignSelf: 'flex-start' }}><MarkStamp text={claimed} tone="shadow" /></Thud>
       )}
       <SlamIn><ShadowBox lines={lines} /></SlamIn>
-      {!hold.cleared && hold.recovery !== null && (
-        <Button label={fillText(T.takeBack, { minutes: hold.recovery.minutes })} onPress={() => onRecovery(hold.recovery!.id)} />
-      )}
+      {recovery !== null && <Button label={fillText(T.takeBack, { minutes: recovery.minutes })} onPress={() => onRecovery(recovery.id)} />}
       {hold.sealed && <Button label={T.trial.start} variant="secondary" onPress={onTrial} />}
       <TextField label={T.noteLabel} value={note} onChangeText={(text) => { setNote(text); setKept(false); }} maxLength={500} multiline />
       <Button label={T.keepNote} variant="secondary" disabled={trimmed === (hold.note ?? '')} onPress={() => void keep()} />
       {kept && <View accessibilityLiveRegion="polite"><Small>{T.noteKept}</Small></View>}
-      <Button label={T.done} variant="secondary" onPress={onDone} />
-      <Button label={T.settings} variant="secondary" onPress={onPact} />
+      <LinkButton label={T.settings} onPress={onPact} />
     </>,
   );
 }

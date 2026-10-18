@@ -1,6 +1,6 @@
 // The swap sheet (spec §3.5, visual design §4.2; M6b decision 3): pick an open quest (from Today) or start from one (its
 // quest screen), then one of the options the server offered for its slot. The count says how many swaps are left today.
-import { ADJUST_TEXT, PLAY_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary } from '@levelmeup/content';
+import { ADJUST_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary } from '@levelmeup/content';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -14,6 +14,7 @@ import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label, Title } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = ADJUST_TEXT.swap;
 
@@ -30,8 +31,8 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   const [busy, setBusy] = useState(false);
 
   const frame = (children: ReactNode) => (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 18 }}>
-      <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 18 }}>
+      <TopBar onBack={onBack} />
       {children}
     </ScreenScroll>
   );

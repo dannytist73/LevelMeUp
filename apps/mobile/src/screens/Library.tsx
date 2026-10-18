@@ -17,7 +17,7 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
 import { Tap } from '../ui/Tap.tsx';
-import { Body, Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { Body, Caption, Heading, Small, Title } from '../ui/Text.tsx';
 import { ClearedRow, questXp } from './QuestCard.tsx';
 import { ReadingHero, ReadingRow } from './reading/ReadingCard.tsx';
 import { lastSynced } from './syncLine.ts';

@@ -15,6 +15,7 @@ import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Small, Title } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = ADJUST_TEXT.classChange;
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
@@ -68,8 +69,8 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
   };
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
-      <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
+      <TopBar onBack={onBack} />
       <Title>{T.title}</Title>
       <Body>{T.keeps}</Body>
       {lock !== null ? <NarrationBox>{lockLine(lock, view.profile.timeZone)}</NarrationBox> : <Small tone="chalk">{T.once}</Small>}

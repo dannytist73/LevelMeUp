@@ -2,7 +2,7 @@
 // hard day, rest, paused or today, and never as a miss. Earlier months while the chronicle reaches back to them.
 import { CHRONICLE_TEXT } from '@levelmeup/content';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, Line, Path, Pattern, Rect } from 'react-native-svg';
 import type { ServerState } from '../../game/types.ts';
 import { compareMonths, marksByDate, monthOf, monthWeeks, shiftMonth } from '../../lib/calendar.ts';
@@ -10,11 +10,13 @@ import type { CellMark, Month } from '../../lib/calendar.ts';
 import { dateKeyLabel, monthLabel } from '../../lib/dates.ts';
 import { colors, fonts, radius, space } from '../../theme/tokens.ts';
 import { Icon } from '../../ui/icons.tsx';
+import { Tap } from '../../ui/Tap.tsx';
 import { Heading, Label } from '../../ui/Text.tsx';
 import { useSize } from '../../ui/useSize.ts';
 
 const C = CHRONICLE_TEXT;
-const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+// M12 (audit 20): sentence case, as Lantern's labels are.
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 const CELL = 44;
 
 type Day = ServerState['calendar'][number];
@@ -70,16 +72,17 @@ function Cell({ date, look, inChronicle }: { date: string; look: Look; inChronic
 
 function MonthButton({ name, label, disabled, onPress }: { name: 'chevronLeft' | 'chevronRight'; label: string; disabled: boolean; onPress: () => void }) {
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.line }}
+      radius={radius.pill}
+      style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, borderWidth: space.border, borderColor: disabled ? colors.line : colors.lineStrong }}
     >
       <Icon name={name} size={20} color={disabled ? colors.line : colors.chalk} />
-    </Pressable>
+    </Tap>
   );
 }
 

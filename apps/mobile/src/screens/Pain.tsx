@@ -16,6 +16,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Small, Title } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
+import { TopBar } from '../ui/TopBar.tsx';
 
 const T = ADJUST_TEXT.pain;
 
@@ -37,8 +38,8 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
   const open = today !== null && today.endsAt !== null && Date.parse(today.endsAt) > now();
 
   const frame = (children: ReactNode) => (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 18 }}>
-      <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} style={{ alignSelf: 'flex-start' }} />
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 18 }}>
+      <TopBar onBack={onBack} />
       {children}
     </ScreenScroll>
   );

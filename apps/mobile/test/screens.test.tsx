@@ -61,7 +61,7 @@ describe('Today', () => {
 
   it('shows the day, the player, the XP bar, the streak and shields', async () => {
     await renderToday();
-    expect(screen.getByText('SAT · 10 OCT')).toBeTruthy();
+    expect(screen.getByText('Saturday, 10 Oct')).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Day 1' })).toBeTruthy();
     expect(screen.getByText(/^Rin · Lv \d+ Warrior$/)).toBeTruthy(); // M12: one line
     expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ })).toBeTruthy();
@@ -282,7 +282,7 @@ describe('Chronicle (M6d)', () => {
       { dayNumber: 1, date: '2026-10-10', mark: 'none' },
     ];
     await render(withStore(testStore({ view: withCalendar(calendar) }), <Chronicle />));
-    expect(screen.getByText('OCTOBER 2026')).toBeTruthy();
+    expect(screen.getByText('October 2026')).toBeTruthy();
     expect(screen.getByLabelText('Thu 15 Oct, today')).toBeTruthy();
     expect(screen.getByLabelText('Wed 14 Oct, cleared')).toBeTruthy();
     expect(screen.getByLabelText('Tue 13 Oct, hard day')).toBeTruthy();
@@ -301,21 +301,21 @@ describe('Chronicle (M6d)', () => {
     await render(withStore(testStore({ view: withCalendar(calendar) }), <Chronicle />));
     expect(disabled(CHRONICLE_TEXT.next)).toBe(true);
     await fireEvent.press(screen.getByRole('button', { name: CHRONICLE_TEXT.previous }));
-    expect(screen.getByText('SEPTEMBER 2026')).toBeTruthy();
+    expect(screen.getByText('September 2026')).toBeTruthy();
     expect(screen.getByLabelText('Wed 30 Sep, cleared')).toBeTruthy();
     expect(disabled(CHRONICLE_TEXT.previous)).toBe(true);
     await fireEvent.press(screen.getByRole('button', { name: CHRONICLE_TEXT.next }));
-    expect(screen.getByText('OCTOBER 2026')).toBeTruthy();
+    expect(screen.getByText('October 2026')).toBeTruthy();
   });
 
   it('follows today into a new month (review)', async () => {
     const store = testStore({ view: withCalendar([{ dayNumber: 1, date: '2026-10-31', mark: 'open' }]) });
     await render(withStore(store, <Chronicle />));
-    expect(screen.getByText('OCTOBER 2026')).toBeTruthy();
+    expect(screen.getByText('October 2026')).toBeTruthy();
     await act(async () => {
       store.setState({ view: withCalendar([{ dayNumber: 2, date: '2026-11-01', mark: 'open' }, { dayNumber: 1, date: '2026-10-31', mark: 'cleared' }]) });
     });
-    expect(screen.getByText('NOVEMBER 2026')).toBeTruthy();
+    expect(screen.getByText('November 2026')).toBeTruthy();
   });
 
   it('with no earlier days there is no earlier month', async () => {
@@ -378,9 +378,10 @@ describe('Settings', () => {
     expect(screen.queryByRole('button', { name: 'Save with Google' })).toBeNull();
   });
 
-  it('shows a refused sync as plain text, never hides the outbox', async () => {
+  it('shows a refused sync in plain words, never the code (M12, audit 23), and never hides the outbox', async () => {
     await render(withStore(testStore({ error: 'The server refused a sync (400 bad_body).' }), <Settings onBack={() => {}} onTraining={() => {}} onGame={() => {}} onDelete={() => {}} version="0.1.0" deviceZone="UTC" />));
-    expect(screen.getByText('The server refused a sync (400 bad_body).')).toBeTruthy();
+    expect(screen.getByText("The last sync didn't go through. Sync now tries again.")).toBeTruthy();
+    expect(screen.queryByText(/400/)).toBeNull();
     expect(screen.getByText('Not synced yet')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Developer' })).toBeNull();
   });
@@ -549,7 +550,7 @@ it("Today's header names the date the quest day mostly covers, as Chronicle does
   // Day 1 begun at 23:00 on Sun 11 Oct in Manila runs to 04:00 on Tue 13 Oct.
   const today = { ...SERVER.today!, startsAt: '2026-10-11T15:00:00.000Z', endsAt: '2026-10-12T20:00:00.000Z' };
   await renderToday({}, { ...SERVER, today });
-  expect(screen.getByText('MON · 12 OCT')).toBeTruthy();
+  expect(screen.getByText('Monday, 12 Oct')).toBeTruthy();
 });
 
 describe('the training notice (M6d decision 13)', () => {

@@ -10,7 +10,7 @@ import { ADJUST_TEXT, PLAY_TEXT, READING_TEXT, STAT_NAMES, fillText } from '@lev
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ClearedNumbers } from '../../quest/cleared.ts';
 import { colors, fonts, radius, space } from '../../theme/tokens.ts';
@@ -26,6 +26,7 @@ import { Panel } from '../../ui/Panel.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
 import { XpStamp } from '../../ui/Stamp.tsx';
 import { Body, Caption, Heading, Label, Small } from '../../ui/Text.tsx';
+import { Tap } from '../../ui/Tap.tsx';
 import { Thud } from '../../ui/Thud.tsx';
 import { useCountUp } from '../../ui/useMotion.ts';
 import { XpBar } from '../../ui/XpBar.tsx';
@@ -84,20 +85,22 @@ function LevelLine({ numbers }: { numbers: ClearedNumbers }) {
 
 function RateButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected }}
       onPress={onPress}
+      on={selected ? 'paper' : 'night'}
+      radius={radius.pill}
       style={{
         flexGrow: 1, flexBasis: 90, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8,
-        borderRadius: radius.pill, borderWidth: space.border, borderColor: selected ? colors.paper : colors.line, backgroundColor: selected ? colors.paper : 'transparent',
+        borderRadius: radius.pill, borderWidth: space.border, borderColor: selected ? colors.paper : colors.lineStrong, backgroundColor: selected ? colors.paper : 'transparent',
       }}
     >
       <Text maxFontSizeMultiplier={1.5} style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: selected ? colors.ink : colors.chalk, textAlign: 'center' }}>
         {label}
       </Text>
-    </Pressable>
+    </Tap>
   );
 }
 
