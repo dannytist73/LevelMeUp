@@ -1,7 +1,7 @@
 // Which notifications should be pending now (M7d decisions 3–4; MAINARC's pattern). Pure: no React, no native module, no
 // clock (`nowMs` is an input), so every rule and every word is tested here. Days ahead are planned blind: only the
 // running day knows its core quest, its timers and the Shadow; tomorrow knows only a rest planned for it.
-import { authoredTemplate, briefingWords, eveningWords, shadowEveningWords, timerWords } from '@levelmeup/content';
+import { NOTIFY_TEXT, authoredTemplate, briefingWords, eveningWords, shadowEveningWords, timerWords } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import { elapsedMs, nextBoundaryAtOrAfter, nextDayWindow } from '@levelmeup/rules';
 import type { DayWindow } from '@levelmeup/rules';
@@ -10,6 +10,8 @@ import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import type { TimerState } from '../quest/timer.ts';
 import type { NotifySettings, PlannedNote } from './types.ts';
+import { liveId } from './live.ts';
+import type { LiveTimer } from './live.ts';
 
 /** The running quest day and the next six get a briefing. */
 export const HORIZON_DAYS = 7;
@@ -24,6 +26,12 @@ export const SHADOW_AFTER_MS = 60 * MINUTE;
 export const SHADOW_LAST_MS = 30 * MINUTE;
 
 export type PlanTimer = { questId: number; title: string; doneAt: number };
+
+/** M12 (plan decision 12): the running quest timers as live countdowns, when the timer notes are on. */
+export function planLive(p: PlanInput): LiveTimer[] {
+  if (!p.settings.optedIn || !p.settings.timers) return [];
+  return p.timers.filter((t) => t.doneAt > p.nowMs).map((t) => ({ id: liveId(t.questId), title: t.title, text: NOTIFY_TEXT.live.timer, at: t.doneAt }));
+}
 
 export type PlanInput = {
   settings: NotifySettings;

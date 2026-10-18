@@ -29,7 +29,8 @@ import type { Shown } from '../game/project.ts';
 import type { ArticleBody, PhoneEvent, Reveal } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
 import { makeApplier } from '../notify/apply.ts';
-import { planInput, planNotes } from '../notify/plan.ts';
+import { setLiveAllowed, syncLive } from '../notify/live.ts';
+import { planInput, planLive, planNotes } from '../notify/plan.ts';
 import { DEFAULT_NOTIFY, NOTIFY_KEY, readNotify } from '../notify/settings.ts';
 import type { NoteOs, NotifySettings, Permission, PlannedNote } from '../notify/types.ts';
 import { NEW_DRAFT, complete, persistable, restoreDraft, stepsFor, toRequest } from '../onboarding/flow.ts';
@@ -104,7 +105,7 @@ export const OFFERS_KEY = 'lmu.offers';
  * The one-time offers (M12): each shows once, then lives in Settings. `setup` marks a character that onboarded after M12,
  * so only it gets the set-up cards of days 1 to 3 (an older character answered them in its onboarding).
  */
-export type Offer = 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}`;
+export type Offer = 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}` | 'live-timer';
 
 const readOffers = (text: string | null): Offer[] => {
   try {
@@ -373,6 +374,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         const input = view === null || permission !== 'granted' ? null : planInput(view, timers, notify, deps.now());
         const planned = input === null ? [] : planNotes(input);
         set({ planned });
+        // M12 decision 12: live countdowns of the running timers, only where the timer notes may come.
+        setLiveAllowed(permission === 'granted' && notify.optedIn && notify.timers);
+        syncLive(input === null ? [] : planLive(input), deps.now());
         await applier.apply(planned);
       };
       const done = planning.then(run);

@@ -5,8 +5,8 @@
 // M12 (Round 3, board R3-2; audit 2, 9, 10, 12): one top bar; the title, then the log first, its button fixed at the
 // bottom; How and Why fold below, Safety stays open; Cleared leads on to the next quest; a half-written takeaway waits.
 import {
-  ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey, authoredTemplate,
-  fillText, questSummary, renderWhy, shadowLine,
+  ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey,
+  authoredTemplate, fillText, questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -84,6 +84,12 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const rememberSets = useGame((s) => s.rememberSets);
   const codex = useGame((s) => s.codex);
   const toggleKeep = useGame((s) => s.toggleKeep);
+  const notify = useGame((s) => s.notify);
+  const permission = useGame((s) => s.permission);
+  const offers = useGame((s) => s.offers);
+  const markOffer = useGame((s) => s.markOffer);
+  const setNotify = useGame((s) => s.setNotify);
+  const allowNotify = useGame((s) => s.allowNotify);
   const [before, setBefore] = useState<Shot | null>(null);
   const [timer, setTimer] = useState<TimerState>(NEW_TIMER);
   const [busy, setBusy] = useState(false);
@@ -239,7 +245,25 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   } else if (quest.slot === 'article') {
     panel = <NarrationBox>{todaysArticle === null ? T.article : READING_TEXT.waiting}</NarrationBox>;
   } else if (quest.completion === 'timer') {
+    // M12 decision 12: the first timer started without the timer notes offers them, once, where it matters.
+    const liveOn = permission === 'granted' && notify.optedIn && notify.timers;
+    const offerLive = timer.runningSince !== null && !liveOn && permission !== 'denied' && permission !== 'unknown' && !offers.includes('live-timer');
+    const allowLive = async (): Promise<void> => {
+      await markOffer('live-timer');
+      const allowed = permission === 'granted' ? 'granted' : await allowNotify();
+      if (allowed === 'granted') await setNotify({ ...notify, timers: true, optedIn: true });
+    };
     panel = (
+      <View style={{ gap: 12 }}>
+      {offerLive && (
+        <View testID="live-offer" style={{ gap: 10, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.lineStrong }}>
+          <Small tone="chalk">{NOTIFY_TEXT.live.offer}</Small>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            <Button label={NOTIFY_TEXT.live.allow} variant="secondary" onPress={() => void allowLive()} style={{ flexGrow: 1 }} />
+            <Button label={NOTIFY_TEXT.live.no} variant="secondary" onPress={() => void markOffer('live-timer')} style={{ flexGrow: 1 }} />
+          </View>
+        </View>
+      )}
       <TimerPanel
         timer={timer}
         targetMs={timerTargetMs(quest)}
@@ -253,6 +277,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
         }}
         onClaim={(payload) => void claim(payload)}
       />
+      </View>
     );
   } else if (quest.condition.kind === 'session') {
     // A new plan starts a fresh log (review); a training change on its way re-plans the workout first, so it waits.

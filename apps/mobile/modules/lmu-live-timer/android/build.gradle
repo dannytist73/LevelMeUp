@@ -1,0 +1,21 @@
+// M12 (plan decision 12): LevelMeUp's own module for live timers in the notification shade. Autolinked from modules/.
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.lmulivetimer'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.lmulivetimer"
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+  }
+}
+
+dependencies {
+  // The version expo-notifications already brings, so Gradle resolves one copy.
+  implementation 'androidx.core:core:1.17.0'
+}
