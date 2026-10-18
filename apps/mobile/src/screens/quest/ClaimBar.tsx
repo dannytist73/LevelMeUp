@@ -27,23 +27,24 @@ export function ClaimButton({ label, disabled, onPress }: Claim) {
   return <Button label={label} variant="commitment" disabled={disabled} onPress={onPress} />;
 }
 
-/** The height the bar takes, so the screen's scroll can end above it. */
+/** The bar's height before it is measured; then the screen's scroll ends above the bar as tall as it really is (review: at 2× text it wraps). */
 export const CLAIM_BAR_SPACE = 132;
 
 /**
  * Holds the screen and its bar. `suffix` follows the panel's label ("· +10 XP"); `note` sits under the button ("Your
  * sets are kept for next time.").
  */
-export function ClaimBarHost({ children, suffix, note }: { children: ReactNode; suffix?: string; note?: string }) {
+export function ClaimBarHost({ children, suffix, note }: { children: (space: number) => ReactNode; suffix?: string; note?: string }) {
   const insets = useSafeAreaInsets();
   // A panel reports only when its label or its state changes, so the bar redraws no more often than the panel.
   const [claim, setClaim] = useState<Claim | null>(null);
+  const [height, setHeight] = useState(CLAIM_BAR_SPACE);
   return (
     <Report.Provider value={setClaim}>
       <View style={{ flex: 1, backgroundColor: colors.night }}>
-        {children}
+        {children(claim === null ? 0 : height)}
         {claim !== null && (
-          <View testID="claim-bar" style={{
+          <View testID="claim-bar" onLayout={(e) => setHeight(Math.ceil(e.nativeEvent.layout.height))} style={{
             position: 'absolute', left: 0, right: 0, bottom: 0, gap: 6, paddingTop: 12, paddingHorizontal: space.gutter,
             paddingBottom: insets.bottom + 12, backgroundColor: colors.night, borderTopWidth: 1, borderTopColor: colors.divider,
           }}>

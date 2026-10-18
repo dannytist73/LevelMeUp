@@ -8,6 +8,7 @@ import Animated, { Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useS
 import { colors, fonts, radius } from '../theme/tokens.ts';
 import { Button } from './Button.tsx';
 import { buzz } from './haptics.ts';
+import { play } from './sound.ts';
 
 export type HoldButtonProps = {
   label: string;
@@ -47,7 +48,7 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
 
   if (readerOn) {
     return confirming
-      ? <Button label={confirmLabel} variant="commitment" disabled={disabled} onPress={() => { buzz('sworn'); onDone(); }} />
+      ? <Button label={confirmLabel} variant="commitment" disabled={disabled} onPress={() => { buzz('sworn'); play('sworn'); onDone(); }} />
       : <Button label={tapLabel} variant="commitment" disabled={disabled} onPress={() => setConfirming(true)} />;
   }
 
@@ -58,6 +59,7 @@ export function HoldButton({ label, tapLabel, confirmLabel, onDone, holdMs = 2_0
     timer.current = setTimeout(() => {
       timer.current = null;
       buzz('sworn');
+      play('sworn');
       onDone();
     }, holdMs);
   };

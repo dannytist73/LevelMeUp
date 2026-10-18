@@ -40,6 +40,7 @@ export function SlipSetup({ onDone, onPact, onNotifications, onGame }: SlipSetup
         <NightCard>
           <Small tone="chalk">{SLIP_SUGGESTIONS[slip]}</Small>
           {slip === 'stakes' && <Button label={T.pact} variant="secondary" onPress={onPact} style={{ alignSelf: 'flex-start' }} />}
+          {slip === 'nudge' && <Button label={T.notifications} variant="secondary" onPress={onNotifications} style={{ alignSelf: 'flex-start' }} />}
         </NightCard>
       )}
       <View style={{ gap: 12 }}>

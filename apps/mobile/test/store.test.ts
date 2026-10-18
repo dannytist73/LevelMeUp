@@ -351,8 +351,11 @@ describe('the game store', () => {
     expect(session.signedIn()).toBe(true); // the analysis did
     expect(api.onboarding).toHaveBeenCalledWith(toRequest(READY_DRAFT, 'Asia/Manila', false));
     expect(store.getState()).toMatchObject({ phase: 'ready', reveal: REVEAL });
+    // M12 decision 8 (review): enrolled for the set-up cards the moment the character exists, not at Accept.
+    expect(store.getState().offers).toContain('setup');
     expect((await local.load())?.state).toEqual(SERVER);
     expect(await store.getState().deleteCharacter()).toEqual({ ok: true });
+    expect(store.getState().offers).toEqual([]); // the next character gets its own
     expect(deps.signOut).toHaveBeenCalled();
     expect(await local.load()).toBeNull();
     expect(store.getState()).toMatchObject({ phase: 'not_started', draft: NEW_DRAFT, reveal: null });

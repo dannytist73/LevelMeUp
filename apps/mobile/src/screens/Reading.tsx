@@ -36,7 +36,8 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
   const todayNumber = view?.today?.article?.id === articleId ? view.today.dayNumber : null;
   const day = dayNumber ?? todayNumber;
   const reading = view?.readings.find((r) => r.id === articleId && (day === null || r.dayNumber === day)) ?? null;
-  const known = reading !== null || todayNumber !== null;
+  // M12: a lesson kept in the Codex opens its reading, however old (review): the phone asks for it.
+  const known = reading !== null || todayNumber !== null || codex.some((e) => e.articleId === articleId);
   const deck = article === null ? null : asDeck(article.deck);
   const hasDeck = deck !== null;
 

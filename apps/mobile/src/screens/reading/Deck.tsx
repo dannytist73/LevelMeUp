@@ -19,6 +19,7 @@ import { LinkButton } from '../../ui/LinkButton.tsx';
 import { Tap } from '../../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../../ui/Text.tsx';
 import { useReduce } from '../../ui/useMotion.ts';
+import { play } from '../../ui/sound.ts';
 
 const D = READING_TEXT.deck;
 /** Points of sideways drag past which the card leaves (Dogeared's FLY). */
@@ -87,6 +88,7 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   };
 
   const show = (to: number, fromLeft: boolean) => {
+    play('cardTurn');
     setBack(fromLeft);
     setStep(to);
     onStep?.(to);
@@ -196,7 +198,10 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
                 accessibilityRole="button"
                 accessibilityLabel={kept ? D.keptLabel : D.keepLabel}
                 accessibilityState={{ selected: kept }}
-                onPress={onKeep}
+                onPress={() => {
+                  if (!kept) play('keep');
+                  onKeep();
+                }}
                 on={kept ? 'accent' : 'night'}
                 radius={radius.pill}
                 style={{

@@ -2,7 +2,7 @@
 // screen off; the panel only redraws once a second while it runs. Claim unlocks at the server's own 80 %.
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import { TIMER_COMPLETE_FRACTION } from '@levelmeup/rules';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { timerPayload } from '../../quest/payload.ts';
 import { pauseTimer, startTimer, timerDone, timerElapsed } from '../../quest/timer.ts';
@@ -11,6 +11,7 @@ import { Button } from '../../ui/Button.tsx';
 import { Display, Heading, Small } from '../../ui/Text.tsx';
 import { XpBar } from '../../ui/XpBar.tsx';
 import { ClaimButton } from './ClaimBar.tsx';
+import { play } from '../../ui/sound.ts';
 
 const T = PLAY_TEXT.timer;
 
@@ -48,6 +49,12 @@ export function TimerPanel({ timer, targetMs, now, endsAt, disabled, onChange, o
   const elapsed = timerElapsed(timer, at);
   const done = timerDone(timer, at, targetMs);
   const started = running || timer.segments.length > 0;
+  // M12 decision 11: a bell the moment a running timer reaches its time here (never for one opened already done).
+  const wasDone = useRef(done);
+  useEffect(() => {
+    if (done && !wasDone.current && running) play('timerDone');
+    wasDone.current = done;
+  }, [done, running]);
   return (
     <View style={{ gap: 12 }}>
       {/* The elapsed time large, the target beside it: "mm:ss / mm:ss" at display size wrapped onto two lines (emulator). */}
@@ -61,7 +68,10 @@ export function TimerPanel({ timer, targetMs, now, endsAt, disabled, onChange, o
         label={running ? T.pause : started ? T.resume : T.start}
         variant="secondary"
         disabled={disabled}
-        onPress={() => onChange(running ? pauseTimer(timer, now()) : startTimer(timer, now()))}
+        onPress={() => {
+          if (!running) play('timerStart');
+          onChange(running ? pauseTimer(timer, now()) : startTimer(timer, now()));
+        }}
       />
       <ClaimButton label={PLAY_TEXT.claim.timer} disabled={disabled || !done} onPress={() => onClaim(timerPayload(timer, clamped()))} />
     </View>

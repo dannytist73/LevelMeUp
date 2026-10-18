@@ -130,7 +130,7 @@ export function Cleared({
         </SlamIn>
         <Small style={{ textAlign: 'center' }}>{line}</Small>
         <InkBurst delay={M.stamp} still={!fresh}>
-          <Thud delay={M.stamp} still={!fresh} haptic="stamp" testID="xp-stamp-thud">
+          <Thud delay={M.stamp} still={!fresh} haptic="stamp" sound="claim" testID="xp-stamp-thud">
             <XpStamp xp={numbers.xp} size={86} rotate={12} />
           </Thud>
         </InkBurst>
@@ -145,7 +145,7 @@ export function Cleared({
                 <Heading tone="ink">{`${STAT_NAMES[up.stat]} ${up.from} → ${up.to}`}</Heading>
               </View>
               {/* M10b: the rank stamps land together, so only the first one ticks. */}
-              <Thud delay={M.rank} still={!fresh} haptic={up.stat === ticking ? 'tick' : undefined} testID="rank-thud">
+              <Thud delay={M.rank} still={!fresh} haptic={up.stat === ticking ? 'tick' : undefined} sound={up.stat === ticking ? 'rank' : undefined} testID="rank-thud">
                 <View
                   accessible
                   accessibilityLabel={`Rank ${up.rank}`}

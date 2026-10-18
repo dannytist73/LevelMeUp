@@ -22,6 +22,11 @@ export const SETTINGS_TEXT = {
     label: 'Haptics',
     line: 'A click you can feel when a stamp lands or a vow is sworn.',
   },
+  /** M12 (plan decision 11). */
+  sounds: {
+    label: 'Sounds',
+    line: 'Short tones when you clear a quest, level up or a timer ends. Quiet while the phone is on silent; music keeps playing.',
+  },
   account: {
     /** M10c: the last section of Settings, after About. */
     section: 'Your character',

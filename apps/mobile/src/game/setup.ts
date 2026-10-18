@@ -23,7 +23,7 @@ export function setupCard({ view, offers, saved, vow }: SetupInput): SetupCard |
   const wanted = (card: SetupCard): boolean => {
     switch (card) {
       case 'save': return !saved;
-      case 'voice': return true;
+      case 'voice': return view.profile.voice === 'system';
       // Strength work is possible and nothing is set up yet (the Training step's own rule).
       case 'gear': return trainingUnset(view.profile);
       case 'slip': return true;

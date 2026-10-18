@@ -20,7 +20,7 @@ export const NOTIFY_TEXT = {
   lead: 'The System can reach you outside the app. All of it is optional; the game works the same without it.',
   briefingLine: 'Your quest day, each morning at the time you pick. On a planned rest day it says so.',
   eveningLine: "A nudge at the time you pick, only while the core quest isn't done. Never on a rest day.",
-  timersLine: 'A live countdown in your notifications while a timer runs, and a note when it reaches its time, even with the app closed.',
+  timersLine: 'A live countdown in your notifications while a quest timer or a rest between sets runs, and a note when a quest timer reaches its time, even with the app closed.',
   /** M12 (plan decision 12): the live timers in the notification shade. */
   live: {
     channel: 'Live timers',

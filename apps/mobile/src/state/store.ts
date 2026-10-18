@@ -46,6 +46,7 @@ import { syncOnce } from '../sync/engine.ts';
 import type { Notice, SyncOutcome } from '../sync/engine.ts';
 import { makeScheduler } from '../sync/scheduler.ts';
 import { setBuzzing } from '../ui/haptics.ts';
+import { setSounding } from '../ui/sound.ts';
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 export type NewEvent = DistributiveOmit<PhoneEvent, 'id'>;
@@ -94,6 +95,8 @@ export const TRIAL_KEY = 'lmu.trial';
 export const PORTRAIT_KEY = 'lmu.portrait';
 /** M10b: the Haptics switch, kept as 'on' or 'off' (spec decision 4); anything else, or nothing, counts as on. */
 export const HAPTICS_KEY = 'lmu.haptics';
+/** M12: the Sounds switch, kept as 'on' or 'off'; anything else, or nothing, counts as on. Like Haptics, the phone's. */
+export const SOUNDS_KEY = 'lmu.sounds';
 /** M10c decision 7: each exercise's and rep-log quest's last logged sets, kept on this phone. */
 export const LAST_SETS_KEY = 'lmu.lastSets';
 /** M11 decision 7: the lessons kept from the Story Decks, on this phone. */
@@ -171,6 +174,8 @@ export type GameState = {
   portrait: Figure | null;
   /** M10b: the Haptics switch (Settings → Game), kept on this phone; on unless turned off. */
   haptics: boolean;
+  /** M12: the Sounds switch (Settings), kept on this phone; on unless turned off. */
+  sounds: boolean;
   /** M10c decision 7: the last logged sets, by exercise and rep-log quest, kept on this phone. */
   lastSets: LastSets;
   /** M11: the lessons kept from the Story Decks, newest first. */
@@ -193,6 +198,8 @@ export type GameState = {
   setPortrait: (figure: Figure) => Promise<void>;
   /** M10b: keeps the switch on the phone; it applies at once, even if the phone can't store it. */
   setHaptics: (on: boolean) => Promise<void>;
+  /** M12: keeps the switch on the phone; it applies at once, even if the phone can't store it. */
+  setSounds: (on: boolean) => Promise<void>;
   /** M10c: remembers logged sets (merged over what's kept); shown at once, even if the phone can't store them. */
   rememberSets: (sets: Readonly<Record<string, readonly number[]>>) => Promise<void>;
   dismissTrainingNotice: () => Promise<void>;
@@ -527,12 +534,13 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       planned: [],
       portrait: null,
       haptics: true,
+      sounds: true,
       lastSets: {},
       codex: [],
       offers: [],
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText] = await Promise.all([
+        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -547,10 +555,13 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(LAST_SETS_KEY).catch(() => null),
           deps.kv.getItem(CODEX_KEY).catch(() => null),
           deps.kv.getItem(OFFERS_KEY).catch(() => null),
+          deps.kv.getItem(SOUNDS_KEY).catch(() => null),
         ]);
         const haptics = hapticsText !== 'off';
         setBuzzing(haptics);
-        set({ notify: readNotify(notifyText), permission, haptics });
+        const sounds = soundsText !== 'off';
+        setSounding(sounds);
+        set({ notify: readNotify(notifyText), permission, haptics, sounds });
         notifyLoaded = true;
         await refresh();
         confirmedLevel = get().cached?.state.character.level ?? null;
@@ -608,6 +619,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
             confirmedLevel = started.body.state.character.level; // the server's own first state (review)
             // A new player just answered the Training step: the note for players from before M6c is never theirs (M6d).
             await deps.kv.setItem(TRAINING_NOTICE_KEY, 'seen').catch(() => {});
+            // M12 decision 8: a character made here gets the set-up cards of days 1 to 3, even if the app closes on the
+            // reveal (review); a character restored with Google never comes this way.
+            await get().markOffer('setup');
             await refresh({
               phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account(), trainingNoticeSeen: true,
             });
@@ -649,6 +663,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         setBuzzing(on);
         set({ haptics: on });
         await deps.kv.setItem(HAPTICS_KEY, on ? 'on' : 'off').catch(() => {});
+      },
+
+      setSounds: async (on) => {
+        setSounding(on);
+        set({ sounds: on });
+        await deps.kv.setItem(SOUNDS_KEY, on ? 'on' : 'off').catch(() => {});
       },
 
       rememberSets: async (sets) => {

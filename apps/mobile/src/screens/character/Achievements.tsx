@@ -71,7 +71,7 @@ export function Achievements({ earned, progress }: { earned: readonly string[]; 
           ))}
         </View>
       )}
-      <Caption>{known.length === 0 ? T.none : fillText(T.hidden, { n: total - known.length })}</Caption>
+      <Caption>{known.length === 0 ? T.none : fillText(T.hidden, { n: total - known.length - reach.length })}</Caption>
     </View>
   );
 }

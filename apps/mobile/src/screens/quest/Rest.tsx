@@ -11,6 +11,7 @@ import type { Rest } from '../../quest/rest.ts';
 import { colors, radius, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { buzz } from '../../ui/haptics.ts';
+import { play } from '../../ui/sound.ts';
 import { Icon } from '../../ui/icons.tsx';
 import { Tap } from '../../ui/Tap.tsx';
 import { Heading, Small } from '../../ui/Text.tsx';
@@ -36,6 +37,7 @@ export function useRest(now: () => number, ms: number) {
       }
       clearInterval(id);
       buzz('stamp');
+      play('timerDone');
       setRest(null);
       setOver(true);
     }, 250);

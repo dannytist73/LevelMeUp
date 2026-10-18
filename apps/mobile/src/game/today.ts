@@ -37,12 +37,22 @@ export function mustDo(today: TodayView): QuestView[] {
   return today.quests.filter((q) => q.slot === 'core' || q.slot === 'recovery' || (q.slot === 'article' && today.article !== null));
 }
 
-/** The day is done: everything it needs is cleared. */
-export function dayCleared(today: TodayView): boolean {
+/**
+ * The day is done: everything it needs is cleared. `excused` names quests that can't be done today (an exercise resting
+ * after pain): they never hold the day open (review).
+ */
+export function dayCleared(today: TodayView, excused: (q: QuestView) => boolean = () => false): boolean {
   if (today.quests.length === 0) return false;
-  const must = mustDo(today);
-  return (must.length > 0 ? must : today.quests).every((q) => q.completedAt !== null);
+  const must = mustDo(today).filter((q) => !excused(q));
+  const rest = today.quests.filter((q) => !excused(q));
+  return (must.length > 0 ? must : rest).every((q) => q.completedAt !== null);
 }
+
+/**
+ * A day the rules already protect (a planned rest, a rest after pain, no quests built): nothing is asked of it, so its
+ * open quests are extras and nothing is Up next (review: they were pushed with the screen's only bright button).
+ */
+export const dayOff = (today: TodayView): boolean => today.protection !== null;
 
 /** The XP today's cleared quests earned. */
 export const xpToday = (today: TodayView): number =>

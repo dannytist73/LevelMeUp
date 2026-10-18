@@ -52,7 +52,7 @@ export const SLIP_CHOICES: Readonly<Record<Slip, { name: string; line: string }>
 
 /** What the reveal says about the slip answer (spec §1.1 beat 7). Only "real stakes" suggests a pact; nothing turns on. */
 export const SLIP_SUGGESTIONS: Readonly<Record<Slip, string>> = {
-  nudge: "You said a kind nudge helps, so no pact for now. I'll remind you, never push.",
+  nudge: 'You said a kind nudge helps, so no pact for now. A reminder can do the nudging: turn one on in Notifications.',
   smaller: 'You said a smaller plan helps. On a rough day, pick a hard day: shorter quests, and the streak still counts.',
   stakes: 'You said real stakes help, so I suggest a pact: The Shadow (level 1). Nothing turns on until you sign it.',
   space: "You said you want space. No pact and no pushing. I'll be here when you come back.",
@@ -265,6 +265,7 @@ export const SETUP_TEXT = {
     go: 'Answer it',
     title: 'When you slip',
     pact: 'Read the pact',
+    notifications: 'Notifications',
     obstacles: 'What usually gets in the way?',
     obstaclesNote: 'Optional. It changes the tip below.',
     done: 'Done',

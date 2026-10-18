@@ -9,6 +9,7 @@ import { Character } from '../src/screens/Character.tsx';
 import { Chronicle } from '../src/screens/Chronicle.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { SNACKBAR_MS } from '../src/ui/Snackbar.tsx';
+import { play } from '../src/ui/sound.ts';
 import { serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
@@ -77,6 +78,39 @@ describe('Today (M10c, M12)', () => {
     expect(screen.queryByTestId('up-next')).toBeNull();
   });
 
+  it('a check-off core quest opens its screen from Begin; it is never cleared from Today (review)', async () => {
+    const s = serverState();
+    const tapCore = { ...s, today: { ...s.today!, quests: s.today!.quests.map((q) => (q.slot === 'core' ? { ...q, completion: 'tap' as const } : q)) } };
+    const { store, onOpenQuest } = await renderToday(tapCore);
+    await fireEvent.press(screen.getByText('Begin'));
+    expect(onOpenQuest).toHaveBeenCalledWith(tapCore.today!.quests.find((q) => q.slot === 'core')!.id);
+    expect(store.getState().enqueue).not.toHaveBeenCalled();
+  });
+
+  it('a protected day (a planned rest) asks nothing: no Up next, its quests are optional extras (review)', async () => {
+    const s = serverState();
+    await renderToday({ ...s, today: { ...s.today!, protection: 'planned_rest' } });
+    expect(screen.queryByTestId('up-next')).toBeNull();
+    expect(screen.getByText(TODAY_TEXT.extra)).toBeTruthy();
+    expect(screen.queryByTestId('day-done')).toBeNull(); // the rest-day banner says what the day is
+  });
+
+  it('a quick second tap on a check circle sends one completion (review)', async () => {
+    const s = serverState();
+    const { store } = await renderToday(s);
+    const circle = screen.getByRole('checkbox', { name: fillText(TODAY_TEXT.markDone, { title: titleOf(s, 'side1') }) });
+    await fireEvent.press(circle);
+    await fireEvent.press(circle);
+    expect(store.getState().enqueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('an open day with no quests says so, not that it ended (review)', async () => {
+    const s = serverState();
+    await renderToday({ ...s, today: { ...s.today!, quests: [] } });
+    expect(screen.getByText(TODAY_TEXT.states.none)).toBeTruthy();
+    expect(screen.queryByText(TODAY_TEXT.states.ended)).toBeNull();
+  });
+
   it('a day whose article never came is done with its core quest', async () => {
     await renderToday(serverState(['core']));
     expect(screen.getByTestId('day-done')).toBeTruthy();
@@ -124,8 +158,10 @@ describe('Today (M10c, M12)', () => {
       await fireEvent.press(screen.getByRole('checkbox', { name: fillText(TODAY_TEXT.markDone, { title: titleOf(s, 'side1') }) }));
       expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: side1.id, completedAt: NOW, rating: null, payload: {} });
       expect(screen.getByText(fillText(TODAY_TEXT.markedDone, { title: titleOf(s, 'side1') }))).toBeTruthy();
+      expect(play).toHaveBeenCalledWith('claim'); // M12 decision 11
       await fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.undo }));
       expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'undo', instanceId: side1.id });
+      expect(play).toHaveBeenCalledWith('undo');
       expect(screen.queryByTestId('snackbar')).toBeNull();
     });
 

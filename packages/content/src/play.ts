@@ -140,11 +140,10 @@ export const TODAY_TEXT = {
     keptMany: '{n} lessons kept',
   },
   reminder: {
-    title: 'A nudge tomorrow?',
-    line: 'One morning briefing at {time}. Change it any time in Settings.',
+    title: 'A morning briefing?',
+    line: 'Your quest day, each morning at {time}. Change it any time in Settings.',
     yes: 'Remind me',
     no: 'Not now',
-    on: 'Your morning briefing comes at {time}.',
   },
   states: {
     loading: 'Loading your day',
@@ -156,6 +155,8 @@ export const TODAY_TEXT = {
     waitingLine: 'They come with the next sync.',
     ended: 'This day has ended',
     endedLine: 'The next day is on its way.',
+    none: 'No quests today',
+    noneLine: 'Nothing is asked of today. The next day brings new quests.',
     retry: 'Try again',
   },
 } as const;

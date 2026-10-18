@@ -6,6 +6,8 @@ jest.mock('react-native-reanimated', () => ({ ...require('react-native-reanimate
 // M10b (plan decision 2): no test sounds a haptic. Screens' buzzes are watched through this mock; test/haptics.test.ts
 // reaches the real module with jest.requireActual.
 jest.mock('../../src/ui/haptics.ts', () => ({ ...jest.requireActual('../../src/ui/haptics.ts'), buzz: jest.fn(), setBuzzing: jest.fn() }));
+// M12 (plan decision 11): no test plays a sound either; test/sound.test.ts reaches the real module.
+jest.mock('../../src/ui/sound.ts', () => ({ ...jest.requireActual('../../src/ui/sound.ts'), play: jest.fn(), setSounding: jest.fn() }));
 // M10c: the home-screen widget library is native; its primitives draw as plain views and text here.
 jest.mock('react-native-android-widget', () => {
   const { createElement } = require('react');

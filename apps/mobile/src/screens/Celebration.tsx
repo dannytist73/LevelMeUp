@@ -38,7 +38,7 @@ export function Celebration() {
       <>
         <SlamIn delay={M.label}><Label tone="accentText">{T.levelLabel}</Label></SlamIn>
         <InkBurst count={16} radius={120} delay={M.number}>
-          <Thud delay={M.number} haptic="level" testID="level-thud"><Display>{`Lv ${next.level}`}</Display></Thud>
+          <Thud delay={M.number} haptic="level" sound="level" testID="level-thud"><Display>{`Lv ${next.level}`}</Display></Thud>
         </InkBurst>
         {shown !== null && (
           <FadeIn rise delay={M.portrait}>
@@ -56,7 +56,7 @@ export function Celebration() {
     body = (
       <>
         <SlamIn><Label tone="accentText">{T.achievementLabel}</Label></SlamIn>
-        <Thud delay={M.name} haptic="stamp" testID="achievement-thud"><Title style={{ textAlign: 'center' }}>{achievement?.name ?? next.id}</Title></Thud>
+        <Thud delay={M.name} haptic="stamp" sound="achievement" testID="achievement-thud"><Title style={{ textAlign: 'center' }}>{achievement?.name ?? next.id}</Title></Thud>
         {achievement !== undefined && <FadeIn delay={M.rest}><Body style={{ textAlign: 'center' }}>{achievement.description}</Body></FadeIn>}
         {achievement !== undefined && achievement.title !== null && <FadeIn delay={M.rest}><Small>{fillText(T.titleEarned, { title: achievement.title })}</Small></FadeIn>}
       </>

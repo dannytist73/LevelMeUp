@@ -46,6 +46,8 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
   const permission = useGame((s) => s.permission);
   const haptics = useGame((s) => s.haptics);
   const setHaptics = useGame((s) => s.setHaptics);
+  const sounds = useGame((s) => s.sounds);
+  const setSounds = useGame((s) => s.setSounds);
   const slotLine = (slot: { on: boolean; minutes: number }) => notifyLine(slot, permission);
   const account = useGame((s) => s.account);
   const phase = useGame((s) => s.phase);
@@ -106,6 +108,7 @@ export function Settings({ onBack, onDeveloper, onTraining, onGame, onDelete, ve
         />
         {/* M10b: kept on the phone and applied at once, so not inside Your game, whose Save goes to the server. */}
         <Toggle label={SETTINGS_TEXT.haptics.label} line={SETTINGS_TEXT.haptics.line} value={haptics} onChange={(on) => void setHaptics(on)} />
+        <Toggle label={SETTINGS_TEXT.sounds.label} line={SETTINGS_TEXT.sounds.line} value={sounds} onChange={(on) => void setSounds(on)} />
         <RowLink label={ADJUST_TEXT.training.open} onPress={onTraining} />
         {view !== null && onPact !== undefined && (
           <>

@@ -8,7 +8,7 @@
 // the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
 import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
@@ -21,7 +21,7 @@ import { setupCard } from '../game/setup.ts';
 import type { SetupCard } from '../game/setup.ts';
 import type { ShadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
-import { dayCleared, openQuests, quickClearable, shownStreak, upNext } from '../game/today.ts';
+import { dayCleared, dayOff, openQuests, quickClearable, shownStreak, upNext } from '../game/today.ts';
 import type { QuestView, TodayView } from '../game/types.ts';
 import { dayLabel } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
@@ -42,6 +42,7 @@ import { Snackbar } from '../ui/Snackbar.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
 import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { play } from '../ui/sound.ts';
 import { Thud } from '../ui/Thud.tsx';
 import { useGrowth } from '../ui/useMotion.ts';
 import { XpBar } from '../ui/XpBar.tsx';
@@ -118,9 +119,11 @@ function setupNotice(
 }
 
 /** Not a usable day (audit 11): loading is a skeleton; offline, a failed reach and an ended day each say what they are. */
-function NoDay({ view, status, ended, onRetry }: { view: Shown | null; status: Status; ended: boolean; onRetry: () => void }) {
+function NoDay({ view, status, ended, empty, onRetry }: { view: Shown | null; status: Status; ended: boolean; empty: boolean; onRetry: () => void }) {
   if (status === 'syncing') return <TodaySkeleton />;
   const retry = { label: S.retry, onPress: onRetry };
+  // A day still running with no quests (review): the rules protect it; it isn't "ended".
+  if (view !== null && empty && !ended) return <StateNote kind="empty" title={S.none} line={S.noneLine} />;
   if (status === 'offline') return <StateNote kind="offline" title={S.offline} line={S.offlineLine} action={retry} />;
   if (status === 'retrying') return <StateNote kind="failed" title={S.failed} line={S.failedLine} action={retry} />;
   if (view !== null && ended) return <StateNote kind="empty" title={S.ended} line={S.endedLine} action={retry} />;
@@ -165,6 +168,8 @@ export function Today({
   const vow = useGame((s) => s.vow);
   /** The quest a check circle just cleared, while its Undo shows. */
   const [snack, setSnack] = useState<{ id: number; title: string } | null>(null);
+  /** Quests a check is on its way for: a quick second tap sends nothing (review). */
+  const clearing = useRef(new Set<number>());
   const [showDone, setShowDone] = useState(false);
 
   const today = view?.today ?? null;
@@ -192,20 +197,34 @@ export function Today({
 
   /** M12 decision 3: a check circle clears a check-off quest as the quest screen's Mark cleared does; Undo takes it back. */
   const check = (q: QuestView, title: string) => {
-    if (!open()) return;
-    void enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} });
+    if (!open() || clearing.current.has(q.id)) return;
+    clearing.current.add(q.id);
+    play('claim');
+    enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} }).catch(() => clearing.current.delete(q.id));
     setSnack({ id: q.id, title });
   };
   const undo = (id: number) => {
-    if (open()) void enqueue({ type: 'undo', instanceId: id });
+    if (!open()) return;
+    clearing.current.delete(id);
+    play('undo');
+    void enqueue({ type: 'undo', instanceId: id });
   };
+  // M12 decision 11: a warm chord the moment the day becomes done while Today is in front (never on opening).
+  const paused = view?.paused;
+  const doneNow = today !== null && usable && dayCleared(today, (q) => q.completedAt === null && isResting(q, paused ?? []));
+  const wasDone = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (wasDone.current === false && doneNow && shown) play('dayDone');
+    wasDone.current = doneNow;
+  }, [doneNow, shown]);
 
   let body;
   if (signInLost) {
     // M4 re-review: the sign-in is gone for good; starting again is the player's choice, confirmed, never automatic.
     body = <SignInLost />;
   } else if (!usable) {
-    body = <NoDay view={view} status={status} ended={today !== null} onRetry={() => void syncNow()} />;
+    body = <NoDay view={view} status={status} ended={today !== null && Date.parse(today.endsAt!) <= now()} empty={today !== null && today.quests.length === 0}
+      onRetry={() => void syncNow()} />;
   } else {
     body = (
       <DayBody view={view!} today={today!} hold={hold} art={art} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onPain={onPain}
@@ -241,7 +260,7 @@ export function Today({
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, rowGap: 4, alignItems: 'center' }}>
                 <View accessible accessibilityLabel={[`${streak!.current} ${TODAY_TEXT.streak}`, ...(note !== null ? [note] : streak!.counts ? [TODAY_TEXT.counts] : [])].join(', ')}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-                  <Thud key={streakGrew} still={streakGrew === 0} haptic="tick" testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Thud key={streakGrew} still={streakGrew === 0} haptic="tick" sound="streak" testID="streak-thud" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Icon name="flame" size={18} color={colors.accentText} />
                     <Heading tone="accentText">{String(streak!.current)}</Heading>
                   </Thud>
@@ -308,15 +327,17 @@ function DayBody({
 }: DayBodyProps) {
   const voice = view.profile.voice;
   const sealed = (q: QuestView) => sealedQuest(hold, q);
-  const done = dayCleared(today);
-  const next = upNext(today, sealed);
+  const resting = (q: QuestView) => q.completedAt === null && isResting(q, view.paused);
+  /** The day's must-dos are cleared (resting ones excused); or the rules protect the day, so nothing is asked of it. */
+  const cleared_ = dayCleared(today, resting);
+  const done = cleared_ || dayOff(today);
+  const next = done ? null : upNext(today, (q) => sealed(q) || resting(q));
   const rest = openQuests(today).filter((q) => q.id !== next?.id);
   /** Before the day is done, everything left is "Then"; after, the side quests are optional extras. */
   const then = done ? [] : rest;
   const extras = done ? rest : [];
   const cleared = today.quests.filter((q) => q.completedAt !== null);
   const anySealed = rest.some(sealed);
-  const resting = (q: QuestView) => q.completedAt === null && isResting(q, view.paused);
 
   const openReading = (q: QuestView) => {
     if (q.completedAt !== null && today.article !== null && onOpenReading !== undefined) onOpenReading(today.article.id);
@@ -346,7 +367,7 @@ function DayBody({
         </View>
       )}
 
-      {done && (
+      {cleared_ && (
         <View style={{ gap: 16 }}>
           <DayDonePanel view={view} today={today} />
           <ReminderOffer />
@@ -363,7 +384,8 @@ function DayBody({
               quest={next}
               voice={voice}
               waiting={view.waiting.has(next.id)}
-              onGo={quickClearable(next, false) ? () => onCheck(next, authoredTemplate(next.templateId).voice[voice].title) : () => onOpenQuest(next.id)}
+              // The core quest always opens its screen (steps, safety, Cleared); a check-off side quest clears here (review).
+              onGo={quickClearable(next, false) && next.slot !== 'core' ? () => onCheck(next, authoredTemplate(next.templateId).voice[voice].title) : () => onOpenQuest(next.id)}
               artUri={next.slot === 'core' ? artUrl(art, artKey(authoredTemplate(next.templateId), next.condition), next.id) : null}
               onPain={next.slot === 'core' && isExercise(next) ? () => onPain(next.id) : undefined}
               resting={resting(next)}

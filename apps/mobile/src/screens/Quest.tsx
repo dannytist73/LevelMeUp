@@ -35,7 +35,7 @@ import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { Body, Caption, Label, Small, Title } from '../ui/Text.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
 import { questXp } from './QuestCard.tsx';
-import { CLAIM_BAR_SPACE, ClaimBarHost } from './quest/ClaimBar.tsx';
+import { ClaimBarHost } from './quest/ClaimBar.tsx';
 import { Cleared } from './quest/Cleared.tsx';
 import { RepLog } from './quest/RepLog.tsx';
 import { SentenceLog } from './quest/SentenceLog.tsx';
@@ -359,7 +359,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.night }}>
       <ClaimBarHost suffix={fillText(PLAY_TEXT.claim.xp, { xp })} note={logsSets ? T.kept : undefined}>
-        <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + CLAIM_BAR_SPACE, paddingHorizontal: space.gutter, gap: 20 }}>
+        {(barSpace) => (
+        <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + barSpace + 24, paddingHorizontal: space.gutter, gap: 20 }}>
           <TopBar onBack={onBack} />
           <View style={{ gap: 6 }}>
             <Label tone="accentText">{`${slot} · ${STAT_NAMES[quest.stat]} · +${xp} XP`}</Label>
@@ -411,6 +412,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
           )}
           {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
         </ScreenScroll>
+        )}
       </ClaimBarHost>
     </KeyboardAvoidingView>
   );

@@ -5,7 +5,7 @@ import { CLUSTER_NAMES, READING_TEXT, fillText } from '@levelmeup/content';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReadingView } from '../game/types.ts';
-import { dateKeyLabel } from '../lib/dates.ts';
+import { clockTime, dateKeyLabel } from '../lib/dates.ts';
 import type { CodexEntry } from '../reading/codex.ts';
 import { asDeck } from '../reading/deck.ts';
 import { useGame } from '../state/store.ts';
@@ -86,8 +86,8 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex }: LibraryProp
       todays = <ReadingHero quest={quest} article={article} waiting={view!.waiting.has(quest.id)} onOpen={() => onOpenQuest(quest.id)} label={hasDeck ? L.openCards : READING_TEXT.read} />;
     } else {
       todays = (
-        <ClearedRow title={article.title} stat={CLUSTER_NAMES[article.cluster]} time={L.readAgain} xp={questXp(quest)} waiting={view!.waiting.has(quest.id)}
-          onOpen={() => onOpenReading(article.id, null)} />
+        <ClearedRow title={article.title} stat={CLUSTER_NAMES[article.cluster]} time={clockTime(quest.completedAt, today!.timeZone)} xp={questXp(quest)}
+          waiting={view!.waiting.has(quest.id)} onOpen={() => onOpenReading(article.id, null)} />
       );
     }
   }

@@ -204,7 +204,8 @@ describe('Character (M6d)', () => {
     await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     expect(screen.getByText('“The Tireless”')).toBeTruthy();
     expect(screen.getByText('First Trial')).toBeTruthy();
-    expect(screen.getByText(`${ACHIEVEMENTS.length - 2} still hidden.`)).toBeTruthy();
+    // M12 review: those named under Within reach (Ten Trials, Awakened, Seven Dawns) aren't hidden.
+    expect(screen.getByText(`${ACHIEVEMENTS.length - 2 - 3} still hidden.`)).toBeTruthy();
   });
 
   it('M12 (board R3-6): how many are earned, the latest three with See all, and the next within reach with progress', async () => {
@@ -445,7 +446,10 @@ it("Today tags a quest whose exercise is resting after pain (M6b review)", async
   await render(withStore(testStore({ view: project(resting, []) }),
     <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
       now={() => DAY_TWO_NOW} />));
-  expect(screen.getAllByText(ADJUST_TEXT.paused.tag)).toHaveLength(1); // the core quest, push-1
+  // The core quest, push-1: a quiet row ending in its tag, never Up next (M12 review: a resting exercise isn't pushed).
+  expect(screen.getAllByText(new RegExp(` · ${ADJUST_TEXT.paused.tag}$`))).toHaveLength(1);
+  expect(screen.queryByText(authoredTemplate('push-1').voice.system.title, { exact: true })).toBeTruthy();
+  expect(screen.getByTestId('up-next')).toBeTruthy(); // the next quest that can be done
 });
 
 it('Character offers a class change, and says when the next one opens (M6b)', async () => {
