@@ -48,11 +48,17 @@ export type DeckProps = {
   reduceMotion?: boolean;
 };
 
-/** A regular's initial in their colour (M14). */
-function PersonBadge({ person, size }: { person: CastMember; size: number }) {
+/**
+ * A regular's initial in their colour (M14). On the cover it wears a ring in the cover's ink: a regular's colour can
+ * match the look's accent (Priya's is Moonlight's), and the badge would vanish into the cover (found on the emulator).
+ */
+function PersonBadge({ person, size, ring = false }: { person: CastMember; size: number; ring?: boolean }) {
   return (
     <View accessible={false} importantForAccessibility="no-hide-descendants"
-      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: CAST_COLORS[person.id], alignItems: 'center', justifyContent: 'center' }}>
+      style={{
+        width: size, height: size, borderRadius: size / 2, backgroundColor: CAST_COLORS[person.id], alignItems: 'center', justifyContent: 'center',
+        borderWidth: ring ? 2 : 0, borderColor: CAST_INK,
+      }}>
       <Text maxFontSizeMultiplier={1} style={{ fontFamily: fonts.bodyBold, fontSize: Math.round(size * 0.45), color: CAST_INK }}>{person.name[0]}</Text>
     </View>
   );
@@ -176,7 +182,7 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             <View style={{ flex: 1, minHeight: 40 }} />
             {person !== null && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <PersonBadge person={person} size={48} />
+                <PersonBadge person={person} size={48} ring />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Caption tone="onAccent">{D.todaysStory}</Caption>
                   <Body tone="onAccent" weight="bold">{`${person.name}, ${person.line}`}</Body>

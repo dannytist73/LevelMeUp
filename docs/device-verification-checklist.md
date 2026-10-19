@@ -733,12 +733,16 @@ regulars, then why it works, an optional quick check, the lesson and Your turn. 
 (the owner's yes); row 6 needs a deck from before M14; rows 7–8 need the functions deployed. Read-only on Vera: open and
 swipe the cards, never claim.
 
+**Found on the emulator:** a phone that had saved today's article before the stories still showed the old cards (8, not
+11), because a saved article with any deck counted as held. Fixed (`af009a8`): it is asked for again until its story
+arrives; on the rebuilt 0.7.0 the story came at the next sync.
+
 | # | Check | Result |
 |---|---|---|
-| 1 | Today's reading opens on a cover with the person ("Today's story", their initial, name and line), the lesson's own title and subtitle, "N cards · about M min · +10 XP". | |
-| 2 | The story cards show the person's initial and "{Name}'s story · n of N"; the text is big and easy to read; a tap or a swipe turns the card. | |
-| 3 | Why it works: the head, the research in plain words, and "{Name} is made up. The research is real…" at the bottom. | |
-| 4 | The quick check: three answers as large buttons; tapping a wrong one marks it and shows "Not quite. The answer: …" with the why; the right one fills with a check mark; the answers lock; swiping on without an answer goes to the lesson. TalkBack reads each answer as a radio button and announces the result. | |
+| 1 | Today's reading opens on a cover with the person ("Today's story", their initial, name and line), the lesson's own title and subtitle, "N cards · about M min · +10 XP". | **Pass after a fix** 2026-10-19, emulator, 0.7.0 built on this PC (Vera, read-only): "Close the book", Priya, 11 cards · about 4 min. Priya's colour matched Moonlight's cover, so her badge vanished: the cover's badge now has a dark ring (rebuilt). |
+| 2 | The story cards show the person's initial and "{Name}'s story · n of N"; the text is big and easy to read; a tap or a swipe turns the card. | **Pass** 2026-10-19 (emulator): "Priya's story · 1 of 6", Next turns. |
+| 3 | Why it works: the head, the research in plain words, and "{Name} is made up. The research is real…" at the bottom. | **Pass** 2026-10-19 (emulator). |
+| 4 | The quick check: three answers as large buttons; tapping a wrong one marks it and shows "Not quite. The answer: …" with the why; the right one fills with a check mark; the answers lock; swiping on without an answer goes to the lesson. TalkBack reads each answer as a radio button and announces the result. | **Pass** 2026-10-19 (emulator) for the taps: a wrong pick shows "Not quite. The answer: …", the right one fills with a check; TalkBack not tried. |
 | 5 | The lesson, Keep (Codex), Your turn and the claim work as before; Library and Read again show the new deck; the largest font size wraps without cutting text. | |
 | 6 | A deck stored before M14 (if any is left) still shows its old cards with the System note. | |
 | 7 | After the functions are deployed: a new night's article gets a story deck from the cron (`npm run articles -- decks`), and `npm run articles -- review` shows it with the right answer marked. | |
