@@ -189,7 +189,8 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
                 <Image testID="deck-picture" source={{ uri: picture }} onError={() => setPictureFailed(true)} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
               </View>
             )}
-            <View style={{ flex: 1, minHeight: 40 }} />
+            {/* With a picture the cover reads top down from it; without one the title sits low, as before (emulator). */}
+            {picture === null && <View style={{ flex: 1, minHeight: 40 }} />}
             {person !== null && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <PersonBadge person={person} size={48} ring />
@@ -201,6 +202,7 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             )}
             <Title tone="onAccent">{cover.title}</Title>
             {cover.subtitle !== null && <Body tone="onAccent" weight="medium" style={{ fontSize: 19, lineHeight: 27 }}>{cover.subtitle}</Body>}
+            {picture !== null && <View style={{ flex: 1, minHeight: 16 }} />}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 8 }}>
               <Small tone="onAccent">{meta}</Small>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
