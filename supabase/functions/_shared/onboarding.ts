@@ -213,11 +213,11 @@ export function startArgs(
   const player: PlayerProfile = {
     classId: choices.classId, level: 1, goals: choices.goals, minutesPerDay: choices.minutesPerDay, difficulty: choices.difficulty,
     limitations: choices.limitations, gentleStart: choices.gentleStart, ownProgram: choices.ownProgram,
-    equipment: choices.equipment, programStyle: choices.programStyle, stats, book: null,
+    equipment: choices.equipment, programStyle: choices.programStyle, trainingPlan: 'build', programDays: 3, stats, book: null,
   };
   const answers = { goals: choices.goals, training: choices.training, reading: choices.reading, focus: choices.focus };
   const ladders = startingLadders(library, player, answers, SEEDS);
-  const built = buildDay(library, { dayNumber: 1, profile: player, ladders, history: [], light: true, workoutsDone: 0, articleId: null });
+  const built = buildDay(library, { dayNumber: 1, profile: player, ladders, history: [], light: true, workoutsDone: 0, programDone: 0, articleId: null });
   // M8b decision 1: day 1's reading, from the player's areas (day 1 is one of their days).
   const article = chooseArticle(articles, { dayNumber: 1, preferred: preferredClusters(choices.goals, choices.classId), insight: null });
   return {

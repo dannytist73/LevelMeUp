@@ -1,5 +1,7 @@
 // Rows as postgres.js returns them, built from the real library so the day builder sees real quests.
-import { DAY_MS, draftQuest, isWorkout, nextDayWindow, planWorkout, specialTemplate, templateById } from '../../../packages/rules/src/index.ts';
+import {
+  DAY_MS, draftQuest, isProgram, isWorkout, nextDayWindow, planProgram, planWorkout, programBlockFor, specialTemplate, templateById,
+} from '../../../packages/rules/src/index.ts';
 import type { LadderState, Slot, WhyReason } from '../../../packages/rules/src/index.ts';
 import { CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
@@ -40,7 +42,7 @@ export function profileRow(c: Choices = choices(), over: Partial<ProfileRow> = {
     time_zone: c.timeZone,
     boundary_minutes: c.boundaryMinutes, minutes_per_day: c.minutesPerDay, difficulty: c.difficulty, goals: c.goals,
     limitations: c.limitations, gentle_start: c.gentleStart, own_program: c.ownProgram, equipment: c.equipment,
-    program_style: c.programStyle, book: null, book_started_at: null, books_finished: [], reveal: {}, accountability_level: 0, accountability_enabled_at: null,
+    program_style: c.programStyle, training_plan: 'build', program_days: 3, program_since: null, book: null, book_started_at: null, books_finished: [], reveal: {}, accountability_level: 0, accountability_enabled_at: null,
     lighter_plan_at: null, ...over,
   };
 }
@@ -80,7 +82,7 @@ export const DAY1: DayDraft = startArgs(choices(), templateReveal(choices()), ON
 export function afterDay1(done: readonly Slot[], nowMs: number, over: Partial<AdvanceInput> = {}): AdvanceInput {
   return {
     profile: profileRow(), character: characterRow(), ladders: [], days: [dayRow(DAY1, 1)], instances: instanceRows(DAY1, 1, done),
-    queue: [], pending: null, workoutsDone: 0, articles: [], timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION,
+    queue: [], pending: null, workoutsDone: 0, programDone: 0, articles: [], timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION,
     ...over,
   };
 }
@@ -103,8 +105,11 @@ export const DAY_TWO_SLOTS = { core: 'push-1', side1: 'walk-1', side2: 'reading-
 function drafted(templateId: string, slot: Slot, why: WhyReason): InstanceDraft {
   const template = templateById(LIBRARY, templateId);
   const player = toProfile(profileRow(), startPoints(characterRow()), statXp(characterRow()));
-  const moves = isWorkout(template) ? planWorkout(LIBRARY.training, template, player, 0) : null;
-  return toDraft(LIBRARY, draftQuest(template, slot, why, { moves }));
+  const moves = isProgram(template)
+    ? planProgram(LIBRARY.training, template, player, 0)
+    : isWorkout(template) ? planWorkout(LIBRARY.training, template, player, 0) : null;
+  const block = programBlockFor(LIBRARY.training, template, player, 0); // M15
+  return toDraft(LIBRARY, draftQuest(template, slot, why, { moves, block }));
 }
 
 /**
@@ -139,6 +144,7 @@ export function dayTwoSnapshot(
     readAt: new Date(w.startsAt + HOUR),
     painReports: 0,
     workoutsDone: 0,
+    programDone: 0,
     articles: [],
     entitlements: [],
     ...over,

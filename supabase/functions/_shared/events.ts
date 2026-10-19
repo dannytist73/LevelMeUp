@@ -4,11 +4,12 @@
 // M7b the game settings and the tap time on a rest or pain report; M7c the pact, the Trial of Stillness and the check-in's
 // note. Anything else is rejected without touching anything.
 import {
-  ACCOUNTABILITY_LEVELS, CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, DIFFICULTIES, EQUIPMENT, MINUTES_OPTIONS, PROGRAM_STYLES, canonicalTimeZone, elapsedMs, isValidTimeZone,
-  isWhyReason, questTimerDone, sessionSets,
+  ACCOUNTABILITY_LEVELS, CHECKIN_ANSWERS, CLASSES, CLOCK_SKEW_MS, DIFFICULTIES, EQUIPMENT, MINUTES_OPTIONS, PROGRAM_DAYS_OPTIONS, PROGRAM_STYLES,
+  TRAINING_PLANS, canonicalTimeZone, elapsedMs, isValidTimeZone, isWhyReason, questTimerDone, sessionSets,
 } from '../../../packages/rules/src/index.ts';
 import type {
   AccountabilityLevel, CheckinAnswer, ClassId, Difficulty, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
+  TrainingPlan,
 } from '../../../packages/rules/src/index.ts';
 import { VOICES } from '../../../packages/content/src/index.ts';
 import type { ArticleCluster, Voice } from '../../../packages/content/src/index.ts';
@@ -50,8 +51,18 @@ export type ResumeEvent = { id: string; type: 'resume'; ladderId: string };
 export type StepDownEvent = { id: string; type: 'step_down'; instanceId: number };
 export type ClassChangeEvent = { id: string; type: 'class_change'; classId: ClassId };
 export type AbilityEvent = { id: string; type: 'ability'; dayId: number; ability: DayAbility };
-/** M6c: the player's training setup (Settings → Training); today's open workout is re-planned with it. */
-export type TrainingEvent = { id: string; type: 'training'; equipment: Equipment[]; programStyle: ProgramStyle };
+/**
+ * M6c: the player's training setup (Settings → Training); today's open workout is re-planned with it. M15: the plan and
+ * the weekly program's workouts a week; an older phone sends neither, and they stay as they are.
+ */
+export type TrainingEvent = {
+  id: string;
+  type: 'training';
+  equipment: Equipment[];
+  programStyle: ProgramStyle;
+  trainingPlan?: TrainingPlan;
+  programDays?: number;
+};
 /** M6d: Scholar's Path. A title starts that book; `finished` first records the current one; null sets it aside. */
 export type BookEvent = { id: string; type: 'book'; title: string | null; finished: boolean };
 export const MAX_BOOK_TITLE = 120;
@@ -160,7 +171,9 @@ function parseMoves(raw: unknown): PlannedMove[] | null | undefined {
   for (const m of raw) {
     if (!isObject(m) || !isKey(m.move) || (m.unit !== 'reps' && m.unit !== 'seconds')) return undefined;
     if (!isCount(m.min) || !isCount(m.max) || typeof m.perSide !== 'boolean') return undefined;
-    moves.push({ move: m.move, unit: m.unit, min: m.min, max: m.max, perSide: m.perSide });
+    // M15: a weekly workout's moves carry their sets.
+    if (m.sets !== undefined && !(isCount(m.sets) && m.sets >= 1)) return undefined;
+    moves.push({ move: m.move, unit: m.unit, min: m.min, max: m.max, perSide: m.perSide, ...(m.sets === undefined ? {} : { sets: m.sets }) });
   }
   return moves;
 }
@@ -227,7 +240,13 @@ function parseEvent(raw: unknown): PhoneEvent | Rejected {
       const equipment = raw.equipment;
       if (!Array.isArray(equipment) || new Set(equipment).size !== equipment.length) return bad;
       if (!equipment.every((e) => EQUIPMENT.includes(e as Equipment)) || !PROGRAM_STYLES.includes(raw.programStyle as ProgramStyle)) return bad;
-      return { id, type: 'training', equipment: equipment as Equipment[], programStyle: raw.programStyle as ProgramStyle };
+      if (raw.trainingPlan !== undefined && !TRAINING_PLANS.includes(raw.trainingPlan as TrainingPlan)) return bad;
+      if (raw.programDays !== undefined && !PROGRAM_DAYS_OPTIONS.includes(raw.programDays as number)) return bad;
+      return {
+        id, type: 'training', equipment: equipment as Equipment[], programStyle: raw.programStyle as ProgramStyle,
+        ...(raw.trainingPlan === undefined ? {} : { trainingPlan: raw.trainingPlan as TrainingPlan }),
+        ...(raw.programDays === undefined ? {} : { programDays: raw.programDays as number }),
+      };
     }
     case 'book': {
       if (typeof raw.finished !== 'boolean') return bad;

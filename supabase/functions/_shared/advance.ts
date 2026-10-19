@@ -31,6 +31,8 @@ export type AdvanceInput = {
   pending: PendingCheckin | null;
   /** Workouts completed so far, the days being closed included (Snapshot.workoutsDone). */
   workoutsDone: number;
+  /** M15: weekly workouts done in the current run (Snapshot.programDone). */
+  programDone: number;
   /** M8b: the published library, with the last day each article was given (Snapshot.articles). */
   articles: readonly CandidateRow[];
   /** The phone's time zone now, canonical. */
@@ -237,7 +239,9 @@ export function planAdvance(input: AdvanceInput): Outcome | null {
     const light = comeback || input.character.next_day_light;
     lightUsed = input.character.next_day_light;
     const dayInput: DayInput = {
-      dayNumber, profile: rulesProfile(), ladders, history, light, workoutsDone: input.workoutsDone, articleId: null,
+      dayNumber, profile: rulesProfile(), ladders, history, light, workoutsDone: input.workoutsDone, programDone: input.programDone,
+      // M15 decision 4: a planned rest day is never a weekly workout day.
+      rest: input.character.rest_day === dayNumber, articleId: null,
     };
     let quests: InstanceDraft[] = [];
     let budget = light ? LIGHT_DAY_MINUTES : profile.minutes_per_day;

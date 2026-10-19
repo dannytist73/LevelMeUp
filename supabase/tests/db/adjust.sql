@@ -481,3 +481,33 @@ begin
       jsonb_build_object('pact', '{"level": 0}'::jsonb, 'consequence', jsonb_build_object('checkinId', cb, 'kind', null))),
     'P0001', 'lmu:bad_change', 'nor touches a settled check-in');
 end $$;
+
+-- M15: the weekly program's plan, its workouts a week and the start of its run, through the training change.
+create function lmu_test.test_adjust_weekly_program() returns setof text language plpgsql as $$
+declare
+  a uuid := lmu_test.start(61);
+  weekly jsonb := '{"equipment": [], "programStyle": "men", "trainingPlan": "weekly", "programDays": 2}';
+  since timestamptz;
+begin
+  return next is((select training_plan from levelmeup.profiles where user_id = a), 'build', 'a player starts step by step');
+  return next is((select program_days from levelmeup.profiles where user_id = a), 3::smallint, 'with 3 workouts a week');
+  return next is((select program_since from levelmeup.profiles where user_id = a), null, 'and no weekly run');
+  perform levelmeup.adjust(a, lmu_test.ev(61), 1, 'training', weekly, jsonb_build_object('training', weekly));
+  select program_since into since from levelmeup.profiles where user_id = a;
+  return next is((select training_plan from levelmeup.profiles where user_id = a), 'weekly', 'the weekly program is stored');
+  return next is((select program_days from levelmeup.profiles where user_id = a), 2::smallint, 'with its workouts a week');
+  return next is(since, now(), 'switching it on starts its run');
+  perform levelmeup.adjust(a, lmu_test.ev(62), 2, 'training', '{}', '{"training": {"equipment": ["bands"], "programStyle": "men"}}');
+  return next is((select training_plan from levelmeup.profiles where user_id = a), 'weekly', 'an older phone''s change keeps the plan');
+  return next is((select program_days from levelmeup.profiles where user_id = a), 2::smallint, 'and the workouts a week');
+  return next is((select equipment from levelmeup.profiles where user_id = a), array['bands'], 'and still changes the equipment');
+  return next is((select program_since from levelmeup.profiles where user_id = a), since, 'staying on the weekly program keeps its run');
+  perform levelmeup.adjust(a, lmu_test.ev(63), 3, 'training', '{}', '{"training": {"equipment": [], "programStyle": "men", "trainingPlan": "build"}}');
+  return next is((select training_plan from levelmeup.profiles where user_id = a), 'build', 'back to step by step');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 4, ''training'', ''{}'', %L)', a, lmu_test.ev(64),
+      '{"training": {"equipment": [], "programStyle": "men", "trainingPlan": "daily"}}'),
+    '23514', null, 'an unknown plan is refused by the table');
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 4, ''training'', ''{}'', %L)', a, lmu_test.ev(65),
+      '{"training": {"equipment": [], "programStyle": "men", "programDays": 5}}'),
+    '23514', null, '5 workouts a week are refused by the table');
+end $$;

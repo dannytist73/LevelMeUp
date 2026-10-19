@@ -195,6 +195,17 @@ describe('the training event (M6c decision 12)', () => {
       expect(parse({ type: 'training', ...bad })).toMatchObject({ events: [], rejected: [{ code: 'bad_event' }] });
     }
   });
+
+  it('M15: carries the plan and the workouts a week when the phone sends them, and refuses unknown ones', () => {
+    expect(parse({ type: 'training', equipment: [], programStyle: 'men', trainingPlan: 'weekly', programDays: 2 })).toMatchObject({
+      events: [{ type: 'training', equipment: [], programStyle: 'men', trainingPlan: 'weekly', programDays: 2 }], rejected: [],
+    });
+    const old = parse({ type: 'training', equipment: [], programStyle: 'men' }) as SyncRequest;
+    expect(old.events[0]).toEqual({ id: ID, type: 'training', equipment: [], programStyle: 'men' });
+    for (const bad of [{ trainingPlan: 'daily' }, { trainingPlan: null }, { programDays: 4 }, { programDays: '3' }]) {
+      expect(parse({ type: 'training', equipment: [], programStyle: 'none', ...bad })).toMatchObject({ events: [], rejected: [{ code: 'bad_event' }] });
+    }
+  });
 });
 
 describe('a workout log (M6c decision 9)', () => {
@@ -253,6 +264,9 @@ describe('offline-built days (M6e)', () => {
   it('reads the day, the zone and each quest, and drops anything else', () => {
     expect(parse([{ ...day, extra: 1, quests: [{ ...quest, extra: 2 }, workout] }]))
       .toEqual({ timeZone: 'UTC', events: [{ ...day, articleId: null }], rejected: [], have: [], want: [] });
+    // M15: a weekly workout's moves keep their sets.
+    const weekly = { ...workout, templateId: 'program-0', moves: [{ move: 'bridge', unit: 'reps', min: 8, max: 12, perSide: false, sets: 3 }] };
+    expect(parse([{ ...day, quests: [quest, weekly] }]).events).toEqual([{ ...day, articleId: null, quests: [quest, weekly] }]);
     // M8b decision 4: the article the phone put on the day, when it names one.
     expect(parse([{ ...day, articleId: 'article-3' }]).events).toEqual([{ ...day, articleId: 'article-3' }]);
   });
@@ -265,6 +279,8 @@ describe('offline-built days (M6e)', () => {
       { quests: [{ ...workout, moves: [{ move: 'Bridge', unit: 'reps', min: 8, max: 12, perSide: false }] }] },
       { quests: [{ ...workout, moves: [{ move: 'bridge', unit: 'laps', min: 8, max: 12, perSide: false }] }] },
       { quests: [{ ...quest, book: 'Dune\nMessiah' }] },
+      { quests: [{ ...workout, moves: [{ move: 'bridge', unit: 'reps', min: 8, max: 12, perSide: false, sets: 0 }] }] }, // M15
+      { quests: [{ ...workout, moves: [{ move: 'bridge', unit: 'reps', min: 8, max: 12, perSide: false, sets: 'two' }] }] },
     ]) {
       expect(parse([{ ...day, ...bad }]), JSON.stringify(bad)).toMatchObject({ events: [], rejected: [{ id: id(40), code: 'bad_event' }] });
     }

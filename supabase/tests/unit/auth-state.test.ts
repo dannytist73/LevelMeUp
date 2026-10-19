@@ -105,6 +105,7 @@ describe('the state the phone receives', () => {
       readAt: new Date(manilaDay(2).startsAt),
       painReports: 0,
       workoutsDone: 0,
+      programDone: 0,
       articles: [],
       entitlements: [],
     };

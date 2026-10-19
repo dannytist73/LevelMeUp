@@ -5,11 +5,12 @@
 // 2, 5, 6). M7c: the pact's level, the Trial and the note (`_shared/pact.ts`).
 import {
   LATE_SYNC_MS, abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout,
-  ladderById, lighterMinutes, newLadder, painKey, painOption, planWorkout, plannedMoves, recordPain, restAllowed, resumeAfterPain, stepDown,
-  swapLimit, swapOptions,
+  ladderById, ladderRungs, lighterMinutes, newLadder, painKey, painOption, planProgram, planWorkout, plannedMoves, programBlockFor, recordPain,
+  restAllowed, resumeAfterPain, stepDown, swapLimit, swapOptions, isProgram,
 } from '../../../packages/rules/src/index.ts';
 import type {
   AccountabilityLevel, BuiltDay, CheckinAnswer, ClassId, Difficulty, Equipment, LadderState, ProgramStyle, QuestDraft, QuestLibrary, StreakState,
+  TrainingPlan,
 } from '../../../packages/rules/src/index.ts';
 import type { Voice } from '../../../packages/content/src/index.ts';
 import { planCheckin } from './checkin.ts';
@@ -39,7 +40,7 @@ export type Change = {
   ladders?: Record<string, LadderState>;
   classId?: ClassId;
   ability?: { id: DayAbility | 'second_wind'; day: number };
-  training?: { equipment: Equipment[]; programStyle: ProgramStyle };
+  training?: { equipment: Equipment[]; programStyle: ProgramStyle; trainingPlan: TrainingPlan; programDays: number };
   /** M6d: Scholar's Path (decision 12). */
   book?: { title: string | null; finished: boolean };
   /** M7a: the check-in's answer (decisions 2–4); `outcome` only when it is resolved at once. M7c: the pact's consequence. */
@@ -247,10 +248,17 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
       };
     }
     case 'training': {
-      // The setup always changes; today's open workouts are re-planned with it, same rung and reward (decision 12).
-      const training = { equipment: event.equipment, programStyle: event.programStyle };
+      // The setup always changes; today's open workouts are re-planned with it, same rung and reward (decision 12). M15
+      // decision 8: an older phone leaves the plan as it is; a new plan starts with tomorrow's quests, and switching the
+      // weekly program on starts its exercises at the level the workouts reached.
+      const training = {
+        equipment: event.equipment, programStyle: event.programStyle,
+        trainingPlan: event.trainingPlan ?? s.profile.training_plan, programDays: event.programDays ?? s.profile.program_days,
+      };
+      const ladders = training.trainingPlan === 'weekly' && s.profile.training_plan !== 'weekly' ? programStart(library, s) : undefined;
+      const base: Change = ladders === undefined ? { training } : { training, ladders };
       const day = openDay(s);
-      if (day === null || nowMs >= day.ends_at.getTime()) return { change: { training } };
+      if (day === null || nowMs >= day.ends_at.getTime() || training.trainingPlan !== s.profile.training_plan) return { change: base };
       const input = todayInput(s, day);
       const player = { ...input.profile, ...training };
       const quests: QuestChange[] = [];
@@ -258,11 +266,14 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
         if (q.completed_at !== null || !QUEST_SLOTS.includes(q.slot)) continue;
         const template = findTemplate(library, q.template_id);
         if (template === undefined || !isWorkout(template)) continue;
-        const moves = planWorkout(library.training, template, player, input.workoutsDone);
+        const moves = isProgram(template)
+          ? planProgram(library.training, template, player, input.programDone)
+          : planWorkout(library.training, template, player, input.workoutsDone);
         if (moves === null) continue; // too few exercises fit the new setup: today's plan stays
-        quests.push(replace(library, q, draftQuest(template, q.slot, q.why, { hardDay: q.hard_day, book: q.book, moves })));
+        const block = programBlockFor(library.training, template, player, input.programDone);
+        quests.push(replace(library, q, draftQuest(template, q.slot, q.why, { hardDay: q.hard_day, book: q.book, moves, block })));
       }
-      return { change: quests.length === 0 ? { training } : { training, day: { id: Number(day.id) }, quests } };
+      return { change: quests.length === 0 ? base : { ...base, day: { id: Number(day.id) }, quests } };
     }
     case 'book': {
       const player = toProfile(s.profile, startPoints(s.character), statXp(s.character));
@@ -329,4 +340,18 @@ export function planOfflinePain(
   if (found.day.protection !== null) return { change: { ladders } };
   const tappedAt = found.tappedAt === null ? {} : { tappedAt: found.tappedAt };
   return { change: { ladders, day: { id: Number(found.day.id), protection: 'pain', ...tappedAt } } };
+}
+
+/**
+ * M15 decision 8: the weekly program's ladder when the plan switches to it and it has none yet: its exercises start at
+ * the level the step-by-step workouts reached (a weekly rung is a level: 0 is level 1).
+ */
+function programStart(library: QuestLibrary, s: Snapshot): Record<string, LadderState> | undefined {
+  const program = library.ladders.find((l) => l.weekly);
+  if (program === undefined || s.ladders.some((l) => l.ladder_id === program.id)) return undefined;
+  const workout = s.ladders.find((l) => l.ladder_id === 'workout');
+  const rung = workout === undefined ? undefined : ladderRungs(library, 'workout')[workout.state.rung];
+  const level = rung !== undefined && rung.condition.kind === 'workout' ? rung.condition.level : 1;
+  const top = ladderRungs(library, program.id).length - 1;
+  return { [program.id]: newLadder(Math.min(level - 1, top)) };
 }

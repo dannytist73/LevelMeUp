@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
 import {
-  LATE_SYNC_MS, levelForXp, newLadder, planWorkout, plannedMoves, questReward, recordPain, sessionCondition, templateById,
+  LATE_SYNC_MS, levelForXp, newLadder, planProgram, planWorkout, plannedMoves, questReward, recordPain, sessionCondition, sessionMinutes,
+  templateById,
 } from '../../../packages/rules/src/index.ts';
 import type { PlayerProfile, Rating } from '../../../packages/rules/src/index.ts';
 import { planAdjust, planOfflinePain } from '../../functions/_shared/adjust.ts';
@@ -95,7 +96,7 @@ describe('what the phone may offer today (today.ts)', () => {
     const s: Snapshot = {
       profile: profileRow(choices), character: characterRow(start as Partial<CharacterRow>), ladders: ladderRows(args.ladders), days: [dayRow(args.day, 1)],
       instances: instanceRows(args.day, 1), earned: [], checkin: null, queue: [], answered: [], result: null,
-      readAt: new Date(ONBOARDED), painReports: 0, workoutsDone: 0, articles: [], entitlements: [],
+      readAt: new Date(ONBOARDED), painReports: 0, workoutsDone: 0, programDone: 0, articles: [], entitlements: [],
     };
     const open = stateView(s, dayOffers(s, LIBRARY), historyOf(s)).today!.quests.filter((q) => q.slot !== 'article');
     const hurt = open.find((q) => templateById(LIBRARY, q.templateId).exercise !== null);
@@ -336,13 +337,14 @@ describe('planning an adjustment (adjust.ts)', () => {
 });
 
 describe('changing the training setup (M6c decision 12)', () => {
+  const BUILD = { trainingPlan: 'build', programDays: 3 } as const;
   const withWorkout = (over: Partial<Snapshot> = {}) => dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'workout-0' }, over);
 
   it('stores the setup and re-plans today\'s open workout with it', () => {
     const s = withWorkout();
     const result = plan(s, { type: 'training', equipment: ['gym'], programStyle: 'men' });
     if (!('change' in result)) throw new Error(JSON.stringify(result));
-    expect(result.change.training).toEqual({ equipment: ['gym'], programStyle: 'men' });
+    expect(result.change.training).toEqual({ equipment: ['gym'], programStyle: 'men', ...BUILD });
     const [core] = result.change.quests!;
     const template = templateById(LIBRARY, 'workout-0');
     const player: PlayerProfile = { ...toProfile(s.profile, startPoints(s.character), statXp(s.character)), equipment: ['gym'], programStyle: 'men' };
@@ -354,16 +356,16 @@ describe('changing the training setup (M6c decision 12)', () => {
     const s = withWorkout();
     const cleared = { ...s, instances: s.instances.map((q) => (String(q.id) === '200' ? { ...q, completed_at: new Date(NOW - HOUR) } : q)) };
     expect(plan(cleared, { type: 'training', equipment: ['bands'], programStyle: 'none' })).toEqual({
-      change: { training: { equipment: ['bands'], programStyle: 'none' } },
+      change: { training: { equipment: ['bands'], programStyle: 'none', ...BUILD } },
     });
     expect(plan(at(), { type: 'training', equipment: ['bands'], programStyle: 'none' })).toEqual({
-      change: { training: { equipment: ['bands'], programStyle: 'none' } },
+      change: { training: { equipment: ['bands'], programStyle: 'none', ...BUILD } },
     });
   });
 
   it('after the day has ended, only the setup changes', () => {
     const late = planAdjust(withWorkout(), { id: 'e', type: 'training', equipment: [], programStyle: 'women' }, { nowMs: manilaDay(3).startsAt, library: LIBRARY });
-    expect(late).toEqual({ change: { training: { equipment: [], programStyle: 'women' } } });
+    expect(late).toEqual({ change: { training: { equipment: [], programStyle: 'women', ...BUILD } } });
   });
 
   it('a hard-day workout is re-planned in its hard-day version (review)', () => {
@@ -385,8 +387,55 @@ describe('changing the training setup (M6c decision 12)', () => {
   it("a setup that leaves too few exercises keeps today's plan and still stores the setup (review)", () => {
     const limited = withWorkout({ profile: profileRow(undefined, { limitations: ['knee', 'back', 'shoulder', 'wrist'] }) });
     expect(plan(limited, { type: 'training', equipment: [], programStyle: 'none' })).toEqual({
-      change: { training: { equipment: [], programStyle: 'none' } },
+      change: { training: { equipment: [], programStyle: 'none', ...BUILD } },
     });
+  });
+
+  // M15 (plan 2026-10-20-m15-weekly-program.md, decision 8)
+  const WEEKLY = { trainingPlan: 'weekly', programDays: 3 } as const;
+
+  it('switching to the weekly program stores it, starts its exercises at the level the workouts reached, and leaves today as it is', () => {
+    const s = withWorkout({ ladders: ladderRows({ workout: newLadder(4) }) });
+    expect(plan(s, { type: 'training', equipment: ['gym'], programStyle: 'men', trainingPlan: 'weekly', programDays: 2 })).toEqual({
+      change: { training: { equipment: ['gym'], programStyle: 'men', trainingPlan: 'weekly', programDays: 2 }, ladders: { program: newLadder(2) } },
+    });
+    const fresh = plan(withWorkout(), { type: 'training', equipment: [], programStyle: 'none', ...WEEKLY });
+    expect(fresh).toEqual({ change: { training: { equipment: [], programStyle: 'none', ...WEEKLY }, ladders: { program: newLadder(0) } } });
+    const stepped = plan(withWorkout({ ladders: ladderRows({ workout: newLadder(1) }) }), { type: 'training', equipment: [], programStyle: 'none', ...WEEKLY });
+    expect(stepped).toMatchObject({ change: { ladders: { program: newLadder(1) } } });
+    // Switched on before: its ladder is kept as it is.
+    const again = plan(withWorkout({ ladders: ladderRows({ program: newLadder(1), workout: newLadder(4) }) }), {
+      type: 'training', equipment: [], programStyle: 'none', ...WEEKLY,
+    });
+    expect(again).toEqual({ change: { training: { equipment: [], programStyle: 'none', ...WEEKLY } } });
+  });
+
+  it('back to step by step: stored, and today stays as it is', () => {
+    const s = withWorkout({ profile: profileRow(undefined, { training_plan: 'weekly' }) });
+    expect(plan(s, { type: 'training', equipment: [], programStyle: 'none', ...BUILD })).toEqual({
+      change: { training: { equipment: [], programStyle: 'none', ...BUILD } },
+    });
+  });
+
+  it("an older phone that sends no plan keeps the player's", () => {
+    const s = withWorkout({ profile: profileRow(undefined, { training_plan: 'weekly', program_days: 2 }) });
+    expect(plan(s, { type: 'training', equipment: ['bands'], programStyle: 'none' })).toMatchObject({
+      change: { training: { equipment: ['bands'], programStyle: 'none', trainingPlan: 'weekly', programDays: 2 } },
+    });
+  });
+
+  it("on the weekly plan, today's open weekly workout is re-planned with the new setup and keeps its block", () => {
+    const s = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'program-0' }, { profile: profileRow(undefined, { training_plan: 'weekly' }) });
+    const result = plan(s, { type: 'training', equipment: ['gym'], programStyle: 'men', ...WEEKLY });
+    if (!('change' in result)) throw new Error(JSON.stringify(result));
+    const template = templateById(LIBRARY, 'program-0');
+    const player: PlayerProfile = {
+      ...toProfile(s.profile, startPoints(s.character), statXp(s.character)), equipment: ['gym'], programStyle: 'men', trainingPlan: 'weekly',
+    };
+    const moves = planProgram(LIBRARY.training, template, player, 0)!;
+    expect(result.change.quests).toHaveLength(1);
+    expect(result.change.quests![0]).toMatchObject({ id: 200, templateId: 'program-0', minutes: sessionMinutes(template, moves, false) });
+    expect(result.change.quests![0]!.condition).toEqual(sessionCondition(template, moves, false, { week: 1, day: 0 }));
   });
 });
 
