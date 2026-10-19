@@ -16,7 +16,8 @@ import { Body, Title } from '../../ui/Text.tsx';
 
 const PLAYER: PlayerProfile = {
   classId: 'warrior', level: 5, goals: ['body'], minutesPerDay: 40, difficulty: 'steady', limitations: [], gentleStart: false,
-  ownProgram: false, equipment: [], programStyle: 'none', stats: { strength: 7, vitality: 5, wisdom: 5, focus: 5 }, book: null,
+  ownProgram: false, equipment: [], programStyle: 'none', trainingPlan: 'build', programDays: 3,
+  stats: { strength: 7, vitality: 5, wisdom: 5, focus: 5 }, book: null,
 };
 
 export default function WorkoutPreview() {

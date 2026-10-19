@@ -7,6 +7,9 @@ import type { Shown } from './project.ts';
 
 export type SetupCard = 'save' | 'voice' | 'gear' | 'slip' | 'vow';
 
+/** M15: workouts done before the weekly program is offered. */
+const PROGRAM_OFFER_WORKOUTS = 3;
+
 /** The day each card is first offered, in order. */
 const CARDS: readonly { card: SetupCard; day: number }[] = [
   { card: 'save', day: 1 }, { card: 'voice', day: 1 }, { card: 'gear', day: 2 }, { card: 'slip', day: 2 }, { card: 'vow', day: 3 },
@@ -31,4 +34,16 @@ export function setupCard({ view, offers, saved, vow }: SetupInput): SetupCard |
     }
   };
   return CARDS.find((c) => today.dayNumber >= c.day && !offers.includes(`setup:${c.card}`) && wanted(c.card))?.card ?? null;
+}
+
+/**
+ * M15 decision 9: the weekly program, offered once, after 3 workouts on the step-by-step plan, while strength work is
+ * possible (no gentle start, no own plan), once today's core quest is cleared (it never pushes the quest down).
+ */
+export function programOffered(view: Pick<Shown, 'today' | 'profile' | 'workoutsDone'>, offers: readonly Offer[]): boolean {
+  const p = view.profile;
+  if (offers.includes('program') || (p.trainingPlan ?? 'build') !== 'build' || p.gentleStart || p.ownProgram) return false;
+  if ((view.workoutsDone ?? 0) < PROGRAM_OFFER_WORKOUTS) return false;
+  const core = view.today?.quests.find((q) => q.slot === 'core');
+  return core !== undefined && core.completedAt !== null;
 }

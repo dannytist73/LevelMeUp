@@ -389,7 +389,7 @@ describe('Training (M6c decision 12)', () => {
     expect(save().props.accessibilityState.disabled).toBe(true); // nothing changed yet
     await fireEvent.press(screen.getByRole('checkbox', { name: EQUIPMENT_NAMES.bands }));
     await fireEvent.press(save());
-    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'training', equipment: ['bands'], programStyle: 'none' });
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'training', equipment: ['bands'], programStyle: 'none', trainingPlan: 'build', programDays: 3 });
     expect(onDone).toHaveBeenCalled();
   });
 

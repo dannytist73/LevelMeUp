@@ -126,7 +126,10 @@ export type PlusOutcome = 'on' | 'pending' | 'cancelled' | 'none' | 'failed' | '
  * The one-time offers (M12): each shows once, then lives in Settings. `setup` marks a character that onboarded after M12,
  * so only it gets the set-up cards of days 1 to 3 (an older character answered them in its onboarding).
  */
-export type Offer = 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}` | 'live-timer' | `plus:${'intro' | 'day7' | 'trial'}`;
+export type Offer =
+  | 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}` | 'live-timer' | `plus:${'intro' | 'day7' | 'trial'}`
+  /** M15: the weekly program's one-time offer. */
+  | 'program';
 
 const readOffers = (text: string | null): Offer[] => {
   try {

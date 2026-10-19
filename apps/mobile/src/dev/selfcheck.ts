@@ -65,7 +65,7 @@ export function zoneProbe(platformZone: () => string | null | undefined, intlZon
 export const contentProbe: Probe = {
   name: 'quest library and why-lines',
   run: () => {
-    must(LIBRARY.templates.length === 80, `${LIBRARY.templates.length} templates, expected 80`);
+    must(LIBRARY.templates.length === 83, `${LIBRARY.templates.length} templates, expected 83`);
     for (const voice of VOICES) {
       const line = renderWhy({ code: 'balance', stat: 'focus' }, voice, { classId: 'warrior' });
       must(line.trim().length > 0, `no why-line in the ${voice} voice`);

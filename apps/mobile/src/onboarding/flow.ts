@@ -144,7 +144,7 @@ export function draftProfile(draft: Draft): PlayerProfile {
   return {
     classId: draft.classId ?? suggestedClass(goals), level: 1, goals, minutesPerDay: draft.minutesPerDay, difficulty: draft.difficulty,
     limitations: draft.limitations, gentleStart: gentleStart(draft), ownProgram: draft.training === 'own',
-    equipment: [], programStyle: 'none',
+    equipment: [], programStyle: 'none', trainingPlan: 'build', programDays: 3,
     stats: { strength: 5, vitality: 5, wisdom: 5, focus: 5 }, book: null,
   };
 }

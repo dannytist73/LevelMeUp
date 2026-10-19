@@ -6,7 +6,7 @@
 // bottom; How and Why fold below, Safety stays open; Cleared leads on to the next quest; a half-written takeaway waits.
 import {
   ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey,
-  authoredTemplate, fillText, questSummary, renderWhy, shadowLine,
+  authoredTemplate, fillText, programBlockLabel, questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -282,9 +282,17 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   } else if (quest.condition.kind === 'session') {
     // A new plan starts a fresh log (review); a training change on its way re-plans the workout first, so it waits.
     const replanning = pending.some((e) => e.type === 'training');
+    // M15: a weekly workout says where it stands in its block and what the week asks for.
+    const block = quest.condition.block;
     panel = (
       <View style={{ gap: 12 }}>
         {replanning && <NarrationBox>{PLAY_TEXT.workout.replanning}</NarrationBox>}
+        {block !== undefined && (
+          <View testID="workout-block" style={{ gap: 4 }}>
+            <Label tone="accentText">{programBlockLabel(block)}</Label>
+            <Small>{PLAY_TEXT.workout.weeks[block.week - 1]}</Small>
+          </View>
+        )}
         <WorkoutLog key={JSON.stringify(quest.condition)} moves={quest.condition.moves} disabled={busy || replanning}
           onClaim={(payload) => void claim(payload)} last={lastSets} now={now} />
       </View>

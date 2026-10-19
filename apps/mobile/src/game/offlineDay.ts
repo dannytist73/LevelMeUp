@@ -24,6 +24,9 @@ export function rulesProfile(profile: ServerState['profile'], character: Charact
     ownProgram: profile.ownProgram,
     equipment: profile.equipment,
     programStyle: profile.programStyle,
+    // M15: a state cached before the weekly program has neither: the step-by-step plan.
+    trainingPlan: (profile as Partial<typeof profile>).trainingPlan ?? 'build',
+    programDays: (profile as Partial<typeof profile>).programDays ?? 3,
     stats: Object.fromEntries(TRAINABLE_STATS.map((s) => [s, character.stats[s].points])) as Record<TrainableStat, number>,
     book: profile.book,
   };
@@ -31,6 +34,10 @@ export function rulesProfile(profile: ServerState['profile'], character: Charact
 
 const sessionsDone = (today: TodayView | null): number =>
   (today?.quests ?? []).filter((q) => q.condition.kind === 'session' && q.completedAt !== null).length;
+
+/** M15: weekly workouts that count, as the server counts them (the full version, not rated too hard). */
+const programDoneOn = (today: TodayView | null): number =>
+  (today?.quests ?? []).filter((q) => q.ladder === 'program' && q.completedAt !== null && !q.hardDay && q.rating !== 'too_hard').length;
 
 /**
  * What the offline day is built from: the cached state with the unsent events, except check-in answers. The server
@@ -50,7 +57,7 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
   if (shown.offline || today === null || today.startsAt === null || today.endsAt === null) return null;
   const last = { startsAt: Date.parse(today.startsAt), endsAt: Date.parse(today.endsAt), timeZone: today.timeZone };
   if (last.endsAt > nowMs) return null;
-  const held = server as Partial<Pick<ServerState, 'ladders' | 'history' | 'workoutsDone'>>;
+  const held = server as Partial<Pick<ServerState, 'ladders' | 'history' | 'workoutsDone' | 'programDone'>>;
   if (held.ladders === undefined || held.history === undefined || held.workoutsDone === undefined) return null;
   try {
     const next = followingDay(last, today.dayNumber, timeZone, shown.profile.boundaryMinutes, nowMs);
@@ -85,10 +92,13 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
       .sort((a, b) => a.dayNumber - b.dayNumber)
       .slice(-7);
     const workoutsDone = Math.max(0, held.workoutsDone + sessionsDone(today) - sessionsDone(server.today));
+    // M15: a state cached before the weekly program has no count: its player is on the step-by-step plan.
+    const programDone = Math.max(0, (held.programDone ?? 0) + programDoneOn(today) - programDoneOn(server.today));
     // A "sick" or "injured" answer asked for a light day (M7a decision 6): the server builds the same one, so it keeps it.
     const light = next.comeback || shown.character.nextDayLight;
     const built = buildDay(LIBRARY, {
-      dayNumber: next.dayNumber, profile: rulesProfile(shown.profile, character), ladders, history, light, workoutsDone, articleId: null,
+      dayNumber: next.dayNumber, profile: rulesProfile(shown.profile, character), ladders, history, light, workoutsDone, programDone,
+      rest: shown.character.restDay === next.dayNumber, articleId: null,
     });
     return {
       type: 'provisional_day',

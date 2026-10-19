@@ -4,7 +4,8 @@
 // that open their quest, and a check-off quest's row has a check circle that clears it (Today offers Undo). A cleared
 // quest is a slim row with its XP.
 import {
-  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, SHADOW_TEXT, STAT_NAMES, TODAY_TEXT, authoredTemplate, fillText, questSummary,
+  ADJUST_TEXT, BOOK_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, SHADOW_TEXT, STAT_NAMES, TODAY_TEXT, authoredTemplate, fillText, programBlockLabel,
+  questSummary,
 } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import { View } from 'react-native';
@@ -96,6 +97,10 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, restin
               <Title>{words.title}</Title>
               <Body tone="ashLight" weight="medium">{questSummary(quest)}</Body>
               {quest.book !== null && <Small>{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
+              {/* M15: a weekly workout's week and day. */}
+              {quest.condition.kind === 'session' && quest.condition.block !== undefined && (
+                <Small>{programBlockLabel(quest.condition.block)}</Small>
+              )}
               <Tags quest={quest} resting={resting} />
               {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
               {waiting && <WillSync />}

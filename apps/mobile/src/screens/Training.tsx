@@ -1,8 +1,10 @@
 // Settings → Training (M6c decision 12): the equipment and program the player's workouts follow. Saving sends one
-// `training` event: the server re-plans today's open workout and the next days follow the new setup.
+// `training` event: the server re-plans today's open workout and the next days follow the new setup. M15 (plan
+// 2026-10-20-m15-weekly-program.md, decisions 1 and 8): the plan, step by step or the weekly program, and its workouts a
+// week; a new plan starts with tomorrow's quests.
 import { ADJUST_TEXT, EQUIPMENT_NAMES, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, PROGRAM_STYLE_CHOICES } from '@levelmeup/content';
-import { EQUIPMENT, PROGRAM_STYLES, workoutsFit } from '@levelmeup/rules';
-import type { Equipment, ProgramStyle } from '@levelmeup/rules';
+import { EQUIPMENT, PROGRAM_DAYS_OPTIONS, PROGRAM_STYLES, TRAINING_PLANS, workoutsFit } from '@levelmeup/rules';
+import type { Equipment, ProgramStyle, TrainingPlan } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +32,8 @@ export function Training({ onDone, onBack }: TrainingProps) {
   const enqueue = useGame((s) => s.enqueue);
   const [equipment, setEquipment] = useState<Equipment[] | null>(null);
   const [style, setStyle] = useState<ProgramStyle | null>(null);
+  const [plan, setPlan] = useState<TrainingPlan | null>(null);
+  const [days, setDays] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   if (view === null) {
@@ -41,13 +45,19 @@ export function Training({ onDone, onBack }: TrainingProps) {
     );
   }
   const p = view.profile;
+  // A state cached before M15 has no plan: the step-by-step one.
+  const currentPlan: TrainingPlan = p.trainingPlan ?? 'build';
+  const currentDays = p.programDays ?? 3;
   const picked = equipment ?? p.equipment;
   const pickedStyle = style ?? p.programStyle;
-  const changed = pickedStyle !== p.programStyle || !sameItems(picked, p.equipment);
+  const pickedPlan = plan ?? currentPlan;
+  const pickedDays = days ?? currentDays;
+  const weekly = pickedPlan === 'weekly';
+  const changed = pickedStyle !== p.programStyle || !sameItems(picked, p.equipment) || pickedPlan !== currentPlan || pickedDays !== currentDays;
   const fits = workoutsFit(LIBRARY, {
     classId: p.classId, level: view.character.level, goals: p.goals, minutesPerDay: p.minutesPerDay, difficulty: p.difficulty,
     limitations: p.limitations, gentleStart: p.gentleStart, ownProgram: p.ownProgram, equipment: picked, programStyle: pickedStyle,
-    stats: { strength: 0, vitality: 0, wisdom: 0, focus: 0 }, book: p.book,
+    trainingPlan: pickedPlan, programDays: pickedDays, stats: { strength: 0, vitality: 0, wisdom: 0, focus: 0 }, book: p.book,
   });
   const toggle = (item: Equipment) => setEquipment(picked.includes(item) ? picked.filter((e) => e !== item) : [...picked, item]);
   const save = async (): Promise<void> => {
@@ -55,7 +65,7 @@ export function Training({ onDone, onBack }: TrainingProps) {
     setBusy(true);
     leave();
     try {
-      await enqueue({ type: 'training', equipment: picked, programStyle: pickedStyle });
+      await enqueue({ type: 'training', equipment: picked, programStyle: pickedStyle, trainingPlan: pickedPlan, programDays: pickedDays });
     } catch {
       stay();
       setBusy(false);
@@ -69,6 +79,22 @@ export function Training({ onDone, onBack }: TrainingProps) {
       <TopBar onBack={onBack} />
       <Title>{T.title}</Title>
       <Body>{T.line}</Body>
+      <View style={{ gap: 12 }}>
+        <Label>{T.plan}</Label>
+        {TRAINING_PLANS.map((item) => (
+          <OptionCard key={item} label={T.plans[item].name} detail={T.plans[item].line} selected={pickedPlan === item} onPress={() => setPlan(item)} />
+        ))}
+      </View>
+      {weekly && (
+        <View style={{ gap: 12 }}>
+          <Label>{T.days}</Label>
+          {PROGRAM_DAYS_OPTIONS.map((n) => {
+            const choice = T.dayChoices[n as 2 | 3];
+            return <OptionCard key={n} label={choice.name} detail={choice.line} selected={pickedDays === n} onPress={() => setDays(n)} />;
+          })}
+          <Small>{T.weeklyNote}</Small>
+        </View>
+      )}
       <View style={{ gap: 12 }}>
         <Label>{G.equipment}</Label>
         {EQUIPMENT.map((item) => (
@@ -85,10 +111,10 @@ export function Training({ onDone, onBack }: TrainingProps) {
       </View>
       {!fits && (
         <NightCard>
-          <Small tone="chalk">{T.noRoom}</Small>
+          <Small tone="chalk">{weekly ? T.noRoomWeekly : T.noRoom}</Small>
         </NightCard>
       )}
-      <Small>{T.today}</Small>
+      <Small>{pickedPlan !== currentPlan ? T.planTomorrow : T.today}</Small>
       <Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} />
     </ScreenScroll>
   );

@@ -36,6 +36,7 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     readAt: new Date(ONBOARDED + HOUR),
     painReports: 0,
     workoutsDone: 0,
+    programDone: 0,
     articles: [],
     entitlements,
   };
@@ -72,6 +73,12 @@ export const REVEAL: Reveal = { narrative: 'Rin. Class: Warrior.', strengths: ['
 /** Day 2 with a workout (workout-0, planned for the default player) as its core quest, id 200. */
 export function workoutState(over: Partial<Snapshot> = {}): ServerState {
   const snapshot = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'workout-0' }, over);
+  return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
+}
+
+/** M15: day 2 on the weekly plan with a weekly workout (program-0: week 1, workout A) as its core quest, id 200. */
+export function weeklyState(over: Partial<Snapshot> = {}): ServerState {
+  const snapshot = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'program-0' }, { profile: profileRow(undefined, { training_plan: 'weekly' }), ...over });
   return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
 }
 

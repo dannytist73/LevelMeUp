@@ -140,7 +140,11 @@ export function project(server: ServerState, pending: readonly PhoneEvent[]): Sh
       continue;
     }
     if (event.type === 'training') {
-      profile = { ...profile, equipment: event.equipment, programStyle: event.programStyle };
+      profile = {
+        ...profile, equipment: event.equipment, programStyle: event.programStyle,
+        // M15: an event from before the weekly program leaves the plan as it is.
+        trainingPlan: event.trainingPlan ?? profile.trainingPlan, programDays: event.programDays ?? profile.programDays,
+      };
       // Today's open workout is re-planned by the server: it says "Will sync" until then.
       for (const q of quests) if (q.completedAt === null && q.condition.kind === 'session') waiting.add(q.id);
       continue;

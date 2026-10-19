@@ -180,3 +180,9 @@ export function fillText(text: string, values: Readonly<Record<string, string | 
     return String(values[name]);
   });
 }
+
+/** M15: a weekly workout's place in its block, "Week 2 of 6 · Workout B"; week 6 says it is the easy week. */
+export function programBlockLabel(block: { week: number; day: number }): string {
+  const day = 'ABC'.charAt(block.day);
+  return block.week === 6 ? fillText(PLAY_TEXT.workout.easyBlock, { day }) : fillText(PLAY_TEXT.workout.block, { week: block.week, day });
+}
