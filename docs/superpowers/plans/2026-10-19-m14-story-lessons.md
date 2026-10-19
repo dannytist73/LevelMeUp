@@ -46,3 +46,22 @@ Superpowers skills).
 | 4 | The 20 story decks by subagents; checked; a sample read by me | `parseDeck` + `checkDeck` on every one |
 | 5 | **Owner's yes:** back up and store the decks; deploy 0017 + functions (M13 + M14), `db:test`, `test:live` | live tests; `npm run articles -- decks` |
 | 6 | 0.7.0 APK on this PC; emulator check (read-only on Vera) | the checklist's M14 rows |
+
+## As built (2026-10-19)
+
+- Built as planned (`50609fe`). Story card limits as decided; the story check also refuses `professor` and
+  `psychologist(s)`. The System-note game-word check went with the System note: applied to every card it would refuse a
+  why card about rewards, and the prompt already forbids game announcements.
+- **The 20 library decks:** four Claude Code subagents wrote them from the production prompt and schema (no API cost),
+  each with a suggested regular for variety (Priya 3, Jonah 4, Mika 3, Tomás 4, Amara 3, Lena 3). All 20 pass
+  `parseDeck` + `checkDeck`; I read every one. One fix by hand: article-22's why card now keeps the article's caution
+  (two failed attempts to repeat the phone-nearby finding). Article-9 kept the subagent's version, which is closer to
+  the article than the canvas sample. Stored at the owner's yes, in one transaction, after the old decks were saved to
+  `.backups/2026-10-19-decks-before-m14.json` (20 decks).
+- **Deployed at the owner's yes:** migration 0017 (M13 Plus), `db:test` 874 assertions in 9 files, nothing left behind;
+  functions sync/onboarding/account-delete v25, articles-tick v13, lmu-plus v1; `test:live` 50/50 (clock +800 ms);
+  players back to 3; 20 story decks live.
+- **Found on the emulator** (`af009a8`): a phone that had saved an article with an old deck counted it as held, so the
+  server never sent the story. A held article now counts only with its story lesson; a past reading is asked for once
+  more.
+- Tests: app 1,156, content 1,128, rules 450, server 568; typecheck, check:functions, check:portable pass.
