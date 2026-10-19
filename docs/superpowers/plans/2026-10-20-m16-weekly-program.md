@@ -133,3 +133,13 @@ An independent review found four bugs and five risks; all are fixed, each with a
 
 Tests after the fixes: rules 475, content 1,170, server unit 585, app 1,173.
 
+
+### Deploy (2026-10-20, the owner's yes)
+
+- Migration 0019 applied (the wedding's migration history unchanged); `db:test` passes every file (`adjust.sql` 127
+  assertions with `test_adjust_weekly_program`), nothing left behind.
+- Functions deployed from this branch: lmu-onboarding, lmu-sync, lmu-account-delete, lmu-articles-tick, lmu-plus
+  (lmu-articles-studio, the daily studio's, left as it was).
+- `test:live` 51/51 (the PC clock 0.9 s behind: `LMU_CLOCK_OFFSET_MS=1000` with the clock preload), with a new test on
+  the training player: switching on stores the plan and starts the ladder at rung 0, today stays as it is, and 0.7.1 or
+  an unversioned app then gets 426 `update_required`. Afterwards: 3 players, none on the weekly plan.
