@@ -78,6 +78,13 @@ describe('the story lesson (M14)', () => {
     for (const value of bad) expect(asDeck(value)).toBeNull();
   });
 
+  it('keeps a picture of the published shape, and drops any other without losing the story', () => {
+    expect(asDeck({ ...STORY, picture: 'story-v1/article-31.webp' })).toEqual({ ...STORY, picture: 'story-v1/article-31.webp' });
+    for (const picture of ['https://example.com/x.webp', '../story-v1/article-31.webp', 'story-v1/article-31.png', 3]) {
+      expect(asDeck({ ...STORY, picture })).toEqual(STORY);
+    }
+  });
+
   it('draws each regular\'s initial at 4.5:1 or more', () => {
     for (const colour of Object.values(CAST_COLORS)) expect(contrast(colour, CAST_INK)).toBeGreaterThanOrEqual(4.5);
   });
@@ -126,6 +133,20 @@ describe('the story lesson on screen (M14)', () => {
     expect(screen.getByText(STORY.lesson)).toBeTruthy();
     await next();
     expect(screen.getByText('turn')).toBeTruthy();
+  });
+
+  it('shows the story\'s picture on the cover, and the cover as before when it fails to load', async () => {
+    await render(
+      <Deck article={{ ...SAMPLE_STORY_ARTICLE, deck: { ...STORY, picture: 'story-v1/article-0.webp' } }} label="Today's reading" xp={10}
+        turn={<Text>turn</Text>} onClose={jest.fn()} onFullArticle={jest.fn()} kept={false} onKeep={jest.fn()} reduceMotion />,
+    );
+    const picture = screen.getByTestId('deck-picture', { includeHiddenElements: true });
+    expect(picture.props.source.uri).toMatch(/\/storage\/v1\/object\/public\/lmu-art\/story-v1\/article-0\.webp$/);
+    await fireEvent(picture, 'error');
+    expect(screen.queryByTestId('deck-picture', { includeHiddenElements: true })).toBeNull();
+    expect(screen.getByText(D.todaysStory)).toBeTruthy();
+    await renderStory();
+    expect(screen.queryByTestId('deck-picture', { includeHiddenElements: true })).toBeNull(); // no picture: none drawn
   });
 
   it('says Right for the right answer, and can be skipped', async () => {

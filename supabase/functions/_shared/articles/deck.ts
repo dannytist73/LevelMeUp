@@ -27,6 +27,11 @@ export type StoryDeck = {
   check: { question: string; options: string[]; answer: number; why: string };
   lesson: string;
   tryToday: string;
+  /**
+   * The story's picture in the public `lmu-art` bucket (`story-v1/article-9.webp`): made in the owner's ComfyUI
+   * (scripts/art/story-art.py) and added by the owner after the upload, never by the writer.
+   */
+  picture?: string;
 };
 export type ArticleDeck = LegacyDeck | StoryDeck;
 

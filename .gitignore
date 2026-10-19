@@ -25,3 +25,6 @@ art/quest/renders/
 # Class art renders (M9a): only the picked set in art/class/v1 is kept
 art/class/renders/
 art/class/_set.jpg
+# Story pictures (M14): only the picked set in art/story/v1 is kept
+art/story/renders/
+art/story/_set.jpg

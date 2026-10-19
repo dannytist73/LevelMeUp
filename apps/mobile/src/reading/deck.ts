@@ -5,6 +5,7 @@
 import { castMember } from '@levelmeup/content';
 import type { CastMember } from '@levelmeup/content';
 import type { ArticleDeck, LegacyDeck, StoryDeck } from '../../../../supabase/functions/_shared/articles/deck.ts';
+import { STORY_PICTURE } from '../art/stories.ts';
 
 export type { ArticleDeck, LegacyDeck, StoryDeck };
 
@@ -54,12 +55,15 @@ function asStory(d: Record<string, unknown>): StoryDeck | null {
   const c = check as Record<string, unknown>;
   if (!filled(w.head) || !filled(w.text) || !filled(c.question) || !texts(c.options, 2, 4) || !filled(c.why)) return null;
   if (typeof c.answer !== 'number' || !Number.isInteger(c.answer) || c.answer < 0 || c.answer >= c.options.length) return null;
-  return {
+  const deck: StoryDeck = {
     v: 2, title, subtitle, cast: castMember(cast)!.id, story,
     why: { head: w.head, text: w.text },
     check: { question: c.question, options: c.options, answer: c.answer, why: c.why },
     lesson: d.lesson as string, tryToday: d.tryToday as string,
   };
+  // The picture is a nicety: one of any other shape is dropped, and the story still shows.
+  if (typeof d.picture === 'string' && STORY_PICTURE.test(d.picture)) deck.picture = d.picture;
+  return deck;
 }
 
 export type Card =
