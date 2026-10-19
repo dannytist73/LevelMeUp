@@ -35,3 +35,32 @@ export function articleJson(overrides: Record<string, unknown> = {}): Record<str
     ...overrides,
   };
 }
+
+/** M14: the deck writer's JSON for a story lesson that passes every check against the fixture article. */
+export function storyDeckJson(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    title: 'Rest builds you',
+    subtitle: 'Why the days off are part of training',
+    cast: 'jonah',
+    story: [
+      'Jonah runs every evening for a week. By Saturday his legs feel heavy, and the hill near the depot feels steeper than ever.',
+      'He decides to push harder. On Sunday he runs again, and halfway up the hill he has to stop and walk, breathing hard.',
+      'His friend Sam asks when he last took a day off. Jonah laughs. "Days off are for people who are not trying," he says.',
+      'That week he tries it anyway: a run, a rest day, a run. On the rest day he walks to the shop and goes to bed early.',
+      'By the next Saturday the hill is still hard. But he climbs it without stopping, and his legs feel like his own again.',
+    ],
+    why: {
+      head: 'Rest is part of the work.',
+      text: 'Training asks the body to change, and much of that change is made while you rest and sleep. Skipping rest skips the building part of the work.',
+    },
+    check: {
+      question: 'Jonah feels slower after a hard week. What helps most?',
+      options: ['Run twice as far tomorrow', 'Take a rest day, then run again', 'Stop running for good'],
+      answer: 1,
+      why: 'Rest gives the body time to rebuild, so the next run goes better.',
+    },
+    lesson: 'Rest is when training turns into strength.',
+    try_today: 'Pick one rest day this week and write it in your plan.',
+    ...overrides,
+  };
+}

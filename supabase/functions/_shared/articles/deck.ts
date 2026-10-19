@@ -1,21 +1,45 @@
-// The Story Deck (M11 decisions 4–5): a finished article told as a few short cards the phone swipes through. Written by
-// one direct Claude call from the stored article (never from new research), then checked by code like the article:
-// lengths, no quotations, no links or markup, the lint, no copied run from a source, and no number the article doesn't
-// have. The cover (the title) and "Your turn" (the article's question) come from the article itself.
+// The Story Deck (M11 decisions 4–5), told as a story since M14 (plan 2026-10-19-m14-story-lessons.md): a finished
+// article becomes a short story about one of the regulars (packages/content cast.ts), then why it works, an optional
+// quick check, the lesson and one thing to try today. Written by one direct Claude call from the stored article (never
+// from new research), then checked by code like the article: lengths, the lint, no copied run from a source, no
+// research in the story (it is fiction, and the phone says so), and no number on the other cards that the article
+// doesn't print. "Your turn" (the article's question) comes from the article itself.
+import { CAST, CAST_IDS } from '../../../../packages/content/src/index.ts';
+import type { CastId } from '../../../../packages/content/src/index.ts';
 import { isObject } from '../http.ts';
 import { ARTICLE_MODEL } from '../prompts/articles.ts';
 import { HOUSE_STYLE } from '../prompts/style.ts';
 import type { ArticleDraft } from './check.ts';
-import { GAME_WORDS, articleTexts, copyProblems, textProblems } from './check.ts';
+import { articleTexts, copyProblems, textProblems } from './check.ts';
 import { clip } from './text.ts';
 
+/** M11's deck: still stored for an article until its story is written, and still shown by the phone. */
 export type DeckCard = { kicker: string; text: string };
-export type ArticleDeck = { story: DeckCard[]; systemNote: string | null; lesson: string; tryToday: string };
+export type LegacyDeck = { story: DeckCard[]; systemNote: string | null; lesson: string; tryToday: string };
+/** M14: the story lesson. */
+export type StoryDeck = {
+  v: 2;
+  title: string;
+  subtitle: string;
+  cast: CastId;
+  story: string[];
+  why: { head: string; text: string };
+  check: { question: string; options: string[]; answer: number; why: string };
+  lesson: string;
+  tryToday: string;
+};
+export type ArticleDeck = LegacyDeck | StoryDeck;
+
+export const isStoryDeck = (d: ArticleDeck): d is StoryDeck => 'v' in d && d.v === 2;
 
 export const DECK_LIMITS = {
-  minCards: 3, maxCards: 5,
-  kicker: [2, 40], text: [80, 420], systemNote: [10, 160], lesson: [15, 140], tryToday: [20, 200],
+  minCards: 4, maxCards: 6, options: 3,
+  title: [2, 40], subtitle: [10, 80], story: [60, 260], whyHead: [8, 60], whyText: [80, 380],
+  question: [15, 120], option: [3, 70], checkWhy: [20, 160], lesson: [15, 140], tryToday: [20, 200],
 } as const;
+
+/** Research has no place in the story: it is fiction, and the why card carries the evidence (decision 2). */
+export const STORY_RESEARCH = /\b(stud(?:y|ies|ied)|research(?:ers?)?|scientists?|experiments?|surveys?|percent|meta-analys[ie]s|participants|professor|psychologists?)\b|%/i;
 
 const text = (description: string) => ({ type: 'string', description }) as const;
 
@@ -23,39 +47,67 @@ const text = (description: string) => ({ type: 'string', description }) as const
 export const DECK_SCHEMA = {
   type: 'object',
   properties: {
+    title: text('The lesson\'s short title in sentence case, 1 to 4 words: the idea, not the article\'s headline (for example: Small wins).'),
+    subtitle: text('One line under the title saying what the reader will take away, 4 to 12 words.'),
+    cast: { type: 'string', enum: [...CAST_IDS], description: 'Who the story is about: the regular whose life fits the article best.' },
     story: {
       type: 'array',
-      description: '3 to 5 story cards, in the order the reader swipes them.',
-      items: {
-        type: 'object',
-        properties: {
-          kicker: text('2 to 5 words naming the card\'s part of the story, in sentence case (for example: The story, What is really happening, Why it matters).'),
-          text: text('One idea in 1 to 3 short sentences, 15 to 70 words.'),
-        },
-        required: ['kicker', 'text'],
-        additionalProperties: false,
-      },
+      description: '4 to 6 story cards, in the order the reader swipes them.',
+      items: text('1 to 3 short sentences of the story, 12 to 45 words.'),
     },
-    system_note: {
-      anyOf: [text('One short line in the System\'s terse game-screen voice, under 25 words, without a "System:" prefix.'), { type: 'null' }],
-      description: 'Shown on the last story card; null when the article gives the System nothing to add.',
+    why: {
+      type: 'object',
+      properties: {
+        head: text('The idea in a few words, under 10 words, ending with a full stop.'),
+        text: text('What the article\'s research found, in 2 or 3 plain sentences, 20 to 60 words.'),
+      },
+      required: ['head', 'text'],
+      additionalProperties: false,
+    },
+    check: {
+      type: 'object',
+      properties: {
+        question: text('One question about using the idea, under 20 words, ending with a question mark.'),
+        options: { type: 'array', description: 'Exactly 3 short answers, 3 to 10 words each.', items: text('One answer.') },
+        answer: { type: 'integer', description: 'The index of the right answer: 0, 1 or 2.' },
+        why: text('One line saying why the right answer is right, under 25 words.'),
+      },
+      required: ['question', 'options', 'answer', 'why'],
+      additionalProperties: false,
     },
     lesson: text('The article\'s main idea as one sentence, under 20 words.'),
     try_today: text('One small, safe thing the reader can try today, taken from the article\'s practical advice, under 30 words.'),
   },
-  required: ['story', 'system_note', 'lesson', 'try_today'],
+  required: ['title', 'subtitle', 'cast', 'story', 'why', 'check', 'lesson', 'try_today'],
   additionalProperties: false,
 } as const;
 
-export const DECK_SYSTEM = `You turn one finished LevelMeUp article into its Story Deck: a few short cards a reader swipes through on a phone in about three minutes.
+const REGULARS = CAST.map((c) => `- ${c.id}: ${c.name}, ${c.line}. Stories about ${c.topics}.`).join('\n');
 
-Rules:
-- Use only what the article says. Add no facts, numbers, names, studies, dates or examples that are not in the article, and keep every number with the study and the outcome it belongs to. This holds for numbers written as words too: "a few minutes" never becomes "five minutes".
-- The story cards retell the article in its own order: open with its opening scene or question, then the key findings, then why they matter. One idea per card, 1 to 3 short sentences. Speak to the reader as "you" where the article does.
-- Each card's kicker names its part of the story in a few words, in sentence case.
+export const DECK_SYSTEM = `You turn one finished LevelMeUp article into its story lesson: a short story the reader swipes through on a phone, then why it works, a quick check and the lesson. About three minutes in all.
+
+The story:
+- It stars one of the regulars listed below: the one whose life fits the article best. Keep their name, age and life as given. Small everyday details are welcome (a place, a time of day, a friend, a colleague), but never a new job or family that contradicts their line.
+- 4 to 6 cards, in order: the moment (a scene the reader can picture, with a problem they would recognise), what goes wrong or what they try first, the turn (they try the article's idea in a small, concrete way), and how it goes. End on a quiet, honest result, never a miracle.
+- Present tense, third person, short sentences, everyday words. Show, don't tell: actions, objects, a few words said aloud. Short lines of dialogue from the regulars are fine, and are the one exception to the house style's rule on quotation marks.
+- The story is fiction and carries no research: no numbers written as digits, no studies, research, researchers, scientists, experiments, surveys, percentages or participants, and no real people. Counts written as words are fine when they belong to the scene (three weeks, the fifth Sunday).
+- The story shows the article's idea working the way the article says it works, and no stronger. When the article says an effect is modest or depends on something, the story's result is modest too.
+
+Why it works:
+- The head is the idea in a few words. The text says what the article's research found, in 2 or 3 plain sentences: who looked at what, and what they found. Use only what the article says, keep every number with the study and the outcome it belongs to, and keep the article's cautions about how strong the evidence is.
+
+The quick check:
+- One question about using the idea, ideally about the story's person in a new moment. Three short answers: exactly one is right by the article; the other two are tempting but wrong, never silly. Put the right answer first, second or third as fits. The why is one line saying why the right answer is right.
+
+The lesson and try today:
 - The lesson is the article's main idea in one sentence. "Try today" is one small, safe action from the article's practical advice, sized for a beginner.
-- A System note is optional: one terse line in the System's game-screen voice that sums up or nudges, never a new fact. It never announces anything in the game (no quest added or active, no XP, rewards or achievements) and never claims to have detected something about the reader: only the app's own quests do that.
-- Everything else in the house style below holds, except its shape: the deck replaces that.
+
+Never: facts, numbers, names, studies or examples that are not in the article (the story's fiction aside); anything announced in the game (no quest added or active, no XP, rewards or achievements); a claim to have detected something about the reader; a System note (the lesson has none).
+
+Everything else in the house style below holds, except its shape: the lesson replaces that.
+
+The regulars:
+${REGULARS}
 
 ${HOUSE_STYLE}`;
 
@@ -81,24 +133,28 @@ export function deckParams(a: ArticleDraft): Record<string, unknown> {
 }
 
 const tidy = (s: string): string => s.replace(/\s+/g, ' ').trim();
+const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === 'string');
 
-/** The model's JSON as a deck, or null when its shape is wrong (types only: the checks judge the content). */
-export function parseDeck(value: unknown): ArticleDeck | null {
-  if (!isObject(value) || !Array.isArray(value.story) || typeof value.lesson !== 'string' || typeof value.try_today !== 'string') return null;
-  if (value.system_note !== null && typeof value.system_note !== 'string') return null;
-  const story: DeckCard[] = [];
-  for (const card of value.story) {
-    if (!isObject(card) || typeof card.kicker !== 'string' || typeof card.text !== 'string') return null;
-    story.push({ kicker: tidy(card.kicker), text: tidy(card.text) });
-  }
-  // The phone's box carries the "System" label already, as for the article's notes.
-  const note = typeof value.system_note === 'string' ? tidy(value.system_note).replace(/^system:\s*/i, '') : '';
-  return { story, systemNote: note === '' ? null : note, lesson: tidy(value.lesson), tryToday: tidy(value.try_today) };
+/** The model's JSON as a story deck, or null when its shape is wrong (types only: the checks judge the content). */
+export function parseDeck(value: unknown): StoryDeck | null {
+  if (!isObject(value)) return null;
+  const { title, subtitle, cast, story, why, check, lesson, try_today: tryToday } = value;
+  if (typeof title !== 'string' || typeof subtitle !== 'string' || typeof lesson !== 'string' || typeof tryToday !== 'string') return null;
+  if (typeof cast !== 'string' || !(CAST_IDS as readonly string[]).includes(cast) || !strings(story)) return null;
+  if (!isObject(why) || typeof why.head !== 'string' || typeof why.text !== 'string') return null;
+  if (!isObject(check) || typeof check.question !== 'string' || !strings(check.options) || typeof check.why !== 'string') return null;
+  if (typeof check.answer !== 'number' || !Number.isInteger(check.answer)) return null;
+  return {
+    v: 2, title: tidy(title), subtitle: tidy(subtitle), cast: cast as CastId, story: story.map(tidy),
+    why: { head: tidy(why.head), text: tidy(why.text) },
+    check: { question: tidy(check.question), options: check.options.map(tidy), answer: check.answer, why: tidy(check.why) },
+    lesson: tidy(lesson), tryToday: tidy(tryToday),
+  };
 }
 
 /** Every piece of text the deck shows. */
-export function deckTexts(d: ArticleDeck): string[] {
-  return [...d.story.flatMap((c) => [c.kicker, c.text]), ...(d.systemNote === null ? [] : [d.systemNote]), d.lesson, d.tryToday];
+export function deckTexts(d: StoryDeck): string[] {
+  return [...d.story, ...factTexts(d)];
 }
 
 /**
@@ -157,24 +213,47 @@ function spelledNumbers(t: string): number[] {
 const between = (s: string, [min, max]: readonly [number, number]): boolean => s.length >= min && s.length <= max;
 
 /** Why a deck can't be shown with its article, or nothing. */
-export function checkDeck(d: ArticleDeck, article: ArticleDraft, excerpts: readonly string[]): string[] {
+export function checkDeck(d: StoryDeck, article: ArticleDraft, excerpts: readonly string[]): string[] {
   const problems: string[] = [];
   const L = DECK_LIMITS;
-  if (d.story.length < L.minCards || d.story.length > L.maxCards) problems.push(`a deck has ${L.minCards}–${L.maxCards} story cards`);
-  for (const c of d.story) {
-    if (!between(c.kicker, L.kicker)) problems.push(`kicker "${clip(c.kicker, 40)}" must be ${L.kicker[0]}–${L.kicker[1]} characters`);
-    if (!between(c.text, L.text)) problems.push(`card "${clip(c.text, 40)}" must be ${L.text[0]}–${L.text[1]} characters`);
+  const size = (s: string, range: readonly [number, number], what: string) => {
+    if (!between(s, range)) problems.push(`${what} must be ${range[0]}–${range[1]} characters`);
+  };
+  size(d.title, L.title, 'the title');
+  size(d.subtitle, L.subtitle, 'the subtitle');
+  if (d.story.length < L.minCards || d.story.length > L.maxCards) problems.push(`a story has ${L.minCards}–${L.maxCards} cards`);
+  for (const card of d.story) {
+    size(card, L.story, `story card "${clip(card, 40)}"`);
+    if (/\d/.test(card)) problems.push(`story card "${clip(card, 40)}" has a number in digits (the story is fiction)`);
+    const research = STORY_RESEARCH.exec(card);
+    if (research !== null) problems.push(`story card "${clip(card, 40)}" mentions research ("${research[0]}"): that belongs on the why card`);
   }
-  if (d.systemNote !== null && !between(d.systemNote, L.systemNote)) problems.push(`the System note must be ${L.systemNote[0]}–${L.systemNote[1]} characters`);
-  if (d.systemNote !== null && GAME_WORDS.test(d.systemNote)) problems.push('the System note announces something in the game, which only the app does');
-  if (!between(d.lesson, L.lesson)) problems.push(`the lesson must be ${L.lesson[0]}–${L.lesson[1]} characters`);
-  if (!between(d.tryToday, L.tryToday)) problems.push(`"Try today" must be ${L.tryToday[0]}–${L.tryToday[1]} characters`);
+  const name = CAST.find((c) => c.id === d.cast)!.name;
+  if (!d.story.some((card) => card.includes(name))) problems.push(`the story never names ${name}`);
+  size(d.why.head, L.whyHead, 'the why card\'s head');
+  size(d.why.text, L.whyText, 'the why card\'s text');
+  size(d.check.question, L.question, 'the question');
+  if (!d.check.question.endsWith('?')) problems.push('the question must end with a question mark');
+  if (d.check.options.length !== L.options) problems.push(`the quick check has exactly ${L.options} answers`);
+  for (const o of d.check.options) size(o, L.option, `the answer "${clip(o, 30)}"`);
+  if (new Set(d.check.options.map((o) => o.toLowerCase())).size !== d.check.options.length) problems.push('the answers must differ');
+  if (d.check.answer < 0 || d.check.answer >= d.check.options.length) problems.push('the right answer must be one of the answers');
+  size(d.check.why, L.checkWhy, 'the answer\'s why');
+  size(d.lesson, L.lesson, 'the lesson');
+  size(d.tryToday, L.tryToday, '"Try today"');
 
-  const texts = deckTexts(d);
-  for (const t of texts) problems.push(...textProblems(t));
-  problems.push(...copyProblems(texts, excerpts));
-  // No invented statistics: every number on a card is one the article prints.
+  // The regulars may speak in the story (decision 2): a story's quotation marks are dialogue, not a quoted source.
+  for (const card of d.story) problems.push(...textProblems(card).filter((p) => !p.startsWith('no quotations')));
+  const facts = factTexts(d);
+  for (const t of facts) problems.push(...textProblems(t));
+  problems.push(...copyProblems(deckTexts(d), excerpts));
+  // No invented statistics: every number off the story's cards is one the article prints. The story's counts are its own.
   const known = new Set(articleTexts(article).flatMap(numbersIn));
-  for (const n of new Set(texts.flatMap(numbersIn))) if (!known.has(n)) problems.push(`the number ${n} is not in the article`);
+  for (const n of new Set(facts.flatMap(numbersIn))) if (!known.has(n)) problems.push(`the number ${n} is not in the article`);
   return [...new Set(problems)];
+}
+
+/** Every text off the story's cards: these speak as fact, so they hold to the article. */
+function factTexts(d: StoryDeck): string[] {
+  return [d.title, d.subtitle, d.why.head, d.why.text, d.check.question, ...d.check.options, d.check.why, d.lesson, d.tryToday];
 }

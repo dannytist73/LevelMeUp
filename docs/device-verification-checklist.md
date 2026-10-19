@@ -725,3 +725,21 @@ RevenueCat set up (the owner's steps 5 and 7) and a build with the public key; r
 | 17 | Restore purchases on a new character with the same Google account brings Plus back; on an account that never bought, it says none was found. | |
 | 18 | Cancel in Play: at the next launch Settings says "ends …, cancelled"; after the end (license testers' periods are minutes), Plus is gone and the look returns to Moonlight. | |
 | 19 | Play Console's App bundle explorer shows the AAB targets API 36 and supports 16 KB pages; the pre-launch report has no crash. | |
+
+## M14 — Story lessons (branch `m14-story-lessons`, 2026-10-19)
+
+Plan `docs/superpowers/plans/2026-10-19-m14-story-lessons.md`. The reading's cards tell a short story about one of six
+regulars, then why it works, an optional quick check, the lesson and Your turn. Rows 1–5 need the story decks stored
+(the owner's yes); row 6 needs a deck from before M14; rows 7–8 need the functions deployed. Read-only on Vera: open and
+swipe the cards, never claim.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Today's reading opens on a cover with the person ("Today's story", their initial, name and line), the lesson's own title and subtitle, "N cards · about M min · +10 XP". | |
+| 2 | The story cards show the person's initial and "{Name}'s story · n of N"; the text is big and easy to read; a tap or a swipe turns the card. | |
+| 3 | Why it works: the head, the research in plain words, and "{Name} is made up. The research is real…" at the bottom. | |
+| 4 | The quick check: three answers as large buttons; tapping a wrong one marks it and shows "Not quite. The answer: …" with the why; the right one fills with a check mark; the answers lock; swiping on without an answer goes to the lesson. TalkBack reads each answer as a radio button and announces the result. | |
+| 5 | The lesson, Keep (Codex), Your turn and the claim work as before; Library and Read again show the new deck; the largest font size wraps without cutting text. | |
+| 6 | A deck stored before M14 (if any is left) still shows its old cards with the System note. | |
+| 7 | After the functions are deployed: a new night's article gets a story deck from the cron (`npm run articles -- decks`), and `npm run articles -- review` shows it with the right answer marked. | |
+| 8 | An app older than 0.7.0 opening a story deck shows the full article instead (no crash). | |

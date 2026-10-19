@@ -1,7 +1,7 @@
 import { PLAY_TEXT, READING_TEXT } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Linking } from 'react-native';
-import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
+import { SAMPLE_ARTICLE, SAMPLE_LEGACY_DECK } from '../src/dev/sampleArticle.ts';
 import { project } from '../src/game/project.ts';
 import type { ArticleBody, PhoneEvent, ServerState } from '../src/game/types.ts';
 import { Quest } from '../src/screens/Quest.tsx';
@@ -93,11 +93,11 @@ describe('the Story Deck (M11)', () => {
     expect(screen.getByText('6 cards · about 2 min · +10 XP')).toBeTruthy();
     expect(screen.getByRole('button', { name: D.previous }).props.accessibilityState).toMatchObject({ disabled: true });
     await next();
-    expect(screen.getByText(SAMPLE_ARTICLE.deck!.story[0]!.text)).toBeTruthy();
+    expect(screen.getByText(SAMPLE_LEGACY_DECK.story[0]!.text)).toBeTruthy();
     expect(screen.getByText('1 of 3')).toBeTruthy();
     await next();
     await next();
-    expect(screen.getByLabelText(`System: ${SAMPLE_ARTICLE.deck!.systemNote}`)).toBeTruthy(); // on the last story card
+    expect(screen.getByLabelText(`System: ${SAMPLE_LEGACY_DECK.systemNote}`)).toBeTruthy(); // on the last story card
     await next();
     expect(screen.getByText(SAMPLE_ARTICLE.deck!.lesson)).toBeTruthy();
     expect(screen.getByText(SAMPLE_ARTICLE.deck!.tryToday)).toBeTruthy();

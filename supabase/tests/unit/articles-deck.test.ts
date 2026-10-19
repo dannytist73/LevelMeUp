@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { CAST_IDS } from '../../../packages/content/src/index.ts';
 import { parseArticle } from '../../functions/_shared/articles/check.ts';
 import type { ArticleDraft } from '../../functions/_shared/articles/check.ts';
-import { DECK_SCHEMA, checkDeck, deckParams, numbersIn, parseDeck } from '../../functions/_shared/articles/deck.ts';
-import { BRIEF, articleJson, paragraph } from './articles-fixtures.ts';
+import { DECK_SCHEMA, DECK_SYSTEM, checkDeck, deckParams, isStoryDeck, numbersIn, parseDeck } from '../../functions/_shared/articles/deck.ts';
+import type { StoryDeck } from '../../functions/_shared/articles/deck.ts';
+import { BRIEF, articleJson, paragraph, storyDeckJson } from './articles-fixtures.ts';
 
 /** The fixture article, with one paragraph that carries numbers a deck may repeat. */
 const ARTICLE: ArticleDraft = (() => {
@@ -11,59 +13,81 @@ const ARTICLE: ArticleDraft = (() => {
   return a;
 })();
 
-/** The model's JSON for a deck that passes every check. */
-function deckJson(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    story: [
-      { kicker: 'The story', text: 'You finish a hard week of training and feel worse, not better. The work was real, so where did the progress go?' },
-      { kicker: 'What is really happening', text: 'A typical night of sleep runs in cycles of about 90 minutes, and the body does much of its repair while you rest.' },
-      { kicker: 'Why it matters', text: 'Training asks the body to change, and rest is when the change is made. Skipping rest skips the building part of the work.' },
-    ],
-    system_note: 'System: Rest days count. They are part of training.',
-    lesson: 'Rest is when training turns into strength.',
-    try_today: 'Pick one rest day this week and write it in your plan.',
-    ...overrides,
-  };
-}
+const deck = (overrides: Record<string, unknown> = {}): StoryDeck => parseDeck(storyDeckJson(overrides))!;
+const story = (): string[] => [...(storyDeckJson().story as string[])];
+const withCard = (i: number, card: string): StoryDeck => {
+  const cards = story();
+  cards[i] = card;
+  return deck({ story: cards });
+};
+const check = (overrides: Record<string, unknown>) => ({ ...(storyDeckJson().check as Record<string, unknown>), ...overrides });
 
-describe('the Story Deck (M11)', () => {
-  it('parses the writer\'s JSON, tidying spaces and dropping the "System:" prefix', () => {
-    const deck = parseDeck(deckJson({ lesson: '  Rest is when\ntraining turns into strength. ' }))!;
-    expect(deck.story).toHaveLength(3);
-    expect(deck.systemNote).toBe('Rest days count. They are part of training.');
-    expect(deck.lesson).toBe('Rest is when training turns into strength.');
-    expect(deck.tryToday).toBe('Pick one rest day this week and write it in your plan.');
-    expect(parseDeck(deckJson({ system_note: null }))!.systemNote).toBeNull();
+describe('the story lesson (M14)', () => {
+  it('parses the writer\'s JSON into a story deck, tidying spaces', () => {
+    const d = deck({ lesson: '  Rest is when\ntraining turns into strength. ' });
+    expect(d).toMatchObject({ v: 2, title: 'Rest builds you', cast: 'jonah', lesson: 'Rest is when training turns into strength.' });
+    expect(d.story).toHaveLength(5);
+    expect(d.check).toMatchObject({ answer: 1, options: ['Run twice as far tomorrow', 'Take a rest day, then run again', 'Stop running for good'] });
+    expect(d.tryToday).toBe('Pick one rest day this week and write it in your plan.');
+    expect(isStoryDeck(d)).toBe(true);
+    expect(isStoryDeck({ story: [], systemNote: null, lesson: 'x', tryToday: 'y' })).toBe(false);
   });
 
   it('refuses a wrong shape', () => {
     expect(parseDeck(null)).toBeNull();
-    expect(parseDeck(deckJson({ story: 'cards' }))).toBeNull();
-    expect(parseDeck(deckJson({ story: [{ kicker: 'x' }] }))).toBeNull();
-    expect(parseDeck(deckJson({ system_note: 3 }))).toBeNull();
-    expect(parseDeck(deckJson({ try_today: undefined }))).toBeNull();
+    expect(parseDeck(storyDeckJson({ cast: 'gandalf' }))).toBeNull();
+    expect(parseDeck(storyDeckJson({ story: [{ kicker: 'The story', text: 'An M11 card.' }] }))).toBeNull();
+    expect(parseDeck(storyDeckJson({ why: 'Rest helps.' }))).toBeNull();
+    expect(parseDeck(storyDeckJson({ check: check({ options: 'one, two, three' }) }))).toBeNull();
+    expect(parseDeck(storyDeckJson({ check: check({ answer: 1.5 }) }))).toBeNull();
+    expect(parseDeck(storyDeckJson({ try_today: undefined }))).toBeNull();
   });
 
   it('passes a good deck', () => {
-    expect(checkDeck(parseDeck(deckJson())!, ARTICLE, BRIEF.excerpts)).toEqual([]);
+    expect(checkDeck(deck(), ARTICLE, BRIEF.excerpts)).toEqual([]);
   });
 
   it('holds the card count and the lengths', () => {
-    const two = parseDeck(deckJson({ story: (deckJson().story as unknown[]).slice(0, 2) }))!;
-    expect(checkDeck(two, ARTICLE, [])).toContain('a deck has 3–5 story cards');
-    const short = parseDeck(deckJson({ lesson: 'Rest.', try_today: 'Sleep.' }))!;
-    const problems = checkDeck(short, ARTICLE, []);
-    expect(problems).toContain('the lesson must be 15–140 characters');
-    expect(problems).toContain('"Try today" must be 20–200 characters');
-    const long = parseDeck(deckJson({ story: [...(deckJson().story as { kicker: string; text: string }[]), { kicker: 'More', text: 'word '.repeat(100) }] }))!;
-    expect(checkDeck(long, ARTICLE, []).some((p) => p.startsWith('card '))).toBe(true);
+    expect(checkDeck(deck({ story: story().slice(0, 3) }), ARTICLE, [])).toContain('a story has 4–6 cards');
+    expect(checkDeck(deck({ story: [...story(), ...story().slice(0, 2)] }), ARTICLE, [])).toContain('a story has 4–6 cards');
+    const short = checkDeck(deck({ lesson: 'Rest.', try_today: 'Sleep.', title: 'R' }), ARTICLE, []);
+    expect(short).toContain('the lesson must be 15–140 characters');
+    expect(short).toContain('"Try today" must be 20–200 characters');
+    expect(short).toContain('the title must be 2–40 characters');
+    expect(checkDeck(withCard(1, `Jonah runs. ${'He keeps going up the hill. '.repeat(12)}`), ARTICLE, []).some((p) => p.startsWith('story card '))).toBe(true);
+  });
+
+  it('keeps research out of the story: no digits, no studies, and it names its person (decision 2)', () => {
+    const digits = checkDeck(withCard(0, 'Jonah runs for 20 minutes every evening. By Saturday his legs feel heavy and the hill looks steep.'), ARTICLE, []);
+    expect(digits).toHaveLength(1);
+    expect(digits[0]).toMatch(/^story card "Jonah runs for 20 .*" has a number in digits \(the story is fiction\)$/);
+    for (const word of ['a study', 'researchers', 'a survey', 'ten percent', 'the participants']) {
+      const problems = checkDeck(withCard(1, `He reads about ${word} on the bus home, then decides to push harder on Sunday anyway.`), ARTICLE, []);
+      expect(problems.some((p) => p.includes('mentions research')), word).toBe(true);
+    }
+    expect(checkDeck(deck({ cast: 'priya' }), ARTICLE, [])).toContain('the story never names Priya');
+  });
+
+  it('lets the story count in words and speak in dialogue, but not the other cards', () => {
+    // Counts in words belong to the scene; the article has no seven, and that's fine in the story.
+    expect(checkDeck(withCard(0, 'Jonah runs seven evenings in a row. By Saturday his legs feel heavy, and the hill feels steeper than ever.'), ARTICLE, [])).toEqual([]);
+    expect(checkDeck(deck({ lesson: 'Rest seven days and you will be strong.' }), ARTICLE, [])).toContain('the number 7 is not in the article');
+    const quoted = deck({ lesson: 'As the coach said, "rest is part of the work" every day.' });
+    expect(checkDeck(quoted, ARTICLE, []).some((p) => p.startsWith('no quotations'))).toBe(true);
+    expect(checkDeck(deck(), ARTICLE, [])).toEqual([]); // the fixture's story has a line of dialogue
+  });
+
+  it('holds the quick check to three different answers, a right one, and a real question', () => {
+    expect(checkDeck(deck({ check: check({ options: ['Rest', 'Run more'] }) }), ARTICLE, [])).toContain('the quick check has exactly 3 answers');
+    expect(checkDeck(deck({ check: check({ answer: 3 }) }), ARTICLE, [])).toContain('the right answer must be one of the answers');
+    expect(checkDeck(deck({ check: check({ options: ['Rest more', 'rest more', 'Run more'] }) }), ARTICLE, [])).toContain('the answers must differ');
+    expect(checkDeck(deck({ check: check({ question: 'Jonah feels slower after a hard week.' }) }), ARTICLE, [])).toContain('the question must end with a question mark');
   });
 
   it('refuses a number the article doesn\'t print, and accepts one written with or without a thousands comma', () => {
-    const invented = parseDeck(deckJson({ lesson: 'Rest for 66 days and you will be strong.' }))!;
-    expect(checkDeck(invented, ARTICLE, [])).toContain('the number 66 is not in the article');
-    const known = parseDeck(deckJson({ try_today: 'Read how 1200 people slept, then plan your own rest day.' }))!;
-    expect(checkDeck(known, ARTICLE, [])).toEqual([]);
+    expect(checkDeck(deck({ why: { head: 'Rest is part of the work.', text: 'In one study of 66 runners, the ones who rested more ran further. Rest gives the body time to rebuild.' } }), ARTICLE, []))
+      .toContain('the number 66 is not in the article');
+    expect(checkDeck(deck({ try_today: 'Read how 1200 people slept, then plan your own rest day.' }), ARTICLE, [])).toEqual([]);
     expect(numbersIn('1,200 people, 2.5 hours, 90 min')).toEqual(['1200', '2.5', '90']);
   });
 
@@ -72,32 +96,21 @@ describe('the Story Deck (M11)', () => {
       .toEqual(['66', '350', '21', '10000', '1200']);
     expect(numbersIn('five six-minute walks; three, four')).toEqual(['5', '6', '3', '4']);
     expect(numbersIn('one small step, the two of them, and none of that')).toEqual([]);
-    const words = parseDeck(deckJson({ lesson: 'People are seven times as likely to keep a habit.' }))!;
-    expect(checkDeck(words, ARTICLE, [])).toContain('the number 7 is not in the article');
-    const same = parseDeck(deckJson({ try_today: 'Sleep in cycles of ninety minutes, and count four to six of them tonight.' }))!;
-    expect(checkDeck(same, ARTICLE, [])).toEqual([]);
+    expect(checkDeck(deck({ try_today: 'Sleep in cycles of ninety minutes, and count four to six of them tonight.' }), ARTICLE, [])).toEqual([]);
   });
 
-  it('refuses a System note that announces something in the game (M11 deploy: "Daily quest added")', () => {
-    for (const note of ['Daily quest added. Protect the last cycle.', 'Quest active: phone out of reach.', 'Bonus XP for rest days.', 'Reflection detected. Keep writing.']) {
-      expect(checkDeck(parseDeck(deckJson({ system_note: note }))!, ARTICLE, [])).toContain('the System note announces something in the game, which only the app does');
-    }
-    expect(checkDeck(parseDeck(deckJson({ system_note: 'Protect the last cycle. Rest days count.' }))!, ARTICLE, [])).toEqual([]);
-  });
-
-  it('refuses quotations, links and copied words', () => {
-    const quoted = parseDeck(deckJson({ lesson: 'As the coach said, "rest is part of the work" every day.' }))!;
-    expect(checkDeck(quoted, ARTICLE, []).some((p) => p.startsWith('no quotations'))).toBe(true);
-    const linked = parseDeck(deckJson({ try_today: 'Read more at sleep.org before you plan your rest.' }))!;
-    expect(checkDeck(linked, ARTICLE, []).some((p) => p.startsWith('no links'))).toBe(true);
-    const copied = parseDeck(deckJson({ lesson: 'A typical night has four to six cycles of about ninety minutes.' }))!;
+  it('refuses links and copied words anywhere', () => {
+    expect(checkDeck(deck({ try_today: 'Read more at sleep.org before you plan your rest.' }), ARTICLE, []).some((p) => p.startsWith('no links'))).toBe(true);
+    const copied = withCard(3, 'Jonah reads that a typical night has four to six cycles of about ninety minutes, and goes to bed early.');
     expect(checkDeck(copied, ARTICLE, BRIEF.excerpts).some((p) => p.startsWith('repeats 8 or more words'))).toBe(true);
   });
 
-  it('asks for structured output from the stored article, with no source ids', () => {
-    const params = deckParams(ARTICLE) as { model: string; output_config: { format: { schema: unknown } }; messages: { content: string }[] };
+  it('asks for structured output from the stored article, with the regulars to choose from', () => {
+    const params = deckParams(ARTICLE) as { model: string; output_config: { format: { schema: typeof DECK_SCHEMA } }; messages: { content: string }[] };
     expect(params.model).toBe('claude-opus-5-5');
     expect(params.output_config.format.schema).toBe(DECK_SCHEMA);
+    expect(DECK_SCHEMA.properties.cast.enum).toEqual(CAST_IDS);
+    for (const name of ['Priya', 'Jonah', 'Mika', 'Tomás', 'Amara', 'Lena']) expect(DECK_SYSTEM).toContain(name);
     expect(params.messages[0]!.content).toContain(ARTICLE.title);
     expect(params.messages[0]!.content).not.toContain('source_ids');
   });

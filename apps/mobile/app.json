@@ -2,7 +2,7 @@
   "expo": {
     "name": "LevelMeUp",
     "slug": "levelmeup",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "levelmeup",
@@ -73,7 +73,7 @@
     ],
     "android": {
       "package": "com.dannytist.levelmeup",
-      "versionCode": 7,
+      "versionCode": 8,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",

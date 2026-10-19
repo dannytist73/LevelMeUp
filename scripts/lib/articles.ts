@@ -3,7 +3,9 @@ import type { Brief } from '../../supabase/functions/_shared/articles/brief.ts';
 import { articleTexts, articleWords, checkArticle, readingMinutes } from '../../supabase/functions/_shared/articles/check.ts';
 import type { ArticleDraft, ArticleSection } from '../../supabase/functions/_shared/articles/check.ts';
 import { clip } from '../../supabase/functions/_shared/articles/text.ts';
+import { isStoryDeck } from '../../supabase/functions/_shared/articles/deck.ts';
 import type { ArticleDeck } from '../../supabase/functions/_shared/articles/deck.ts';
+import { castMember } from '../../packages/content/src/index.ts';
 
 export const TICK_JOB = 'lmu-articles-tick';
 export const TICK_SCHEDULE = '*/30 * * * *';
@@ -63,6 +65,19 @@ const esc = (text: string): string => text.replace(/&/g, '&amp;').replace(/</g, 
 /** M11: the Story Deck under its article, card by card; or a line saying the cron hasn't written it yet. */
 function deckHtml(deck: ArticleDeck | null): string {
   if (deck === null) return '<p class="meta">Story Deck: not written yet (the cron writes it within the hour).</p>';
+  // M14: the story lesson, with the regular it follows and the quick check's right answer marked.
+  if (isStoryDeck(deck)) {
+    return `<section class="deck"><h3>Story lesson: ${esc(deck.title)}</h3>
+  <p class="meta">${esc(deck.subtitle)} · ${esc(castMember(deck.cast)?.name ?? deck.cast)}'s story</p>
+  ${deck.story.map((card, i) => `<p><span class="cites">${i + 1}.</span> ${esc(card)}</p>`).join('\n  ')}
+  <p><b>Why it works: ${esc(deck.why.head)}</b> ${esc(deck.why.text)}</p>
+  <p><b>Quick check:</b> ${esc(deck.check.question)}</p>
+  <ol>${deck.check.options.map((o, i) => `<li>${i === deck.check.answer ? `<b>${esc(o)} (right)</b>` : esc(o)}</li>`).join('')}</ol>
+  <p class="meta">${esc(deck.check.why)}</p>
+  <p><b>Lesson:</b> ${esc(deck.lesson)}</p>
+  <p><b>Try it today:</b> ${esc(deck.tryToday)}</p>
+</section>`;
+  }
   return `<section class="deck"><h3>Story Deck</h3>
   ${deck.story.map((c, i) => `<p><span class="cites">${i + 1}. ${esc(c.kicker)}</span><br>${esc(c.text)}</p>`).join('\n  ')}
   ${deck.systemNote === null ? '' : `<p class="system">System: ${esc(deck.systemNote)}</p>`}

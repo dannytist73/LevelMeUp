@@ -9,7 +9,7 @@ import type {
   BatchResult, Batches, DeckAnswer, DeckSource, Decks, Finish, Job, JobSet, JobStatus, Store, StoredArticle, StoredSource,
 } from '../../functions/_shared/articles/pipeline.ts';
 import type { BatchRequest } from '../../functions/_shared/prompts/articles.ts';
-import { BRIEF, articleJson } from './articles-fixtures.ts';
+import { BRIEF, articleJson, storyDeckJson } from './articles-fixtures.ts';
 
 const HOUR = 3_600_000;
 const NIGHT = Date.parse('2026-10-13T18:05:00Z');
@@ -411,16 +411,7 @@ class FakeDecks implements Decks {
 }
 
 const DECK_USAGE = { input_tokens: 3_000, output_tokens: 800 };
-const DECK = {
-  story: [
-    { kicker: 'The story', text: 'You finish a hard week of training and feel worse, not better. The work was real, so where did the progress go?' },
-    { kicker: 'What is really happening', text: 'Training breaks the body down a little, and the building happens later, while you sleep and rest between sessions.' },
-    { kicker: 'Why it matters', text: 'Skip the rest and you skip the part where the change is made. Rest days are part of the plan, not a break from it.' },
-  ],
-  system_note: 'Rest days count. They are part of training.',
-  lesson: 'Rest is when training turns into strength.',
-  try_today: 'Pick one rest day this week and write it in your plan.',
-};
+const DECK = storyDeckJson();
 
 describe('the Story Deck step (M11 decision 4)', () => {
   const draft = parseArticle(articleJson())!;
@@ -438,7 +429,7 @@ describe('the Story Deck step (M11 decision 4)', () => {
     expect(DECKS_PER_TICK).toBe(2);
     expect(report).toMatchObject({ decked: ['article-1', 'article-2'], deckFailed: [] });
     expect(store.decks.map((d) => d.deck === null)).toEqual([false, false, true]);
-    expect(store.decks[0]!.deck!.systemNote).toBe('Rest days count. They are part of training.');
+    expect(store.decks[0]!.deck).toMatchObject({ v: 2, cast: 'jonah', title: 'Rest builds you' });
     expect(store.calls.map((c) => [c.jobId, c.estimate, c.finish!.status, c.finish!.costUsd])).toEqual([[1, 0.08, 'ok', 0.028], [2, 0.08, 'ok', 0.028]]);
     expect((await run()).decked).toEqual(['article-3']);
     expect((await run()).decked).toEqual([]);
@@ -454,7 +445,7 @@ describe('the Story Deck step (M11 decision 4)', () => {
 
   it('a refused deck uses one of its two tries and says why; after two it is left to the full article', async () => {
     const { store, decks, run } = withArticles(1);
-    decks.answers.set('article-1', { value: { ...DECK, lesson: 'Rest for 66 days and you will be strong.' }, usage: DECK_USAGE });
+    decks.answers.set('article-1', { value: storyDeckJson({ lesson: 'Rest for 66 days and you will be strong.' }), usage: DECK_USAGE });
     expect((await run()).deckFailed).toEqual(['article-1']);
     expect(store.decks[0]).toMatchObject({ deck: null, attempts: 1, error: 'the number 66 is not in the article' });
     expect(store.calls[0]!.finish).toMatchObject({ status: 'failed', costUsd: 0.028 });

@@ -4,7 +4,8 @@ import {
 } from '../../../scripts/lib/articles.ts';
 import type { StoredArticle } from '../../../scripts/lib/articles.ts';
 import { parseArticle } from '../../functions/_shared/articles/check.ts';
-import { BRIEF, articleJson } from './articles-fixtures.ts';
+import { parseDeck } from '../../functions/_shared/articles/deck.ts';
+import { BRIEF, articleJson, storyDeckJson } from './articles-fixtures.ts';
 
 describe('the cron (M8a decision 11)', () => {
   const sql = cronOnSql('https://x.supabase.co/functions/v1/lmu-articles-tick', 'sb_publishable_abc');
@@ -73,6 +74,14 @@ describe('the review page (M8a decision 10)', () => {
     expect(html).toContain('You &lt;wake&gt; tired.');
     expect(html).toContain('System: Sleep counts.');
     expect(html).toContain('<b>Try it today:</b> Wake at one time.');
+  });
+
+  it("shows a story lesson with its person and the quick check's right answer (M14)", () => {
+    const html = reviewHtml([{ ...article, deck: parseDeck(storyDeckJson())! }]);
+    expect(html).toContain('Story lesson: Rest builds you');
+    expect(html).toContain("Jonah's story");
+    expect(html).toContain('<b>Take a rest day, then run again (right)</b>');
+    expect(html).toContain('<b>Why it works: Rest is part of the work.</b>');
   });
 });
 

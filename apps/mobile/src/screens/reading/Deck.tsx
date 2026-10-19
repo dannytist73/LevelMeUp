@@ -3,14 +3,18 @@
 // gives (today: the takeaway that clears the quest; a past reading: the line written that day). A clearly sideways drag
 // turns a card and a quick tap on the cover or a story card turns it too; Previous and Next work for everyone (TalkBack,
 // switch access); each card is announced with its number. Under "Remove animations" cards change without moving.
-// React Native's own Animated and PanResponder, as in Dogeared: no new native module.
+// React Native's own Animated and PanResponder, as in Dogeared: no new native module. M14 (plan
+// 2026-10-19-m14-story-lessons.md): a story lesson's cards follow one of the regulars, then say why it works (and that
+// the person is made up), then ask the optional quick check, whose answer stays on this phone and changes nothing.
 import { CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
+import type { CastMember } from '@levelmeup/content';
 import type { ReactNode } from 'react';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, PanResponder, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ArticleBody } from '../../game/types.ts';
-import { coverTitle, deckCards, deckMinutes } from '../../reading/deck.ts';
+import { CAST_COLORS, CAST_INK } from '../../reading/castColors.ts';
+import { coverTitle, deckCards, deckMinutes, deckPerson, isStory } from '../../reading/deck.ts';
 import type { ArticleDeck, Card } from '../../reading/deck.ts';
 import { colors, fonts, radius, space } from '../../theme/tokens.ts';
 import { Icon } from '../../ui/icons.tsx';
@@ -44,6 +48,16 @@ export type DeckProps = {
   reduceMotion?: boolean;
 };
 
+/** A regular's initial in their colour (M14). */
+function PersonBadge({ person, size }: { person: CastMember; size: number }) {
+  return (
+    <View accessible={false} importantForAccessibility="no-hide-descendants"
+      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: CAST_COLORS[person.id], alignItems: 'center', justifyContent: 'center' }}>
+      <Text maxFontSizeMultiplier={1} style={{ fontFamily: fonts.bodyBold, fontSize: Math.round(size * 0.45), color: CAST_INK }}>{person.name[0]}</Text>
+    </View>
+  );
+}
+
 function RoundButton({ icon, label, onPress, disabled = false, filled = false }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean; filled?: boolean }) {
   return (
     <Tap
@@ -72,6 +86,11 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   const cards = useMemo(() => deckCards(deck), [deck]);
   const last = cards.length - 1;
   const stories = deck.story.length;
+  const story = isStory(deck) ? deck : null;
+  const person = deckPerson(deck);
+  const cover = coverTitle(article.title, deck);
+  /** The quick check's pick: kept while the deck is open, sent nowhere (M14 decision 3). */
+  const [chosen, setChosen] = useState<number | null>(null);
   const [step, setStep] = useState(() => Math.max(0, Math.min(initialStep, cards.length - 1)));
   const [back, setBack] = useState(false);
   const dx = useRef(new Animated.Value(0)).current;
@@ -82,8 +101,11 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   /** What a screen reader says when a card arrives: where it is, then what it holds. */
   const spoken = (i: number): string => {
     const c = cards[i]!;
-    const what = c.kind === 'cover' ? article.title : c.kind === 'story' ? `${c.kicker}. ${c.text}` : c.kind === 'lesson'
-      ? `${D.lesson}: ${deck.lesson} ${D.tryToday}: ${deck.tryToday}` : `${D.turn}: ${article.question}`;
+    const what = c.kind === 'cover' ? (cover.subtitle === null ? cover.title : `${cover.title}. ${cover.subtitle}`)
+      : c.kind === 'story' ? `${c.kicker ?? fillText(D.storyBy, { name: person?.name ?? '' })}. ${c.text}`
+      : c.kind === 'why' ? `${D.whyItWorks}: ${story?.why.head} ${story?.why.text}`
+      : c.kind === 'check' ? `${D.check}: ${story?.check.question}`
+      : c.kind === 'lesson' ? `${D.lesson}: ${deck.lesson} ${D.tryToday}: ${deck.tryToday}` : `${D.turn}: ${article.question}`;
     return `${fillText(D.card, { n: i + 1, total: cards.length })}. ${what}`;
   };
 
@@ -139,7 +161,6 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   const at = Math.min(step, last);
   const card = cards[at]!;
   const left = last - at;
-  const cover = coverTitle(article.title);
   const minutes = deckMinutes(deck);
   const meta = xp === null ? fillText(D.cards, { cards: cards.length, minutes }) : fillText(D.cardsXp, { cards: cards.length, minutes, xp });
   const share = () => {
@@ -153,6 +174,15 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
           <View style={{ flex: 1, gap: 12 }}>
             <Label tone="onAccent">{`${label} · ${CLUSTER_NAMES[article.cluster]}`}</Label>
             <View style={{ flex: 1, minHeight: 40 }} />
+            {person !== null && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <PersonBadge person={person} size={48} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Caption tone="onAccent">{D.todaysStory}</Caption>
+                  <Body tone="onAccent" weight="bold">{`${person.name}, ${person.line}`}</Body>
+                </View>
+              </View>
+            )}
             <Title tone="onAccent">{cover.title}</Title>
             {cover.subtitle !== null && <Body tone="onAccent" weight="medium" style={{ fontSize: 19, lineHeight: 27 }}>{cover.subtitle}</Body>}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 8 }}>
@@ -168,7 +198,12 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
         return { bg: colors.paper, body: (
           <View style={{ flex: 1, gap: 16 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <Label tone="accentInk" style={{ flexShrink: 1 }}>{c.kicker}</Label>
+              {person !== null && c.kicker === null ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}>
+                  <PersonBadge person={person} size={32} />
+                  <Label tone="accentInk" style={{ flexShrink: 1 }}>{fillText(D.storyBy, { name: person.name })}</Label>
+                </View>
+              ) : <Label tone="accentInk" style={{ flexShrink: 1 }}>{c.kicker}</Label>}
               <Caption tone="inkMuted">{fillText(D.storyCount, { n: c.i + 1, total: stories })}</Caption>
             </View>
             <Text selectable maxFontSizeMultiplier={1.5} style={{ fontFamily: fonts.bodyMedium, fontSize: 21, lineHeight: 32, color: colors.ink }}>{c.text}</Text>
@@ -183,6 +218,67 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             {c.i === 0 && <Caption tone="inkMuted">{D.tapHint}</Caption>}
           </View>
         ) };
+      case 'why':
+        return { bg: colors.paper, body: (
+          <View style={{ flex: 1, gap: 14 }}>
+            <Label tone="accentInk">{D.whyItWorks}</Label>
+            <Heading tone="ink" style={{ fontSize: 24, lineHeight: 31 }}>{story?.why.head}</Heading>
+            <Text selectable maxFontSizeMultiplier={1.5} style={{ fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 28, color: colors.ink }}>{story?.why.text}</Text>
+            <View style={{ flex: 1, minHeight: 16 }} />
+            {person !== null && <Caption tone="inkMuted">{fillText(D.madeUp, { name: person.name })}</Caption>}
+          </View>
+        ) };
+      case 'check': {
+        const q = story!.check;
+        const answered = chosen !== null;
+        const answerLine = `${D.notQuite} ${fillText(D.rightAnswer, { answer: q.options[q.answer]! })}`;
+        const pick = (i: number) => {
+          if (answered) return;
+          setChosen(i);
+          AccessibilityInfo.announceForAccessibility(`${i === q.answer ? D.right : answerLine} ${q.why}`);
+        };
+        return { bg: colors.panel, border: colors.line, body: (
+          <View style={{ flex: 1, gap: 14 }}>
+            <Label tone="accentText">{D.check}</Label>
+            <Heading style={{ fontSize: 22, lineHeight: 30 }}>{q.question}</Heading>
+            <View accessibilityRole="radiogroup" style={{ gap: 8 }}>
+              {q.options.map((option, i) => {
+                const right = answered && i === q.answer;
+                const wrong = answered && i === chosen && i !== q.answer;
+                return (
+                  <Tap
+                    key={i}
+                    testID={`deck-check-${i}`}
+                    accessibilityRole="radio"
+                    accessibilityLabel={option}
+                    accessibilityState={{ checked: chosen === i, disabled: answered }}
+                    disabled={answered}
+                    onPress={() => pick(i)}
+                    on={right ? 'accent' : 'night'}
+                    radius={radius.control}
+                    style={{
+                      minHeight: 52, paddingHorizontal: 14, paddingVertical: 12, borderRadius: radius.control, flexDirection: 'row', alignItems: 'center', gap: 10,
+                      backgroundColor: right ? colors.accent : colors.night, borderWidth: space.border, borderColor: right ? colors.accent : wrong ? colors.accentText : colors.line,
+                    }}
+                  >
+                    {right && <Icon name="check" size={18} color={colors.onAccent} />}
+                    {wrong && <Icon name="close" size={18} color={colors.accentText} />}
+                    <Body tone={right ? 'onAccent' : 'chalk'} weight={right ? 'bold' : 'medium'} style={{ flex: 1 }}>{option}</Body>
+                  </Tap>
+                );
+              })}
+            </View>
+            {answered && (
+              <View style={{ gap: 4 }}>
+                <Body weight="bold">{chosen === q.answer ? D.right : answerLine}</Body>
+                <Body tone="ashLight">{q.why}</Body>
+              </View>
+            )}
+            <View style={{ flex: 1, minHeight: 16 }} />
+            {!answered && <Caption>{D.checkSkip}</Caption>}
+          </View>
+        ) };
+      }
       case 'lesson':
         return { bg: colors.panel, border: colors.line, body: (
           <View style={{ flex: 1, gap: 16 }}>
@@ -230,7 +326,7 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   };
 
   const { bg, border, body } = face(card);
-  const tappable = card.kind === 'cover' || card.kind === 'story';
+  const tappable = card.kind === 'cover' || card.kind === 'story' || card.kind === 'why';
   const rot = dx.interpolate({ inputRange: [-220, 0, 220], outputRange: ['-9deg', '0deg', '9deg'] });
   const entering = back
     ? [{ translateX: enter.interpolate({ inputRange: [0, 1], outputRange: [-120, 0] }) }]

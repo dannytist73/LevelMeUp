@@ -53,6 +53,16 @@ export const READING_TEXT = {
     full: 'Read the full article · {minutes} min',
     backToCards: 'Back to the cards',
     yourLine: 'Your line that day',
+    /** M14 (plan 2026-10-19-m14-story-lessons.md): the story lesson's cards. */
+    todaysStory: "Today's story",
+    storyBy: "{name}'s story",
+    whyItWorks: 'Why it works',
+    madeUp: '{name} is made up. The research is real, and the full article lists its sources.',
+    check: 'Quick check · optional',
+    right: 'Right.',
+    notQuite: 'Not quite.',
+    rightAnswer: 'The answer: {answer}.',
+    checkSkip: 'Swipe on to skip. Nothing is lost either way.',
   },
   codex: {
     title: 'Codex',
