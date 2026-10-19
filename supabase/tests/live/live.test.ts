@@ -281,6 +281,23 @@ describe('the training setup (M6c)', () => {
     const again = await sync(t, [change]);
     expect(again.body.results[0].result).toEqual(res.body.results[0].result);
   });
+
+  // M16: the same player (a live run creates at most 13).
+  it('the weekly program: switching on stores it and starts its ladder; today stays as it is; older apps then update first', async () => {
+    const as = (version: string | null, events: unknown[] = []) =>
+      call('lmu-sync', t.token, { timeZone: 'Asia/Manila', events }, version === null ? {} : { 'x-lmu-app': version });
+    const on = { id: eventId(), type: 'training', equipment: ['dumbbells'], programStyle: 'men', trainingPlan: 'weekly', programDays: 2 };
+    const res = await as('0.8.0', [on]);
+    expect(res.status).toBe(200);
+    expect(res.body.results[0]).toMatchObject({ ok: true });
+    expect(res.body.state.profile).toMatchObject({ trainingPlan: 'weekly', programDays: 2, equipment: ['dumbbells'], programStyle: 'men' });
+    expect(res.body.state).toMatchObject({ programDone: 0, programLastAt: null });
+    expect(res.body.state.ladders.program).toMatchObject({ rung: 0, paused: false });
+    expect(res.body.state.today.quests.some((q: any) => q.ladder === 'program')).toBe(false); // a new plan starts tomorrow
+    expect(await as('0.7.1')).toMatchObject({ status: 426, body: { error: 'update_required' } });
+    expect(await as(null)).toMatchObject({ status: 426, body: { error: 'update_required' } });
+    expect((await as('0.8.0')).status).toBe(200);
+  });
 });
 
 describe('Character and Chronicle (M6d)', () => {
