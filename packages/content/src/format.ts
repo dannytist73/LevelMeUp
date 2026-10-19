@@ -29,6 +29,8 @@ export function targetText(condition: Condition): string {
       const high = Math.max(...condition.sets);
       return `${count(condition.sets.length, 'exercise')}, ${low === high ? count(low, 'set') : `${low}–${high} sets`} each`;
     }
+    case 'program':
+      return 'A full day of your weekly program';
     case 'session':
       return condition.moves.map((m) => authoredMove(m.move).name).join(', ');
   }

@@ -113,6 +113,26 @@ export const ADJUST_TEXT = {
     noRoom: 'Workouts need 25 minutes a day or more, and they stay off on a gentle start or your own plan. Your setup is kept for when they fit.',
     notice: 'New: tell the System what you train with, and your workouts are built for it.',
     setUp: 'Set up training',
+    /** M15: the plan, the workouts a week, and the one-time offer. */
+    plan: 'How do you want to train?',
+    plans: {
+      build: { name: 'Step by step', line: 'Workouts of 3 or 4 exercises that grow as you show you are ready. 16 to 32 minutes, inside your daily minutes.' },
+      weekly: {
+        name: 'Weekly program',
+        line: 'Full workouts of 5 or 6 exercises on set days, in 6-week blocks: 2 sets in week 1, building to 4, then an easy week.',
+      },
+    },
+    days: 'Workouts a week',
+    dayChoices: {
+      2: { name: '2 a week', line: 'Two full-body days.' },
+      3: { name: '3 a week', line: 'Three days of your program.' },
+    },
+    weeklyNote:
+      'Workout days take about 30 to 50 minutes, on top of your daily minutes. A week moves on once its workouts are done, and the other days have no strength quests, so your muscles rest.',
+    noRoomWeekly: 'The weekly program stays off on a gentle start or your own plan. Your setup is kept for when it fits.',
+    planTomorrow: 'A new plan starts with tomorrow\'s quests; today stays as it is.',
+    offer: "You've done 3 workouts. Want the full weekly program? 3 workouts a week in 6-week blocks: 2 sets to start, building to 4, then an easy week.",
+    offerGo: 'See the weekly program',
   },
 } as const;
 

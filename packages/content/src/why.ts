@@ -24,6 +24,7 @@ export const WHY_PLACEHOLDERS: Readonly<Record<WhyCode, readonly string[]>> = {
   second_wind: [],
   pain: [],
   article: [],
+  program: [],
 };
 
 export const WHY_TEXT: Readonly<Record<WhyCode, Readonly<Record<Voice, string>>>> = {
@@ -121,6 +122,11 @@ export const WHY_TEXT: Readonly<Record<WhyCode, Readonly<Record<Voice, string>>>
     mentor: 'Read it, then write the one idea you want to keep.',
     system: 'Daily reading: one takeaway.',
     questmaster: 'Knowledge is a blade. Read, then name what you learned.',
+  },
+  program: {
+    mentor: "It's a workout day in your weekly program.",
+    system: 'Weekly program: workout day.',
+    questmaster: 'The week calls you to the forge. Answer it.',
   },
 };
 

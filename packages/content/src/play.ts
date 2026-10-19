@@ -61,6 +61,18 @@ export const PLAY_TEXT = {
     log: 'Log workout',
     change: 'Change equipment or program',
     replanning: 'Your new training setup is on its way. Log this workout once it syncs.',
+    /** M15: a weekly workout's place in its block; {day} is a letter, A to C. */
+    block: 'Week {week} of 6 · Workout {day}',
+    easyBlock: 'Week 6 of 6, the easy week · Workout {day}',
+    /** What each week of the block asks for (the workout builder's set scheme). */
+    weeks: [
+      'Week 1: two sets of each exercise. Pick weights you control with 2 or 3 reps to spare, and learn the moves.',
+      'Three sets of each exercise this week.',
+      'Three sets of each exercise again. Go a little heavier where every set reached the top of its range.',
+      'The main exercises get a fourth set this week. Rest well between sets.',
+      'Four sets on the main exercises again: the hardest week of the block.',
+      'The easy week: two sets at half the reps, with the same weight as last week. Your body catches up, and the next block starts stronger.',
+    ],
   },
   /** M10c decision 8: the rest between sets, started by a set's Done. */
   rest: {

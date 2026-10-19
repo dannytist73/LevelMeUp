@@ -3,9 +3,9 @@ import { MIND_LADDERS, MIND_TEMPLATES } from './quests/mind.ts';
 import { SPECIAL_TEMPLATES } from './quests/special.ts';
 import { STRENGTH_LADDERS, STRENGTH_TEMPLATES } from './quests/strength.ts';
 import { VITALITY_LADDERS, VITALITY_TEMPLATES } from './quests/vitality.ts';
-import { WORKOUT_LADDERS, WORKOUT_TEMPLATES } from './quests/workout.ts';
+import { WEEKLY_TEMPLATES, WORKOUT_LADDERS, WORKOUT_TEMPLATES } from './quests/workout.ts';
 import { MOVES } from './training/moves.ts';
-import { PROGRAMS } from './training/programs.ts';
+import { PROGRAMS, WEEKLY } from './training/programs.ts';
 import type { AuthoredTemplate } from './types.ts';
 
 /** Bump when a template's meaning changes; each quest instance stores the version it was built from (architecture §3). */
@@ -16,6 +16,7 @@ export const LADDERS: readonly Ladder[] = [...STRENGTH_LADDERS, ...WORKOUT_LADDE
 export const TEMPLATES: readonly AuthoredTemplate[] = [
   ...STRENGTH_TEMPLATES,
   ...WORKOUT_TEMPLATES,
+  ...WEEKLY_TEMPLATES,
   ...VITALITY_TEMPLATES,
   ...MIND_TEMPLATES,
   ...SPECIAL_TEMPLATES,
@@ -25,7 +26,7 @@ export const LIBRARY: QuestLibrary = {
   ladders: LADDERS,
   templates: TEMPLATES,
   recovery: { warrior: 'recovery-walk', rogue: 'recovery-walk', mage: 'recovery-read', monk: 'recovery-breath' },
-  training: { moves: MOVES, programs: PROGRAMS },
+  training: { moves: MOVES, programs: PROGRAMS, weekly: WEEKLY },
 };
 
 export function authoredTemplate(id: string): AuthoredTemplate {

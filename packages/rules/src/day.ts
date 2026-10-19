@@ -1,5 +1,7 @@
 import { abilityUnlocked } from './abilities.ts';
-import { CLASSES, CORE_MIX, DISCIPLINE_PER_RECOVERY, GOALS, LIGHT_DAY_MINUTES, MIN_SIDE_MINUTES, TRAINABLE_STATS } from './constants.ts';
+import {
+  CLASSES, CORE_MIX, DISCIPLINE_PER_RECOVERY, GOALS, LIGHT_DAY_MINUTES, MIN_SIDE_MINUTES, TRAINABLE_STATS, WEEK_QUEST_DAYS,
+} from './constants.ts';
 import { newLadder } from './ladder.ts';
 import type { LadderState } from './ladder.ts';
 import {
@@ -8,8 +10,8 @@ import {
 } from './library.ts';
 import type { CompletionType, Condition, Ladder, PlayerProfile, QuestLibrary, QuestTemplate } from './library.ts';
 import type { Goal, Slot, Stat, Tier, TrainableStat } from './types.ts';
-import { isWorkout, planWorkout, sessionCondition, sessionMinutes } from './workout.ts';
-import type { PlannedMove } from './workout.ts';
+import { isProgram, isWorkout, planProgram, planWorkout, programBlockFor, sessionCondition, sessionMinutes } from './workout.ts';
+import type { PlannedMove, ProgramBlock } from './workout.ts';
 import { questXp, splitXp } from './xp.ts';
 import type { XpByStat } from './xp.ts';
 
@@ -23,7 +25,9 @@ export type WhyReason =
   | {
       code:
         | 'after_strength' | 'stepped_down' | 'gentle_start' | 'limits' | 'light_day' | 'own_program'
-        | 'swap' | 'stillness' | 'dawn_ritual' | 'recovery' | 'second_wind' | 'pain' | 'article';
+        | 'swap' | 'stillness' | 'dawn_ritual' | 'recovery' | 'second_wind' | 'pain' | 'article'
+        /** M15: a workout day of the weekly program. */
+        | 'program';
     };
 
 export type WhyCode = WhyReason['code'];
@@ -31,6 +35,7 @@ export type WhyCode = WhyReason['code'];
 export const WHY_CODES: readonly WhyCode[] = [
   'class_main', 'class_second', 'balance', 'goal', 'unlocked', 'after_strength', 'stepped_down', 'gentle_start', 'limits',
   'short_on_time', 'light_day', 'own_program', 'swap', 'stillness', 'dawn_ritual', 'recovery', 'second_wind', 'pain', 'article',
+  'program',
 ];
 
 /** A why-line sent by a phone (M6e): one of the builder's reasons, with valid details and nothing else. */
@@ -71,6 +76,8 @@ export type QuestDraft = {
   book: string | null;
   /** A workout's planned exercises (M6c decision 8); null for every other quest. */
   moves: readonly PlannedMove[] | null;
+  /** A weekly workout's place in its block (M15 decision 6); null for every other quest. */
+  block: ProgramBlock | null;
 };
 
 export type BuiltDay = {
@@ -102,6 +109,10 @@ export type DayInput = {
   light: boolean;
   /** Workouts completed so far (M6c): a new workout follows the program's next day; a missed one repeats. */
   workoutsDone: number;
+  /** Weekly workouts that count in the current run (M15 decision 3, `programRun`): the next one's week and day. */
+  programDone: number;
+  /** A rest day the player planned (M7b): never a weekly workout day (M15 decision 4). */
+  rest?: boolean;
   articleId: string | null;
 };
 
@@ -111,17 +122,24 @@ export function questReward(template: QuestTemplate, hardDay: boolean): XpByStat
   return splitXp(questXp(template.tier, { hardDay }), template.stat, template.split ?? undefined);
 }
 
-/** A quest for a slot. The article and recovery quests have no hard-day version; a workout needs its exercises. */
+/**
+ * A quest for a slot. The article and recovery quests have no hard-day version; a workout needs its exercises, and a
+ * weekly one its block.
+ */
 export function draftQuest(
   template: QuestTemplate,
   slot: Slot,
   why: WhyReason,
-  options: { hardDay?: boolean; book?: string | null; moves?: readonly PlannedMove[] | null } = {},
+  options: { hardDay?: boolean; book?: string | null; moves?: readonly PlannedMove[] | null; block?: ProgramBlock | null } = {},
 ): QuestDraft {
   const hardDay = options.hardDay === true && template.role !== 'article' && template.role !== 'recovery';
   const moves = options.moves ?? null;
+  const block = options.block ?? null;
   if (isWorkout(template) !== (moves !== null)) {
     throw new RangeError(isWorkout(template) ? `${template.id} needs its planned exercises` : `${template.id} is not a workout`);
+  }
+  if (isProgram(template) !== (block !== null)) {
+    throw new RangeError(isProgram(template) ? `${template.id} needs its block` : `${template.id} is not a weekly workout`);
   }
   return {
     slot,
@@ -136,11 +154,12 @@ export function draftQuest(
     why,
     book: options.book ?? null,
     moves,
+    block,
   };
 }
 
 /** A built quest as it is stored and shown: the completion type and the condition of the version in use, no plan list. */
-export type StoredQuest = Omit<QuestDraft, 'moves'> & { completion: CompletionType; condition: Condition };
+export type StoredQuest = Omit<QuestDraft, 'moves' | 'block'> & { completion: CompletionType; condition: Condition };
 
 /**
  * A built quest as the database stores it (a later content change never rewrites a day) and as the phone shows a day it
@@ -157,7 +176,9 @@ export function storedQuest(library: QuestLibrary, q: QuestDraft): StoredQuest {
     tier: q.tier,
     minutes: q.minutes,
     completion: template.completion,
-    condition: q.moves !== null ? sessionCondition(template, q.moves, q.hardDay) : q.hardDay ? template.hardDay.condition : template.condition,
+    condition: q.moves !== null
+      ? sessionCondition(template, q.moves, q.hardDay, q.block)
+      : q.hardDay ? template.hardDay.condition : template.condition,
     hardDay: q.hardDay,
     xp: q.xp,
     why: q.why,
@@ -199,6 +220,9 @@ export function dayContext(library: QuestLibrary, input: DayInput): DayContext {
   if (!Number.isInteger(input.workoutsDone) || input.workoutsDone < 0) {
     throw new RangeError(`workoutsDone must be a whole number, got ${input.workoutsDone}`);
   }
+  if (!Number.isInteger(input.programDone) || input.programDone < 0) {
+    throw new RangeError(`programDone must be a whole number, got ${input.programDone}`);
+  }
   validateProfile(input.profile);
   const lastUsed = new Map<string, number>();
   const strengthYesterday = new Set<string>();
@@ -233,7 +257,8 @@ export function ladderCandidates(ctx: DayContext, ladders: readonly Ladder[], al
   const { library, input } = ctx;
   const candidates: Candidate[] = [];
   for (const ladder of ladders) {
-    if (used.has(ladder.id) || ctx.strengthYesterday.has(ladder.id) || !ladderAllowed(ladder, input.profile)) continue;
+    // The weekly program's ladder is built on its own days only (M15 decision 5: programCandidate).
+    if (ladder.weekly || used.has(ladder.id) || ctx.strengthYesterday.has(ladder.id) || !ladderAllowed(ladder, input.profile)) continue;
     const state = input.ladders[ladder.id] ?? newLadder();
     if (state.paused) continue;
     const rung = effectiveRung(library, ladder.id, input.profile, state, allowance);
@@ -287,9 +312,46 @@ export function keptOutBy(library: QuestLibrary, template: QuestTemplate, moves:
   ];
 }
 
-/** A workout's exercises for this player today (decision 5); null for other quests, or when too few fit. */
+/** A workout's exercises for this player today (decision 5; M15, a weekly one's); null for other quests, or when too few fit. */
 export function movesFor(ctx: DayContext, template: QuestTemplate): PlannedMove[] | null {
-  return isWorkout(template) ? planWorkout(ctx.library.training, template, ctx.input.profile, ctx.input.workoutsDone) : null;
+  const { library, input } = ctx;
+  if (isProgram(template)) return planProgram(library.training, template, input.profile, input.programDone);
+  return isWorkout(template) ? planWorkout(library.training, template, input.profile, input.workoutsDone) : null;
+}
+
+/** A weekly workout's block today (M15 decision 6); null for every other quest. */
+export function blockFor(ctx: DayContext, template: QuestTemplate): ProgramBlock | null {
+  return programBlockFor(ctx.library.training, template, ctx.input.profile, ctx.input.programDone);
+}
+
+/**
+ * Today's weekly workout, when today is one of its days (M15 decision 4): the weekly plan, not a light or planned rest
+ * day, none built in the last ⌊7 ÷ per week⌋ − 1 days and fewer than the week's number in the last 6, its ladder not
+ * resting after pain, and at least two exercises the player can do. Null otherwise.
+ */
+export function programCandidate(ctx: DayContext, light: boolean): Candidate | null {
+  const { library, input } = ctx;
+  const { profile } = input;
+  if (profile.trainingPlan !== 'weekly' || light || input.rest === true) return null;
+  const ladder = library.ladders.find((l) => l.weekly);
+  if (ladder === undefined || !ladderAllowed(ladder, profile)) return null;
+  const gap = Math.floor(WEEK_QUEST_DAYS / profile.programDays);
+  let recent = 0;
+  for (const past of input.history) {
+    const ago = input.dayNumber - past.dayNumber;
+    if (ago < 1 || ago >= WEEK_QUEST_DAYS) continue;
+    if (!Object.values(past.quests).some((id) => id !== undefined && findTemplate(library, id)?.ladder === ladder.id)) continue;
+    if (ago < gap) return null;
+    recent++;
+  }
+  if (recent >= profile.programDays) return null;
+  const state = input.ladders[ladder.id] ?? newLadder();
+  if (state.paused) return null;
+  const rung = Math.min(state.rung, allowedTopRung(library, ladder.id, profile));
+  if (rung < 0) return null;
+  const template = ladderRungs(library, ladder.id)[rung]!;
+  if (movesFor(ctx, template) === null) return null;
+  return { template, state, capped: rung === state.rung ? null : 'limits' };
 }
 
 const unique = <T>(items: readonly T[]): T[] => [...new Set(items)];
@@ -373,7 +435,7 @@ function chooseGoalSide(ctx: DayContext, allowance: number, used: ReadonlySet<st
 /** The reason a card shows: safety and adjustments first, then what the slot asked for. */
 function explain(ctx: DayContext, slot: Slot, choice: Choice, light: boolean): WhyReason {
   const { template, state, capped } = choice.candidate;
-  if (choice.reason.code === 'after_strength') return choice.reason;
+  if (choice.reason.code === 'after_strength' || choice.reason.code === 'program') return choice.reason;
   if (ctx.input.profile.gentleStart && template.exercise !== null) return { code: 'gentle_start' };
   if (slot === 'core' && light) return { code: 'light_day' };
   if (state !== null && template.ladder !== null && template.rung !== null) {
@@ -397,21 +459,28 @@ export function buildDay(library: QuestLibrary, input: DayInput): BuiltDay {
   const light = input.light || input.dayNumber === 1;
   const budget = dayBudget(input);
   const used = new Set<string>();
-  const core = chooseCore(ctx, budget, used);
+  // M15 decision 4: on a weekly workout day the workout is the core quest.
+  const program = programCandidate(ctx, light);
+  const core = program !== null ? { candidate: program, reason: { code: 'program' } as const } : chooseCore(ctx, budget, used);
   const coreMoves = movesFor(ctx, core.candidate.template);
   for (const key of [useKey(core.candidate.template), ...keptOutBy(library, core.candidate.template, coreMoves)]) used.add(key);
-  const side1 = chooseGoalSide(ctx, budget - core.candidate.template.minutes - MIN_SIDE_MINUTES, used);
+  // A weekly workout takes the time it takes, outside the daily minutes: the side quests get what is left, at least
+  // their minimum (M15).
+  const coreMinutes = program !== null ? sessionMinutes(core.candidate.template, coreMoves!, false) : core.candidate.template.minutes;
+  const side1 = chooseGoalSide(ctx, Math.max(MIN_SIDE_MINUTES, budget - coreMinutes - MIN_SIDE_MINUTES), used);
   const side1Moves = movesFor(ctx, side1.candidate.template);
   for (const key of [useKey(side1.candidate.template), ...keptOutBy(library, side1.candidate.template, side1Moves)]) used.add(key);
   const side2 = chooseBalance(
     ctx,
-    budget - core.candidate.template.minutes - side1.candidate.template.minutes,
+    Math.max(MIN_SIDE_MINUTES, budget - coreMinutes - side1.candidate.template.minutes),
     used,
     [core.candidate.template.stat, side1.candidate.template.stat],
   );
   const draft = (slot: Slot, choice: Choice): QuestDraft => {
     const { template } = choice.candidate;
-    return draftQuest(template, slot, explain(ctx, slot, choice, light), { book: bookFor(ctx, template), moves: movesFor(ctx, template) });
+    return draftQuest(template, slot, explain(ctx, slot, choice, light), {
+      book: bookFor(ctx, template), moves: movesFor(ctx, template), block: blockFor(ctx, template),
+    });
   };
   return {
     dayNumber: input.dayNumber,

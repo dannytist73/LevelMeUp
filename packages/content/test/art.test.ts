@@ -25,13 +25,14 @@ describe('quest art keys (M6a, decision 10)', () => {
 
   it('needs 33 pictures: ladders, own rung pictures, small-quest stats, special quests and exercise families', () => {
     expect(ART_KEYS).toHaveLength(33);
-    for (const ladder of LADDERS.filter((l) => l.id !== 'workout')) expect(ART_KEYS).toContain(`ladder-${ladder.id}`);
+    for (const ladder of LADDERS.filter((l) => l.id !== 'workout' && l.id !== 'program')) expect(ART_KEYS).toContain(`ladder-${ladder.id}`);
     for (const pattern of new Set(MOVES.map((m) => m.pattern))) expect(ART_KEYS).toContain(`move-${pattern}`);
     expect(ART_KEYS).toEqual(expect.arrayContaining([
       'push-wall', 'push-incline', 'push-knee', 'squat-chair', 'squat-split', 'core-dead-bug',
       'micro-strength', 'micro-vitality', 'micro-wisdom', 'micro-focus', 'recovery', 'stillness', 'dawn-ritual', 'article',
     ]));
     expect(ART_KEYS).not.toContain('ladder-workout');
+    expect(ART_KEYS).not.toContain('ladder-program'); // M15: a weekly workout shows its first exercise too
   });
 
   it('has a subject in the art script for every key, so the set can be rendered', () => {

@@ -14,6 +14,7 @@ const COMPLETION_FOR: Record<Condition['kind'], readonly string[]> = {
   habit: ['tap'],
   sentence: ['text'],
   workout: ['reps'],
+  program: ['reps'],
   session: [],
 };
 
@@ -104,10 +105,10 @@ describe('ladders', () => {
 });
 
 describe('the whole library', () => {
-  it('has the 13 ladders and about 80 templates', () => {
+  it('has the 14 ladders and about 80 templates', () => {
     expect(LADDERS.map((l) => l.id)).toEqual([
-      'push', 'squat', 'core', 'own-program', 'workout', 'walk', 'mobility', 'sleep', 'breathing', 'reading', 'insight', 'focus',
-      'phone-free',
+      'push', 'squat', 'core', 'own-program', 'workout', 'program', 'walk', 'mobility', 'sleep', 'breathing', 'reading', 'insight',
+      'focus', 'phone-free',
     ]);
     expect(TEMPLATES.length).toBeGreaterThanOrEqual(65);
     expect(TEMPLATES.length).toBeLessThanOrEqual(90);
@@ -128,6 +129,19 @@ describe('the whole library', () => {
       expect(t.minutes, t.id).toBe(workoutMinutes(t.condition.sets));
       expect(t.hardDay.condition, t.id).toEqual({ kind: 'workout', sets: [1, 1], level: t.condition.level });
       expect(t.hardDay.minutes, t.id).toBe(workoutMinutes([1, 1]));
+      expect(t.contraindications, t.id).toEqual([]);
+    }
+  });
+
+  it('the weekly program (M15): 3 rungs of exercise levels, major, built only on its days, its hard day 7 minutes', () => {
+    const program = LADDERS.find((l) => l.id === 'program')!;
+    expect(program).toMatchObject({ stat: 'strength', weekly: true, affinity: [], ownProgram: false });
+    const rungs = ladderRungs(LIBRARY, 'program');
+    expect(rungs.map((t) => t.condition)).toEqual([{ kind: 'program', level: 1 }, { kind: 'program', level: 2 }, { kind: 'program', level: 3 }]);
+    for (const t of rungs) {
+      expect(t.tier, t.id).toBe('major');
+      expect(t.minutes, t.id).toBe(workoutMinutes([2, 2, 2, 2, 2, 2])); // week 1's full day
+      expect(t.hardDay, t.id).toEqual({ minutes: workoutMinutes([1, 1]), condition: t.condition });
       expect(t.contraindications, t.id).toEqual([]);
     }
   });

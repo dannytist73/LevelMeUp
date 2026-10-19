@@ -1,7 +1,7 @@
 import { abilityReady, abilityUnlocked } from './abilities.ts';
 import { DISCIPLINE_PER_RECOVERY, PAIN_PERSISTS_REPORTS, REST_DAYS_PER_WEEK, SWAP_SAME_STAT_CHOICES, WEEK_QUEST_DAYS } from './constants.ts';
 import {
-  balanceChoice, bookFor, dayBudget, dayContext, draftQuest, keptOutBy, ladderCandidates, microCandidates, movesFor, useKey,
+  balanceChoice, blockFor, bookFor, dayBudget, dayContext, draftQuest, keptOutBy, ladderCandidates, microCandidates, movesFor, useKey,
 } from './day.ts';
 import type { BuiltDay, DayInput, QuestDraft, WhyReason } from './day.ts';
 import { newLadder } from './ladder.ts';
@@ -11,7 +11,7 @@ import {
 } from './library.ts';
 import type { Exercise, QuestLibrary, QuestTemplate } from './library.ts';
 import type { Slot } from './types.ts';
-import { isWorkout, planWorkout, sameMoves } from './workout.ts';
+import { isProgram, isWorkout, planProgram, planWorkout, programBlockFor, sameMoves } from './workout.ts';
 import type { PlannedMove } from './workout.ts';
 
 const QUEST_SLOTS: readonly Slot[] = ['core', 'side1', 'side2'];
@@ -64,7 +64,9 @@ export function swapOptions(library: QuestLibrary, input: DayInput, day: BuiltDa
   );
   const candidates = balance ? [...sameStat, balance.candidate] : sameStat;
   return candidates.map((c) =>
-    draftQuest(c.template, slot, { code: 'swap' }, { hardDay: day.hardDay, book: bookFor(ctx, c.template), moves: movesFor(ctx, c.template) }));
+    draftQuest(c.template, slot, { code: 'swap' }, {
+      hardDay: day.hardDay, book: bookFor(ctx, c.template), moves: movesFor(ctx, c.template), block: blockFor(ctx, c.template),
+    }));
 }
 
 /** Swaps an open core or side quest for one of `swapOptions`. The caller checks the day's swap limit (`swapLimit`). */
@@ -90,7 +92,7 @@ export function applyHardDay(library: QuestLibrary, day: BuiltDay, completedSlot
     hardDay: true,
     quests: day.quests.map((q) =>
       QUEST_SLOTS.includes(q.slot) && !completedSlots.includes(q.slot)
-        ? draftQuest(templateById(library, q.templateId), q.slot, q.why, { hardDay: true, book: q.book, moves: q.moves })
+        ? draftQuest(templateById(library, q.templateId), q.slot, q.why, { hardDay: true, book: q.book, moves: q.moves, block: q.block })
         : q,
     ),
   };
@@ -202,10 +204,14 @@ export function addRecovery(library: QuestLibrary, input: DayInput, day: BuiltDa
   if (day.quests.some((q) => useKey(templateById(library, q.templateId)) === useKey(redo))) {
     throw new RangeError(`${useKey(redo)} is already in today's quests`);
   }
-  // A missed workout is redone with today's plan; one that can't be planned any more is refused.
-  const moves = isWorkout(redo) ? planWorkout(library.training, redo, input.profile, input.workoutsDone) : null;
+  // A missed workout is redone with today's plan; one that can't be planned any more is refused. M15: a weekly one is
+  // the program's next workout.
+  const moves = isProgram(redo)
+    ? planProgram(library.training, redo, input.profile, input.programDone)
+    : isWorkout(redo) ? planWorkout(library.training, redo, input.profile, input.workoutsDone) : null;
   if (isWorkout(redo) && moves === null) throw new RangeError(`${redo.id} can't be planned for this player today`);
-  const quest = draftQuest(redo, 'recovery', { code: 'second_wind' }, { moves });
+  const block = programBlockFor(library.training, redo, input.profile, input.programDone);
+  const quest = draftQuest(redo, 'recovery', { code: 'second_wind' }, { moves, block });
   const xp = { ...quest.xp, discipline: (quest.xp.discipline ?? 0) + DISCIPLINE_PER_RECOVERY };
   return { ...day, quests: [...day.quests, { ...quest, xp }] };
 }
@@ -272,7 +278,8 @@ export function checkProvisionalDay(library: QuestLibrary, input: DayInput, day:
     const key = useKey(template);
     if (keys.has(key)) problems.push(`${key} is used twice`);
     keys.add(key);
-    minutes += template.minutes;
+    // A weekly workout takes the time it takes, outside the daily minutes (M15).
+    if (!isProgram(template)) minutes += template.minutes;
   }
   // No movement twice in a day (M6c review): a workout and a strength quest it keeps out never share it. Both ways, since
   // the builder keeps out by slot order and a swap by the rest of the day (M6e).
@@ -307,7 +314,7 @@ export function provisionalDay(
     const template = findTemplate(library, q.templateId);
     if (template === undefined) return { day: null, problems: [`unknown template ${q.templateId}`] };
     try {
-      drafts.push(draftQuest(template, q.slot, q.why, { book: bookFor(ctx, template), moves: q.moves }));
+      drafts.push(draftQuest(template, q.slot, q.why, { book: bookFor(ctx, template), moves: q.moves, block: blockFor(ctx, template) }));
     } catch (error) {
       if (!(error instanceof RangeError)) throw error;
       return { day: null, problems: [error.message] };

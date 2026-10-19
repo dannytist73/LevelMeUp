@@ -84,7 +84,7 @@ describe('the programs (decision 4)', () => {
 
 const player = (over: Partial<PlayerProfile> = {}): PlayerProfile => ({
   classId: 'warrior', level: 5, goals: ['body'], minutesPerDay: 40, difficulty: 'steady', limitations: [], gentleStart: false,
-  ownProgram: false, equipment: [], programStyle: 'none', stats: { strength: 7, vitality: 5, wisdom: 5, focus: 5 }, book: null, ...over,
+  ownProgram: false, equipment: [], programStyle: 'none', trainingPlan: 'build', programDays: 3, stats: { strength: 7, vitality: 5, wisdom: 5, focus: 5 }, book: null, ...over,
 });
 const SETUPS: Equipment[][] = [[], ['bands'], ['dumbbells'], ['dumbbells', 'bench'], ['pullup_bar'], ['bands', 'dumbbells', 'bench', 'pullup_bar'], ['gym']];
 

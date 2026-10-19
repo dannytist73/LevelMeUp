@@ -45,7 +45,9 @@ const rungs = (id: string, stat: Stat, minutes: number[], extra: (rung: number) 
   minutes.map((m, rung) => template({ id: `${id}-${rung}`, ladder: id, rung, stat, minutes: m, ...extra(rung) }));
 
 /** No exercises and no programs: the fixture library has no workouts (the workout fixture in Task 2 has). */
-export const NO_TRAINING: TrainingLibrary = { moves: [], programs: { men: [], women: [], none: [] } };
+export const NO_TRAINING: TrainingLibrary = {
+  moves: [], programs: { men: [], women: [], none: [] }, weekly: { three: { men: [], women: [], none: [] }, two: [] },
+};
 
 export const FIXTURE: QuestLibrary = {
   ladders: [
@@ -90,6 +92,8 @@ export const PROFILE: PlayerProfile = {
   ownProgram: false,
   equipment: [],
   programStyle: 'none',
+  trainingPlan: 'build',
+  programDays: 3,
   stats: { strength: 7, vitality: 5, wisdom: 5, focus: 4 },
   book: null,
 };
@@ -103,6 +107,7 @@ export function dayInput(overrides: Partial<DayInput> = {}, profile: Partial<Pla
     history: [],
     light: false,
     workoutsDone: 0,
+    programDone: 0,
     articleId: 'article-1',
     ...overrides,
   };
@@ -132,6 +137,29 @@ export const TRAINING: TrainingLibrary = {
     women: [['hip_hinge', 'quads', 'horizontal_pull', 'abs']],
     none: [['squat', 'horizontal_push', 'hip_hinge', 'horizontal_pull'], ['quads', 'vertical_pull', 'abs', 'horizontal_push']],
   },
+  // M15: small weekly layouts in the builder's shape (sets in weeks 1–5).
+  weekly: {
+    three: {
+      men: [
+        [{ slot: 'horizontal_push', sets: [2, 3, 3, 4, 4] }, { slot: 'horizontal_pull', sets: [2, 3, 3, 3, 3] }, { slot: 'abs', sets: [2, 2, 3, 3, 3] }],
+        [{ slot: 'squat', sets: [2, 3, 3, 4, 4] }, { slot: 'hip_hinge', sets: [2, 3, 3, 3, 3] }, { slot: 'vertical_pull', sets: [2, 3, 3, 3, 3] }],
+        [{ slot: 'hip_hinge', sets: [2, 3, 3, 4, 4] }, { slot: 'quads', sets: [2, 3, 3, 3, 3] }, { slot: 'abs', sets: [2, 3, 3, 3, 3] }],
+      ],
+      women: [
+        [{ slot: 'hip_hinge', sets: [2, 3, 3, 4, 4] }, { slot: 'quads', sets: [2, 3, 3, 3, 3] }],
+        [{ slot: 'squat', sets: [2, 3, 3, 4, 4] }, { slot: 'horizontal_pull', sets: [2, 3, 3, 3, 3] }],
+        [{ slot: 'quads', sets: [2, 3, 3, 3, 3] }, { slot: 'abs', sets: [2, 3, 3, 4, 4] }],
+      ],
+      none: [
+        [{ slot: 'horizontal_push', sets: [2, 3, 3, 4, 4] }, { slot: 'squat', sets: [2, 3, 3, 3, 3] }],
+        [{ slot: 'hip_hinge', sets: [2, 3, 3, 4, 4] }, { slot: 'horizontal_pull', sets: [2, 3, 3, 3, 3] }],
+      ],
+    },
+    two: [
+      [{ slot: 'horizontal_push', sets: [2, 3, 3, 4, 4] }, { slot: 'horizontal_pull', sets: [2, 3, 3, 4, 4] }, { slot: 'quads', sets: [2, 3, 3, 3, 3] }],
+      [{ slot: 'squat', sets: [2, 3, 3, 4, 4] }, { slot: 'hip_hinge', sets: [2, 3, 3, 4, 4] }, { slot: 'abs', sets: [2, 3, 3, 3, 3] }],
+    ],
+  },
 };
 
 /** A workout template: 3 exercises of 2 sets at `level`, or the given shape. */
@@ -154,4 +182,21 @@ export const WORKOUT_FIXTURE: QuestLibrary = {
   ],
   templates: [...FIXTURE.templates, workoutTemplate(0, 1), workoutTemplate(1, 2), workoutTemplate(2, 3), workoutTemplate(3, 3, [3, 3, 3])],
   training: TRAINING,
+};
+
+/** A weekly program rung (M15): exercises up to `level`; the block gives them and their sets. */
+export function programTemplate(rung: number, level: MoveLevel): QuestTemplate {
+  return {
+    ...template({ id: `program-${rung}`, ladder: 'program', rung, stat: 'strength', minutes: 29, tier: 'major', exercise: 'strength' }),
+    completion: 'reps',
+    condition: { kind: 'program', level },
+    hardDay: { minutes: workoutMinutes([1, 1]), condition: { kind: 'program', level } },
+  };
+}
+
+/** WORKOUT_FIXTURE plus the weekly program's ladder (rungs: levels 1, 2, 3). */
+export const WEEKLY_FIXTURE: QuestLibrary = {
+  ...WORKOUT_FIXTURE,
+  ladders: [...WORKOUT_FIXTURE.ladders, ladder('program', 'strength', ['body'], ['warrior', 'mage', 'rogue', 'monk'], { weekly: true })],
+  templates: [...WORKOUT_FIXTURE.templates, programTemplate(0, 1), programTemplate(1, 2), programTemplate(2, 3)],
 };

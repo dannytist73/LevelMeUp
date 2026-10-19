@@ -47,6 +47,7 @@ export const LADDER_NAMES: Readonly<Record<string, string>> = {
   core: 'Core training',
   'own-program': 'Your own training',
   workout: 'Workouts',
+  program: 'Weekly program',
   walk: 'Walking',
   mobility: 'Mobility',
   sleep: 'Sleep routine',

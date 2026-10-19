@@ -6,6 +6,8 @@ import type { AuthoredTemplate, Voice, VoiceText } from '../types.ts';
 
 export const WORKOUT_LADDERS: readonly Ladder[] = [
   { id: 'workout', stat: 'strength', goals: ['body'], affinity: ['warrior', 'mage', 'rogue', 'monk'], ownProgram: false, tracksBook: false },
+  // M15 decision 5: the weekly program's exercise levels; only its own workout days build it.
+  { id: 'program', stat: 'strength', goals: ['body'], affinity: [], ownProgram: false, tracksBook: false, weekly: true },
 ];
 
 const STEPS = [
@@ -88,6 +90,69 @@ export const WORKOUT_TEMPLATES: readonly AuthoredTemplate[] = [
       mentor: { title: "Today's workout", line: 'The top of the program: an extra set on the first exercise. Well earned.' },
       system: { title: 'Workout', line: 'Strength program, top rung. An extra set on the first exercise.' },
       questmaster: { title: 'Trial of the summit', line: 'The summit of the forge. Your first trial gets a fourth round.' },
+    },
+  }),
+];
+
+// M15 (plan 2026-10-20-m15-weekly-program.md): the weekly program's rungs raise the exercises' level only; its block
+// gives the day's exercises and the week's sets (rules: planProgram). The minutes are week 1's full day (6 exercises × 2
+// sets); a weekly workout's own minutes come from its plan, outside the daily minutes.
+const WEEKLY_STEPS = [
+  'Warm up for 2 minutes: march on the spot, circle your arms and do a few easy reps of the first exercise.',
+  'Do the exercises in order, every set of one before the next.',
+  'Rest 2 to 3 minutes between sets of the first exercises, 1 to 2 minutes for the smaller ones.',
+  'End each set with 1 or 2 good reps still in you.',
+  'Same weight as last time until every set reaches the top of its range; then go a little heavier.',
+];
+
+type WeeklyRung = { level: MoveLevel; name: string; voice: Record<Voice, VoiceText> };
+
+function weeklyRung(r: number, x: WeeklyRung): AuthoredTemplate {
+  return {
+    id: `program-${r}`,
+    role: 'ladder',
+    ladder: 'program',
+    rung: r,
+    stat: 'strength',
+    split: null,
+    tier: 'major',
+    minutes: 29,
+    completion: 'reps',
+    condition: { kind: 'program', level: x.level },
+    exercise: 'strength',
+    gentle: false,
+    contraindications: [],
+    hardDay: { minutes: 7, condition: { kind: 'program', level: x.level } },
+    name: x.name,
+    steps: WEEKLY_STEPS,
+    safety: SAFETY,
+    voice: x.voice,
+  };
+}
+
+export const WEEKLY_TEMPLATES: readonly AuthoredTemplate[] = [
+  weeklyRung(0, {
+    level: 1, name: 'Weekly workout',
+    voice: {
+      mentor: { title: 'Your weekly workout', line: "Today's full workout from your program. Learn each exercise before anything else." },
+      system: { title: 'Weekly workout', line: 'Weekly program. Every exercise of the day, the sets this week asks for.' },
+      questmaster: { title: 'The weekly forge', line: 'The full forge of the day, every trial in turn. Learn their shapes.' },
+    },
+  }),
+  weeklyRung(1, {
+    level: 2, name: 'Weekly workout',
+    voice: {
+      mentor: { title: 'Your weekly workout', line: 'Some exercises step up a level in your weekly workouts now.' },
+      system: { title: 'Weekly workout', line: 'Weekly program. Harder versions of the exercises.' },
+      questmaster: { title: 'The weekly forge', line: 'The easy forms are behind you. The week brings the harder ones.' },
+    },
+  }),
+  weeklyRung(2, {
+    level: 3, name: 'Weekly workout',
+    voice: {
+      mentor: { title: 'Your weekly workout', line: 'The full versions of every exercise are open now. Keep every rep clean.' },
+      system: { title: 'Weekly workout', line: 'Weekly program. Full versions of the exercises.' },
+      questmaster: { title: 'The weekly forge', line: 'The full form of every trial, as the week demands. No shortcuts.' },
     },
   }),
 ];

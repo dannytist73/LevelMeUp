@@ -18,7 +18,7 @@ export function artKey(template: Pick<QuestTemplate, 'role' | 'ladder' | 'stat'>
 /** Every key the quest library uses: what the art set has to cover. A workout template's own key is never shown. */
 export const ART_KEYS: readonly string[] = [
   ...new Set([
-    ...TEMPLATES.filter((t) => t.condition.kind !== 'workout').map((t) => artKey(t)),
+    ...TEMPLATES.filter((t) => t.condition.kind !== 'workout' && t.condition.kind !== 'program').map((t) => artKey(t)),
     ...MOVES.map((m) => `move-${m.pattern}`),
   ]),
 ].sort();
