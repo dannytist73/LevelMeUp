@@ -52,7 +52,7 @@ export type StepDownEvent = { id: string; type: 'step_down'; instanceId: number 
 export type ClassChangeEvent = { id: string; type: 'class_change'; classId: ClassId };
 export type AbilityEvent = { id: string; type: 'ability'; dayId: number; ability: DayAbility };
 /**
- * M6c: the player's training setup (Settings → Training); today's open workout is re-planned with it. M15: the plan and
+ * M6c: the player's training setup (Settings → Training); today's open workout is re-planned with it. M16: the plan and
  * the weekly program's workouts a week; an older phone sends neither, and they stay as they are.
  */
 export type TrainingEvent = {
@@ -171,7 +171,7 @@ function parseMoves(raw: unknown): PlannedMove[] | null | undefined {
   for (const m of raw) {
     if (!isObject(m) || !isKey(m.move) || (m.unit !== 'reps' && m.unit !== 'seconds')) return undefined;
     if (!isCount(m.min) || !isCount(m.max) || typeof m.perSide !== 'boolean') return undefined;
-    // M15: a weekly workout's moves carry their sets.
+    // M16: a weekly workout's moves carry their sets.
     if (m.sets !== undefined && !(isCount(m.sets) && m.sets >= 1)) return undefined;
     moves.push({ move: m.move, unit: m.unit, min: m.min, max: m.max, perSide: m.perSide, ...(m.sets === undefined ? {} : { sets: m.sets }) });
   }

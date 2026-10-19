@@ -20,7 +20,7 @@ export type Condition =
   | { kind: 'sentence' }
   /** A workout template (M6c): the sets of each exercise, in order, and the hardest exercise level it may use. */
   | { kind: 'workout'; sets: readonly number[]; level: MoveLevel }
-  /** A weekly program workout (M15): the hardest exercise level; the block gives the exercises and their sets. */
+  /** A weekly program workout (M16): the hardest exercise level; the block gives the exercises and their sets. */
   | { kind: 'program'; level: MoveLevel }
   /** A planned workout as a quest stores it: each exercise with its sets (`sessionCondition`); a weekly one, its block. */
   | { kind: 'session'; moves: readonly SessionMove[]; block?: ProgramBlock };
@@ -63,7 +63,7 @@ export type Ladder = {
   ownProgram: boolean;
   /** The movement a strength ladder trains (M6c review): a workout with that movement keeps it out of the day. */
   pattern?: MovePattern;
-  /** The weekly program's ladder (M15 decision 5): only its workout days build it, and only on the weekly plan. */
+  /** The weekly program's ladder (M16 decision 5): only its workout days build it, and only on the weekly plan. */
   weekly?: true;
   /** Its quests show the player's Scholar's Path book. */
   tracksBook: boolean;
@@ -94,7 +94,7 @@ export type PlayerProfile = {
   equipment: readonly Equipment[];
   /** The program their workouts follow (M6c). */
   programStyle: ProgramStyle;
-  /** Growing workouts or the weekly program (M15 decision 1). */
+  /** Growing workouts or the weekly program (M16 decision 1). */
   trainingPlan: TrainingPlan;
   /** The weekly program's workouts a week: 2 or 3. */
   programDays: number;
@@ -160,7 +160,7 @@ export function specialTemplate(library: QuestLibrary, role: 'stillness' | 'dawn
 
 /**
  * Reported limitations exclude matching templates; a gentle start allows only gentle walking and mobility. On the weekly
- * plan the weekly workouts are the only strength work (M15 decision 7).
+ * plan the weekly workouts are the only strength work (M16 decision 7).
  */
 export function templateAllowed(template: QuestTemplate, profile: PlayerProfile): boolean {
   if (template.contraindications.some((tag) => profile.limitations.includes(tag))) return false;
@@ -171,7 +171,7 @@ export function templateAllowed(template: QuestTemplate, profile: PlayerProfile)
 
 /**
  * Players with their own program get its ladder instead of the strength ladders. The weekly program's ladder is open on
- * the weekly plan only, and closes the other strength ladders (M15 decision 7).
+ * the weekly plan only, and closes the other strength ladders (M16 decision 7).
  */
 export function ladderAllowed(ladder: Ladder, profile: PlayerProfile): boolean {
   if (ladder.ownProgram) return profile.ownProgram;
@@ -224,7 +224,7 @@ export function effectiveRung(library: QuestLibrary, ladderId: string, profile: 
 
 /**
  * `maxRung` for recordCompletion: the highest allowed rung that fits a normal day's core quest; −1 if none. A weekly
- * workout takes the time it takes, outside the daily minutes (M15), so its ladder is capped by what is allowed only.
+ * workout takes the time it takes, outside the daily minutes (M16), so its ladder is capped by what is allowed only.
  */
 export function maxRungFor(library: QuestLibrary, ladderId: string, profile: PlayerProfile): number {
   if (ladderById(library, ladderId).weekly) return allowedTopRung(library, ladderId, profile);

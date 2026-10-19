@@ -20,7 +20,7 @@ export const PROGRAMS: Readonly<Record<ProgramStyle, readonly ProgramDay[]>> = {
   ],
 };
 
-// M15 (plan 2026-10-20-m15-weekly-program.md, decision 2): the weekly program, the same days in full, each slot with its
+// M16 (plan 2026-10-20-m16-weekly-program.md, decision 2): the weekly program, the same days in full, each slot with its
 // sets in build-up weeks 1–5 from the builders' grids (kaizen-training.md §3.5 and Appendix A). Week 6, the easy week, is
 // 2 sets of everything at half the reps (rules: planProgram).
 const UP = [2, 3, 3, 4, 4] as const; // a priority slot: 4 sets in weeks 4–5

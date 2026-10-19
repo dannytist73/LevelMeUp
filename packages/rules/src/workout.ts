@@ -1,7 +1,7 @@
 // Workouts (M6c): sessions of several exercises, planned for the player from the library's moves and programs. Pure
 // and deterministic, so the server plans a workout when it builds a day and the phone can draft the same quest again.
 // The exercise names, slots and rep ranges come from the owner's Kaizen workout builders (docs/research); the words
-// live in packages/content. M15 (plan 2026-10-20-m15-weekly-program.md): the weekly program, the builder's full days
+// live in packages/content. M16 (plan 2026-10-20-m16-weekly-program.md): the weekly program, the builder's full days
 // in its 6-week block.
 import {
   BLOCK_RESTART_MS, BLOCK_WEEKS, EASY_WEEK_SETS, MIN_WORKOUT_MOVES, PROGRAM_HARD_DAY_SETS, WORKOUT_SET_MINUTES, WORKOUT_WARMUP_MINUTES,
@@ -52,7 +52,7 @@ export type Move = {
 /** A program day: its slots, most important first. */
 export type ProgramDay = readonly MoveSlot[];
 
-/** How the player's workouts are set up (M15 decision 1): growing on readiness (M6c), or the weekly program. */
+/** How the player's workouts are set up (M16 decision 1): growing on readiness (M6c), or the weekly program. */
 export type TrainingPlan = 'build' | 'weekly';
 export const TRAINING_PLANS: readonly TrainingPlan[] = ['build', 'weekly'];
 /** The weekly program's workouts a week (decision 2). */
@@ -94,11 +94,11 @@ export function workoutMinutes(sets: readonly number[]): number {
   return WORKOUT_WARMUP_MINUTES + Math.ceil(sets.reduce((sum, n) => sum + n, 0) * WORKOUT_SET_MINUTES);
 }
 
-/** The template is a workout: a growing one (its condition gives the sets of each exercise) or a weekly one (M15). */
+/** The template is a workout: a growing one (its condition gives the sets of each exercise) or a weekly one (M16). */
 export const isWorkout = (template: Pick<QuestTemplate, 'condition'>): boolean =>
   template.condition.kind === 'workout' || template.condition.kind === 'program';
 
-/** The template is a weekly program workout (M15 decision 5): its block gives the exercises and their sets. */
+/** The template is a weekly program workout (M16 decision 5): its block gives the exercises and their sets. */
 export const isProgram = (template: Pick<QuestTemplate, 'condition'>): boolean => template.condition.kind === 'program';
 
 /** The player has what the move needs; a gym counts as everything. */
@@ -222,7 +222,7 @@ export function programBlockFor(training: TrainingLibrary, template: QuestTempla
 
 /**
  * A planned workout as a quest stores it: each move with its sets in the version in use. The hard-day version keeps the
- * first exercises its shape lists (one set of the first two: the minimum session, decision 6). A weekly workout (M15)
+ * first exercises its shape lists (one set of the first two: the minimum session, decision 6). A weekly workout (M16)
  * takes its planned sets and keeps its block, in both versions.
  */
 export function sessionCondition(template: QuestTemplate, moves: readonly PlannedMove[], hardDay: boolean, block: ProgramBlock | null = null): Condition {
@@ -251,7 +251,7 @@ export function sessionMinutes(template: QuestTemplate, moves: readonly PlannedM
 
 /**
  * A stored session's moves, to draft it again (its hard-day version); null for other quests. A growing workout's lose
- * their sets (its template gives them); a weekly workout's keep them (M15 decision 6).
+ * their sets (its template gives them); a weekly workout's keep them (M16 decision 6).
  */
 export function plannedMoves(condition: Condition): PlannedMove[] | null {
   if (condition.kind !== 'session') return null;
@@ -259,7 +259,7 @@ export function plannedMoves(condition: Condition): PlannedMove[] | null {
   return condition.moves.map(({ sets: _sets, ...move }) => move);
 }
 
-/** A stored weekly workout's block (M15); null for every other quest. */
+/** A stored weekly workout's block (M16); null for every other quest. */
 export function plannedBlock(condition: Condition): ProgramBlock | null {
   return condition.kind === 'session' ? condition.block ?? null : null;
 }

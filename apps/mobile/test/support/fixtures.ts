@@ -76,7 +76,7 @@ export function workoutState(over: Partial<Snapshot> = {}): ServerState {
   return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));
 }
 
-/** M15: day 2 on the weekly plan with a weekly workout (program-0: week 1, workout A) as its core quest, id 200. */
+/** M16: day 2 on the weekly plan with a weekly workout (program-0: week 1, workout A) as its core quest, id 200. */
 export function weeklyState(over: Partial<Snapshot> = {}): ServerState {
   const snapshot = dayTwoSnapshot({ ...DAY_TWO_SLOTS, core: 'program-0' }, { profile: profileRow(undefined, { training_plan: 'weekly' }), ...over });
   return stateView(snapshot, dayOffers(snapshot, LIBRARY), historyOf(snapshot));

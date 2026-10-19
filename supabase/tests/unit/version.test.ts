@@ -37,7 +37,7 @@ describe('the minimum app version (M9b decision 5)', () => {
     expect(tooOld(request())).toBeNull();
   });
 
-  it('M15: a character on the weekly program syncs only from 0.8.0 on (lmu-sync checks it with the profile)', () => {
+  it('M16: a character on the weekly program syncs only from 0.8.0 on (lmu-sync checks it with the profile)', () => {
     expect(WEEKLY_MIN_APP_VERSION).toBe('0.8.0');
     expect(tooOld(request('0.7.1'), WEEKLY_MIN_APP_VERSION)).toEqual({ status: 426, code: 'update_required' });
     expect(tooOld(request('0.8.0'), WEEKLY_MIN_APP_VERSION)).toBeNull();

@@ -122,7 +122,7 @@ export const WORKOUT_WARMUP_MINUTES = 2;
 /** A workout needs at least this many exercises the player can do, or the day uses the single-exercise ladders. */
 export const MIN_WORKOUT_MOVES = 2;
 
-// The weekly program (M15 decisions 2–4)
+// The weekly program (M16 decisions 2–4)
 /** A block: 5 build-up weeks and an easy week, then it starts again (the workout builder's 6-week block). */
 export const BLOCK_WEEKS = 6;
 /** The easy week's sets of every exercise; its reps are half the range, at the same weight. */

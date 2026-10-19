@@ -282,7 +282,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   } else if (quest.condition.kind === 'session') {
     // A new plan starts a fresh log (review); a training change on its way re-plans the workout first, so it waits.
     const replanning = pending.some((e) => e.type === 'training');
-    // M15: a weekly workout says where it stands in its block and what the week asks for.
+    // M16: a weekly workout says where it stands in its block and what the week asks for.
     const block = quest.condition.block;
     panel = (
       <View style={{ gap: 12 }}>

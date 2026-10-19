@@ -1,4 +1,4 @@
-// M15, the weekly program (plan 2026-10-20-m15-weekly-program.md): the block, the plan of a weekly workout, its days,
+// M16, the weekly program (plan 2026-10-20-m16-weekly-program.md): the block, the plan of a weekly workout, its days,
 // and the adjustments that re-draft it.
 import { describe, expect, it } from 'vitest';
 import { addRecovery, applyHardDay, provisionalDay, swapOptions } from '../src/adjust.ts';

@@ -128,7 +128,7 @@ export type PlusOutcome = 'on' | 'pending' | 'cancelled' | 'none' | 'failed' | '
  */
 export type Offer =
   | 'reminder' | 'setup' | `setup:${'save' | 'voice' | 'gear' | 'slip' | 'vow'}` | 'live-timer' | `plus:${'intro' | 'day7' | 'trial'}`
-  /** M15: the weekly program's one-time offer. */
+  /** M16: the weekly program's one-time offer. */
   | 'program';
 
 const readOffers = (text: string | null): Offer[] => {

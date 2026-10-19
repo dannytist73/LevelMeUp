@@ -248,7 +248,7 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
       };
     }
     case 'training': {
-      // The setup always changes; today's open workouts are re-planned with it, same rung and reward (decision 12). M15
+      // The setup always changes; today's open workouts are re-planned with it, same rung and reward (decision 12). M16
       // decision 8: an older phone leaves the plan as it is; a new plan starts with tomorrow's quests, and switching the
       // weekly program on starts its exercises at the level the workouts reached.
       const training = {
@@ -343,7 +343,7 @@ export function planOfflinePain(
 }
 
 /**
- * M15 decision 8: the weekly program's ladder when the plan switches to it and it has none yet: its exercises start at
+ * M16 decision 8: the weekly program's ladder when the plan switches to it and it has none yet: its exercises start at
  * the level the step-by-step workouts reached (a weekly rung is a level: 0 is level 1).
  */
 function programStart(library: QuestLibrary, s: Snapshot): Record<string, LadderState> | undefined {

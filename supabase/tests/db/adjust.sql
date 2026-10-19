@@ -482,7 +482,7 @@ begin
     'P0001', 'lmu:bad_change', 'nor touches a settled check-in');
 end $$;
 
--- M15: the weekly program's plan, its workouts a week and the start of its run, through the training change.
+-- M16: the weekly program's plan, its workouts a week and the start of its run, through the training change.
 create function lmu_test.test_adjust_weekly_program() returns setof text language plpgsql as $$
 declare
   a uuid := lmu_test.start(61);

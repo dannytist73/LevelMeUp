@@ -32,7 +32,7 @@ export type ProfileRow = {
   own_program: boolean;
   equipment: Equipment[];
   program_style: ProgramStyle;
-  /** M15: the training plan, the weekly program's workouts a week, and when it was last switched on (decisions 1, 3). */
+  /** M16: the training plan, the weekly program's workouts a week, and when it was last switched on (decisions 1, 3). */
   training_plan: TrainingPlan;
   program_days: number;
   program_since: Date | null;
@@ -381,7 +381,7 @@ export type Snapshot = {
   painReports: number;
   /** Workouts completed so far (M6c): the program day of the next workout (rules: planWorkout). */
   workoutsDone: number;
-  /** M15: weekly workouts that count in the current run (rules: programRun): the next one's week and day. */
+  /** M16: weekly workouts that count in the current run (rules: programRun): the next one's week and day. */
   programDone: number;
   /** M8b: the published library, each with the last quest day it was given to this player (decision 1). */
   articles: CandidateRow[];
@@ -466,7 +466,7 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
       boundaryMinutes: s.profile.boundary_minutes, minutesPerDay: s.profile.minutes_per_day, difficulty: s.profile.difficulty,
       goals: s.profile.goals, limitations: s.profile.limitations, gentleStart: s.profile.gentle_start, ownProgram: s.profile.own_program,
       equipment: s.profile.equipment, programStyle: s.profile.program_style,
-      trainingPlan: s.profile.training_plan, programDays: s.profile.program_days, // M15
+      trainingPlan: s.profile.training_plan, programDays: s.profile.program_days, // M16
       book: s.profile.book, bookStartedAt: iso(s.profile.book_started_at), booksFinished: s.profile.books_finished,
       reveal: s.profile.reveal, accountabilityLevel: s.profile.accountability_level,
       /** M7c: when the current pact level was signed: only days that start after it count (decision 2). */
@@ -522,7 +522,7 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
     ladders: ladderMap(s.ladders),
     history: pastDays(s.days, s.instances),
     workoutsDone: s.workoutsDone,
-    /** M15: the weekly workouts done in the current run, for the phone's offline day. */
+    /** M16: the weekly workouts done in the current run, for the phone's offline day. */
     programDone: s.programDone,
     /** M13: whether the player is Plus, decided here from the stored grants (decision 1). */
     plus: plusView(s.entitlements, s.readAt),

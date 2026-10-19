@@ -391,7 +391,7 @@ describe('changing the training setup (M6c decision 12)', () => {
     });
   });
 
-  // M15 (plan 2026-10-20-m15-weekly-program.md, decision 8)
+  // M16 (plan 2026-10-20-m16-weekly-program.md, decision 8)
   const WEEKLY = { trainingPlan: 'weekly', programDays: 3 } as const;
 
   it('switching to the weekly program stores it, starts its exercises at the level the workouts reached, and leaves today as it is', () => {

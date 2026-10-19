@@ -137,7 +137,7 @@ export const TRAINING: TrainingLibrary = {
     women: [['hip_hinge', 'quads', 'horizontal_pull', 'abs']],
     none: [['squat', 'horizontal_push', 'hip_hinge', 'horizontal_pull'], ['quads', 'vertical_pull', 'abs', 'horizontal_push']],
   },
-  // M15: small weekly layouts in the builder's shape (sets in weeks 1–5).
+  // M16: small weekly layouts in the builder's shape (sets in weeks 1–5).
   weekly: {
     three: {
       men: [
@@ -184,7 +184,7 @@ export const WORKOUT_FIXTURE: QuestLibrary = {
   training: TRAINING,
 };
 
-/** A weekly program rung (M15): exercises up to `level`; the block gives them and their sets. */
+/** A weekly program rung (M16): exercises up to `level`; the block gives them and their sets. */
 export function programTemplate(rung: number, level: MoveLevel): QuestTemplate {
   return {
     ...template({ id: `program-${rung}`, ladder: 'program', rung, stat: 'strength', minutes: 29, tier: 'major', exercise: 'strength' }),

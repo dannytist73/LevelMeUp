@@ -113,7 +113,7 @@ export const ADJUST_TEXT = {
     noRoom: 'Workouts need 25 minutes a day or more, and they stay off on a gentle start or your own plan. Your setup is kept for when they fit.',
     notice: 'New: tell the System what you train with, and your workouts are built for it.',
     setUp: 'Set up training',
-    /** M15: the plan, the workouts a week, and the one-time offer. */
+    /** M16: the plan, the workouts a week, and the one-time offer. */
     plan: 'How do you want to train?',
     plans: {
       build: { name: 'Step by step', line: 'Workouts of 3 or 4 exercises that grow as you show you are ready. 16 to 32 minutes, inside your daily minutes.' },

@@ -1,4 +1,4 @@
-// M15, the weekly program (plan 2026-10-20-m15-weekly-program.md) on the phone: Settings → Training, the one-time offer,
+// M16, the weekly program (plan 2026-10-20-m16-weekly-program.md) on the phone: Settings → Training, the one-time offer,
 // a weekly workout on Today and on its quest screen, a pending change, and the offline day.
 import { ADJUST_TEXT, LIBRARY, PLAY_TEXT, programBlockLabel } from '@levelmeup/content';
 import { planProgram, templateById } from '@levelmeup/rules';

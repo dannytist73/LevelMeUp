@@ -1,4 +1,4 @@
-// M15, the weekly program (plan 2026-10-20-m15-weekly-program.md) with the real library: the builder's grids, a plan for
+// M16, the weekly program (plan 2026-10-20-m16-weekly-program.md) with the real library: the builder's grids, a plan for
 // every setup, the minutes a workout day takes, the days it comes on, and its words.
 import { describe, expect, it } from 'vitest';
 import {
@@ -148,7 +148,7 @@ describe('weekly workout days with the real library (decision 4)', () => {
   });
 });
 
-describe('the words (M15)', () => {
+describe('the words (M16)', () => {
   it('name every week, every plan and every choice, and pass the lint', () => {
     expect(PLAY_TEXT.workout.weeks).toHaveLength(6);
     const all = [

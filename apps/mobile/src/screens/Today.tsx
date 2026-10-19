@@ -200,7 +200,7 @@ export function Today({
   if (card !== null) strip.push(setupNotice(card, (go) => { void markOffer(`setup:${card}`); go?.(); }, { onSettings, onGame, onTraining, onSlip, onVow }));
   // M13: Plus's one-time cards (a week in; a free trial's last two days), never while a set-up card waits.
   const plusNote = card !== null || view === null ? null : plusCard(view, offers, now(), purchasesSetUp());
-  // M15 decision 9: the weekly program, offered once, never beside another card.
+  // M16 decision 9: the weekly program, offered once, never beside another card.
   if (card === null && plusNote === null && view !== null && programOffered(view, offers)) {
     const T = ADJUST_TEXT.training;
     strip.push({ key: 'program', text: T.offer, actions: [

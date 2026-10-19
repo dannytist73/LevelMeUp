@@ -1,4 +1,4 @@
-# M15 — The weekly program — Plan
+# M16 — The weekly program — Plan
 
 **Goal:** an opt-in weekly program for players who want full workouts: the owner's Kaizen workout builder's 6-week
 block (2 sets in week 1, 3 in weeks 2–3, 4 on the main lifts in weeks 4–5, an easy week 6), with the builder's full
@@ -11,7 +11,7 @@ you think it's a good addition."
 
 **Source:** `docs/research/kaizen-training.md` §3.4–3.6 and Appendix A (the builder's set scheme per slot).
 
-**Tech:** as M14. No new dependencies, no native module; one migration (0018), the functions, and an APK.
+**Tech:** as M14. No new dependencies, no native module; one migration (0019; 0018 is the daily studio's, M15, applied from its own branch), the functions, and an APK.
 
 ---
 
@@ -75,4 +75,32 @@ you think it's a good addition."
 
 ## Remote steps (each needs the owner's yes)
 
-Migration 0018 (`levelmeup` only), the functions deploy, the live tests, and the 0.8.0 APK.
+Migration 0019 (`levelmeup` only), the functions deploy, the live tests, and the 0.8.0 APK.
+
+## As built (2026-10-20)
+
+Branch `m16-weekly-program` (from `m14-story-lessons`): rules and content `be21f29`, server `7e6d4f7`, phone `9008d3d`
+(0.8.0, versionCode 10), the old-app guard `7dba1df`.
+
+**Changes from the plan**
+
+- **Stand-in slots** (decision 6): without equipment some program days had empty slots (Men's day A at level 1 kept only
+  2 exercises: no bodyweight incline push, shoulder or arm move). A slot nothing fits now takes a move from the
+  program's next days' slots, in order, after the day's own slots are filled, and keeps the empty slot's sets
+  (`planProgram`). Every setup in the content check (7 equipment sets × 3 programs × 2 or 3 a week × levels 1–3 × 18
+  workouts) plans 4–6 exercises; a gym always 6.
+- **The hard-day version** is `{ kind: 'program', level }` like the full one (the library's "same kind" check), and the
+  rules give it one set of the first two exercises (`PROGRAM_HARD_DAY_SETS`).
+- **Old apps:** an app before 0.8.0 doesn't know the weekly quests (`program-0..2`, the `program` why-line), so
+  `lmu-sync` answers it 426 `update_required` when the character is on the weekly program (`WEEKLY_MIN_APP_VERSION`);
+  step-by-step characters sync from any app as before. `MIN_APP_VERSION` stays 0.1.0.
+
+**Minutes** (gym, Men's 3 a week): weeks 1 and 6 take 29 minutes, weeks 2–3 38–43, weeks 4–5 47–50.
+
+**Tests:** rules 471 (21 new, `packages/rules/test/weekly.test.ts`), content 1,170 (7 new: the builder's grids, every
+setup, the minutes, 28 days for every class and daily time), server unit 579 (the training change, the parser, the
+version floor), pgTAP `test_adjust_weekly_program` (not run yet: needs the owner's yes), app 1,169 (10 new,
+`apps/mobile/test/weekly.test.tsx`). Typecheck, the portable check and the Deno check pass.
+- **Renumbered M15 → M16** the same day: the daily studio (another session, branch `m15-daily-studio`) took M15 and
+  applied migration 0018 (`0018_article_studio.sql`) to the live project first. This branch carries that file unchanged
+  (the runner needs every applied migration) and its own is 0019. The first three commits' messages still say M15.

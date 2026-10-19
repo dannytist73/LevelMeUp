@@ -24,7 +24,7 @@ export function rulesProfile(profile: ServerState['profile'], character: Charact
     ownProgram: profile.ownProgram,
     equipment: profile.equipment,
     programStyle: profile.programStyle,
-    // M15: a state cached before the weekly program has neither: the step-by-step plan.
+    // M16: a state cached before the weekly program has neither: the step-by-step plan.
     trainingPlan: (profile as Partial<typeof profile>).trainingPlan ?? 'build',
     programDays: (profile as Partial<typeof profile>).programDays ?? 3,
     stats: Object.fromEntries(TRAINABLE_STATS.map((s) => [s, character.stats[s].points])) as Record<TrainableStat, number>,
@@ -35,7 +35,7 @@ export function rulesProfile(profile: ServerState['profile'], character: Charact
 const sessionsDone = (today: TodayView | null): number =>
   (today?.quests ?? []).filter((q) => q.condition.kind === 'session' && q.completedAt !== null).length;
 
-/** M15: weekly workouts that count, as the server counts them (the full version, not rated too hard). */
+/** M16: weekly workouts that count, as the server counts them (the full version, not rated too hard). */
 const programDoneOn = (today: TodayView | null): number =>
   (today?.quests ?? []).filter((q) => q.ladder === 'program' && q.completedAt !== null && !q.hardDay && q.rating !== 'too_hard').length;
 
@@ -92,7 +92,7 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
       .sort((a, b) => a.dayNumber - b.dayNumber)
       .slice(-7);
     const workoutsDone = Math.max(0, held.workoutsDone + sessionsDone(today) - sessionsDone(server.today));
-    // M15: a state cached before the weekly program has no count: its player is on the step-by-step plan.
+    // M16: a state cached before the weekly program has no count: its player is on the step-by-step plan.
     const programDone = Math.max(0, (held.programDone ?? 0) + programDoneOn(today) - programDoneOn(server.today));
     // A "sick" or "injured" answer asked for a light day (M7a decision 6): the server builds the same one, so it keeps it.
     const light = next.comeback || shown.character.nextDayLight;

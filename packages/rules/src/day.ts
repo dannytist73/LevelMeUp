@@ -26,7 +26,7 @@ export type WhyReason =
       code:
         | 'after_strength' | 'stepped_down' | 'gentle_start' | 'limits' | 'light_day' | 'own_program'
         | 'swap' | 'stillness' | 'dawn_ritual' | 'recovery' | 'second_wind' | 'pain' | 'article'
-        /** M15: a workout day of the weekly program. */
+        /** M16: a workout day of the weekly program. */
         | 'program';
     };
 
@@ -76,7 +76,7 @@ export type QuestDraft = {
   book: string | null;
   /** A workout's planned exercises (M6c decision 8); null for every other quest. */
   moves: readonly PlannedMove[] | null;
-  /** A weekly workout's place in its block (M15 decision 6); null for every other quest. */
+  /** A weekly workout's place in its block (M16 decision 6); null for every other quest. */
   block: ProgramBlock | null;
 };
 
@@ -109,9 +109,9 @@ export type DayInput = {
   light: boolean;
   /** Workouts completed so far (M6c): a new workout follows the program's next day; a missed one repeats. */
   workoutsDone: number;
-  /** Weekly workouts that count in the current run (M15 decision 3, `programRun`): the next one's week and day. */
+  /** Weekly workouts that count in the current run (M16 decision 3, `programRun`): the next one's week and day. */
   programDone: number;
-  /** A rest day the player planned (M7b): never a weekly workout day (M15 decision 4). */
+  /** A rest day the player planned (M7b): never a weekly workout day (M16 decision 4). */
   rest?: boolean;
   articleId: string | null;
 };
@@ -257,7 +257,7 @@ export function ladderCandidates(ctx: DayContext, ladders: readonly Ladder[], al
   const { library, input } = ctx;
   const candidates: Candidate[] = [];
   for (const ladder of ladders) {
-    // The weekly program's ladder is built on its own days only (M15 decision 5: programCandidate).
+    // The weekly program's ladder is built on its own days only (M16 decision 5: programCandidate).
     if (ladder.weekly || used.has(ladder.id) || ctx.strengthYesterday.has(ladder.id) || !ladderAllowed(ladder, input.profile)) continue;
     const state = input.ladders[ladder.id] ?? newLadder();
     if (state.paused) continue;
@@ -312,20 +312,20 @@ export function keptOutBy(library: QuestLibrary, template: QuestTemplate, moves:
   ];
 }
 
-/** A workout's exercises for this player today (decision 5; M15, a weekly one's); null for other quests, or when too few fit. */
+/** A workout's exercises for this player today (decision 5; M16, a weekly one's); null for other quests, or when too few fit. */
 export function movesFor(ctx: DayContext, template: QuestTemplate): PlannedMove[] | null {
   const { library, input } = ctx;
   if (isProgram(template)) return planProgram(library.training, template, input.profile, input.programDone);
   return isWorkout(template) ? planWorkout(library.training, template, input.profile, input.workoutsDone) : null;
 }
 
-/** A weekly workout's block today (M15 decision 6); null for every other quest. */
+/** A weekly workout's block today (M16 decision 6); null for every other quest. */
 export function blockFor(ctx: DayContext, template: QuestTemplate): ProgramBlock | null {
   return programBlockFor(ctx.library.training, template, ctx.input.profile, ctx.input.programDone);
 }
 
 /**
- * Today's weekly workout, when today is one of its days (M15 decision 4): the weekly plan, not a light or planned rest
+ * Today's weekly workout, when today is one of its days (M16 decision 4): the weekly plan, not a light or planned rest
  * day, none built in the last ⌊7 ÷ per week⌋ − 1 days and fewer than the week's number in the last 6, its ladder not
  * resting after pain, and at least two exercises the player can do. Null otherwise.
  */
@@ -459,13 +459,13 @@ export function buildDay(library: QuestLibrary, input: DayInput): BuiltDay {
   const light = input.light || input.dayNumber === 1;
   const budget = dayBudget(input);
   const used = new Set<string>();
-  // M15 decision 4: on a weekly workout day the workout is the core quest.
+  // M16 decision 4: on a weekly workout day the workout is the core quest.
   const program = programCandidate(ctx, light);
   const core = program !== null ? { candidate: program, reason: { code: 'program' } as const } : chooseCore(ctx, budget, used);
   const coreMoves = movesFor(ctx, core.candidate.template);
   for (const key of [useKey(core.candidate.template), ...keptOutBy(library, core.candidate.template, coreMoves)]) used.add(key);
   // A weekly workout takes the time it takes, outside the daily minutes: the side quests get what is left, at least
-  // their minimum (M15).
+  // their minimum (M16).
   const coreMinutes = program !== null ? sessionMinutes(core.candidate.template, coreMoves!, false) : core.candidate.template.minutes;
   const side1 = chooseGoalSide(ctx, Math.max(MIN_SIDE_MINUTES, budget - coreMinutes - MIN_SIDE_MINUTES), used);
   const side1Moves = movesFor(ctx, side1.candidate.template);

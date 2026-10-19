@@ -749,11 +749,11 @@ arrives; on the rebuilt 0.7.0 the story came at the next sync.
 | 8 | An app older than 0.7.0 opening a story deck shows the full article instead (no crash). | |
 | 9 | 0.7.1: the cover shows the story's picture under its label; after updating from 0.7.0, today's lesson has its picture after the first sync. | **Pass** 2026-10-20, emulator, 0.7.1 built on this PC (Vera, read-only): Priya's picture on "Close the book" right after the update from 0.7.0; the cover now reads top down from the picture (it left a gap first; fixed in 0292bb5). |
 
-## M15 — The weekly program (branch `m15-weekly-program`, 2026-10-20)
+## M16 — The weekly program (branch `m16-weekly-program`, 2026-10-20)
 
-Plan `docs/superpowers/plans/2026-10-20-m15-weekly-program.md`. Settings → Training asks how to train: step by step
+Plan `docs/superpowers/plans/2026-10-20-m16-weekly-program.md`. Settings → Training asks how to train: step by step
 (the workouts so far) or the weekly program, the workout builder's full days in its 6-week block (2 sets in week 1, 3 in
-weeks 2–3, 4 on the main lifts in weeks 4–5, an easy week 6), 2 or 3 workouts a week. Every row needs migration 0018 and
+weeks 2–3, 4 on the main lifts in weeks 4–5, an easy week 6), 2 or 3 workouts a week. Every row needs migration 0019 and
 the functions deployed (the owner's yes) and 0.8.0. **Not on Vera** (read-only): rows 2–8 need a test character the owner
 agrees to switch to the weekly program.
 

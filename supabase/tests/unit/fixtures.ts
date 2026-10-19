@@ -108,7 +108,7 @@ function drafted(templateId: string, slot: Slot, why: WhyReason): InstanceDraft 
   const moves = isProgram(template)
     ? planProgram(LIBRARY.training, template, player, 0)
     : isWorkout(template) ? planWorkout(LIBRARY.training, template, player, 0) : null;
-  const block = programBlockFor(LIBRARY.training, template, player, 0); // M15
+  const block = programBlockFor(LIBRARY.training, template, player, 0); // M16
   return toDraft(LIBRARY, draftQuest(template, slot, why, { moves, block }));
 }
 

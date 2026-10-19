@@ -7,7 +7,7 @@ import type { Shown } from './project.ts';
 
 export type SetupCard = 'save' | 'voice' | 'gear' | 'slip' | 'vow';
 
-/** M15: workouts done before the weekly program is offered. */
+/** M16: workouts done before the weekly program is offered. */
 const PROGRAM_OFFER_WORKOUTS = 3;
 
 /** The day each card is first offered, in order. */
@@ -37,7 +37,7 @@ export function setupCard({ view, offers, saved, vow }: SetupInput): SetupCard |
 }
 
 /**
- * M15 decision 9: the weekly program, offered once, after 3 workouts on the step-by-step plan, while strength work is
+ * M16 decision 9: the weekly program, offered once, after 3 workouts on the step-by-step plan, while strength work is
  * possible (no gentle start, no own plan), once today's core quest is cleared (it never pushes the quest down).
  */
 export function programOffered(view: Pick<Shown, 'today' | 'profile' | 'workoutsDone'>, offers: readonly Offer[]): boolean {

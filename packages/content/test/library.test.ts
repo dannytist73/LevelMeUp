@@ -133,7 +133,7 @@ describe('the whole library', () => {
     }
   });
 
-  it('the weekly program (M15): 3 rungs of exercise levels, major, built only on its days, its hard day 7 minutes', () => {
+  it('the weekly program (M16): 3 rungs of exercise levels, major, built only on its days, its hard day 7 minutes', () => {
     const program = LADDERS.find((l) => l.id === 'program')!;
     expect(program).toMatchObject({ stat: 'strength', weekly: true, affinity: [], ownProgram: false });
     const rungs = ladderRungs(LIBRARY, 'program');

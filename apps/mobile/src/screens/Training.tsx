@@ -1,6 +1,6 @@
 // Settings → Training (M6c decision 12): the equipment and program the player's workouts follow. Saving sends one
-// `training` event: the server re-plans today's open workout and the next days follow the new setup. M15 (plan
-// 2026-10-20-m15-weekly-program.md, decisions 1 and 8): the plan, step by step or the weekly program, and its workouts a
+// `training` event: the server re-plans today's open workout and the next days follow the new setup. M16 (plan
+// 2026-10-20-m16-weekly-program.md, decisions 1 and 8): the plan, step by step or the weekly program, and its workouts a
 // week; a new plan starts with tomorrow's quests.
 import { ADJUST_TEXT, EQUIPMENT_NAMES, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, PROGRAM_STYLE_CHOICES } from '@levelmeup/content';
 import { EQUIPMENT, PROGRAM_DAYS_OPTIONS, PROGRAM_STYLES, TRAINING_PLANS, workoutsFit } from '@levelmeup/rules';
@@ -45,7 +45,7 @@ export function Training({ onDone, onBack }: TrainingProps) {
     );
   }
   const p = view.profile;
-  // A state cached before M15 has no plan: the step-by-step one.
+  // A state cached before M16 has no plan: the step-by-step one.
   const currentPlan: TrainingPlan = p.trainingPlan ?? 'build';
   const currentDays = p.programDays ?? 3;
   const picked = equipment ?? p.equipment;

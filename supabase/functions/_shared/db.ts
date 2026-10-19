@@ -96,7 +96,7 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       select count(*)::int as workouts from levelmeup.quest_instances
       where user_id = ${userId} and completed_at is not null and condition ->> 'kind' = 'session'
         and payload ->> 'offlineQuest' is null`);
-    // M15 decision 3: the weekly workouts that count (the full version, not rated too hard) since the weekly program was
+    // M16 decision 3: the weekly workouts that count (the full version, not rated too hard) since the weekly program was
     // last switched on; programRun keeps the current run.
     const program = await tx<{ at: Date }[]>`
       select q.completed_at as at from levelmeup.quest_instances q

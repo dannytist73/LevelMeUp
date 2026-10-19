@@ -32,7 +32,7 @@ describe('quest art keys (M6a, decision 10)', () => {
       'micro-strength', 'micro-vitality', 'micro-wisdom', 'micro-focus', 'recovery', 'stillness', 'dawn-ritual', 'article',
     ]));
     expect(ART_KEYS).not.toContain('ladder-workout');
-    expect(ART_KEYS).not.toContain('ladder-program'); // M15: a weekly workout shows its first exercise too
+    expect(ART_KEYS).not.toContain('ladder-program'); // M16: a weekly workout shows its first exercise too
   });
 
   it('has a subject in the art script for every key, so the set can be rendered', () => {

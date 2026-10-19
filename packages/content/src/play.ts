@@ -61,7 +61,7 @@ export const PLAY_TEXT = {
     log: 'Log workout',
     change: 'Change equipment or program',
     replanning: 'Your new training setup is on its way. Log this workout once it syncs.',
-    /** M15: a weekly workout's place in its block; {day} is a letter, A to C. */
+    /** M16: a weekly workout's place in its block; {day} is a letter, A to C. */
     block: 'Week {week} of 6 · Workout {day}',
     easyBlock: 'Week 6 of 6, the easy week · Workout {day}',
     /** What each week of the block asks for (the workout builder's set scheme). */
@@ -181,7 +181,7 @@ export function fillText(text: string, values: Readonly<Record<string, string | 
   });
 }
 
-/** M15: a weekly workout's place in its block, "Week 2 of 6 · Workout B"; week 6 says it is the easy week. */
+/** M16: a weekly workout's place in its block, "Week 2 of 6 · Workout B"; week 6 says it is the easy week. */
 export function programBlockLabel(block: { week: number; day: number }): string {
   const day = 'ABC'.charAt(block.day);
   return block.week === 6 ? fillText(PLAY_TEXT.workout.easyBlock, { day }) : fillText(PLAY_TEXT.workout.block, { week: block.week, day });

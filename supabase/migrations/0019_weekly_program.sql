@@ -1,4 +1,4 @@
--- M15, the weekly program (plan 2026-10-20-m15-weekly-program.md, decisions 1, 3 and 8): the player's training plan
+-- M16, the weekly program (plan 2026-10-20-m16-weekly-program.md, decisions 1, 3 and 8): the player's training plan
 -- (`build`, the M6c workouts, or `weekly`), its workouts a week, and when the weekly program was last switched on (its
 -- run counts the weekly workouts completed since, `programRun`). The `training` adjustment writes them; otherwise
 -- `adjust` is as 0013. A weekly workout is stored like any workout (quest_instances.condition, kind `session`, with its
@@ -9,10 +9,10 @@ alter table levelmeup.profiles
   add column program_days smallint not null default 3 check (program_days in (2, 3)),
   add column program_since timestamptz;
 
-comment on column levelmeup.profiles.training_plan is 'M15: build (workouts grow on readiness) or weekly (the weekly program).';
-comment on column levelmeup.profiles.program_days is 'M15: the weekly program''s workouts a week, 2 or 3.';
+comment on column levelmeup.profiles.training_plan is 'M16: build (workouts grow on readiness) or weekly (the weekly program).';
+comment on column levelmeup.profiles.program_days is 'M16: the weekly program''s workouts a week, 2 or 3.';
 comment on column levelmeup.profiles.program_since is
-  'M15: when the weekly program was last switched on; its run counts the weekly workouts completed since. Null: never.';
+  'M16: when the weekly program was last switched on; its run counts the weekly workouts completed since. Null: never.';
 
 create or replace function levelmeup.adjust(p_user uuid, p_event uuid, p_version int, p_type text, p_payload jsonb, p_change jsonb)
 returns jsonb language plpgsql security definer set search_path = levelmeup, pg_temp as $$
@@ -221,7 +221,7 @@ begin
     update levelmeup.profiles set class_id = p_change ->> 'classId', class_changed_at = now() where user_id = p_user;
   end if;
 
-  -- M6c: the training setup; the table's checks refuse unknown equipment, styles, plans and workouts a week. M15: the
+  -- M6c: the training setup; the table's checks refuse unknown equipment, styles, plans and workouts a week. M16: the
   -- plan and its workouts a week stay as they are when a change leaves them out (an older phone); switching the weekly
   -- program on starts its run (the right-hand sides read the row as it was).
   if jsonb_typeof(p_change -> 'training') = 'object' then

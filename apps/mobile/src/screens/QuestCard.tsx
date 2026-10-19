@@ -97,7 +97,7 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, restin
               <Title>{words.title}</Title>
               <Body tone="ashLight" weight="medium">{questSummary(quest)}</Body>
               {quest.book !== null && <Small>{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
-              {/* M15: a weekly workout's week and day. */}
+              {/* M16: a weekly workout's week and day. */}
               {quest.condition.kind === 'session' && quest.condition.block !== undefined && (
                 <Small>{programBlockLabel(quest.condition.block)}</Small>
               )}

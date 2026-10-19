@@ -7,7 +7,7 @@ import type { Problem } from './http.ts';
 
 export const MIN_APP_VERSION = '0.1.0';
 /**
- * M15: the oldest app that knows the weekly program's quests. A character on the weekly program syncs only from it: an
+ * M16: the oldest app that knows the weekly program's quests. A character on the weekly program syncs only from it: an
  * older app (another phone with the same saved character) updates first instead of meeting quests it can't show.
  */
 export const WEEKLY_MIN_APP_VERSION = '0.8.0';

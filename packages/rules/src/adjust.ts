@@ -204,7 +204,7 @@ export function addRecovery(library: QuestLibrary, input: DayInput, day: BuiltDa
   if (day.quests.some((q) => useKey(templateById(library, q.templateId)) === useKey(redo))) {
     throw new RangeError(`${useKey(redo)} is already in today's quests`);
   }
-  // A missed workout is redone with today's plan; one that can't be planned any more is refused. M15: a weekly one is
+  // A missed workout is redone with today's plan; one that can't be planned any more is refused. M16: a weekly one is
   // the program's next workout.
   const moves = isProgram(redo)
     ? planProgram(library.training, redo, input.profile, input.programDone)
@@ -278,7 +278,7 @@ export function checkProvisionalDay(library: QuestLibrary, input: DayInput, day:
     const key = useKey(template);
     if (keys.has(key)) problems.push(`${key} is used twice`);
     keys.add(key);
-    // A weekly workout takes the time it takes, outside the daily minutes (M15).
+    // A weekly workout takes the time it takes, outside the daily minutes (M16).
     if (!isProgram(template)) minutes += template.minutes;
   }
   // No movement twice in a day (M6c review): a workout and a strength quest it keeps out never share it. Both ways, since

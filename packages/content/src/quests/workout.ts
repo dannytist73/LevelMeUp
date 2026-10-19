@@ -6,7 +6,7 @@ import type { AuthoredTemplate, Voice, VoiceText } from '../types.ts';
 
 export const WORKOUT_LADDERS: readonly Ladder[] = [
   { id: 'workout', stat: 'strength', goals: ['body'], affinity: ['warrior', 'mage', 'rogue', 'monk'], ownProgram: false, tracksBook: false },
-  // M15 decision 5: the weekly program's exercise levels; only its own workout days build it.
+  // M16 decision 5: the weekly program's exercise levels; only its own workout days build it.
   { id: 'program', stat: 'strength', goals: ['body'], affinity: [], ownProgram: false, tracksBook: false, weekly: true },
 ];
 
@@ -94,7 +94,7 @@ export const WORKOUT_TEMPLATES: readonly AuthoredTemplate[] = [
   }),
 ];
 
-// M15 (plan 2026-10-20-m15-weekly-program.md): the weekly program's rungs raise the exercises' level only; its block
+// M16 (plan 2026-10-20-m16-weekly-program.md): the weekly program's rungs raise the exercises' level only; its block
 // gives the day's exercises and the week's sets (rules: planProgram). The minutes are week 1's full day (6 exercises × 2
 // sets); a weekly workout's own minutes come from its plan, outside the daily minutes.
 const WEEKLY_STEPS = [
