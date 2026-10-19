@@ -747,3 +747,4 @@ arrives; on the rebuilt 0.7.0 the story came at the next sync.
 | 6 | A deck stored before M14 (if any is left) still shows its old cards with the System note. | |
 | 7 | After the functions are deployed: a new night's article gets a story deck from the cron (`npm run articles -- decks`), and `npm run articles -- review` shows it with the right answer marked. | |
 | 8 | An app older than 0.7.0 opening a story deck shows the full article instead (no crash). | |
+| 9 | 0.7.1: the cover shows the story's picture under its label; after updating from 0.7.0, today's lesson has its picture after the first sync. | |

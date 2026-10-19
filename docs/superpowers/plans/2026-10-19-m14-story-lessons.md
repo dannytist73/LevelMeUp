@@ -65,3 +65,19 @@ Superpowers skills).
   server never sent the story. A held article now counts only with its story lesson; a past reading is asked for once
   more.
 - Tests: app 1,156, content 1,128, rules 450, server 568; typecheck, check:functions, check:portable pass.
+
+## Story pictures (2026-10-20, the owner: "make the story pictures with ComfyUI", then "upload them when they're done")
+
+- `scripts/art/story-art.py`: Z-Image Turbo in the owner's ComfyUI, the quest art's style, one fixed description per
+  regular (face, hair, build; clothes come with the scene), one scene per lesson from its story's turning moment. Six
+  reference portraits first (Priya re-rendered as Indian with warm brown skin: the first take read as East Asian, too
+  close to Mika). 60 takes (3 a scene, about 55 s each on the RTX 4070 laptop), picked by me: no lettering in the
+  picture (article-24 re-rendered with plain shop fronts), the regular like their reference. 20 webp, 874 KB.
+- Uploaded at the owner's yes through the Supabase dashboard (Browser 1; Brave's Supabase login only sees the
+  Residentas org) to `lmu-art/story-v1/`; all 20 byte-identical at their public URLs. Each of the 20 decks gained
+  `picture: 'story-v1/<id>.webp'` (one update, 20 rows).
+- The phone: the cover shows the picture under its label (16:9, rounded), and reads as before when a deck has none or it
+  fails to load. A picture of any other shape is dropped. 0.7.1 (vc 9) clears the articles a 0.7.0 install had saved
+  (local migration 8), so they come back with their pictures.
+- New nightly articles have no picture until the owner runs story-art.py for them (the fork session is planning a daily
+  local job for articles, stories and pictures).
