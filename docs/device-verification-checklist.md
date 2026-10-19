@@ -754,12 +754,12 @@ arrives; on the rebuilt 0.7.0 the story came at the next sync.
 Plan `docs/superpowers/plans/2026-10-20-m16-weekly-program.md`. Settings → Training asks how to train: step by step
 (the workouts so far) or the weekly program, the workout builder's full days in its 6-week block (2 sets in week 1, 3 in
 weeks 2–3, 4 on the main lifts in weeks 4–5, an easy week 6), 2 or 3 workouts a week. Every row needs migration 0019 and
-the functions deployed (the owner's yes) and 0.8.0. **Not on Vera** (read-only): rows 2–8 need a test character the owner
+the functions deployed (done 2026-10-20 at the owner's yes) and 0.8.0 (`apps/mobile/dist/levelmeup-0.8.0-preview.apk`, vc 10). **Not on Vera** (read-only): rows 2–8 need a test character the owner
 agrees to switch to the weekly program.
 
 | # | Check | Result |
 |---|---|---|
-| 1 | Settings → Training shows "How do you want to train?" with Step by step and Weekly program; picking Weekly program adds "Workouts a week" (2 or 3) and the note on workout days; "A new plan starts with tomorrow's quests" shows; Save goes back. Largest font: nothing cut. | |
+| 1 | Settings → Training shows "How do you want to train?" with Step by step and Weekly program; picking Weekly program adds "Workouts a week" (2 or 3) and the note on workout days; "A new plan starts with tomorrow's quests" shows; Save goes back. Largest font: nothing cut. | **Pass** 2026-10-20, emulator, 0.8.0 built on this PC, installed over 0.7.1 (Vera kept, read-only: picked on screen, never saved; she is still on Step by step): both choices, Workouts a week (2 / 3) with the note, "A new plan starts with tomorrow's quests". Save and the largest font not tried. |
 | 2 | The next day after switching: a weekly workout leads the day (why-line "It's a workout day in your weekly program." in the Mentor voice), the card says "Week 1 of 6 · Workout A", about 29 minutes, 5–6 exercises of 2 sets; the side quests are small. | |
 | 3 | The weekly workout's quest screen: "Week 1 of 6 · Workout A", the week's note, every exercise with "2 sets of …", the rest bar after each set; logging every set clears it. | |
 | 4 | The day after a weekly workout has no strength quest in any slot; the next workout comes the day after (3 a week), or two days after (2 a week). | |
