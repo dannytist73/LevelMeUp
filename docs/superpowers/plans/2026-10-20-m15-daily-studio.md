@@ -40,7 +40,7 @@ uses, uploads the picture and publishes the article. The PC holds one key that c
     written once more with the reasons when refused, as the tick does.
   - Picture: Claude writes the scene from the story; `story-art.py scene` renders three takes with the regular's fixed
     look; Claude looks at them and picks one (or none, then three more); `story-art.py webp` makes the published size.
-    ComfyUI is started only with 12 GB free (waiting up to an hour), and stopped again if the run started it. No
+    ComfyUI is used only when nobody else is rendering with it, started only with 10 GB free (waiting up to an hour for either), and stopped again only if the run started it and nobody else uses it. No
     picture: the story goes out without one (the cover reads as before).
   - Each step's result is kept in `~/.levelmeup/studio/jobs/job-<id>/`, so the next run resumes; a log in
     `~/.levelmeup/studio/studio.log`, and a Windows notification with the result.

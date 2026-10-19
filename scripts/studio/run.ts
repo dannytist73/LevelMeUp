@@ -38,8 +38,8 @@ const LOG = join(HOME, 'studio', 'studio.log');
 const CLAUDE = process.env.LMU_CLAUDE ?? join(process.env.APPDATA ?? '', 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
 const COMFY = 'http://127.0.0.1:8188';
 const COMFY_DIR = process.env.LMU_COMFY_DIR ?? 'D:\\ai\\ComfyUI';
-/** Free memory ComfyUI needs to start beside everything else (Z-Image Turbo on the 4070 laptop). */
-const COMFY_FREE_BYTES = 12 * 1024 ** 3;
+/** Free memory ComfyUI needs to start beside everything else (Z-Image Turbo on the 4070 laptop; checked on the first runs). */
+const COMFY_FREE_BYTES = 10 * 1024 ** 3;
 /** How long a run waits for that memory (an emulator or a build may finish) before the story goes out without a picture. */
 const MEMORY_WAIT_MS = 60 * 60 * 1000;
 
@@ -184,10 +184,34 @@ const comfyUp = async (): Promise<boolean> => {
   }
 };
 
-/** ComfyUI, started here when it isn't running and the memory allows; null when it can't be had within the wait. */
+/** ComfyUI's queue is empty and stays so for 90 seconds: nobody else is rendering (a script queues one take at a time). */
+async function comfyIdle(): Promise<boolean> {
+  for (let i = 0; i < 6; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 15_000));
+    try {
+      const q = (await (await fetch(`${COMFY}/queue`, { signal: AbortSignal.timeout(5000) })).json()) as { queue_running?: unknown[]; queue_pending?: unknown[] };
+      if ((q.queue_running?.length ?? 0) + (q.queue_pending?.length ?? 0) > 0) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * ComfyUI, started here when it isn't running and the memory allows; one already running is used only once nobody
+ * else is rendering with it (the owner's own work comes first). Null when it can't be had within the wait.
+ */
 async function comfy(): Promise<{ started: number | null } | null> {
-  if (await comfyUp()) return { started: null };
   const until = Date.now() + MEMORY_WAIT_MS;
+  if (await comfyUp()) {
+    while (!(await comfyIdle())) {
+      if (Date.now() > until) return null;
+      log('ComfyUI is busy with other renders: waiting');
+      await new Promise((r) => setTimeout(r, 5 * 60_000));
+    }
+    return { started: null };
+  }
   while (freemem() < COMFY_FREE_BYTES) {
     if (Date.now() > until) return null;
     log(`waiting for memory for ComfyUI: ${(freemem() / 1024 ** 3).toFixed(1)} GB free, ${COMFY_FREE_BYTES / 1024 ** 3} GB needed`);
@@ -225,7 +249,7 @@ async function picture(env: Env, job: StudioJob, dir: string, d: StoryDeck): Pro
     return null;
   };
   const server = await comfy();
-  if (server === null) return none('ComfyUI could not run (not enough free memory within the hour, or it did not start)');
+  if (server === null) return none('ComfyUI could not be had within the hour (busy with other renders, not enough free memory, or it did not start)');
   try {
     const { scene } = await step(dir, 'scene.json', () => claude(env, { system: SCENE_SYSTEM, prompt: scenePrompt(d), schema: SCENE_SCHEMA, cwd: HERE, effort: 'low', minutes: 5 }) as { scene: string });
     const look = python(['look', d.cast]);
@@ -246,7 +270,11 @@ async function picture(env: Env, job: StudioJob, dir: string, d: StoryDeck): Pro
     }
     return none('no take was usable twice over');
   } finally {
-    if (server.started !== null) spawnSync('taskkill', ['/PID', String(server.started), '/T', '/F']);
+    // Stopped only when this run started it and nobody else has queued work on it since.
+    if (server.started !== null) {
+      if (await comfyIdle()) spawnSync('taskkill', ['/PID', String(server.started), '/T', '/F']);
+      else log('ComfyUI is left running: someone else is rendering with it');
+    }
   }
 }
 
