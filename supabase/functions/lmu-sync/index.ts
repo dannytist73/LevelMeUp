@@ -21,7 +21,7 @@ import { playRecheckDue, plusView } from '../_shared/plus.ts';
 import { refreshPlay, revenueCatKey } from '../_shared/revenuecat.ts';
 import { achievementProgress, characterView, ladderMap, stateView } from '../_shared/state.ts';
 import { dayOffers, openDay } from '../_shared/today.ts';
-import { tooOld } from '../_shared/version.ts';
+import { WEEKLY_MIN_APP_VERSION, tooOld } from '../_shared/version.ts';
 import type { DayRow, InstanceRow, Snapshot } from '../_shared/state.ts';
 
 /** Tries at closing days or adjusting one when another write got there first (`lmu:conflict`). */
@@ -317,6 +317,9 @@ Deno.serve(async (req) => {
   try {
     const started = await db().begin((tx) => loadSnapshot(tx, player.userId));
     if (started === null) return problemResponse(problem(404, 'not_started'));
+    // M15: a character on the weekly program needs an app that knows its quests; an older one updates first, as above.
+    const behind = started.profile.training_plan === 'weekly' ? tooOld(req, WEEKLY_MIN_APP_VERSION) : null;
+    if (behind !== null) return problemResponse(behind);
     // Events first, so an offline completion always lands before its day closes (architecture §4.3); check-in answers
     // last, since each closes the days that have ended (M7a review). The results keep the phone's order.
     const results: Applied[] = new Array(request.events.length);

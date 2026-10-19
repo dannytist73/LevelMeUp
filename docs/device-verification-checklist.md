@@ -748,3 +748,23 @@ arrives; on the rebuilt 0.7.0 the story came at the next sync.
 | 7 | After the functions are deployed: a new night's article gets a story deck from the cron (`npm run articles -- decks`), and `npm run articles -- review` shows it with the right answer marked. | |
 | 8 | An app older than 0.7.0 opening a story deck shows the full article instead (no crash). | |
 | 9 | 0.7.1: the cover shows the story's picture under its label; after updating from 0.7.0, today's lesson has its picture after the first sync. | **Pass** 2026-10-20, emulator, 0.7.1 built on this PC (Vera, read-only): Priya's picture on "Close the book" right after the update from 0.7.0; the cover now reads top down from the picture (it left a gap first; fixed in 0292bb5). |
+
+## M15 — The weekly program (branch `m15-weekly-program`, 2026-10-20)
+
+Plan `docs/superpowers/plans/2026-10-20-m15-weekly-program.md`. Settings → Training asks how to train: step by step
+(the workouts so far) or the weekly program, the workout builder's full days in its 6-week block (2 sets in week 1, 3 in
+weeks 2–3, 4 on the main lifts in weeks 4–5, an easy week 6), 2 or 3 workouts a week. Every row needs migration 0018 and
+the functions deployed (the owner's yes) and 0.8.0. **Not on Vera** (read-only): rows 2–8 need a test character the owner
+agrees to switch to the weekly program.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Settings → Training shows "How do you want to train?" with Step by step and Weekly program; picking Weekly program adds "Workouts a week" (2 or 3) and the note on workout days; "A new plan starts with tomorrow's quests" shows; Save goes back. Largest font: nothing cut. | |
+| 2 | The next day after switching: a weekly workout leads the day (why-line "It's a workout day in your weekly program." in the Mentor voice), the card says "Week 1 of 6 · Workout A", about 29 minutes, 5–6 exercises of 2 sets; the side quests are small. | |
+| 3 | The weekly workout's quest screen: "Week 1 of 6 · Workout A", the week's note, every exercise with "2 sets of …", the rest bar after each set; logging every set clears it. | |
+| 4 | The day after a weekly workout has no strength quest in any slot; the next workout comes the day after (3 a week), or two days after (2 a week). | |
+| 5 | After 3 workouts (3 a week) the card says "Week 2 of 6" and the exercises show 3 sets; a workout rated "Too hard" comes back before the week moves on. | |
+| 6 | Hard day on a weekly workout day: one set of the first two exercises, 7 minutes, still "Week … · Workout …". | |
+| 7 | Today offers the weekly program once (after 3 workouts on the step-by-step plan, once the core quest is cleared): "See the weekly program" opens Training; "Not now" never shows it again. | |
+| 8 | Back to Step by step: the next day's strength work is the step-by-step workout again, at its old rung. | |
+| 9 | An app older than 0.8.0 on a weekly character (the same saved character on another phone): it shows "Update needed" (lmu-sync answers 426 `update_required`, WEEKLY_MIN_APP_VERSION) and keeps what it holds unsent; a step-by-step character on it syncs as before. | |
