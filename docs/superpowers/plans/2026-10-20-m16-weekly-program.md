@@ -104,3 +104,7 @@ version floor), pgTAP `test_adjust_weekly_program` (not run yet: needs the owner
 - **Renumbered M15 → M16** the same day: the daily studio (another session, branch `m15-daily-studio`) took M15 and
   applied migration 0018 (`0018_article_studio.sql`) to the live project first. This branch carries that file unchanged
   (the runner needs every applied migration) and its own is 0019. The first three commits' messages still say M15.
+- **Merging with the daily studio** (agreed with its session 2026-10-20): it deploys only `lmu-articles-studio` and
+  numbers anything new 0020 or later; redeploying `lmu-articles-tick` from this branch is safe (its `_shared/articles`
+  changes are a type, a new export, an exported helper and a comment). When the branches merge, `package.json`'s
+  `check:functions` and `deploy:functions` lists need `lmu-articles-studio` added.
