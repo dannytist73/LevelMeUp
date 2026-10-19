@@ -29,7 +29,8 @@ export type StoryDeck = {
   tryToday: string;
   /**
    * The story's picture in the public `lmu-art` bucket (`story-v1/article-9.webp`): made in the owner's ComfyUI
-   * (scripts/art/story-art.py) and added by the owner after the upload, never by the writer.
+   * (scripts/art/story-art.py) and added by the owner after the upload, or by lmu-articles-studio for the daily
+   * studio's articles (M15); never by the writer.
    */
   picture?: string;
 };

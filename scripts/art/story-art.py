@@ -11,6 +11,9 @@ usage (with D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe, or any Python 3.11+):
   story-art.py sheet [PATTERN]                      -> art/story/renders/_sheet-<page>.jpg (renders matching PATTERN)
   story-art.py pick                                 -> art/story/v1/<article>.webp from PICKS (published to lmu-art/story-v1)
   story-art.py final                                -> art/story/_set.jpg (the picked set, for the owner)
+  story-art.py scene OUT WHO SCENE [--seeds ...]    -> OUT/<seed>.png (M15: a new story's scene, for scripts/studio)
+  story-art.py webp SRC DEST                        -> DEST, SRC cropped to 960x540 as the published set
+  story-art.py look WHO                             -> prints the regular's fixed look
 Existing renders are skipped, so a changed prompt needs new seeds (or the old renders deleted).
 """
 import argparse, json, subprocess, sys, time, urllib.parse, urllib.request
@@ -116,8 +119,7 @@ def queue_and_fetch(wf: dict, dest: Path) -> Path:
         time.sleep(2)
 
 
-def scene_prompt(article: str) -> str:
-    who, scene = SCENES[article]
+def scene_prompt(who: str, scene: str) -> str:
     return f"{STYLE}. {FRAME}. {CAST[who]}, {scene}"
 
 
@@ -125,7 +127,23 @@ def render(article: str, seed: int) -> Path:
     dest = RENDERS / f"{article}-{seed}.png"
     if dest.exists():
         return dest
-    return queue_and_fetch(workflow(scene_prompt(article), seed, f"lmu/story-{dest.stem}"), dest)
+    return queue_and_fetch(workflow(scene_prompt(*SCENES[article]), seed, f"lmu/story-{dest.stem}"), dest)
+
+
+def studio_scene(out: Path, who: str, scene: str, seed: int) -> Path:
+    """M15: a new story's scene for the daily studio (scripts/studio), outside the committed set."""
+    dest = out / f"{seed}.png"
+    if dest.exists():
+        return dest
+    return queue_and_fetch(workflow(scene_prompt(who, scene), seed, f"lmu/studio-{out.name}-{seed}"), dest)
+
+
+def webp(src: Path, dest: Path) -> Path:
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-vf",
+                    "scale=960:540:force_original_aspect_ratio=increase,crop=960:540", "-quality", "80", str(dest)], check=True)
+    if dest.stat().st_size > 200_000:
+        print(f"warning: {dest.name} is {dest.stat().st_size // 1000} KB (over 200 KB)")
+    return dest
 
 
 def cast(who: str, seed: int) -> Path:
@@ -173,11 +191,7 @@ def pick() -> None:
     for old in OUT.glob("*.webp"):
         old.unlink()
     for article, src in sources.items():
-        dest = OUT / f"{article}.webp"
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-vf",
-                        "scale=960:540:force_original_aspect_ratio=increase,crop=960:540", "-quality", "80", str(dest)], check=True)
-        if dest.stat().st_size > 200_000:
-            print(f"warning: {dest.name} is {dest.stat().st_size // 1000} KB (over 200 KB)")
+        webp(src, OUT / f"{article}.webp")
     print(f"{len(sources)} pictures in {OUT}")
 
 
@@ -188,7 +202,7 @@ def final() -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("command", choices=["cast", "render", "sheet", "pick", "final"])
+    p.add_argument("command", choices=["cast", "render", "sheet", "pick", "final", "scene", "webp", "look"])
     p.add_argument("keys", nargs="*")
     p.add_argument("--seeds", nargs="+", type=int, default=[11, 22, 33])
     a = p.parse_args()
@@ -208,6 +222,20 @@ def main() -> None:
         sheet(*(a.keys[:1] or []))
     elif a.command == "pick":
         pick()
+    elif a.command == "scene":
+        out, who, scene = (a.keys + ["", "", ""])[:3]
+        if who not in CAST or not out or not scene:
+            sys.exit("usage: scene OUT WHO SCENE")
+        for seed in a.seeds:
+            print(studio_scene(Path(out), who, scene, seed), flush=True)
+    elif a.command == "webp":
+        if len(a.keys) != 2:
+            sys.exit("usage: webp SRC DEST")
+        print(webp(Path(a.keys[0]), Path(a.keys[1])))
+    elif a.command == "look":
+        if not a.keys or a.keys[0] not in CAST:
+            sys.exit("usage: look WHO")
+        print(CAST[a.keys[0]])
     else:
         final()
 
