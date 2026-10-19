@@ -53,7 +53,7 @@ SCENES = {
     "article-21": ("tomas", "standing in a small kitchen in early morning light, writing on a sticky note stuck by the kettle, a baby monitor on the counter, wearing a grey hoodie"),
     "article-22": ("priya", "sitting up in bed in the morning stretching her arms, an old wind-up alarm clock on the bedside table, no phone anywhere near the bed, soft daylight through the curtains"),
     "article-23": ("amara", "at a library table quizzing herself with a small stack of handwritten index cards, holding one card face down while thinking, a notebook open beside her, wearing an oversized hoodie"),
-    "article-24": ("lena", "behind the counter of her small bakery after closing, drawing a line down the middle of an order slip with a pencil, bread baskets behind her, the lit window of a busy cafe across the street at dusk, wearing a linen apron"),
+    "article-24": ("lena", "behind the counter of her small bakery after closing, drawing a line down the middle of an order slip with a pencil, bread baskets behind her, the lit window of a busy cafe across the street at dusk with plain awnings and no signs or lettering anywhere, wearing a linen apron"),
     "article-25": ("lena", "shaping a round loaf of rye dough with both hands on a floured wooden table in the early morning, focused and curious, bakery shelves behind her, wearing a linen apron"),
     "article-27": ("tomas", "walking along a tree-lined street at lunchtime pushing a baby pram, earbuds in, relaxed, a sticky note on the front door of a house behind him, wearing a grey hoodie"),
     "article-28": ("jonah", "sitting at a kitchen table on a quiet Sunday writing a plan in a small training notebook, a mug of tea beside it, a gym bag by the door, wearing a plain t-shirt"),
@@ -71,8 +71,13 @@ SCENES = {
 }
 FRAME = "medium wide shot, one person, the face clearly visible, quiet everyday moment"
 
-# Filled in after picking from the sheets: article -> seed; cast -> seed for the reference sheet.
-PICKS: dict[str, int] = {}
+# Filled in after picking from the sheets: article -> seed.
+PICKS: dict[str, int] = {
+    "article-9": 11, "article-20": 22, "article-21": 22, "article-22": 22, "article-23": 22, "article-24": 66,
+    "article-25": 22, "article-27": 22, "article-28": 33, "article-29": 33, "article-30": 11, "article-31": 22,
+    "article-32": 11, "article-33": 22, "article-34": 22, "article-35": 11, "article-36": 11, "article-37": 33,
+    "article-55": 22, "article-56": 11,
+}  # picked 2026-10-20 from the sheets: no lettering in the picture, the regular looks like their reference
 
 
 def workflow(prompt: str, seed: int, prefix: str, size: tuple[int, int] = (W, H)) -> dict:

@@ -30,6 +30,9 @@ const MIGRATIONS: readonly string[] = [
   // Insight, so an older copy goes (the outbox stays).
   `create table if not exists articles (id text primary key, json text not null, saved_at integer not null);
    delete from cache where key = 'state';`,
+  // M14: the story lessons gained their pictures after 0.7.0 had saved some; the saved articles go, so the next sync and
+  // the readings opened bring them back with their pictures (the state and the outbox stay).
+  `delete from articles;`,
 ];
 
 export async function migrate(sql: Sql): Promise<void> {
