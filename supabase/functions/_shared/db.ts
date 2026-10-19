@@ -2,7 +2,7 @@
 // (role lmu_player with their claims) so row level security decides; writes call the levelmeup functions. lmu_player
 // can read LevelMeUp's tables and nothing else, so no claims can reach the wedding's data (migration 0004).
 import postgres from 'npm:postgres@3.4.9';
-import { LIGHTER_PLAN_WINDOW_MS, PAIN_WINDOW_MS, programRun } from '../../../packages/rules/src/index.ts';
+import { LIGHTER_PLAN_WINDOW_MS, PAIN_WINDOW_MS } from '../../../packages/rules/src/index.ts';
 import { statWeeks } from './plus.ts';
 import type { EntitlementRow } from './plus.ts';
 import { READINGS_SHOWN, articleBody } from './reading.ts';
@@ -97,7 +97,7 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       where user_id = ${userId} and completed_at is not null and condition ->> 'kind' = 'session'
         and payload ->> 'offlineQuest' is null`);
     // M16 decision 3: the weekly workouts that count (the full version, not rated too hard) since the weekly program was
-    // last switched on; programRun keeps the current run.
+    // last switched on; programRun finds the run as of a day's start.
     const program = await tx<{ at: Date }[]>`
       select q.completed_at as at from levelmeup.quest_instances q
       join levelmeup.profiles p on p.user_id = q.user_id
@@ -116,7 +116,7 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances],
       earned: earned.map((r) => r.achievement_id), checkin: checkin ?? null, queue: [...queue], answered: [...answered],
       result: result ?? null, readAt: now, painReports: pain, workoutsDone: workouts,
-      programDone: programRun(program.map((r) => r.at.getTime()), now.getTime()), articles: [...articles],
+      programTimes: program.map((r) => r.at.getTime()), articles: [...articles],
       entitlements: [...entitlements],
     };
   } finally {

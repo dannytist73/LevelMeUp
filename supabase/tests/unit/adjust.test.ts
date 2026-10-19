@@ -96,7 +96,7 @@ describe('what the phone may offer today (today.ts)', () => {
     const s: Snapshot = {
       profile: profileRow(choices), character: characterRow(start as Partial<CharacterRow>), ladders: ladderRows(args.ladders), days: [dayRow(args.day, 1)],
       instances: instanceRows(args.day, 1), earned: [], checkin: null, queue: [], answered: [], result: null,
-      readAt: new Date(ONBOARDED), painReports: 0, workoutsDone: 0, programDone: 0, articles: [], entitlements: [],
+      readAt: new Date(ONBOARDED), painReports: 0, workoutsDone: 0, programTimes: [], articles: [], entitlements: [],
     };
     const open = stateView(s, dayOffers(s, LIBRARY), historyOf(s)).today!.quests.filter((q) => q.slot !== 'article');
     const hurt = open.find((q) => templateById(LIBRARY, q.templateId).exercise !== null);
@@ -408,6 +408,16 @@ describe('changing the training setup (M6c decision 12)', () => {
       type: 'training', equipment: [], programStyle: 'none', ...WEEKLY,
     });
     expect(again).toEqual({ change: { training: { equipment: [], programStyle: 'none', ...WEEKLY } } });
+  });
+
+  it('switching on keeps a pain rest, and an old weekly level comes down unless a weekly workout was recent (review)', () => {
+    const on: Draft = { type: 'training', equipment: [], programStyle: 'none', ...WEEKLY };
+    const resting = plan(withWorkout({ ladders: ladderRows({ workout: { ...newLadder(4), paused: true } }) }), on);
+    expect(resting).toMatchObject({ change: { ladders: { program: { rung: 2, paused: true } } } });
+    const old = withWorkout({ ladders: ladderRows({ workout: newLadder(0), program: newLadder(2) }) });
+    expect(plan(old, on)).toMatchObject({ change: { ladders: { program: { rung: 0, paused: false } } } });
+    const recent = withWorkout({ ladders: ladderRows({ workout: newLadder(0), program: newLadder(2) }), programTimes: [NOW - 3 * DAY_MS] });
+    expect(plan(recent, on)).toEqual({ change: { training: { equipment: [], programStyle: 'none', ...WEEKLY } } });
   });
 
   it('back to step by step: stored, and today stays as it is', () => {

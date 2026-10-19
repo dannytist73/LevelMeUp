@@ -53,7 +53,9 @@ export function Training({ onDone, onBack }: TrainingProps) {
   const pickedPlan = plan ?? currentPlan;
   const pickedDays = days ?? currentDays;
   const weekly = pickedPlan === 'weekly';
-  const changed = pickedStyle !== p.programStyle || !sameItems(picked, p.equipment) || pickedPlan !== currentPlan || pickedDays !== currentDays;
+  // The workouts a week matter only on the weekly program (the choice is hidden otherwise).
+  const sentDays = weekly ? pickedDays : currentDays;
+  const changed = pickedStyle !== p.programStyle || !sameItems(picked, p.equipment) || pickedPlan !== currentPlan || sentDays !== currentDays;
   const fits = workoutsFit(LIBRARY, {
     classId: p.classId, level: view.character.level, goals: p.goals, minutesPerDay: p.minutesPerDay, difficulty: p.difficulty,
     limitations: p.limitations, gentleStart: p.gentleStart, ownProgram: p.ownProgram, equipment: picked, programStyle: pickedStyle,
@@ -65,7 +67,7 @@ export function Training({ onDone, onBack }: TrainingProps) {
     setBusy(true);
     leave();
     try {
-      await enqueue({ type: 'training', equipment: picked, programStyle: pickedStyle, trainingPlan: pickedPlan, programDays: pickedDays });
+      await enqueue({ type: 'training', equipment: picked, programStyle: pickedStyle, trainingPlan: pickedPlan, programDays: sentDays });
     } catch {
       stay();
       setBusy(false);
@@ -93,6 +95,7 @@ export function Training({ onDone, onBack }: TrainingProps) {
             return <OptionCard key={n} label={choice.name} detail={choice.line} selected={pickedDays === n} onPress={() => setDays(n)} />;
           })}
           <Small>{T.weeklyNote}</Small>
+          {currentPlan === 'weekly' && pickedDays !== currentDays && <Small>{T.daysRestart}</Small>}
         </View>
       )}
       <View style={{ gap: 12 }}>

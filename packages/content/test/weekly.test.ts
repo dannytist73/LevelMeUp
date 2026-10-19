@@ -154,7 +154,7 @@ describe('the words (M16)', () => {
     const all = [
       PLAY_TEXT.workout.block, PLAY_TEXT.workout.easyBlock, ...PLAY_TEXT.workout.weeks,
       ADJUST_TEXT.training.plan, ADJUST_TEXT.training.days, ADJUST_TEXT.training.weeklyNote, ADJUST_TEXT.training.noRoomWeekly,
-      ADJUST_TEXT.training.planTomorrow, ADJUST_TEXT.training.offer, ADJUST_TEXT.training.offerGo,
+      ADJUST_TEXT.training.planTomorrow, ADJUST_TEXT.training.offer, ADJUST_TEXT.training.offerGo, ADJUST_TEXT.training.daysRestart,
       ...Object.values(ADJUST_TEXT.training.plans).flatMap((p) => [p.name, p.line]),
       ...Object.values(ADJUST_TEXT.training.dayChoices).flatMap((p) => [p.name, p.line]),
     ];

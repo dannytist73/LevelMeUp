@@ -160,12 +160,15 @@ export function specialTemplate(library: QuestLibrary, role: 'stillness' | 'dawn
 
 /**
  * Reported limitations exclude matching templates; a gentle start allows only gentle walking and mobility. On the weekly
- * plan the weekly workouts are the only strength work (M16 decision 7).
+ * plan the weekly workouts are the only strength work (M16 decision 7), unless the player follows their own program: it
+ * stays theirs, and the weekly program stays off (ladderAllowed).
  */
 export function templateAllowed(template: QuestTemplate, profile: PlayerProfile): boolean {
   if (template.contraindications.some((tag) => profile.limitations.includes(tag))) return false;
   if (profile.gentleStart && template.exercise !== null && (template.exercise === 'strength' || !template.gentle)) return false;
-  if (profile.trainingPlan === 'weekly' && template.exercise === 'strength' && template.condition.kind !== 'program') return false;
+  if (profile.trainingPlan === 'weekly' && !profile.ownProgram && template.exercise === 'strength' && template.condition.kind !== 'program') {
+    return false;
+  }
   return true;
 }
 

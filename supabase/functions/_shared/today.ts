@@ -2,8 +2,8 @@
 // offer on it. Pure. The planner (adjust.ts) and the state view use the same functions, so the phone is offered only
 // what the server will accept.
 import {
-  STREAK_SLOTS, abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, isStreakDay, newLadder, painOption, plannedBlock, plannedMoves,
-  restAllowed, secondWindRedo, swapLimit, swapOptions,
+  STREAK_SLOTS, abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, isStreakDay, newLadder, painOption, plannedBlock,
+  plannedMoves, programRun, restAllowed, secondWindRedo, swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type { BuiltDay, DayInput, QuestDraft, QuestLibrary, Slot } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
@@ -40,7 +40,7 @@ export function todayInput(s: Snapshot, day: DayRow): DayInput {
     history: pastDays(s.days.filter((d) => d.day_number < day.day_number), s.instances).slice(-7),
     light: day.light,
     workoutsDone: s.workoutsDone,
-    programDone: s.programDone,
+    programDone: programRun(s.programTimes, day.starts_at.getTime()), // M16: the run as of the day's start
     articleId: day.article_id,
   };
 }

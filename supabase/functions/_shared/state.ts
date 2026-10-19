@@ -1,7 +1,7 @@
 // Database rows and what the rules make of them. Pure: no database access here.
 import {
-  STATS, TRAINABLE_STATS, checkinEvents, levelForXp, levelProgress, lighterMinutes, lighterPlanOffered, newLadder, questDayDate, rankFor,
-  statPoints, xpToNextPoint,
+  STATS, TRAINABLE_STATS, checkinEvents, levelForXp, levelProgress, lighterMinutes, lighterPlanOffered, newLadder, programRun, questDayDate,
+  rankFor, statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
   AbilityId, AchievementProgress, CheckinAnswer, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState,
@@ -381,8 +381,11 @@ export type Snapshot = {
   painReports: number;
   /** Workouts completed so far (M6c): the program day of the next workout (rules: planWorkout). */
   workoutsDone: number;
-  /** M16: weekly workouts that count in the current run (rules: programRun): the next one's week and day. */
-  programDone: number;
+  /**
+   * M16: when each weekly workout that counts was completed, since the weekly program was last switched on: programRun
+   * finds the run as of a day's start (the next one's week and day).
+   */
+  programTimes: number[];
   /** M8b: the published library, each with the last quest day it was given to this player (decision 1). */
   articles: CandidateRow[];
   /** M13: LevelMeUp Plus grants. */
@@ -522,8 +525,12 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
     ladders: ladderMap(s.ladders),
     history: pastDays(s.days, s.instances),
     workoutsDone: s.workoutsDone,
-    /** M16: the weekly workouts done in the current run, for the phone's offline day. */
-    programDone: s.programDone,
+    /**
+     * M16: the weekly workouts done in the current run as of now, and when the last one was done, for the phone's offline
+     * day (it ends the run after 14 days without one, as the server does).
+     */
+    programDone: programRun(s.programTimes, s.readAt.getTime()),
+    programLastAt: s.programTimes.length === 0 ? null : new Date(Math.max(...s.programTimes)).toISOString(),
     /** M13: whether the player is Plus, decided here from the stored grants (decision 1). */
     plus: plusView(s.entitlements, s.readAt),
     /** M13: the all-time stat chart, for Plus only (null otherwise). */

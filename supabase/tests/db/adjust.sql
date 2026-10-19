@@ -502,12 +502,18 @@ begin
   return next is((select program_days from levelmeup.profiles where user_id = a), 2::smallint, 'and the workouts a week');
   return next is((select equipment from levelmeup.profiles where user_id = a), array['bands'], 'and still changes the equipment');
   return next is((select program_since from levelmeup.profiles where user_id = a), since, 'staying on the weekly program keeps its run');
-  perform levelmeup.adjust(a, lmu_test.ev(63), 3, 'training', '{}', '{"training": {"equipment": [], "programStyle": "men", "trainingPlan": "build"}}');
+  update levelmeup.profiles set program_since = now() - interval '3 days' where user_id = a;
+  perform levelmeup.adjust(a, lmu_test.ev(66), 3, 'training', '{}', '{"training": {"equipment": [], "programStyle": "women", "programDays": 2}}');
+  return next is((select program_since from levelmeup.profiles where user_id = a), now() - interval '3 days',
+    'the same workouts a week keep the run');
+  perform levelmeup.adjust(a, lmu_test.ev(67), 4, 'training', '{}', '{"training": {"equipment": [], "programStyle": "women", "programDays": 3}}');
+  return next is((select program_since from levelmeup.profiles where user_id = a), now(), 'a new number of workouts a week starts the run again');
+  perform levelmeup.adjust(a, lmu_test.ev(63), 5, 'training', '{}', '{"training": {"equipment": [], "programStyle": "men", "trainingPlan": "build"}}');
   return next is((select training_plan from levelmeup.profiles where user_id = a), 'build', 'back to step by step');
-  return next throws_ok(format('select levelmeup.adjust(%L, %L, 4, ''training'', ''{}'', %L)', a, lmu_test.ev(64),
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 6, ''training'', ''{}'', %L)', a, lmu_test.ev(64),
       '{"training": {"equipment": [], "programStyle": "men", "trainingPlan": "daily"}}'),
     '23514', null, 'an unknown plan is refused by the table');
-  return next throws_ok(format('select levelmeup.adjust(%L, %L, 4, ''training'', ''{}'', %L)', a, lmu_test.ev(65),
+  return next throws_ok(format('select levelmeup.adjust(%L, %L, 6, ''training'', ''{}'', %L)', a, lmu_test.ev(65),
       '{"training": {"equipment": [], "programStyle": "men", "programDays": 5}}'),
     '23514', null, '5 workouts a week are refused by the table');
 end $$;

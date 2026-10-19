@@ -335,6 +335,9 @@ export function programCandidate(ctx: DayContext, light: boolean): Candidate | n
   if (profile.trainingPlan !== 'weekly' || light || input.rest === true) return null;
   const ladder = library.ladders.find((l) => l.weekly);
   if (ladder === undefined || !ladderAllowed(ladder, profile)) return null;
+  // As every workout (M6c decision 7): never the day after a strength core quest or a workout (the day the plan changed
+  // may have had one); a small strength side quest yesterday doesn't keep it out.
+  if (ctx.afterStrength || ctx.strengthYesterday.has(ladder.id)) return null;
   const gap = Math.floor(WEEK_QUEST_DAYS / profile.programDays);
   let recent = 0;
   for (const past of input.history) {
@@ -435,7 +438,8 @@ function chooseGoalSide(ctx: DayContext, allowance: number, used: ReadonlySet<st
 /** The reason a card shows: safety and adjustments first, then what the slot asked for. */
 function explain(ctx: DayContext, slot: Slot, choice: Choice, light: boolean): WhyReason {
   const { template, state, capped } = choice.candidate;
-  if (choice.reason.code === 'after_strength' || choice.reason.code === 'program') return choice.reason;
+  if (choice.reason.code === 'after_strength') return choice.reason;
+  if (choice.reason.code === 'program') return capped === 'limits' ? { code: 'limits' } : choice.reason;
   if (ctx.input.profile.gentleStart && template.exercise !== null) return { code: 'gentle_start' };
   if (slot === 'core' && light) return { code: 'light_day' };
   if (state !== null && template.ladder !== null && template.rung !== null) {

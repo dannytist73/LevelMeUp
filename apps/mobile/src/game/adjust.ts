@@ -1,7 +1,7 @@
 // The phone's side of adjusting the day (M6b): an option put in a quest's slot, and the hard-day version of a quest,
 // drafted with the rules and the server's own `toDraft`, so what shows at once matches what the server stores.
 import { LIBRARY } from '@levelmeup/content';
-import { draftQuest, findTemplate, painKey, plannedMoves, templateById } from '@levelmeup/rules';
+import { draftQuest, findTemplate, painKey, plannedBlock, plannedMoves, templateById } from '@levelmeup/rules';
 import type { Slot } from '@levelmeup/rules';
 import { toDraft } from '../../../../supabase/functions/_shared/drafts.ts';
 import type { QuestFields } from '../../../../supabase/functions/_shared/state.ts';
@@ -10,7 +10,7 @@ import type { QuestView } from './types.ts';
 /** A quest's fields in their hard-day version (spec §3.5: lighter, half XP). */
 export function hardFields(fields: QuestFields, slot: Slot): QuestFields {
   const draft = draftQuest(templateById(LIBRARY, fields.templateId), slot, fields.why, {
-    hardDay: true, book: fields.book, moves: plannedMoves(fields.condition),
+    hardDay: true, book: fields.book, moves: plannedMoves(fields.condition), block: plannedBlock(fields.condition), // M16
   });
   const { slot: _slot, ...hard } = toDraft(LIBRARY, draft);
   return hard;

@@ -4,7 +4,7 @@
 // settings, a rest day ahead, and a rest or pain report tapped while its day ran, accepted after the day ended (decisions
 // 2, 5, 6). M7c: the pact's level, the Trial and the note (`_shared/pact.ts`).
 import {
-  LATE_SYNC_MS, abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout,
+  BLOCK_RESTART_MS, LATE_SYNC_MS, abilityUnlocked, applyDawnRitual, applyHardDay, applyStillness, classChangeOpensAt, draftQuest, findTemplate, isWorkout,
   ladderById, ladderRungs, lighterMinutes, newLadder, painKey, painOption, planProgram, planWorkout, plannedMoves, programBlockFor, recordPain,
   restAllowed, resumeAfterPain, stepDown, swapLimit, swapOptions, isProgram,
 } from '../../../packages/rules/src/index.ts';
@@ -255,7 +255,7 @@ function plan(s: Snapshot, event: AdjustEvent, { nowMs, library }: { nowMs: numb
         equipment: event.equipment, programStyle: event.programStyle,
         trainingPlan: event.trainingPlan ?? s.profile.training_plan, programDays: event.programDays ?? s.profile.program_days,
       };
-      const ladders = training.trainingPlan === 'weekly' && s.profile.training_plan !== 'weekly' ? programStart(library, s) : undefined;
+      const ladders = training.trainingPlan === 'weekly' && s.profile.training_plan !== 'weekly' ? programStart(library, s, nowMs) : undefined;
       const base: Change = ladders === undefined ? { training } : { training, ladders };
       const day = openDay(s);
       if (day === null || nowMs >= day.ends_at.getTime() || training.trainingPlan !== s.profile.training_plan) return { change: base };
@@ -343,15 +343,22 @@ export function planOfflinePain(
 }
 
 /**
- * M16 decision 8: the weekly program's ladder when the plan switches to it and it has none yet: its exercises start at
- * the level the step-by-step workouts reached (a weekly rung is a level: 0 is level 1).
+ * M16 decision 8: the weekly program's ladder when the plan switches to it. Its exercises start at the level the
+ * step-by-step workouts reached (a weekly rung is a level: 0 is level 1); a ladder kept from an earlier run keeps its
+ * rung only when a weekly workout was done in the last 14 days, else it comes down to that level. A pain rest on the
+ * workouts carries over: Resume brings the program back (CLAUDE.md: pain always rests). Undefined when nothing changes.
  */
-function programStart(library: QuestLibrary, s: Snapshot): Record<string, LadderState> | undefined {
+function programStart(library: QuestLibrary, s: Snapshot, nowMs: number): Record<string, LadderState> | undefined {
   const program = library.ladders.find((l) => l.weekly);
-  if (program === undefined || s.ladders.some((l) => l.ladder_id === program.id)) return undefined;
-  const workout = s.ladders.find((l) => l.ladder_id === 'workout');
-  const rung = workout === undefined ? undefined : ladderRungs(library, 'workout')[workout.state.rung];
+  if (program === undefined) return undefined;
+  const workout = s.ladders.find((l) => l.ladder_id === 'workout')?.state;
+  const rung = workout === undefined ? undefined : ladderRungs(library, 'workout')[workout.rung];
   const level = rung !== undefined && rung.condition.kind === 'workout' ? rung.condition.level : 1;
-  const top = ladderRungs(library, program.id).length - 1;
-  return { [program.id]: newLadder(Math.min(level - 1, top)) };
+  const seed = Math.min(level - 1, ladderRungs(library, program.id).length - 1);
+  const held = s.ladders.find((l) => l.ladder_id === program.id)?.state;
+  const recent = s.programTimes.some((at) => nowMs - at <= BLOCK_RESTART_MS);
+  let start = held ?? newLadder(seed);
+  if (held !== undefined && !recent && held.rung > seed) start = { ...held, rung: seed, atRung: [], misses: [] };
+  if (workout?.paused === true && !start.paused) start = { ...start, paused: true };
+  return start === held ? undefined : { [program.id]: start };
 }

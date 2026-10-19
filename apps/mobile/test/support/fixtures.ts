@@ -36,7 +36,7 @@ export function serverState(done: readonly Slot[] = [], character: Partial<Chara
     readAt: new Date(ONBOARDED + HOUR),
     painReports: 0,
     workoutsDone: 0,
-    programDone: 0,
+    programTimes: [],
     articles: [],
     entitlements,
   };

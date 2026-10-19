@@ -82,7 +82,7 @@ export const DAY1: DayDraft = startArgs(choices(), templateReveal(choices()), ON
 export function afterDay1(done: readonly Slot[], nowMs: number, over: Partial<AdvanceInput> = {}): AdvanceInput {
   return {
     profile: profileRow(), character: characterRow(), ladders: [], days: [dayRow(DAY1, 1)], instances: instanceRows(DAY1, 1, done),
-    queue: [], pending: null, workoutsDone: 0, programDone: 0, articles: [], timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION,
+    queue: [], pending: null, workoutsDone: 0, programTimes: [], articles: [], timeZone: 'Asia/Manila', nowMs, library: LIBRARY, contentVersion: CONTENT_VERSION,
     ...over,
   };
 }
@@ -144,7 +144,7 @@ export function dayTwoSnapshot(
     readAt: new Date(w.startsAt + HOUR),
     painReports: 0,
     workoutsDone: 0,
-    programDone: 0,
+    programTimes: [],
     articles: [],
     entitlements: [],
     ...over,

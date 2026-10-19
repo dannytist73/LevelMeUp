@@ -317,8 +317,9 @@ Deno.serve(async (req) => {
   try {
     const started = await db().begin((tx) => loadSnapshot(tx, player.userId));
     if (started === null) return problemResponse(problem(404, 'not_started'));
-    // M16: a character on the weekly program needs an app that knows its quests; an older one updates first, as above.
-    const behind = started.profile.training_plan === 'weekly' ? tooOld(req, WEEKLY_MIN_APP_VERSION) : null;
+    // M16: a character that has been on the weekly program needs an app that knows its quests (one may still be open
+    // after switching back); an older one updates first, as above.
+    const behind = started.profile.program_since !== null ? tooOld(req, WEEKLY_MIN_APP_VERSION) : null;
     if (behind !== null) return problemResponse(behind);
     // Events first, so an offline completion always lands before its day closes (architecture §4.3); check-in answers
     // last, since each closes the days that have ended (M7a review). The results keep the phone's order.

@@ -3,8 +3,8 @@
 // builds with the same rules (`buildDay`); the server checks it when it syncs (`checkProvisionalDay`).
 import { LIBRARY } from '@levelmeup/content';
 import {
-  DISCIPLINE_PER_CORE_DAY, RUNG_BONUS_XP, TRAINABLE_STATS, buildDay, closeLadders, followingDay, ladderById, newLadder, recordPain,
-  reenterLadders, resumeAfterPain, stepDown,
+  BLOCK_RESTART_MS, DISCIPLINE_PER_CORE_DAY, RUNG_BONUS_XP, TRAINABLE_STATS, buildDay, closeLadders, followingDay, ladderById, newLadder,
+  recordPain, reenterLadders, resumeAfterPain, stepDown,
 } from '@levelmeup/rules';
 import type { LadderState, PastDay, PlayerProfile, TrainableStat, XpByStat } from '@levelmeup/rules';
 import { addStatXp, project } from './project.ts';
@@ -35,9 +35,9 @@ export function rulesProfile(profile: ServerState['profile'], character: Charact
 const sessionsDone = (today: TodayView | null): number =>
   (today?.quests ?? []).filter((q) => q.condition.kind === 'session' && q.completedAt !== null).length;
 
-/** M16: weekly workouts that count, as the server counts them (the full version, not rated too hard). */
-const programDoneOn = (today: TodayView | null): number =>
-  (today?.quests ?? []).filter((q) => q.ladder === 'program' && q.completedAt !== null && !q.hardDay && q.rating !== 'too_hard').length;
+/** M16: the weekly workouts that count on a day, as the server counts them (the full version, not rated too hard). */
+const programDoneOn = (today: TodayView | null) =>
+  (today?.quests ?? []).filter((q) => q.ladder === 'program' && q.completedAt !== null && !q.hardDay && q.rating !== 'too_hard');
 
 /**
  * What the offline day is built from: the cached state with the unsent events, except check-in answers. The server
@@ -57,7 +57,7 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
   if (shown.offline || today === null || today.startsAt === null || today.endsAt === null) return null;
   const last = { startsAt: Date.parse(today.startsAt), endsAt: Date.parse(today.endsAt), timeZone: today.timeZone };
   if (last.endsAt > nowMs) return null;
-  const held = server as Partial<Pick<ServerState, 'ladders' | 'history' | 'workoutsDone' | 'programDone'>>;
+  const held = server as Partial<Pick<ServerState, 'ladders' | 'history' | 'workoutsDone' | 'programDone' | 'programLastAt'>>;
   if (held.ladders === undefined || held.history === undefined || held.workoutsDone === undefined) return null;
   try {
     const next = followingDay(last, today.dayNumber, timeZone, shown.profile.boundaryMinutes, nowMs);
@@ -92,8 +92,12 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
       .sort((a, b) => a.dayNumber - b.dayNumber)
       .slice(-7);
     const workoutsDone = Math.max(0, held.workoutsDone + sessionsDone(today) - sessionsDone(server.today));
-    // M16: a state cached before the weekly program has no count: its player is on the step-by-step plan.
-    const programDone = Math.max(0, (held.programDone ?? 0) + programDoneOn(today) - programDoneOn(server.today));
+    // M16: the run as of the new day's start, as the server finds it (rules: programRun): the weekly workouts done, and
+    // none after 14 days without one. A state cached before M16 has neither: its player is on the step-by-step plan.
+    const doneHere = programDoneOn(today);
+    const times = [held.programLastAt ?? null, ...doneHere.map((q) => q.completedAt)].flatMap((t) => (t === null ? [] : [Date.parse(t)]));
+    const ran = times.length > 0 && next.window.startsAt - Math.max(...times) <= BLOCK_RESTART_MS;
+    const programDone = ran ? Math.max(0, (held.programDone ?? 0) + doneHere.length - programDoneOn(server.today).length) : 0;
     // A "sick" or "injured" answer asked for a light day (M7a decision 6): the server builds the same one, so it keeps it.
     const light = next.comeback || shown.character.nextDayLight;
     const built = buildDay(LIBRARY, {
@@ -110,7 +114,7 @@ export function offlineDay(server: ServerState, shown: Shown, nowMs: number, tim
       light: built.light,
       // M8b decision 4: the article the server named for the next day; it keeps it while it is published.
       articleId: shown.nextArticle?.id ?? null,
-      quests: built.quests.map((q) => ({ slot: q.slot, templateId: q.templateId, why: q.why, moves: q.moves, book: q.book })),
+      quests: built.quests.map((q) => ({ slot: q.slot, templateId: q.templateId, why: q.why, moves: q.moves, book: q.book, block: q.block })),
     };
   } catch {
     return null; // the rules can't build it from what the phone holds: "preparing", as before M6e

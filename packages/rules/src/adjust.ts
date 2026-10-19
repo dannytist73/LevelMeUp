@@ -1,7 +1,10 @@
 import { abilityReady, abilityUnlocked } from './abilities.ts';
-import { DISCIPLINE_PER_RECOVERY, PAIN_PERSISTS_REPORTS, REST_DAYS_PER_WEEK, SWAP_SAME_STAT_CHOICES, WEEK_QUEST_DAYS } from './constants.ts';
 import {
-  balanceChoice, blockFor, bookFor, dayBudget, dayContext, draftQuest, keptOutBy, ladderCandidates, microCandidates, movesFor, useKey,
+  DISCIPLINE_PER_RECOVERY, MIN_SIDE_MINUTES, PAIN_PERSISTS_REPORTS, REST_DAYS_PER_WEEK, SWAP_SAME_STAT_CHOICES, WEEK_QUEST_DAYS,
+} from './constants.ts';
+import {
+  balanceChoice, blockFor, bookFor, dayBudget, dayContext, draftQuest, keptOutBy, ladderCandidates, microCandidates, movesFor,
+  programCandidate, useKey,
 } from './day.ts';
 import type { BuiltDay, DayInput, QuestDraft, WhyReason } from './day.ts';
 import { newLadder } from './ladder.ts';
@@ -15,6 +18,17 @@ import { isProgram, isWorkout, planProgram, planWorkout, programBlockFor, sameMo
 import type { PlannedMove } from './workout.ts';
 
 const QUEST_SLOTS: readonly Slot[] = ['core', 'side1', 'side2'];
+
+/**
+ * The minutes a slot's quest may take: the budget less the other two quests'. A weekly workout takes the time it takes,
+ * outside the daily minutes (M16), so beside one a side quest keeps its minimum, as buildDay gives it.
+ */
+function slotAllowance(library: QuestLibrary, day: BuiltDay, slot: Slot): number {
+  const others = QUEST_SLOTS.filter((s) => s !== slot).map((s) => questIn(day, s));
+  const programs = others.filter((q) => isProgram(templateById(library, q.templateId)));
+  const minutes = others.reduce((sum, q) => sum + (programs.includes(q) ? q.minutes : templateById(library, q.templateId).minutes), 0);
+  return programs.length > 0 ? Math.max(MIN_SIDE_MINUTES, day.budget - minutes) : day.budget - minutes;
+}
 
 function questIn(day: BuiltDay, slot: Slot): QuestDraft {
   const quest = day.quests.find((q) => q.slot === slot);
@@ -40,7 +54,7 @@ export function swapOptions(library: QuestLibrary, input: DayInput, day: BuiltDa
   const ctx = dayContext(library, input);
   const current = templateById(library, questIn(day, slot).templateId);
   const others = QUEST_SLOTS.filter((s) => s !== slot).map((s) => templateById(library, questIn(day, s).templateId));
-  const allowance = day.budget - others.reduce((sum, t) => sum + t.minutes, 0);
+  const allowance = slotAllowance(library, day, slot);
   const recovery = day.quests.find((q) => q.slot === 'recovery');
   const staying = [...others, ...(recovery ? [templateById(library, recovery.templateId)] : [])];
   // No movement twice in a day: what the rest of the day keeps out (M6c review).
@@ -128,7 +142,7 @@ export function painOption(library: QuestLibrary, input: DayInput, day: BuiltDay
   const current = templateById(library, questIn(day, slot).templateId);
   if (current.exercise === null) throw new RangeError(`${current.id} is not an exercise quest`);
   const others = QUEST_SLOTS.filter((s) => s !== slot).map((s) => templateById(library, questIn(day, s).templateId));
-  const allowance = day.budget - others.reduce((sum, t) => sum + t.minutes, 0);
+  const allowance = slotAllowance(library, day, slot);
   const recovery = day.quests.find((q) => q.slot === 'recovery');
   const used = new Set([current, ...others, ...(recovery ? [templateById(library, recovery.templateId)] : [])].map(useKey));
   const kinds: Exercise[] = current.exercise === 'walk' ? ['mobility', 'walk'] : ['walk', 'mobility'];
@@ -278,8 +292,12 @@ export function checkProvisionalDay(library: QuestLibrary, input: DayInput, day:
     const key = useKey(template);
     if (keys.has(key)) problems.push(`${key} is used twice`);
     keys.add(key);
-    // A weekly workout takes the time it takes, outside the daily minutes (M16).
+    // A weekly workout takes the time it takes, outside the daily minutes, and comes only as the core quest of its own
+    // days (M16 decision 4).
     if (!isProgram(template)) minutes += template.minutes;
+    else if (quest.slot !== 'core' || programCandidate(ctx, day.light)?.template.id !== template.id) {
+      problems.push(`${template.id} is not today's weekly workout`);
+    }
   }
   // No movement twice in a day (M6c review): a workout and a strength quest it keeps out never share it. Both ways, since
   // the builder keeps out by slot order and a swap by the rest of the day (M6e).

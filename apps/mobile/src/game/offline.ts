@@ -35,7 +35,8 @@ export function offlineToday(event: Omit<ProvisionalDayEvent, 'id'>): TodayView 
       const template = findTemplate(LIBRARY, q.templateId);
       if (template === undefined) return [];
       try {
-        const stored = storedQuest(LIBRARY, draftQuest(template, q.slot, q.why, { moves: q.moves, book: q.book }));
+        // M16: a weekly workout keeps its block (the phone put it on the event).
+        const stored = storedQuest(LIBRARY, draftQuest(template, q.slot, q.why, { moves: q.moves, book: q.book, block: q.block ?? null }));
         return [{ id: OFFLINE_IDS[q.slot], ...stored, completedAt: null, rating: null, swaps: [], gentle: null, canStepDown: false }];
       } catch {
         return []; // this app can't draft it (another content version): the server's day will show it

@@ -108,3 +108,28 @@ version floor), pgTAP `test_adjust_weekly_program` (not run yet: needs the owner
   numbers anything new 0020 or later; redeploying `lmu-articles-tick` from this branch is safe (its `_shared/articles`
   changes are a type, a new export, an exported helper and a comment). When the branches merge, `package.json`'s
   `check:functions` and `deploy:functions` lists need `lmu-articles-studio` added.
+
+### Code review (2026-10-20): fixes
+
+An independent review found four bugs and five risks; all are fixed, each with a test.
+
+- **The offline day dropped its weekly workout** (the phone redrafts a day it built without the block) and **Hard day on a
+  weekly workout threw** inside the phone's projection, freezing the view: the block now travels on the phone's
+  `provisional_day` quests (the server never reads it) and into the hard-day draft.
+- **A weekly workout could come the day after strength work** (the day the plan changed): `programCandidate` now follows
+  M6c decision 7, never after a strength core quest or a workout. A small strength side quest doesn't keep it out.
+- **An own program vanished on the weekly plan**: the weekly plan's strength rule now leaves an own program alone (the
+  weekly program stays off, as the screen says).
+- **Safety:** switching on carries a pain rest over from the workouts, and a weekly ladder kept from an earlier run comes
+  down to the workouts' level unless a weekly workout was done in the last 14 days; a new number of workouts a week
+  starts the run again (0019; Training says so), so the easy week is never skipped; the 14-day restart now applies to
+  the phone's offline day too (the state sends `programLastAt`), and the server finds the run as of each day's start
+  (the snapshot keeps the completion times, `programTimes`).
+- **Old apps:** the update gate covers every character that has been on the weekly program (`program_since`), since a
+  weekly workout can stay open after switching back.
+- **Side quests beside a weekly workout** keep their swaps and gentler option (the workout's minutes are outside the day,
+  as in `buildDay`); the server refuses a phone's day with a weekly workout outside the core or on a day that isn't its
+  own; a weekly workout capped by limits says so; Save stays off when only the hidden workouts-a-week choice changed.
+
+Tests after the fixes: rules 475, content 1,170, server unit 585, app 1,173.
+

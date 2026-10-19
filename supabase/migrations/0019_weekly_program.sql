@@ -223,7 +223,8 @@ begin
 
   -- M6c: the training setup; the table's checks refuse unknown equipment, styles, plans and workouts a week. M16: the
   -- plan and its workouts a week stay as they are when a change leaves them out (an older phone); switching the weekly
-  -- program on starts its run (the right-hand sides read the row as it was).
+  -- program on starts its run, and so does a new number of workouts a week, whose weeks count differently (the
+  -- right-hand sides read the row as it was).
   if jsonb_typeof(p_change -> 'training') = 'object' then
     update levelmeup.profiles set
       equipment = array(select jsonb_array_elements_text(coalesce(p_change -> 'training' -> 'equipment', '[]'))),
@@ -231,7 +232,9 @@ begin
       training_plan = coalesce(p_change -> 'training' ->> 'trainingPlan', training_plan),
       program_days = coalesce((p_change -> 'training' ->> 'programDays')::smallint, program_days),
       program_since = case
-        when coalesce(p_change -> 'training' ->> 'trainingPlan', training_plan) = 'weekly' and training_plan <> 'weekly' then now()
+        when coalesce(p_change -> 'training' ->> 'trainingPlan', training_plan) = 'weekly'
+          and (training_plan <> 'weekly' or coalesce((p_change -> 'training' ->> 'programDays')::smallint, program_days) <> program_days)
+          then now()
         else program_since end
     where user_id = p_user;
   end if;

@@ -4,7 +4,8 @@ import { ADJUST_TEXT, LIBRARY, PLAY_TEXT, programBlockLabel } from '@levelmeup/c
 import { planProgram, templateById } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { planAdvance } from '../../../supabase/functions/_shared/advance.ts';
-import { DAY1, afterDay1 } from '../../../supabase/tests/unit/fixtures.ts';
+import { DAY1, afterDay1, instanceRows } from '../../../supabase/tests/unit/fixtures.ts';
+import { hardFields } from '../src/game/adjust.ts';
 import { offlineDay } from '../src/game/offlineDay.ts';
 import { project } from '../src/game/project.ts';
 import { programOffered } from '../src/game/setup.ts';
@@ -48,6 +49,17 @@ describe('Settings → Training (decisions 1, 8)', () => {
     await fireEvent.press(screen.getByRole('radio', { name: `${T.plans.weekly.name}. ${T.plans.weekly.line}` }));
     expect(screen.queryByText(T.noRoom)).toBeNull();
     expect(screen.queryByText(T.noRoomWeekly)).toBeNull();
+  });
+
+  it('a new number of workouts a week says it starts the block again; on Step by step the hidden choice changes nothing (review)', async () => {
+    await renderTraining(workoutState({ profile: profileRow(undefined, { training_plan: 'weekly' }) }));
+    expect(screen.queryByText(T.daysRestart)).toBeNull();
+    await fireEvent.press(screen.getByRole('radio', { name: `${T.dayChoices[2].name}. ${T.dayChoices[2].line}` }));
+    expect(screen.getByText(T.daysRestart)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: `${T.plans.build.name}. ${T.plans.build.line}` }));
+    await fireEvent.press(screen.getByRole('radio', { name: `${T.plans.weekly.name}. ${T.plans.weekly.line}` }));
+    await fireEvent.press(screen.getByRole('radio', { name: `${T.dayChoices[3].name}. ${T.dayChoices[3].line}` }));
+    expect(screen.getByRole('button', { name: T.save }).props.accessibilityState.disabled).toBe(true);
   });
 
   it('it stays off on a gentle start, and says so', async () => {
@@ -104,6 +116,14 @@ describe('a weekly workout (decision 6)', () => {
     expect(screen.getAllByText(/^Exercise \d of \d$/)).toHaveLength(moves);
   });
 
+  it('Hard day: one set of the first two exercises, still in its block (review)', () => {
+    const core = weeklyState().today!.quests.find((q) => q.slot === 'core')!;
+    const hard = hardFields(core, 'core');
+    expect(hard).toMatchObject({ hardDay: true, minutes: 7, condition: { kind: 'session', block: { week: 1, day: 0 } } });
+    if (hard.condition.kind !== 'session' || core.condition.kind !== 'session') throw new Error('not a session');
+    expect(hard.condition.moves).toEqual(core.condition.moves.slice(0, 2).map((m) => ({ ...m, sets: 1 })));
+  });
+
   it('the easy week says so', () => {
     expect(programBlockLabel({ week: 6, day: 2 })).toBe('Week 6 of 6, the easy week · Workout C');
   });
@@ -120,16 +140,25 @@ describe('a weekly workout (decision 6)', () => {
 describe('the offline day on the weekly plan (decisions 3, 4)', () => {
   const END = Date.parse(DAY1.endsAt);
   const HOUR = 3_600_000;
+  // Day 1 with a walk as its core quest: a weekly workout never comes the day after a strength core quest.
+  const WALK = { templateId: 'walk-0', ladder: 'walk', rung: 0, stat: 'vitality' } as const;
   const weekly = (programDone: number): ServerState => {
     const s = serverState();
-    return { ...s, profile: { ...s.profile, trainingPlan: 'weekly' }, programDone };
+    return {
+      ...s, profile: { ...s.profile, trainingPlan: 'weekly' }, programDone, programLastAt: programDone > 0 ? DAY1.startsAt : null,
+      today: { ...s.today!, quests: s.today!.quests.map((q) => (q.slot === 'core' ? { ...q, ...WALK } : q)) },
+    };
   };
+  const walkDay1 = instanceRows(DAY1, 1).map((r) => (r.slot === 'core' ? { ...r, template_id: 'walk-0', ladder_id: 'walk', rung: 0, stat: 'vitality' as const } : r));
 
   it('puts the weekly workout on day 2, as the server does, at the run\'s week', () => {
     for (const done of [0, 3]) {
       const s = weekly(done);
       const event = offlineDay(s, project(s, []), END + HOUR, 'Asia/Manila')!;
-      const server = planAdvance(afterDay1([], END + HOUR, { profile: profileRow(undefined, { training_plan: 'weekly' }), programDone: done }))!.newDay!;
+      const times = Array.from({ length: done }, (_, i) => END - (done - i) * HOUR);
+      const server = planAdvance(afterDay1([], END + HOUR, {
+        profile: profileRow(undefined, { training_plan: 'weekly' }), programTimes: times, instances: walkDay1,
+      }))!.newDay!;
       const core = event.quests.find((q) => q.slot === 'core')!;
       expect(core.templateId).toBe('program-0');
       expect(event.quests.map((q) => [q.slot, q.templateId])).toEqual(server.quests.map((q) => [q.slot, q.templateId]));
@@ -137,6 +166,24 @@ describe('the offline day on the weekly plan (decisions 3, 4)', () => {
       expect(core.moves).toEqual(planProgram(LIBRARY.training, template, { ...rules(s), trainingPlan: 'weekly' }, done));
       expect(core.moves!.every((m) => m.sets === (done === 0 ? 2 : 3))).toBe(true);
     }
+  });
+
+  it('the offline day shows its weekly workout on Today, in its block (review)', () => {
+    const s = weekly(0);
+    const event = offlineDay(s, project(s, []), END + HOUR, 'Asia/Manila')!;
+    const shown = project(s, [{ ...event, id: '00000000-0000-4000-8000-000000000097' }]);
+    const core = shown.today!.quests.find((q) => q.slot === 'core')!;
+    expect(core).toMatchObject({ templateId: 'program-0', condition: { kind: 'session', block: { week: 1, day: 0 } } });
+  });
+
+  it('14 days without a weekly workout start the block again offline too (review)', () => {
+    const s = { ...weekly(9), programLastAt: new Date(END - 15 * 24 * HOUR).toISOString() };
+    const event = offlineDay(s, project(s, []), END + HOUR, 'Asia/Manila')!;
+    const core = event.quests.find((q) => q.slot === 'core')!;
+    expect(core.block).toEqual({ week: 1, day: 0 });
+    expect(core.moves!.every((m) => m.sets === 2)).toBe(true);
+    const recent = { ...weekly(9), programLastAt: new Date(END - 2 * 24 * HOUR).toISOString() };
+    expect(offlineDay(recent, project(recent, []), END + HOUR, 'Asia/Manila')!.quests.find((q) => q.slot === 'core')!.block).toEqual({ week: 4, day: 1 });
   });
 
   it('never on a planned rest day', () => {

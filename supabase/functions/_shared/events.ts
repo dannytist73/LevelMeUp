@@ -8,8 +8,8 @@ import {
   TRAINING_PLANS, canonicalTimeZone, elapsedMs, isValidTimeZone, isWhyReason, questTimerDone, sessionSets,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  AccountabilityLevel, CheckinAnswer, ClassId, Difficulty, Equipment, PlannedMove, ProgramStyle, ProvisionalQuest, Rating, Segment, Slot,
-  TrainingPlan,
+  AccountabilityLevel, CheckinAnswer, ClassId, Difficulty, Equipment, PlannedMove, ProgramBlock, ProgramStyle, ProvisionalQuest, Rating,
+  Segment, Slot, TrainingPlan,
 } from '../../../packages/rules/src/index.ts';
 import { VOICES } from '../../../packages/content/src/index.ts';
 import type { ArticleCluster, Voice } from '../../../packages/content/src/index.ts';
@@ -101,7 +101,11 @@ export type ProvisionalDayEvent = {
   light: boolean;
   /** M8b: the article the phone put on the day (the state's nextArticle), or null; absent from older phones. */
   articleId?: string | null;
-  quests: (ProvisionalQuest & { book: string | null })[];
+  /**
+   * M16: `block`, a weekly workout's place in its block, is the phone's own, so it can show the day it built; the server
+   * never reads it (it drafts the block from its own count).
+   */
+  quests: (ProvisionalQuest & { book: string | null; block?: ProgramBlock | null })[];
 };
 export type AdjustEvent =
   | SwapEvent | HardDayEvent | RestEvent | PainEvent | ResumeEvent | StepDownEvent | ClassChangeEvent | AbilityEvent | TrainingEvent

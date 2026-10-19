@@ -130,6 +130,7 @@ export const ADJUST_TEXT = {
     weeklyNote:
       'Workout days take about 30 to 50 minutes, on top of your daily minutes. A week moves on once its workouts are done, and the other days have no strength quests, so your muscles rest.',
     noRoomWeekly: 'The weekly program stays off on a gentle start or your own plan. Your setup is kept for when it fits.',
+    daysRestart: 'A new number of workouts a week starts the block again at week 1, with 2 sets.',
     planTomorrow: 'A new plan starts with tomorrow\'s quests; today stays as it is.',
     offer: "You've done 3 workouts. Want the full weekly program? 3 workouts a week in 6-week blocks: 2 sets to start, building to 4, then an easy week.",
     offerGo: 'See the weekly program',

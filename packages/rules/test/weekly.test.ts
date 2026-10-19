@@ -1,12 +1,12 @@
 // M16, the weekly program (plan 2026-10-20-m16-weekly-program.md): the block, the plan of a weekly workout, its days,
 // and the adjustments that re-draft it.
 import { describe, expect, it } from 'vitest';
-import { addRecovery, applyHardDay, provisionalDay, swapOptions } from '../src/adjust.ts';
+import { addRecovery, applyHardDay, checkProvisionalDay, painOption, provisionalDay, swapOptions } from '../src/adjust.ts';
 import { DAY_MS } from '../src/constants.ts';
 import { buildDay, storedQuest } from '../src/day.ts';
 import type { BuiltDay, DayInput, PastDay } from '../src/day.ts';
 import { newLadder } from '../src/ladder.ts';
-import { maxRungFor, templateById, validateProfile } from '../src/library.ts';
+import { allowedTopRung, maxRungFor, templateById, validateProfile } from '../src/library.ts';
 import type { PlayerProfile } from '../src/library.ts';
 import {
   isProgram, isWorkout, planProgram, plannedBlock, plannedMoves, programBlock, programRun, sameMoves, sessionCondition, sessionMinutes,
@@ -191,6 +191,22 @@ describe('weekly workout days (decision 4)', () => {
     for (const d of run({ ...PROFILE }, 21)) expect(d.quests.some((q) => q.templateId.startsWith('program-'))).toBe(false);
   });
 
+  it('never the day after a strength core quest or a workout, the day the plan changed included (review)', () => {
+    const at = (quests: PastDay['quests']) =>
+      core(buildDay(WEEKLY_FIXTURE, dayInput({ dayNumber: 10, history: [{ dayNumber: 9, quests }] }, { trainingPlan: 'weekly' }))).templateId;
+    expect(at({ core: 'walk-0' })).toBe('program-0');
+    expect(at({ core: 'workout-0' })).not.toMatch(/^program/);
+    expect(at({ core: 'push-0' })).not.toMatch(/^program/);
+    expect(at({ core: 'walk-0', side1: 'push-0' })).toBe('program-0'); // a small side quest doesn't keep it out, as in M6c
+  });
+
+  it('an own program stays the player\'s on the weekly plan; the weekly program stays off (review)', () => {
+    const own = weekly({ ownProgram: true });
+    expect(allowedTopRung(WEEKLY_FIXTURE, 'own', own)).toBe(0);
+    expect(allowedTopRung(WEEKLY_FIXTURE, 'program', own)).toBe(-1);
+    expect(allowedTopRung(WEEKLY_FIXTURE, 'push', own)).toBe(-1);
+  });
+
   it('its rung cap ignores the daily minutes', () => {
     expect(maxRungFor(WEEKLY_FIXTURE, 'program', weekly({ minutesPerDay: 10 }))).toBe(2);
     expect(maxRungFor(WEEKLY_FIXTURE, 'program', { ...PROFILE })).toBe(-1);
@@ -207,6 +223,25 @@ describe('adjusting a weekly workout day', () => {
     expect(storedQuest(WEEKLY_FIXTURE, hard).condition).toEqual({
       kind: 'session', moves: core(day).moves!.slice(0, 2).map((m) => ({ ...m, sets: 1 })), block: { week: 1, day: 0 },
     });
+  });
+
+  it('beside it, a side quest keeps its swaps and its gentler option at any daily time (review)', () => {
+    const tight = dayInput({ dayNumber: 2 }, { trainingPlan: 'weekly', minutesPerDay: 10 });
+    const built = buildDay(WEEKLY_FIXTURE, tight);
+    expect(swapOptions(WEEKLY_FIXTURE, tight, built, 'side1').length).toBeGreaterThan(0);
+    // At 25 minutes the workout's template minutes (29) used to leave the side quests nothing.
+    const roomy = dayInput({ dayNumber: 2 }, { trainingPlan: 'weekly', minutesPerDay: 25 });
+    const day25 = buildDay(WEEKLY_FIXTURE, roomy);
+    const exercise = { ...day25, quests: day25.quests.map((q) => (q.slot === 'side1' ? { ...q, templateId: 'mobility-0' } : q)) };
+    expect(painOption(WEEKLY_FIXTURE, roomy, exercise, 'side1')).toMatchObject({ templateId: 'walk-0' });
+  });
+
+  it('a phone\'s day is refused with a weekly workout outside the core, or on a day that isn\'t its own (review)', () => {
+    const swapped = { ...day, quests: day.quests.map((q) => (q.slot === 'core' ? { ...q, slot: 'side1' as const } : q.slot === 'side1' ? { ...q, slot: 'core' as const } : q)) };
+    expect(checkProvisionalDay(WEEKLY_FIXTURE, input, swapped)).toContain('program-0 is not today\'s weekly workout');
+    const light = dayInput({ dayNumber: 2, light: true }, { trainingPlan: 'weekly', programStyle: 'men', level: 5 });
+    expect(checkProvisionalDay(WEEKLY_FIXTURE, light, { ...day, light: true })).toContain('program-0 is not today\'s weekly workout');
+    expect(checkProvisionalDay(WEEKLY_FIXTURE, input, day)).toEqual([]);
   });
 
   it('a swap offers no strength work in its place', () => {
