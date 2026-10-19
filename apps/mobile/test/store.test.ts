@@ -6,7 +6,7 @@ import { dayTwoSnapshot, historyOf } from '../../../supabase/tests/unit/fixtures
 import type { Account, GoogleResult } from '../src/auth/google.ts';
 import type { SessionState } from '../src/auth/session.ts';
 import { makeLocal, migrate } from '../src/data/local.ts';
-import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
+import { SAMPLE_ARTICLE, SAMPLE_STORY_ARTICLE } from '../src/dev/sampleArticle.ts';
 import type { PhoneEvent, ServerState, SyncResponse } from '../src/game/types.ts';
 import type { Api, Call } from '../src/net/api.ts';
 import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
@@ -272,6 +272,27 @@ describe('the game store', () => {
     const requests = api.sync.mock.calls.map((c) => c[0] as { want: string[]; have: string[] });
     expect(requests.filter((r) => r.want.includes('article-9'))).toHaveLength(1);
     expect(requests.some((r) => r.have.includes('article-9'))).toBe(false);
+    store.getState().stop();
+  });
+
+  it('a reading held with a deck from before the stories is asked for again once; one with its story is not (M14)', async () => {
+    const withReading: ServerState = {
+      ...SERVER, readings: [{ id: 'article-9', cluster: 'sleep', title: 'Wake time', minutes: 6, dayNumber: 0, date: '2026-10-09', takeaway: null }],
+    };
+    const { store, local, api } = await setup([ok(withReading)]);
+    await local.acknowledge([], [], withReading, 1, [{ ...SAMPLE_ARTICLE, id: 'article-9' }]);
+    await store.getState().boot();
+    store.getState().fetchArticle('article-9');
+    await store.getState().syncNow();
+    store.getState().fetchArticle('article-9');
+    await store.getState().syncNow();
+    const wanted = () => api.sync.mock.calls.filter((c) => (c[0] as { want: string[] }).want.includes('article-9')).length;
+    expect(wanted()).toBe(1);
+    await local.acknowledge([], [], withReading, 2, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-9' }]);
+    await store.getState().boot();
+    store.getState().fetchArticle('article-9');
+    await store.getState().syncNow();
+    expect(wanted()).toBe(1);
     store.getState().stop();
   });
 

@@ -3,7 +3,7 @@
 // the cache and the outbox combined (game/project.ts).
 import { articleKeep } from '../game/reading.ts';
 import type { ArticleBody, PhoneEvent, ServerState } from '../game/types.ts';
-import { asDeck } from '../reading/deck.ts';
+import { hasStoryDeck } from '../reading/deck.ts';
 import type { Notice } from '../sync/engine.ts';
 import type { Sql } from './sql.ts';
 
@@ -100,12 +100,13 @@ export function makeLocal(sql: Sql) {
     /**
      * M8b: the articles this phone holds, for the next sync's `have` (decision 3). M11 decision 6: one held without its
      * Story Deck, or with one this phone can't read (review), is left out, so the server sends it again (today's and the
-     * next day's, and a past reading asked for) until its deck arrives.
+     * next day's, and a past reading asked for) until its deck arrives. M14: until its story lesson arrives, so a
+     * deck from before the stories is replaced.
      */
     articleIds: async () => (await sql.all<{ id: string; json: string }>('select id, json from articles order by id'))
       .filter((r) => {
         try {
-          return asDeck((JSON.parse(r.json) as { deck?: unknown }).deck) !== null;
+          return hasStoryDeck((JSON.parse(r.json) as { deck?: unknown }).deck);
         } catch {
           return false;
         }

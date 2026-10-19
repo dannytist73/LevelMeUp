@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import { makeLocal, migrate } from '../src/data/local.ts';
 import { serialized } from '../src/data/sql.ts';
-import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
+import { SAMPLE_ARTICLE, SAMPLE_STORY_ARTICLE } from '../src/dev/sampleArticle.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import { serverState } from './support/fixtures.ts';
 import { nodeSql, rawNodeSql } from './support/nodeSql.ts';
@@ -145,7 +145,7 @@ describe('the phone database', () => {
 
   it('keeps the articles a sync brings and drops those no longer needed (M8b)', async () => {
     const { local } = await fresh();
-    const body = (id: string) => ({ ...SAMPLE_ARTICLE, id });
+    const body = (id: string) => ({ ...SAMPLE_STORY_ARTICLE, id });
     const s = serverState();
     const keepOne: ServerState = { ...s, today: { ...s.today!, article: { id: 'article-1', cluster: 'sleep', title: 'One', minutes: 6 } } };
     await local.acknowledge([], [], keepOne, 1, [body('article-1'), body('article-2')]);
@@ -166,10 +166,22 @@ describe('the phone database', () => {
     await local.acknowledge([], [], both, 1, [{ ...SAMPLE_ARTICLE, id: 'article-1', deck: null }, { ...old, id: 'article-2' } as typeof SAMPLE_ARTICLE]);
     expect(Object.keys((await local.snapshot()).articles).sort()).toEqual(['article-1', 'article-2']); // still shown, as the full article
     expect(await local.articleIds()).toEqual([]);
-    await local.acknowledge([], [], both, 2, [{ ...SAMPLE_ARTICLE, id: 'article-1' }]);
+    await local.acknowledge([], [], both, 2, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-1' }]);
     expect(await local.articleIds()).toEqual(['article-1']);
     await local.acknowledge([], [], both, 3, [{ ...SAMPLE_ARTICLE, id: 'article-1', deck: { story: 'cards' } as never }]);
     expect(await local.articleIds()).toEqual([]); // a deck this phone can't read is sent again too (M11 review)
+  });
+
+  it('asks again for an article held with a deck from before the stories, until its story lesson arrives (M14)', async () => {
+    const { local } = await fresh();
+    const s = serverState();
+    const today: ServerState = { ...s, today: { ...s.today!, article: { id: 'article-1', cluster: 'sleep', title: 'One', minutes: 6 } } };
+    await local.acknowledge([], [], today, 1, [{ ...SAMPLE_ARTICLE, id: 'article-1' }]);
+    expect((await local.snapshot()).articles['article-1']!.deck).toEqual(SAMPLE_ARTICLE.deck); // still shown with its old cards
+    expect(await local.articleIds()).toEqual([]);
+    await local.acknowledge([], [], today, 2, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-1' }]);
+    expect((await local.snapshot()).articles['article-1']!.deck).toEqual(SAMPLE_STORY_ARTICLE.deck);
+    expect(await local.articleIds()).toEqual(['article-1']);
   });
 
   it('wipe empties the cache, the outbox and the notices', async () => {

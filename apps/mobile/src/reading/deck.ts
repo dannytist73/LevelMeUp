@@ -36,6 +36,16 @@ export function asDeck(value: unknown): ArticleDeck | null {
   return { story, systemNote: typeof d.systemNote === 'string' ? d.systemNote : null, lesson: d.lesson as string, tryToday: d.tryToday as string };
 }
 
+/**
+ * Whether a held article already has its story lesson. M14: since every deck on the server is now a story, a body held
+ * with an older deck (or none) is asked for again, so a phone that read the article before the stories were written
+ * gets them (found on the emulator: the old cards stayed, because a body with any deck counted as held).
+ */
+export function hasStoryDeck(value: unknown): boolean {
+  const deck = asDeck(value);
+  return deck !== null && isStory(deck);
+}
+
 function asStory(d: Record<string, unknown>): StoryDeck | null {
   const { title, subtitle, cast, story, why, check } = d;
   if (!filled(title) || !filled(subtitle) || typeof cast !== 'string' || castMember(cast) === undefined || !texts(story, 1, 8)) return null;

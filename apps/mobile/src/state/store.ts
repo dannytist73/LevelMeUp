@@ -43,7 +43,7 @@ import type { ThemeName } from '../theme/palettes.ts';
 import type { Draft } from '../onboarding/flow.ts';
 import { readLastSets } from '../quest/lastSets.ts';
 import { readCodex, toggled } from '../reading/codex.ts';
-import { asDeck } from '../reading/deck.ts';
+import { hasStoryDeck } from '../reading/deck.ts';
 import type { CodexEntry } from '../reading/codex.ts';
 import type { LastSets } from '../quest/lastSets.ts';
 import { parseTimers } from '../quest/timer.ts';
@@ -871,7 +871,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       fetchArticle: (id) => {
         const held = get().articles[id];
-        if (wanted.has(id) || (held !== undefined && (asDeck(held.deck) !== null || deckAsked.has(id)))) return;
+        // M14: a reading held with a deck from before the stories is asked for once more, like one held without a deck.
+        if (wanted.has(id) || (held !== undefined && (hasStoryDeck(held.deck) || deckAsked.has(id)))) return;
         if (held !== undefined) deckAsked.add(id);
         wanted.add(id);
         void scheduler.request();
