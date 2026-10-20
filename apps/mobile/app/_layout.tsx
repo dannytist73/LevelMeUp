@@ -19,6 +19,7 @@ import type { GameState } from '../src/state/store.ts';
 import { appliedTheme, applyTheme } from '../src/theme/palettes.ts';
 import { colors, space } from '../src/theme/tokens.ts';
 import { NarrationBox } from '../src/ui/NarrationBox.tsx';
+import { Toasts } from '../src/ui/Toasts.tsx';
 import { publishWidget } from '../src/widget/publish.tsx';
 
 void SplashScreen.preventAutoHideAsync();
@@ -147,6 +148,7 @@ export default function RootLayout() {
             <Celebration />
             <NoteTaps />
             <ThemeReturn />
+            <Toasts />
           </Themed>
         </GameProvider>
       )}

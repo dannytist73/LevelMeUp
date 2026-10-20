@@ -13,7 +13,7 @@ import { Button } from '../../ui/Button.tsx';
 import { Tap } from '../../ui/Tap.tsx';
 import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
 import { ClaimButton } from './ClaimBar.tsx';
-import { keepLogDraft, logDraft } from './logDrafts.ts';
+import { keepLogDraft, logDraft, logRestored } from './logDrafts.ts';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
 
 const T = PLAY_TEXT.reps;
@@ -33,13 +33,15 @@ export type RepLogProps = {
   /** M10c: the sets of the last time this quest was logged on this phone, or null. */
   last?: readonly number[] | null;
   now?: () => number;
-  /** M17: names this log's draft (the quest and its target), kept while the app runs. */
+  /** M17: names this log's draft (the quest and its target), kept on the phone (premium pass A1). */
   draftKey?: string;
 };
 
 export function RepLog({ condition, disabled, onClaim, last = null, now = Date.now, draftKey }: RepLogProps) {
   const [sets, setSets] = useState(() => logDraft<{ sets: number[]; done: boolean[] }>(draftKey)?.sets ?? startingSets(condition));
   const [done, setDone] = useState<boolean[]>(() => logDraft<{ sets: number[]; done: boolean[] }>(draftKey)?.done ?? []);
+  /** Premium pass A1: the phone kept this log from before the app closed; said once, while this visit lasts. */
+  const [picked] = useState(() => logRestored(draftKey));
   // Saved once the player changes something (review): untouched, the log keeps following last time's numbers.
   const changed = useRef(false);
   useEffect(() => {
@@ -57,6 +59,7 @@ export function RepLog({ condition, disabled, onClaim, last = null, now = Date.n
   };
   return (
     <View style={{ gap: 12 }}>
+      {picked && <Small tone="chalk">{PLAY_TEXT.quest.picked}</Small>}
       <Caption>{fillText(T.unitLine, { unit })}</Caption>
       {last !== null && <Small>{fillText(T.lastTime, { sets: setsLine(last) })}</Small>}
       {sets.map((n, i) => (

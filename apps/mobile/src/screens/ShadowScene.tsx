@@ -11,6 +11,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shadowHold } from '../game/pact.ts';
 import { dateKeyLabel } from '../lib/dates.ts';
+import { readDraft, writeDraft } from '../state/drafts.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -46,9 +47,11 @@ export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.no
   const enqueue = useGame((s) => s.enqueue);
   const seeShadow = useGame((s) => s.seeShadow);
   const hold = view === null ? null : shadowHold(view, now());
-  const [note, setNote] = useState(hold?.note ?? '');
-  const [kept, setKept] = useState(false);
   const checkinId = hold?.checkinId ?? null;
+  // Premium pass A1: a note typed but not kept waits on the phone (Today opens the scene again); nothing is sent unasked.
+  const draftKey = `shadow:${checkinId ?? ''}`;
+  const [note, setNote] = useState(() => readDraft<string>(draftKey) ?? hold?.note ?? '');
+  const [kept, setKept] = useState(false);
 
   // Opening the scene shows it: Today won't open it again for this check-in (decision 5).
   useEffect(() => {
@@ -88,6 +91,7 @@ export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.no
   const keep = async (): Promise<void> => {
     try {
       await enqueue({ type: 'checkin_note', checkinId: hold.checkinId, note: trimmed === '' ? null : trimmed });
+      writeDraft(draftKey, undefined);
       setKept(true);
     } catch {
       // Not kept: the note stays in the field, and "Keep the note" can be pressed again.
@@ -107,7 +111,7 @@ export function ShadowScene({ onDone, onRecovery, onTrial, onPact, now = Date.no
       <SlamIn><ShadowBox lines={lines} /></SlamIn>
       {recovery !== null && <Button label={fillText(T.takeBack, { minutes: recovery.minutes })} onPress={() => onRecovery(recovery.id)} />}
       {hold.sealed && <Button label={T.trial.start} variant="secondary" onPress={onTrial} />}
-      <TextField label={T.noteLabel} value={note} onChangeText={(text) => { setNote(text); setKept(false); }} maxLength={500} multiline />
+      <TextField label={T.noteLabel} value={note} onChangeText={(text) => { setNote(text); setKept(false); writeDraft(draftKey, text); }} maxLength={500} multiline />
       <Button label={T.keepNote} variant="secondary" disabled={trimmed === (hold.note ?? '')} onPress={() => void keep()} />
       {kept && <View accessibilityLiveRegion="polite"><Small>{T.noteKept}</Small></View>}
       <LinkButton label={T.settings} onPress={onPact} />

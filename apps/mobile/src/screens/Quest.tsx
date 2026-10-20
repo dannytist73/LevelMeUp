@@ -21,8 +21,9 @@ import { upNext } from '../game/today.ts';
 import { clearedSummary } from '../quest/cleared.ts';
 import { questKey, sessionMemory } from '../quest/lastSets.ts';
 import type { Shot } from '../quest/cleared.ts';
-import { NEW_TIMER } from '../quest/timer.ts';
+import { NEW_TIMER, pauseTimer } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
+import { readDraft, restoredDraft, writeDraft } from '../state/drafts.ts';
 import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Appear } from '../ui/Appear.tsx';
@@ -46,7 +47,6 @@ import { WorkoutLog } from './quest/WorkoutLog.tsx';
 import { isKept } from '../reading/codex.ts';
 import { asDeck } from '../reading/deck.ts';
 import { keepDraft, takeawayDraft } from '../reading/drafts.ts';
-import { dropLogDraft } from './quest/logDrafts.ts';
 import { Deck } from './reading/Deck.tsx';
 import { openSource } from './reading/openSource.ts';
 import { readingLength } from './reading/ReadingCard.tsx';
@@ -104,6 +104,10 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const [deckStep, setDeckStep] = useState(0);
   /** M12 (audit 9): null until typed in here; the draft kept for this article stands in until then. */
   const [typed, setTyped] = useState<string | null>(null);
+  /** Premium pass A1: a one-sentence quest's line, likewise; null until typed in here. */
+  const [typedLine, setTypedLine] = useState<string | null>(null);
+  /** Premium pass A4: what the last undo gave back, said above the log. */
+  const [undone, setUndone] = useState<'log' | 'tap' | null>(null);
   const [showHow, setShowHow] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const [, redraw] = useState(0);
@@ -125,6 +129,13 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const deck = reading === null ? null : asDeck(reading.deck);
   if (reading !== null && fullArticle === null) setFullArticle(deck === null);
   const takeaway = typed ?? (todaysArticle === null ? '' : takeawayDraft(todaysArticle.id));
+  const lineKey = `line:${logKey}`;
+  const line = typedLine ?? readDraft<string>(lineKey) ?? '';
+  const [pickedLine] = useState(() => quest !== null && restoredDraft(lineKey));
+  const setLine = (text: string) => {
+    setTypedLine(text);
+    writeDraft(lineKey, text);
+  };
   const setTakeaway = (text: string) => {
     setTyped(text);
     if (todaysArticle !== null) keepDraft(todaysArticle.id, text);
@@ -203,7 +214,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
         onUndo={() => {
           if (!stillOpen()) return;
           setBefore(null);
-          setTimer(NEW_TIMER); // logged by mistake: the time it claimed doesn't carry over
+          // Premium pass A4: the log comes back as it was claimed (its draft and the paused timer are kept), and says so.
+          setUndone(quest.completion === 'tap' ? 'tap' : 'log');
           void enqueue({ type: 'undo', instanceId: quest.id });
         }}
         onContinue={onBack}
@@ -224,10 +236,15 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
     setBusy(true);
     try {
       setBefore({ character: view.character, quests: today.quests });
+      setUndone(null);
       await enqueue({ type: 'complete', instanceId: quest.id, completedAt: now(), rating: null, payload });
-      if (todaysArticle !== null) keepDraft(todaysArticle.id, ''); // M12: claimed, so the draft is done
-      dropLogDraft(logKey); // M17 (review): and the sets being logged
-      if (quest.completion === 'timer') await saveTimer(quest.id, null).catch(() => {});
+      // Premium pass A4: the takeaway, the line and the sets stay as drafts, and the timer stays, paused where it was
+      // claimed: "Logged by mistake? Undo" gives them back instead of starting over.
+      if (quest.completion === 'timer') {
+        const kept = pauseTimer(timer, endsAt === null ? now() : Math.min(now(), endsAt));
+        setTimer(kept);
+        await saveTimer(quest.id, kept).catch(() => {});
+      }
       // M10c decision 7: next time starts from these sets.
       const sets = Array.isArray(payload.sets) ? (payload.sets as number[]) : null;
       if (sets !== null && quest.condition.kind === 'session') await rememberSets(sessionMemory(quest.condition.moves, sets)).catch(() => {});
@@ -308,7 +325,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
     panel = <RepLog key={JSON.stringify(quest.condition)} condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)}
       last={lastSets[questKey(quest.templateId)] ?? null} now={now} draftKey={logKey} />;
   } else if (quest.completion === 'text') {
-    panel = <SentenceLog disabled={busy} onClaim={(payload) => void claim(payload)} />;
+    panel = <SentenceLog disabled={busy} onClaim={(payload) => void claim(payload)} value={line} onChangeText={setLine} />;
   } else {
     panel = <TapClaim disabled={busy} onClaim={(payload) => void claim(payload)} />;
   }
@@ -385,6 +402,10 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
             {quest.hardDay && <Chip label={A.hardDay.tag} kind="outline" />}
           </View>
           {quest.completedAt === null && isResting(quest, view.paused) && <NarrationBox>{A.paused.quest}</NarrationBox>}
+          {undone !== null && (
+            <View accessibilityLiveRegion="polite"><Small tone="chalk">{undone === 'log' ? T.undoneLog : T.undone}</Small></View>
+          )}
+          {undone === null && pickedLine && quest.completion === 'text' && <Small tone="chalk">{T.picked}</Small>}
           {/* M12 (audit 2): the log first, where the thumb is; its button sits in the bar at the bottom. */}
           {panel}
           {/* Safety stays open (CLAUDE.md: exercise safety is never folded away), with "I felt pain" in reach. M17 (design

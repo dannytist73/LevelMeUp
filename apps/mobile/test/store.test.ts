@@ -16,6 +16,7 @@ import {
   ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, OFFERS_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
+import { DRAFTS_KEY, flushDrafts, readDraft, restoredDraft, writeDraft } from '../src/state/drafts.ts';
 import { NOT_PLUS } from '../src/plus/plus.ts';
 import * as purchases from '../src/plus/purchases.ts';
 import { setBuzzing } from '../src/ui/haptics.ts';
@@ -541,6 +542,23 @@ describe('the game store', () => {
     await store.getState().startOver();
     expect(kv.has(LAST_SETS_KEY)).toBe(false);
     expect(store.getState().lastSets).toEqual({});
+    store.getState().stop();
+  });
+
+  it('reads the drafts kept on the phone at boot, and forgets them with the character (premium pass A1)', async () => {
+    const { store, local, kv } = await setup([ok(SERVER)]);
+    await local.acknowledge([], [], SERVER, 1);
+    kv.set(DRAFTS_KEY, JSON.stringify({ 'log:1:7:{}': { sets: [12, 10], done: [true, false] } }));
+    await store.getState().boot();
+    expect(readDraft('log:1:7:{}')).toEqual({ sets: [12, 10], done: [true, false] });
+    expect(restoredDraft('log:1:7:{}')).toBe(true);
+    writeDraft('shadow:c-1', 'Work ran late.');
+    await flushDrafts();
+    expect(JSON.parse(kv.get(DRAFTS_KEY)!)).toHaveProperty(['shadow:c-1'], 'Work ran late.');
+    expect(await local.pending(10)).toEqual([]); // kept on the phone: nothing goes to the server
+    await store.getState().startOver();
+    expect(kv.has(DRAFTS_KEY)).toBe(false);
+    expect(readDraft('shadow:c-1')).toBeUndefined();
     store.getState().stop();
   });
 

@@ -53,6 +53,7 @@ import type { Notice, SyncOutcome } from '../sync/engine.ts';
 import { makeScheduler } from '../sync/scheduler.ts';
 import { setBuzzing } from '../ui/haptics.ts';
 import { setSounding } from '../ui/sound.ts';
+import { DRAFTS_KEY, forgetDrafts, startDrafts } from './drafts.ts';
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 export type NewEvent = DistributiveOmit<PhoneEvent, 'id'>;
@@ -535,6 +536,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(CODEX_KEY); // M11: the character's kept lessons go with it
       await deps.kv.removeItem(OFFERS_KEY); // M12: the next character gets its own offers
       await deps.kv.removeItem(FRAME_KEY); // M13: the frame is the character's; the look (theme) is the phone's
+      await forgetDrafts(); // premium pass A1: the player's own words and numbers
       // The Haptics switch stays: it is the phone's, not the character's (M10b plan decision 3).
       confirmedLevel = null;
       set({
@@ -657,7 +659,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         accountReading = accountRead.then((account) => {
           if (!get().accountKnown) set({ account, accountKnown: true });
         });
-        const [saved, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText] = await Promise.all([
+        const [saved, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText, draftsText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.kv.getItem(ART_KEY).catch(() => null),
           deps.kv.getItem(VOW_KEY).catch(() => null),
@@ -674,7 +676,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           deps.kv.getItem(SOUNDS_KEY).catch(() => null),
           deps.kv.getItem(THEME_KEY).catch(() => null),
           deps.kv.getItem(FRAME_KEY).catch(() => null),
+          deps.kv.getItem(DRAFTS_KEY).catch(() => null),
         ]);
+        startDrafts(deps.kv, draftsText); // premium pass A1: sets, lines and notes being written when the app last closed
         const haptics = hapticsText !== 'off';
         setBuzzing(haptics);
         const sounds = soundsText !== 'off';

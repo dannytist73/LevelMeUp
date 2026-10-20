@@ -21,7 +21,7 @@ import { Tap } from '../../ui/Tap.tsx';
 import { Body, Heading, Label, Small } from '../../ui/Text.tsx';
 import { Step } from './RepLog.tsx';
 import { ClaimButton } from './ClaimBar.tsx';
-import { keepLogDraft, logDraft } from './logDrafts.ts';
+import { keepLogDraft, logDraft, logRestored } from './logDrafts.ts';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
 
 const T = PLAY_TEXT.workout;
@@ -33,13 +33,15 @@ export type WorkoutLogProps = {
   /** M10c: each exercise's sets from the last workout logged on this phone. */
   last?: LastSets;
   now?: () => number;
-  /** M17: names this log's draft (the quest and its exercises), kept while the app runs. */
+  /** M17: names this log's draft (the quest and its exercises), kept on the phone (premium pass A1). */
   draftKey?: string;
 };
 
 export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now, draftKey }: WorkoutLogProps) {
   const [sets, setSets] = useState(() => logDraft<{ sets: number[][]; done: Record<string, boolean> }>(draftKey)?.sets ?? startFromLast(moves, last));
   const [done, setDone] = useState<Record<string, boolean>>(() => logDraft<{ sets: number[][]; done: Record<string, boolean> }>(draftKey)?.done ?? {});
+  /** Premium pass A1: the phone kept this log from before the app closed; said once, while this visit lasts. */
+  const [picked] = useState(() => logRestored(draftKey));
   // Saved once the player changes something (review): untouched, the log keeps following last time's numbers.
   const changed = useRef(false);
   useEffect(() => {
@@ -79,6 +81,7 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
   };
   return (
     <View style={{ gap: 16 }}>
+      {picked && <Small tone="chalk">{PLAY_TEXT.quest.picked}</Small>}
       {moves.map((move, m) => {
         const words = authoredMove(move.move);
         const unit = moveUnit(move);

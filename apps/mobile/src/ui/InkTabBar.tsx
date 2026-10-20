@@ -12,6 +12,7 @@ import { colors, fonts, radius } from '../theme/tokens.ts';
 import { Icon } from './icons.tsx';
 import { timing } from './motion.ts';
 import { Tap } from './Tap.tsx';
+import { setTabBarHeight } from './toast.ts';
 import { useReduce } from './useMotion.ts';
 import type { IconName } from './icons.tsx';
 
@@ -52,6 +53,7 @@ export function InkTabBar({
   return (
     <View
       accessibilityRole="tablist"
+      onLayout={(e) => setTabBarHeight(e.nativeEvent.layout.height)}
       style={{ flexDirection: 'row', paddingHorizontal: 8, paddingTop: 6, paddingBottom: 8 + bottomInset, borderTopWidth: 1, borderTopColor: colors.divider, backgroundColor: colors.tabBar }}
     >
       {tabs.map((tab) => {

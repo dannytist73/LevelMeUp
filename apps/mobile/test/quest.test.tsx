@@ -10,6 +10,7 @@ import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { NEW_TIMER, startTimer } from '../src/quest/timer.ts';
 import type { TimerState } from '../src/quest/timer.ts';
 import { ClaimBarHost } from '../src/screens/quest/ClaimBar.tsx';
+import { startDrafts } from '../src/state/drafts.ts';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import type { ClearedProps } from '../src/screens/quest/Cleared.tsx';
 import { Quest } from '../src/screens/Quest.tsx';
@@ -329,7 +330,39 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { sets: [5, 5] } }));
   });
 
-  it('a timer picks up where it was, and forgets itself once claimed', async () => {
+  it('after an undo, a rep log comes back as it was logged, and says so (premium pass A4)', async () => {
+    const server = withCore({ completion: 'reps', condition: { kind: 'reps', sets: 2, reps: 5, perSide: false } });
+    const core = coreOf(server);
+    const { enqueue } = await renderQuest(server, core.id);
+    await fireEvent.press(screen.getByRole('button', { name: 'Set 2, one less' }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Log \d+ sets? · \+\d+ XP$/ }));
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { sets: [5, 4] } }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
+    expect(screen.getByLabelText('4 reps')).toBeTruthy(); // not back at the target
+    expect(screen.getByText('Undone. The XP went back, and your log is as you left it.')).toBeTruthy();
+  });
+
+  it('a one-sentence quest keeps its line when the screen closes and opens again (premium pass A1)', async () => {
+    const server = withCore({ completion: 'text', condition: { kind: 'sentence' } });
+    const core = coreOf(server);
+    await renderQuest(server, core.id);
+    await fireEvent.changeText(screen.getByLabelText('One sentence'), 'Two pages on focus.');
+    await screen.unmount();
+    await renderQuest(server, core.id);
+    expect(screen.getByDisplayValue('Two pages on focus.')).toBeTruthy();
+  });
+
+  it('a log the phone kept from before the app closed comes back, and says so (premium pass A1)', async () => {
+    const kv = new Map<string, string>();
+    const blobs = { getItem: async (k: string) => kv.get(k) ?? null, setItem: async (k: string, v: string) => void kv.set(k, v), removeItem: async (k: string) => void kv.delete(k) };
+    startDrafts(blobs, JSON.stringify({ 'log:q-9:reps': { sets: [6, 5], done: [true, false] } }));
+    await render(<RepLog condition={{ kind: 'reps', sets: 2, reps: 8, perSide: false }} disabled={false} onClaim={jest.fn()} draftKey="q-9:reps" />);
+    expect(screen.getByText('Picked up where you left off.')).toBeTruthy();
+    expect(screen.getByLabelText('5 reps')).toBeTruthy();
+    expect(screen.getAllByRole('checkbox', { name: 'Set 1 done' })[0]!.props.accessibilityState).toMatchObject({ checked: true });
+  });
+
+  it('a timer picks up where it was, and stays, paused, once claimed (premium pass A4)', async () => {
     const server = withCore({ completion: 'timer', condition: { kind: 'minutes', minutes: 10 }, minutes: 10 });
     const core = coreOf(server);
     const stored = { segments: [{ start: NOW - 9 * 60_000, end: NOW }], runningSince: null };
@@ -339,13 +372,13 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     expect(await screen.findByLabelText('09:00 of 10:00')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: BAR('Claim') }));
     expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { segments: stored.segments } }));
-    expect(store.getState().saveTimer).toHaveBeenCalledWith(core.id, null);
+    expect(store.getState().saveTimer).toHaveBeenCalledWith(core.id, { segments: stored.segments, runningSince: null });
   });
 
-  it('after an undo, a timer quest starts again from zero', async () => {
+  it('after an undo, a timer quest comes back where it was claimed, and says so (premium pass A4)', async () => {
     const server = withCore({ completion: 'timer', condition: { kind: 'minutes', minutes: 10 }, minutes: 10 });
     const core = coreOf(server);
-    // Kept like the store keeps it: the claim forgets it.
+    // Kept like the store keeps it: the claim keeps it, paused.
     let kept: TimerState | null = { segments: [{ start: NOW - 9 * 60_000, end: NOW }], runningSince: null };
     const timer = jest.fn(async () => kept);
     const saveTimer = jest.fn(async (_id: number, state: TimerState | null) => void (kept = state));
@@ -353,7 +386,8 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     await screen.findByLabelText('09:00 of 10:00');
     await fireEvent.press(screen.getByRole('button', { name: BAR('Claim') }));
     await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
-    expect(await screen.findByLabelText('00:00 of 10:00')).toBeTruthy();
+    expect(await screen.findByLabelText('09:00 of 10:00')).toBeTruthy();
+    expect(screen.getByText('Undone. The XP went back, and your log is as you left it.')).toBeTruthy();
   });
 
   it('a cleared quest rates and undoes through the outbox', async () => {
@@ -366,6 +400,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'undo', instanceId: core.id });
     expect(screen.getByRole('button', { name: BAR('Mark cleared') })).toBeTruthy(); // open again
+    expect(screen.getByText('Undone. The XP went back.')).toBeTruthy(); // premium pass A4: and it says so
   });
 
   it('today\'s reading waits for the articles: no claim', async () => {

@@ -8,6 +8,7 @@ import { Pact } from '../src/screens/Pact.tsx';
 import { Quest } from '../src/screens/Quest.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
+import { readDraft } from '../src/state/drafts.ts';
 import { Today } from '../src/screens/Today.tsx';
 import { Trial, clock } from '../src/screens/Trial.tsx';
 import { Portrait } from '../src/ui/Portrait.tsx';
@@ -124,6 +125,19 @@ describe("the Shadow's scene (board F2)", () => {
     await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.keepNote }));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin_note', checkinId: 7, note: 'A late shift.' });
     expect(screen.getByText(SHADOW_TEXT.noteKept)).toBeTruthy();
+  });
+
+  it('a note typed but not kept waits for the scene to open again, and nothing is sent (premium pass A1)', async () => {
+    const first = await scene();
+    await fireEvent.changeText(screen.getByLabelText(SHADOW_TEXT.noteLabel), 'Work ran late.');
+    await screen.unmount();
+    expect(first.store.getState().enqueue).not.toHaveBeenCalled();
+    await scene();
+    expect(screen.getByDisplayValue('Work ran late.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.keepNote }));
+    await screen.unmount();
+    // Kept: the draft goes, and the scene shows what the System holds from then on.
+    expect(readDraft('shadow:7')).toBeUndefined();
   });
 
   it('at level 2 the trial is one tap away, and the Shadow names its seal', async () => {

@@ -1,6 +1,6 @@
 // A short note at the bottom of the screen with one action, usually Undo (M12, audit 24, plan decision 3): shown for
 // a few seconds after something a stray tap could have done (a quest checked off, a lesson taken out). It never steals
-// focus; screen readers hear it once.
+// focus; screen readers hear it once. Premium pass B1: the action is optional, for a note that only says it worked.
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { colors, radius } from '../theme/tokens.ts';
@@ -11,8 +11,8 @@ export const SNACKBAR_MS = 5000;
 
 export type SnackbarProps = {
   message: string;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   /** Called when its time is up (or after the action): the owner stops showing it. */
   onHide: () => void;
   ms?: number;
@@ -30,12 +30,15 @@ export function Snackbar({ message, actionLabel, onAction, onHide, ms = SNACKBAR
       testID="snackbar"
       accessibilityLiveRegion="polite"
       style={{
-        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, paddingLeft: 16, paddingRight: 14,
+        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, paddingLeft: 16,
+        paddingRight: actionLabel === undefined ? 16 : 14,
         paddingVertical: 4, borderRadius: radius.control, backgroundColor: colors.paper,
       }}
     >
       <Body tone="ink" weight="medium" style={{ flexShrink: 1, paddingVertical: 10 }}>{message}</Body>
-      <LinkButton label={actionLabel} tone="accentInk" onPress={() => { onAction(); hide.current(); }} />
+      {actionLabel !== undefined && onAction !== undefined && (
+        <LinkButton label={actionLabel} tone="accentInk" onPress={() => { onAction(); hide.current(); }} />
+      )}
     </View>
   );
 }

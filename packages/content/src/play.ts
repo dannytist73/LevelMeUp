@@ -17,6 +17,11 @@ export const PLAY_TEXT = {
     slots: { core: 'Core quest', side: 'Side quest', article: "Today's reading", recovery: 'Recovery quest' },
     /** M12 (board R3-2): under the fixed button of a rep log or a workout. */
     kept: 'Your sets are kept for next time.',
+    /** Premium pass A1: a log, or a line, the phone kept from before the app closed. */
+    picked: 'Picked up where you left off.',
+    /** Premium pass A4: after "Logged by mistake? Undo", back on the quest. */
+    undone: 'Undone. The XP went back.',
+    undoneLog: 'Undone. The XP went back, and your log is as you left it.',
   },
   claim: {
     tap: 'Mark cleared',
