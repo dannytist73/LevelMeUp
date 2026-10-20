@@ -195,6 +195,17 @@ describe('Character and the Chronicle (M10c)', () => {
     expect(screen.queryByText('Bars show progress to the next point.')).toBeNull();
   });
 
+  it('opens the vow from Character: to write one, or to change it (M17: once Today’s card was answered, nothing did)', async () => {
+    const onVow = jest.fn();
+    const first = await render(withStore(testStore({ view: project(serverState(), []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} onVow={onVow} />));
+    await fireEvent.press(screen.getByRole('button', { name: CHARACTER_TEXT.vow.write }));
+    await first.unmount();
+    await render(withStore(testStore({ view: project(serverState(), []), vow: 'I will rise.' }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} onVow={onVow} />));
+    expect(screen.getByText('“I will rise.”')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: CHARACTER_TEXT.vow.change }));
+    expect(onVow).toHaveBeenCalledTimes(2);
+  });
+
   it('the tiles count today as Today does, and growth shows only the stats that grew', async () => {
     const s = serverState(['core'], { streak_current: 5, streak_best: 5 });
     await render(withStore(testStore({ view: project(s, []) }), <Chronicle />));

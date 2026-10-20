@@ -15,6 +15,7 @@ import { Icon } from '../ui/icons.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { plusOf, shownFrame } from '../plus/plus.ts';
 import { Portrait } from '../ui/Portrait.tsx';
+import { LinkButton } from '../ui/LinkButton.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Bone, Skeleton } from '../ui/Skeleton.tsx';
@@ -32,9 +33,9 @@ import { lastSynced, staleSince } from './syncLine.ts';
 
 const T = CHARACTER_TEXT;
 
-export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void; onSettings?: () => void; now?: () => number };
+export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void; onSettings?: () => void; onVow?: () => void; now?: () => number };
 
-export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.now }: CharacterProps) {
+export function Character({ onChangeClass, onOpenBook, onSettings, onVow, now = Date.now }: CharacterProps) {
   const insets = useSafeAreaInsets();
   const pull = usePullToSync();
   const view = useGame((s) => s.view);
@@ -116,8 +117,10 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
           <NightCard>
             <Label tone="chalk">{T.vow.title}</Label>
             <Body>{`“${vow}”`}</Body>
+            {onVow !== undefined && <LinkButton label={T.vow.change} tone="accentText" onPress={onVow} />}
           </NightCard>
         )}
+        {vow === null && onVow !== undefined && <RowLink label={T.vow.write} onPress={onVow} />}
         <RowLink label={ADJUST_TEXT.classChange.open}
           line={lock === null ? `${ADJUST_TEXT.classChange.label}: ${className}` : `${ADJUST_TEXT.classChange.label}: ${className} · ${lockLine(lock, timeZone)}`}
           onPress={onChangeClass} />

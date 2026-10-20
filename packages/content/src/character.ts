@@ -42,7 +42,8 @@ export const CHARACTER_TEXT = {
     seeAll: 'See all {n}',
     fewer: 'Show fewer',
   },
-  vow: { title: 'Your vow' },
+  // M17 (UX audit): the vow opens again from here (Today's card, once answered, never came back).
+  vow: { title: 'Your vow', change: 'Change your vow', write: 'Write a vow' },
   scholar: {
     title: "Scholar's Path",
     reading: 'Reading',
