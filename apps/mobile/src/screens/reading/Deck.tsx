@@ -187,7 +187,8 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
       case 'cover':
         return { bg: colors.accent, body: (
           <View style={{ flex: 1, gap: 12 }}>
-            <Label tone="onAccent">{`${label} · ${CLUSTER_NAMES[article.cluster]}`}</Label>
+            {/* M17 (design critique): the topic alone; the bar above already says which reading this is. */}
+            <Label tone="onAccent">{CLUSTER_NAMES[article.cluster]}</Label>
             {picture !== null && (
               <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.control, overflow: 'hidden', backgroundColor: colors.paper }}
                 accessible={false} importantForAccessibility="no-hide-descendants">
