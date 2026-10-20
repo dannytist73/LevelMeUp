@@ -134,6 +134,27 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 4. **The Plus offer right after the Reveal** (before the first quest). It doesn't show yet (Plus isn't on sale). Research
    says most trials start on install day; the UX audit says it costs first-session momentum. Your call when Plus goes on
    sale.
+5. **Plus teasers while Plus isn't on sale.** Chronicle's "All-time stats · See Plus" card and the Plus rows lead to a
+   screen that says "Plus isn't on sale yet". Recommended: hide the teasers until the first plan can be bought.
+6. **The pain screen's order.** It leads with "Gentle movement instead" when one fits (spec M6b decision 6); a design
+   critique suggested leading with "Rest today", since the title says "Stop and rest". Both are safe (rest is always
+   offered with no penalty); it's a product call.
+7. **Which day a check-in is about.** Today's card asks "The day closed. What happened?"; naming the day ("Yesterday's
+   quest day closed…") would say more at a glance. It's board F1's copy, so it's yours to change.
+
+## Next round (proposed, not urgent)
+
+Smaller ideas the loop found and left for a calmer moment, most useful first:
+
+1. **Library: a small picture on each past reading** (the story's own picture, 56 dp), so the list isn't a wall of
+   titles. Needs the picture to travel with each past reading (today only the readings kept on the phone carry it).
+2. **Codex: denser lessons** (18 sp instead of the 21 sp quote style, about six to a screen) and Take out as a small
+   button on the card.
+3. **Reading deck: one counter.** "2 / 11", the dots and the story's "1 of 6" say similar things; keep the dots and the
+   story's count, and keep "Card 2 of 11" for screen readers only.
+4. **Links that look like buttons** ("Restore purchases", "Take out"): accent text without the underline, 48 dp tall.
+5. **Onboarding's first screen:** a hint in the name box ("Your name or a nickname") and "Sign in with Google" as a quiet
+   text button, so the brightest thing isn't the option most new players don't need.
 
 ## Log
 
