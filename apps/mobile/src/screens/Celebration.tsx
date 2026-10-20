@@ -3,12 +3,13 @@
 // Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared"). M9a: at levels 5 and 10 the new
 // portrait (decision 8). M10a: each moves (spec decision 4) and is keyed, so the next one plays afresh (plan decision 6).
 // M10b: the double click as "LV n" lands, the firm click as an achievement's name lands.
-import { ACHIEVEMENTS, CHARACTER_TEXT, CLASS_NAMES, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { ABILITY_LINES, ABILITY_NAMES, ACHIEVEMENTS, CHARACTER_TEXT, CLASS_NAMES, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { ABILITIES, ABILITY_IDS } from '@levelmeup/rules';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { figureFor, portraitChanges } from '../art/portraits.ts';
 import { useGame } from '../state/store.ts';
-import { colors, space } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { FadeIn } from '../ui/FadeIn.tsx';
 import { InkBurst } from '../ui/InkBurst.tsx';
@@ -33,6 +34,9 @@ export function Celebration() {
   let body;
   if (next.kind === 'level') {
     const shown = view !== null && portraitChanges(next.from, next.level) ? view.profile : null;
+    // M17: the class abilities this level brings (levels 5 and 10), named with what they do: the reward to use.
+    const unlocked = view === null ? [] : ABILITY_IDS.filter((a) =>
+      ABILITIES[a].classId === view.profile.classId && ABILITIES[a].level > next.from && ABILITIES[a].level <= next.level);
     const M = MOMENTS.level;
     body = (
       <>
@@ -48,6 +52,14 @@ export function Celebration() {
         )}
         <SlamIn delay={M.line}><NarrationBox>{fillText(T.level, { level: next.level })}</NarrationBox></SlamIn>
         {shown !== null && <FadeIn delay={M.line}><Small>{T.portrait}</Small></FadeIn>}
+        {unlocked.map((a) => (
+          <FadeIn key={a} rise delay={M.line}>
+            <View accessible style={{ gap: 4, paddingVertical: 12, paddingHorizontal: 16, borderRadius: radius.control, borderWidth: space.border, borderColor: colors.line, backgroundColor: colors.panel }}>
+              <Label tone="accentText">{fillText(T.ability, { name: ABILITY_NAMES[a] })}</Label>
+              <Small tone="chalk">{ABILITY_LINES[a]}</Small>
+            </View>
+          </FadeIn>
+        ))}
       </>
     );
   } else {

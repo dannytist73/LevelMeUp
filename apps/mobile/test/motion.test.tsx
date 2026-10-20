@@ -322,9 +322,10 @@ describe('level-ups and achievements move (M10a decision 4)', () => {
     expect(screen.getByTestId('level-thud')).toBeTruthy();
     expect(screen.getByText('Lv 5')).toBeTruthy();
     expect(screen.getAllByTestId('ink-drop', hidden)).toHaveLength(16);
-    expect(screen.getAllByTestId('fade-in')).toHaveLength(2); // the portrait and its line
+    expect(screen.getAllByTestId('fade-in')).toHaveLength(3); // the portrait, its line and (M17) the new ability
     expect(screen.getAllByTestId('slam-in')).toHaveLength(2); // LEVEL UP and the System's line
     expect(screen.getByText(PLAY_TEXT.celebration.portrait)).toBeTruthy();
+    expect(screen.getByText('New ability: Second Wind')).toBeTruthy(); // M17: a Warrior's level 5
   });
 
   it('an achievement: still lines, no splash; its name thuds and its words fade in', async () => {

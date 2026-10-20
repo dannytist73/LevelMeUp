@@ -122,6 +122,8 @@ export const PLAY_TEXT = {
     titleEarned: 'Title earned: {title}',
     /** M9a decision 8: a level-up that changes the portrait's tier (levels 5 and 10). */
     portrait: 'Your portrait has changed.',
+    /** M17: a level that unlocks a class ability says which (levels 5 and 10). */
+    ability: 'New ability: {name}',
     continue: 'Continue',
   },
 } as const;
