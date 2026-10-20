@@ -50,7 +50,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 9 | Motion: rows, the snackbar, folding sections and Done today animate in and out (reduced motion: none); the XP bar grows by `scaleX`, not width | N7, N15 | done |
 | 10 | Onboarding Reveal: Accept pinned in a bottom bar; Change class and Fix together; portrait capped | O2 | done |
 | 11 | Settings: grouped cards with rows and dividers; sync as one row; "N waiting" only when N > 0 | O4, B | done |
-| 12 | Edit screens: Save in a bar at the bottom (Your game, Training; check-in's Answer too). Not done: Class, Book (their commit flows differ), "Discard changes?" on Back | O5, N14 | partly |
+| 12 | Edit screens: Save in a bar at the bottom (Your game, Training; check-in's Answer too); "Leave without saving?" on Back (item 56). Not done: Class, Book (their commit flows differ) | O5, N14 | mostly |
 | 13 | Character: stats in two columns; achievement words beside their stamps. The portrait stays large (it is the reward) | O7 | done |
 | 14 | Loading looks like empty on Library and Chronicle: skeletons | O8 | done |
 | 15 | Delete character: "Keep my character" is the main button; deletion an outline | O9 | done |
@@ -93,6 +93,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 52 | Change today's confirmation had bright buttons under Up next: a System card with quiet answers | old audit 1 | done |
 | 53 | System cards captured their colours at load (wrong under a Plus look) | own catch | done |
 | 54 | Design critique (a designer agent on 15 screenshots): Safety after the log as a filled card; disabled buttons as quiet outlines; a sentence-sized takeaway box; Today's check-in card asks only the question; quiet System narration; even side-by-side buttons; switch rows; option-card markers (radio/checkbox) and lighter edges; "0 of 2 shields"; long reading titles at heading size; quieter portrait switch and ranks; onboarding's sign-in split; Training row summary; and five small ones | critique | done |
+| 56 | Back with unsaved changes in Your game and Training asks first (Android's dialog); Save leaves without asking | O5 | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -109,8 +110,6 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 4. **The Plus offer right after the Reveal** (before the first quest). It doesn't show yet (Plus isn't on sale). Research
    says most trials start on install day; the UX audit says it costs first-session momentum. Your call when Plus goes on
    sale.
-5. **"Discard changes?" on Back** in Your game and Training. Not built: Save is now pinned at the bottom, so unsaved
-   changes are visible; a clean guard needs navigation internals.
 
 ## Log
 
@@ -157,3 +156,4 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 02:58 | 54 (part 2) | Switch rows, check-in screen card, sign-in split, Character, shields, titles, option edges | emulator: Settings, Character, Today, Library, onboarding |
 | 03:00 | 54 (markers) | Radio and checkbox markers | emulator: Training, check-in |
 | 03:02 | 54 (small) | Kept lessons count, workout steps size, Cleared lines, Training row | app tests |
+| 03:07 | 56 | Leave guard | emulator: changed a choice, Back asked, Leave left; Vera's Training unchanged |
