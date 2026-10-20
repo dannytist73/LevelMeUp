@@ -41,7 +41,7 @@ import { ShadowMark } from '../ui/ShadowMark.tsx';
 import { TodaySkeleton } from '../ui/Skeleton.tsx';
 import { Snackbar } from '../ui/Snackbar.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
-import { Tap } from '../ui/Tap.tsx';
+import { SettingsButton } from '../ui/TabTop.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { play } from '../ui/sound.ts';
 import { Thud } from '../ui/Thud.tsx';
@@ -269,15 +269,7 @@ export function Today({
                 <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
               )}
             </View>
-            <Tap
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-              onPress={onSettings}
-              radius={radius.pill}
-              style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.panel }}
-            >
-              <Icon name="settings" size={20} />
-            </Tap>
+            <SettingsButton onPress={onSettings} />
           </View>
           {view !== null && (
             <>

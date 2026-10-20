@@ -16,6 +16,7 @@ import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
+import { TabTop } from '../ui/TabTop.tsx';
 import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Small, Title } from '../ui/Text.tsx';
 import { ClearedRow, questXp } from './QuestCard.tsx';
@@ -32,6 +33,8 @@ export type LibraryProps = {
   /** A reading again: a past day's, or a kept lesson's (no day). */
   onOpenReading: (articleId: string, dayNumber: number | null) => void;
   onOpenCodex: () => void;
+  /** M17: the gear on every tab. */
+  onSettings?: () => void;
 };
 
 /** A kept lesson: its words, the reading it came from; it opens that reading. */
@@ -63,7 +66,7 @@ function PastRow({ reading, onOpen }: { reading: ReadingView; onOpen: () => void
   );
 }
 
-export function Library({ onOpenQuest, onOpenReading, onOpenCodex }: LibraryProps) {
+export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }: LibraryProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const codex = useGame((s) => s.codex);
@@ -95,8 +98,10 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex }: LibraryProp
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <ScreenHeader style={{ paddingTop: insets.top + 22, gap: 4 }}>
-        <Title accessibilityRole="header">{L.title}</Title>
-        <Small>{L.line}</Small>
+        <TabTop onSettings={onSettings}>
+          <Title accessibilityRole="header">{L.title}</Title>
+          <Small>{L.line}</Small>
+        </TabTop>
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 26 }}>
         {todays !== null && (

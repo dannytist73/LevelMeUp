@@ -17,6 +17,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { TabTop } from '../ui/TabTop.tsx';
 import { Calendar } from './chronicle/Calendar.tsx';
 import { StatChart } from './chronicle/StatChart.tsx';
 import { lastSynced } from './syncLine.ts';
@@ -65,9 +66,9 @@ function Growth({ growth }: { growth: ServerState['growth'] }) {
 }
 
 /** M13: the all-time chart's way to the Plus offer. */
-export type ChronicleProps = { onPlus?: () => void };
+export type ChronicleProps = { onPlus?: () => void; onSettings?: () => void };
 
-export function Chronicle({ onPlus = () => {} }: ChronicleProps) {
+export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const status = useGame((s) => s.status);
@@ -79,8 +80,8 @@ export function Chronicle({ onPlus = () => {} }: ChronicleProps) {
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-      <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
-        <Label>{C.label}</Label>
+      <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
+        <TabTop onSettings={onSettings}><Label accessibilityRole="header">{C.label}</Label></TabTop>
         {streak !== undefined && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
             <Tile value={shown!.current} label={C.streak} />

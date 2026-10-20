@@ -18,6 +18,7 @@ import { Portrait } from '../ui/Portrait.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Bone, Skeleton } from '../ui/Skeleton.tsx';
+import { TabTop } from '../ui/TabTop.tsx';
 import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Label, Title } from '../ui/Text.tsx';
 import { XpBar } from '../ui/XpBar.tsx';
@@ -30,9 +31,9 @@ import { lastSynced } from './syncLine.ts';
 
 const T = CHARACTER_TEXT;
 
-export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void; now?: () => number };
+export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void; onSettings?: () => void; now?: () => number };
 
-export function Character({ onChangeClass, onOpenBook, now = Date.now }: CharacterProps) {
+export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.now }: CharacterProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const vow = useGame((s) => s.vow);
@@ -47,8 +48,8 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
   if (view === null) {
     return (
       <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-        <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
-          <Label>{T.label}</Label>
+        <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
+          <TabTop onSettings={onSettings}><Label accessibilityRole="header">{T.label}</Label></TabTop>
         </ScreenHeader>
         <View style={{ paddingHorizontal: space.gutter, gap: 12 }}>
           {/* M12 (audit 11): loading looks like loading. */}
@@ -74,8 +75,8 @@ export function Character({ onChangeClass, onOpenBook, now = Date.now }: Charact
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-      <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
-        <Label>{T.label}</Label>
+      <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
+        <TabTop onSettings={onSettings}><Label accessibilityRole="header">{T.label}</Label></TabTop>
         <View style={{ alignSelf: 'center' }}>
           <Portrait classId={classId} level={level} figure={figure} marked={mark} frame={frame}
             label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />

@@ -7,6 +7,7 @@ export default function LibraryRoute() {
       onOpenQuest={(id) => router.push(`/quest/${id}`)}
       onOpenReading={(id, day) => router.push(day === null ? `/reading/${id}` : `/reading/${id}?day=${day}`)}
       onOpenCodex={() => router.push('/codex')}
+      onSettings={() => router.push('/settings')}
     />
   );
 }
