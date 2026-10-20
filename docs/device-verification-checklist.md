@@ -792,3 +792,8 @@ APK.
 | 12 | Character's stats in two columns; Chronicle's day cells rounded; an empty Codex says so; the current class is readable on Choose your class. | **Pass** 2026-10-20, emulator. Find X9: |
 | 13 | The check-in keeps Answer at the bottom; Delete my character makes "Keep my character" the bright button. | **Pass** 2026-10-20, emulator (check-in opened, not answered). Delete not opened. Find X9: |
 | 14 | Opening the app in the morning: no blank screen after the splash (the account is read after the first screen). | Unit tests; not measurable on the emulator. Find X9: |
+| 15 | The first open of a new week (after any check-in is answered): one System note, "Last week: N of M days cleared … A new week starts today."; Got it hides it until next week. | **Pass** 2026-10-20, emulator (Vera's Monday showed "Last week: 1 of 5 days cleared…"; now held while her check-in waits). Not dismissed. Find X9: |
+| 16 | Level 5 and level 10: the level-up names the class ability it unlocks, with what it does. | **Pass** 2026-10-20, emulator (motion bench: "New ability: Second Wind"). Find X9: |
+| 17 | Change today → Rest day (or Hard day): "I felt pain" stays visible above the confirmation. | **Pass** 2026-10-20, emulator (opened, then Not now). Find X9: |
+| 18 | Tabs: Character opens with the player's name as its title, Chronicle with "Chronicle", like Today and Library. | **Pass** 2026-10-20, emulator. Find X9: |
+| 19 | With "Remove animations" on (Android accessibility): tabs switch at once, folds open without motion, nothing hangs. | **Pass** 2026-10-20, emulator. Find X9: |
