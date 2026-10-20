@@ -47,7 +47,7 @@ export const DEV_MARKERS: readonly string[] = [
   'A made-up check-in for yesterday', 'Nothing waiting.', 'Your trials are set. Clear the core quest',
   'Planned: the copy shows in 10 seconds', '00000000-0000-4000-8000-0000000000ff', 'No day is cached yet: sync once',
   'Workout preview', 'Why tiny wins change how you see yourself',
-  'Motion bench: replay each piece and moment',
+  'Motion bench: replay each piece and moment', 'beats a large one planned for someday',
 ];
 
 export function devMarkersIn(text: string): string[] {
