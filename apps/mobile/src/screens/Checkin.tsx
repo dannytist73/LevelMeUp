@@ -12,7 +12,10 @@ import { CHECKIN_CHOICES, answerLine, checkinLead } from '../game/checkin.ts';
 import type { CheckinChoice } from '../game/checkin.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
+import { Appear } from '../ui/Appear.tsx';
+import { BottomBarFrame } from '../ui/BottomBar.tsx';
 import { Button } from '../ui/Button.tsx';
+import { LinkButton } from '../ui/LinkButton.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
@@ -75,36 +78,46 @@ export function Checkin({ onDone }: CheckinProps) {
     onDone();
   };
 
-  return frame(
+  // M17 (UX audit N14): Answer stays in a bar at the bottom, with Answer later as a link under it; the follow-up questions
+  // fade in where they open.
+  const bar = (
     <>
-      <NarrationBox>{T.title}</NarrationBox>
-      <Body tone="chalk">{checkinLead(checkin, view.today?.dayNumber ?? null)}</Body>
-      <View style={{ gap: 10 }}>
-        {CHECKIN_CHOICES.map((c) => (
-          <OptionCard key={c} label={T.answers[c].label} detail={answerLine(c, checkin, view.lighterPlan)} selected={choice === c} onPress={() => pick(c)} />
-        ))}
-      </View>
-      {choice === 'sick_or_injured' && (
-        <View style={{ gap: 10 }}>
-          <Heading accessibilityRole="header">{T.which}</Heading>
-          <OptionCard label={T.sick} selected={injured === false} onPress={() => setInjured(false)} />
-          <OptionCard label={T.injured} detail={restsExercise ? T.injuredNote : undefined} selected={injured === true} onPress={() => setInjured(true)} />
-        </View>
-      )}
-      {choice === 'just_didnt' && redo !== null && (
-        <View style={{ gap: 10 }}>
-          <Heading accessibilityRole="header">{T.how}</Heading>
-          <OptionCard label={T.recovery} selected={!secondWind} onPress={() => setSecondWind(false)} />
-          <OptionCard
-            label={fillText(T.secondWind, { quest: authoredTemplate(redo.templateId).voice[view.profile.voice].title })}
-            selected={secondWind}
-            onPress={() => setSecondWind(true)}
-          />
-        </View>
-      )}
       <Button label={T.answer} variant="commitment" disabled={answer === null || busy} onPress={() => void send()} />
-      <Button label={T.later} variant="secondary" onPress={() => { answerLater(checkin.id); onDone(); }} />
-      <Small tone="chalk">{T.laterNote}</Small>
-    </>,
+      <LinkButton label={T.later} onPress={() => { answerLater(checkin.id); onDone(); }} style={{ alignSelf: 'center' }} />
+    </>
+  );
+  return (
+    <BottomBarFrame bar={bar}>
+      {(barSpace) => (
+        <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: barSpace + 24, paddingHorizontal: space.gutter, gap: 18 }}>
+          <NarrationBox>{T.title}</NarrationBox>
+          <Body tone="chalk">{checkinLead(checkin, view.today?.dayNumber ?? null)}</Body>
+          <View style={{ gap: 10 }}>
+            {CHECKIN_CHOICES.map((c) => (
+              <OptionCard key={c} label={T.answers[c].label} detail={answerLine(c, checkin, view.lighterPlan)} selected={choice === c} onPress={() => pick(c)} />
+            ))}
+          </View>
+          {choice === 'sick_or_injured' && (
+            <Appear style={{ gap: 10 }}>
+              <Heading accessibilityRole="header">{T.which}</Heading>
+              <OptionCard label={T.sick} selected={injured === false} onPress={() => setInjured(false)} />
+              <OptionCard label={T.injured} detail={restsExercise ? T.injuredNote : undefined} selected={injured === true} onPress={() => setInjured(true)} />
+            </Appear>
+          )}
+          {choice === 'just_didnt' && redo !== null && (
+            <Appear style={{ gap: 10 }}>
+              <Heading accessibilityRole="header">{T.how}</Heading>
+              <OptionCard label={T.recovery} selected={!secondWind} onPress={() => setSecondWind(false)} />
+              <OptionCard
+                label={fillText(T.secondWind, { quest: authoredTemplate(redo.templateId).voice[view.profile.voice].title })}
+                selected={secondWind}
+                onPress={() => setSecondWind(true)}
+              />
+            </Appear>
+          )}
+          <Small tone="chalk">{T.laterNote}</Small>
+        </ScreenScroll>
+      )}
+    </BottomBarFrame>
   );
 }
