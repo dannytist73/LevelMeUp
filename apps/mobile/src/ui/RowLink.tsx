@@ -14,9 +14,11 @@ export type RowLinkProps = {
   onPress: () => void;
   /** Opens in place: whether it is open now. Leave out for a row that opens another screen. */
   open?: boolean;
+  /** M17: a row inside a Group card: no edge or fill of its own (the group's card has them). */
+  flat?: boolean;
 };
 
-export function RowLink({ label, line, onPress, open }: RowLinkProps) {
+export function RowLink({ label, line, onPress, open, flat = false }: RowLinkProps) {
   const inPlace = open !== undefined;
   return (
     <Tap
@@ -24,18 +26,18 @@ export function RowLink({ label, line, onPress, open }: RowLinkProps) {
       accessibilityLabel={line === undefined ? label : `${label}. ${line}`}
       accessibilityState={inPlace ? { expanded: open } : undefined}
       onPress={onPress}
-      radius={radius.control}
+      radius={flat ? 0 : radius.control}
       style={({ pressed }) => ({
         minHeight: 56,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderWidth: space.border,
+        paddingHorizontal: flat ? 16 : 14,
+        paddingVertical: flat ? 12 : 10,
+        borderWidth: flat ? 0 : space.border,
         borderColor: colors.lineStrong,
-        borderRadius: radius.control,
-        backgroundColor: pressed ? colors.divider : colors.panel,
+        borderRadius: flat ? 0 : radius.control,
+        backgroundColor: pressed ? colors.divider : flat ? 'transparent' : colors.panel,
       })}
     >
       <View style={{ flex: 1, gap: 2 }}>

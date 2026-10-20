@@ -3,7 +3,9 @@
 // difficulty), Delete my character, and the sign-in-lost card. M7c: the Accountability Pact under Game. M7d: the
 // Notifications section (S1). M9b: About opens Your data and privacy; the update card in Sync. M10b: the Haptics switch
 // under Your game. M10c: places are rows with what's set now (Daily plan, Training, the Pact, Notifications, privacy);
-// Delete my character moves to the end, under its own heading.
+// Delete my character moves to the end, under its own heading. M17 (UX audit 2026-10-20, O4): grouped cards (Your
+// plan, Accountability, Look and feel, LevelMeUp Plus, Account, Sync, About), each a card of rows; the sync is one row
+// with Sync now beside it, and "N waiting" shows only while something waits.
 import {
   ABOUT_TEXT, ADJUST_TEXT, GOOGLE_ERRORS, NOTIFY_TEXT, PACT_TEXT, PLUS_TEXT, PRIVACY_TEXT, SETTINGS_TEXT, VOICE_NAMES, fillText,
 } from '@levelmeup/content';
@@ -19,7 +21,7 @@ import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { LinkButton } from '../ui/LinkButton.tsx';
-import { NightCard } from '../ui/NightCard.tsx';
+import { Group, GroupBody } from '../ui/Group.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
@@ -98,12 +100,62 @@ export function Settings({
   const mark = syncMark(status);
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: space.gutter, gap: 24 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: space.gutter, gap: 28 }}>
       <TopBar title={'Settings'} onBack={onBack} />
 
-      <View style={{ gap: 12 }}>
-        <SectionTitle title="Account" />
-        <NightCard>
+      <Group title={SETTINGS_TEXT.groups.plan} note={onNotifications !== undefined ? <Meta>{NOTIFY_TEXT.eveningNote}</Meta> : undefined}>
+        <RowLink
+          flat
+          label={SETTINGS_TEXT.game.open}
+          line={view === null ? undefined : fillText(SETTINGS_TEXT.game.row, {
+            voice: VOICE_NAMES[view.profile.voice], time: clockLabel(view.profile.boundaryMinutes), minutes: view.profile.minutesPerDay,
+          })}
+          onPress={onGame}
+        />
+        <RowLink flat label={ADJUST_TEXT.training.open} onPress={onTraining} />
+        {onNotifications !== undefined && (
+          <RowLink
+            flat
+            label={NOTIFY_TEXT.open}
+            line={`${NOTIFY_TEXT.briefing} · ${slotLine(notify.briefing)}\n${NOTIFY_TEXT.evening} · ${slotLine(notify.evening)}`}
+            onPress={onNotifications}
+          />
+        )}
+      </Group>
+
+      {view !== null && onPact !== undefined && (
+        <Group title={SETTINGS_TEXT.groups.accountability} note={pactStartsNext(view) ? <Small>{PACT_TEXT.startsNext}</Small> : undefined}>
+          <RowLink flat label={PACT_TEXT.settings} line={pactName(view.profile.accountabilityLevel)} onPress={onPact} />
+        </Group>
+      )}
+
+      {/* M10b: kept on the phone and applied at once, so not inside Your game, whose Save goes to the server. */}
+      <Group title={SETTINGS_TEXT.groups.feel}>
+        {view !== null && onPlus !== undefined && onLook !== undefined && (
+          <RowLink flat label={PLUS_TEXT.settings.look} line={`${PLUS_TEXT.themes[theme].name} · ${PLUS_TEXT.frames[frame]}`} onPress={onLook} />
+        )}
+        <Toggle flat label={SETTINGS_TEXT.haptics.label} line={SETTINGS_TEXT.haptics.line} value={haptics} onChange={(on) => void setHaptics(on)} />
+        <Toggle flat label={SETTINGS_TEXT.sounds.label} line={SETTINGS_TEXT.sounds.line} value={sounds} onChange={(on) => void setSounds(on)} />
+      </Group>
+
+      {view !== null && onPlus !== undefined && onLook !== undefined && (
+        <Group title={PLUS_TEXT.settings.section}>
+          <GroupBody>
+            <Body weight="bold">{statusLine(plus, zone)}</Body>
+            {!plus.active && <Button label={PLUS_TEXT.settings.see} variant="secondary" onPress={onPlus} />}
+            {canManage(plus) && (
+              <Button label={PLUS_TEXT.settings.manage} variant="secondary" onPress={() => void Linking.openURL(manageUrl(plus.product)).catch(() => {})} />
+            )}
+            {plus.source !== 'beta_founder' && (
+              <LinkButton label={PLUS_TEXT.restore} tone="accentText" disabled={restoring} onPress={() => void restore()} />
+            )}
+            {plusNote !== null && <View accessibilityLiveRegion="polite"><Small>{plusNote}</Small></View>}
+          </GroupBody>
+        </Group>
+      )}
+
+      <Group title="Account" note={signInLost ? <SignInLost /> : undefined}>
+        <GroupBody>
           {account.kind === 'saved' ? (
             <>
               <Body weight="bold">Saved with Google.</Body>
@@ -118,80 +170,32 @@ export function Settings({
               {note !== null && <View accessibilityLiveRegion="polite"><Small>{note}</Small></View>}
             </>
           )}
-        </NightCard>
-        {signInLost && <SignInLost />}
-      </View>
+        </GroupBody>
+      </Group>
 
-      <View style={{ gap: 12 }}>
-        <SectionTitle title="Game" />
-        <RowLink
-          label={SETTINGS_TEXT.game.open}
-          line={view === null ? undefined : fillText(SETTINGS_TEXT.game.row, {
-            voice: VOICE_NAMES[view.profile.voice], time: clockLabel(view.profile.boundaryMinutes), minutes: view.profile.minutesPerDay,
-          })}
-          onPress={onGame}
-        />
-        {/* M10b: kept on the phone and applied at once, so not inside Your game, whose Save goes to the server. */}
-        <Toggle label={SETTINGS_TEXT.haptics.label} line={SETTINGS_TEXT.haptics.line} value={haptics} onChange={(on) => void setHaptics(on)} />
-        <Toggle label={SETTINGS_TEXT.sounds.label} line={SETTINGS_TEXT.sounds.line} value={sounds} onChange={(on) => void setSounds(on)} />
-        <RowLink label={ADJUST_TEXT.training.open} onPress={onTraining} />
-        {view !== null && onPact !== undefined && (
-          <>
-            <RowLink label={PACT_TEXT.settings} line={pactName(view.profile.accountabilityLevel)} onPress={onPact} />
-            {pactStartsNext(view) && <Small>{PACT_TEXT.startsNext}</Small>}
-          </>
-        )}
-      </View>
-
-      {view !== null && onPlus !== undefined && onLook !== undefined && (
-        <View style={{ gap: 12 }}>
-          <SectionTitle title={PLUS_TEXT.settings.section} />
-          <NightCard>
-            <Body weight="bold">{statusLine(plus, zone)}</Body>
-            {!plus.active && <Button label={PLUS_TEXT.settings.see} variant="secondary" onPress={onPlus} />}
-            {canManage(plus) && (
-              <Button label={PLUS_TEXT.settings.manage} variant="secondary" onPress={() => void Linking.openURL(manageUrl(plus.product)).catch(() => {})} />
-            )}
-            {plus.source !== 'beta_founder' && (
-              <LinkButton label={PLUS_TEXT.restore} tone="accentText" disabled={restoring} onPress={() => void restore()} />
-            )}
-            {plusNote !== null && <View accessibilityLiveRegion="polite"><Small>{plusNote}</Small></View>}
-          </NightCard>
-          <RowLink label={PLUS_TEXT.settings.look} line={`${PLUS_TEXT.themes[theme].name} · ${PLUS_TEXT.frames[frame]}`} onPress={onLook} />
-        </View>
-      )}
-
-      {onNotifications !== undefined && (
-        <View style={{ gap: 12 }}>
-          <SectionTitle title={NOTIFY_TEXT.section} />
-          <RowLink
-            label={NOTIFY_TEXT.open}
-            line={`${NOTIFY_TEXT.briefing} · ${slotLine(notify.briefing)}\n${NOTIFY_TEXT.evening} · ${slotLine(notify.evening)}`}
-            onPress={onNotifications}
-          />
-          <Meta>{NOTIFY_TEXT.eveningNote}</Meta>
-        </View>
-      )}
-
-      <View style={{ gap: 12 }}>
-        <SectionTitle title="Sync" />
+      <View style={{ gap: 10 }}>
         {updateRequired && <UpdateNeeded />}
-        <NightCard>
-          <Body>{lastSynced(lastSyncedAt, zone)}</Body>
-          <Meta>{`${waiting} waiting`}</Meta>
-          {mark !== null && <Meta>{mark}</Meta>}
-          {/* M12 (audit 23): plain words, never the server's code. */}
-          {error !== null && <Small>The last sync didn't go through. Sync now tries again.</Small>}
-          <Button label="Sync now" variant="secondary" onPress={() => void syncNow()} />
-        </NightCard>
+        <Group title="Sync">
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, rowGap: 8, padding: 16 }}>
+            <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
+              <Body weight="bold">{lastSynced(lastSyncedAt, zone)}</Body>
+              {waiting > 0 && <Meta>{`${waiting} waiting`}</Meta>}
+              {mark !== null && <Meta>{mark}</Meta>}
+              {/* M12 (audit 23): plain words, never the server's code. */}
+              {error !== null && <Small>The last sync didn't go through. Sync now tries again.</Small>}
+            </View>
+            <Button label="Sync now" variant="secondary" onPress={() => void syncNow()} />
+          </View>
+        </Group>
       </View>
 
-      <View style={{ gap: 12 }}>
-        <SectionTitle title="About" />
-        <Small>{ABOUT_TEXT.notMedical}</Small>
-        <Meta>{`Version ${version}`}</Meta>
-        {onPrivacy !== undefined && <RowLink label={PRIVACY_TEXT.open} onPress={onPrivacy} />}
-      </View>
+      <Group title="About">
+        <GroupBody>
+          <Small>{ABOUT_TEXT.notMedical}</Small>
+          <Meta>{`Version ${version}`}</Meta>
+        </GroupBody>
+        {onPrivacy !== undefined && <RowLink flat label={PRIVACY_TEXT.open} onPress={onPrivacy} />}
+      </Group>
 
       {phase === 'ready' && !signInLost && (
         <View style={{ gap: 12 }}>

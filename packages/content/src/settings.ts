@@ -2,6 +2,8 @@
 // words; deleting says exactly what goes, and that a Google sign-in stays (M3 owner decision). M10b: the Haptics switch.
 
 export const SETTINGS_TEXT = {
+  /** M17: the groups of Settings. */
+  groups: { plan: 'Your plan', accountability: 'Accountability', feel: 'Look and feel' },
   game: {
     /** M10c: the row in Settings, with what's set now as its line. */
     open: 'Daily plan',

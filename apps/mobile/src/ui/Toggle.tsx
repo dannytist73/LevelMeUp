@@ -5,11 +5,15 @@ import { colors, radius } from '../theme/tokens.ts';
 import { Tap } from './Tap.tsx';
 import { Body, Small } from './Text.tsx';
 
-export type ToggleProps = { label: string; line: string; value: boolean; disabled?: boolean; onChange: (on: boolean) => void };
+export type ToggleProps = {
+  label: string; line: string; value: boolean; disabled?: boolean; onChange: (on: boolean) => void;
+  /** M17: a row inside a Group card, padded as its other rows. */
+  flat?: boolean;
+};
 
-export function Toggle({ label, line, value, disabled = false, onChange }: ToggleProps) {
+export function Toggle({ label, line, value, disabled = false, onChange, flat = false }: ToggleProps) {
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: 6, ...(flat ? { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14 } : {}) }}>
       <Tap
         accessibilityRole="switch"
         accessibilityLabel={label}
