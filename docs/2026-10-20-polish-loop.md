@@ -94,6 +94,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 53 | System cards captured their colours at load (wrong under a Plus look) | own catch | done |
 | 54 | Design critique (a designer agent on 15 screenshots): Safety after the log as a filled card; disabled buttons as quiet outlines; a sentence-sized takeaway box; Today's check-in card asks only the question; quiet System narration; even side-by-side buttons; switch rows; option-card markers (radio/checkbox) and lighter edges; "0 of 2 shields"; long reading titles at heading size; quieter portrait switch and ranks; onboarding's sign-in split; Training row summary; and five small ones | critique | done |
 | 56 | Back with unsaved changes in Your game and Training asks first (Android's dialog); Save leaves without asking | O5 | done |
+| 57 | Third review: disabled edge too strong; Enter closed the Shadow's note (now only one-line fields); recap said "starts today" mid-week; week marks now read as the Chronicle reads them; old recap keys pruned; snackbar edge; check-in gap line back on Today; recap waits while the Shadow's card shows; Settings test fixed | review | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -157,3 +158,4 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 03:00 | 54 (markers) | Radio and checkbox markers | emulator: Training, check-in |
 | 03:02 | 54 (small) | Kept lessons count, workout steps size, Cleared lines, Training row | app tests |
 | 03:07 | 56 | Leave guard | emulator: changed a choice, Back asked, Leave left; Vera's Training unchanged |
+| 03:12 | 57 | Third review fixes | app tests 1187/1187, content 1170/1170, typecheck clean |
