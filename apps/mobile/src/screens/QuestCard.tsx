@@ -160,7 +160,7 @@ export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting 
       >
         <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
           <Body weight="bold">{title}</Body>
-          <Meta>{line}</Meta>
+          <Small>{line}</Small>
           {note !== undefined && <Small>{note}</Small>}
           {waiting && <WillSync />}
         </View>

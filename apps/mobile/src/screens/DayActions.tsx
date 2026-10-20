@@ -12,11 +12,13 @@ import type { Shown } from '../game/project.ts';
 import { todayCounts } from '../game/today.ts';
 import type { TodayView } from '../game/types.ts';
 import type { NewEvent } from '../state/store.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Appear } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
-import { RowLink } from '../ui/RowLink.tsx';
+import { Icon } from '../ui/icons.tsx';
+import { Tap } from '../ui/Tap.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { Body, Small } from '../ui/Text.tsx';
 
@@ -74,9 +76,28 @@ export type DayActionsProps = {
   enqueue: (event: NewEvent) => Promise<void>;
   onSwap: () => void;
   onVanish: () => void;
+  /**
+   * M17: "I felt pain" for Up next's exercise, beside Change today in one row (it had a row of its own under the card).
+   * It shows even when the day has nothing to change: pain always offers a rest (CLAUDE.md).
+   */
+  onPain?: () => void;
 };
 
-export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps) {
+/** Change today's toggle: a pill with a chevron that turns, the same height as the pain button beside it. */
+function FoldButton({ label, open, onPress }: { label: string; open: boolean; onPress: () => void }) {
+  return (
+    <Tap accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ expanded: open }} onPress={onPress} radius={radius.pill}
+      style={{
+        flexGrow: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20,
+        borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.lineStrong,
+      }}>
+      <Body weight="bold">{label}</Body>
+      <Icon name={open ? 'chevronUp' : 'chevronDown'} size={20} color={colors.ashLight} />
+    </Tap>
+  );
+}
+
+export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActionsProps) {
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [folded, setFolded] = useState(true);
   const today = view.today!;
@@ -110,7 +131,10 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
       </View>
     );
   }
-  if (!canSwap && !canHardDay && !canRest && today.abilities.length === 0 && !canVanish) return later;
+  const pain = onPain === undefined ? null : <Button label={T.pain.open} variant="secondary" onPress={onPain} style={{ flexGrow: 1 }} />;
+  if (!canSwap && !canHardDay && !canRest && today.abilities.length === 0 && !canVanish) {
+    return pain === null ? later : <View style={{ gap: 12 }}>{later}<View style={{ flexDirection: 'row' }}>{pain}</View></View>;
+  }
   const buttons = (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
       {canSwap && <Button label={fillText(T.day.swap, { left: today.swapsLeft })} variant="secondary" onPress={onSwap} />}
@@ -124,7 +148,10 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
   );
   const options = (
     <View style={{ gap: 12 }}>
-      <RowLink label={TODAY_TEXT.change} open={!folded} onPress={() => setFolded((f) => !f)} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        {pain}
+        <FoldButton label={TODAY_TEXT.change} open={!folded} onPress={() => setFolded((f) => !f)} />
+      </View>
       {!folded && <Appear>{buttons}</Appear>}
     </View>
   );

@@ -424,11 +424,11 @@ function DayBody({
               // The core quest always opens its screen (steps, safety, Cleared); a check-off side quest clears here (review).
               onGo={quickClearable(next, false) && next.slot !== 'core' ? () => onCheck(next, authoredTemplate(next.templateId).voice[voice].title) : () => onOpenQuest(next.id)}
               artUri={next.slot === 'core' ? artUrl(art, artKey(authoredTemplate(next.templateId), next.condition), next.id) : null}
-              onPain={next.slot === 'core' && isExercise(next) ? () => onPain(next.id) : undefined}
               resting={resting(next)}
             />
           )}
-          <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />
+          <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish}
+            onPain={next.slot === 'core' && isExercise(next) ? () => onPain(next.id) : undefined} />
         </View>
       )}
 
