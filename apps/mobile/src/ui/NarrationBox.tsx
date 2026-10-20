@@ -7,7 +7,8 @@ import { colors, fonts, radius, space } from '../theme/tokens.ts';
 import { Button } from './Button.tsx';
 import { Body, Caption, Small } from './Text.tsx';
 
-const BOX = { borderRadius: radius.control, borderWidth: space.border, borderColor: colors.accent, backgroundColor: colors.panel } as const;
+// Read as it draws, never into a constant at load: a Plus look swaps `colors` (M13).
+const box = () => ({ borderRadius: radius.control, borderWidth: space.border, borderColor: colors.accent, backgroundColor: colors.panel });
 
 function Speaker() {
   return (
@@ -23,7 +24,7 @@ export function NarrationBox({ children, style }: { children: string; style?: St
       accessible
       accessibilityLabel={`${PLAY_TEXT.speakers.system}: ${children}`}
       style={[
-        { gap: 6, paddingTop: 14, paddingHorizontal: 16, paddingBottom: 14, ...BOX },
+        { gap: 6, paddingTop: 14, paddingHorizontal: 16, paddingBottom: 14, ...box() },
         style,
       ]}
     >
@@ -50,7 +51,7 @@ export function SystemCard({ text, detail, actions = [], count, testID }: {
   testID?: string;
 }) {
   return (
-    <View testID={testID} style={{ gap: 14, padding: 16, ...BOX, borderColor: colors.line }}>
+    <View testID={testID} style={{ gap: 14, padding: 16, ...box(), borderColor: colors.line }}>
       <View accessible accessibilityLabel={[`${PLAY_TEXT.speakers.system}: ${text}`, detail, count].filter((x) => x !== undefined).join(' ')} style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <Speaker />
