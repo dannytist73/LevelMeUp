@@ -119,6 +119,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 71 | The deck cover said "Today's reading" twice (bar and card): the card names the topic only. "about 4 min" broke across lines on Today's reading row: no-break spaces | critique 2, own pass | done |
 | 72 | Up next's "2 sets of 10 · about 5 min" broke between "5" and "min": no-break spaces in every quest summary. Accessibility sweep again on eleven screens: every control labelled (the switch rows' inner switches are hidden on purpose; the row is the switch) | own pass | done |
 | 73 | The first screen's name box was empty with nothing in it: a hint, "Your name or a nickname" (the label above still asks the question) | critique 2 | done |
+| 74 | A sweep for leftovers (tsc --noUnusedLocals): this loop's one unused import (Reveal) removed. Older ones, left alone per CLAUDE.md: an unused `insets` in Notifications, Privacy and Settings, and `slots` in test/today.test.ts | own pass | done (older ones noted) |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
