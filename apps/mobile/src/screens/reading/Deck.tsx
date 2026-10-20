@@ -371,8 +371,11 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
         <RoundButton icon="close" label={D.close} onPress={onClose} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Caption>{label}</Caption>
-          {/* M17 (UX audit N9): on the cover the title is the card's own, so the bar doesn't repeat it. */}
-          {card.kind !== 'cover' && <Body weight="bold">{cover.title}</Body>}
+          {/* M17 (UX audit N9): on the cover the title is the card's own, so the bar doesn't show it; its line keeps its
+              place, unseen and unread, so the bar doesn't change height on the first swipe (design critique). */}
+          <Body weight="bold" {...(card.kind === 'cover'
+            ? { style: { opacity: 0 }, accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const }
+            : {})}>{cover.title}</Body>
         </View>
         <Small accessibilityLabel={fillText(D.card, { n: at + 1, total: cards.length })}>{`${at + 1} / ${cards.length}`}</Small>
       </View>
