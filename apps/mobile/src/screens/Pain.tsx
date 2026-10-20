@@ -14,7 +14,7 @@ import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Small, Title } from '../ui/Text.tsx';
+import { Body, Small } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
 
@@ -39,7 +39,7 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
 
   const frame = (children: ReactNode) => (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 18 }}>
-      <TopBar onBack={onBack} />
+      <TopBar title={T.title} onBack={onBack} />
       {children}
     </ScreenScroll>
   );
@@ -75,7 +75,6 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
 
   return frame(
     <>
-      <Title accessibilityRole="header">{T.title}</Title>
       {seeProfessional(reports) && <NarrationBox>{fillText(T.persists, { count: reports })}</NarrationBox>}
       <Body>{T.lead}</Body>
       <Body>{fillText(T.paused, { name })}</Body>

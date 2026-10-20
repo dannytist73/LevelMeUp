@@ -1,18 +1,19 @@
 // Scholar's Path (spec §2.5, Mage level 10; M6d decision 12): set the book the reading quests track, finish it, or set
 // it aside. Each choice sends one `book` event; the server keeps the finished books with their sessions.
-import { BOOK_TEXT, FEEDBACK_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { BOOK_TEXT, FEEDBACK_TEXT, fillText } from '@levelmeup/content';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAX_BOOK_TITLE } from '../../../../supabase/functions/_shared/events.ts';
 import { scholarsPathOpen } from '../game/character.ts';
 import { useGame } from '../state/store.ts';
-import { space } from '../theme/tokens.ts';
+import { radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { Body, Heading, Label, Small } from '../ui/Text.tsx';
 import { TextField } from '../ui/TextField.tsx';
 import { useLeavingView } from './leaving.ts';
@@ -35,9 +36,10 @@ export function Book({ onDone, onBack }: BookProps) {
 
   if (view === null) {
     return (
-      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: space.gutter, gap: 20 }}>
-        <NarrationBox>The System is preparing your trials.</NarrationBox>
-        <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} />
+      // Premium pass C3: loading looks like loading (it said "The System is preparing your trials."), under the screen's own bar.
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 20 }}>
+        <TopBar title={B.title} onBack={onBack} />
+        <Skeleton><Bone height={20} width="70%" /><Bone height={76} round={radius.card} /><Bone height={76} round={radius.card} /></Skeleton>
       </ScreenScroll>
     );
   }
@@ -86,7 +88,8 @@ export function Book({ onDone, onBack }: BookProps) {
                 ) : (
                   <>
                     <Small tone="chalk">{fillText(confirm === 'finish' ? B.finishConfirm : B.setAsideConfirm, { title: current })}</Small>
-                    <Button label={confirm === 'finish' ? B.finishYes : B.setAsideYes} variant="commitment" disabled={busy}
+                    {/* Premium pass C3: setting a book aside loses its sessions, so it is the quiet button, as deleting is. */}
+                    <Button label={confirm === 'finish' ? B.finishYes : B.setAsideYes} variant={confirm === 'finish' ? 'commitment' : 'secondary'} disabled={busy}
                       onPress={() => void send(null, confirm === 'finish')} />
                     <Button label={B.notNow} variant="secondary" onPress={() => setConfirm(null)} />
                   </>
@@ -102,7 +105,7 @@ export function Book({ onDone, onBack }: BookProps) {
           {confirm === 'switch' && current !== null && (
             <View style={{ gap: 8 }}>
               <Small tone="chalk">{fillText(B.switchConfirm, { title: clean, current })}</Small>
-              <Button label={B.switchYes} variant="commitment" disabled={busy || clean.length === 0 || clean === current}
+              <Button label={B.switchYes} variant="secondary" disabled={busy || clean.length === 0 || clean === current}
                 onPress={() => void send(clean, false)} />
               <Button label={B.notNow} variant="secondary" onPress={() => setConfirm(null)} />
             </View>

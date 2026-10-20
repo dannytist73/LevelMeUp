@@ -11,7 +11,7 @@ import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Small, Title } from '../ui/Text.tsx';
+import { Body, Small } from '../ui/Text.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
 import { toast } from '../ui/toast.ts';
 
@@ -50,8 +50,7 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
-      <TopBar onBack={onBack} disabled={busy} />
-      <Title accessibilityRole="header">{T.title}</Title>
+      <TopBar title={T.title} onBack={onBack} disabled={busy} />
       <Body>{T.what}</Body>
       {/* M17 (review): said once the phone knows who is signed in. */}
       {accountKnown && <Body>{account.kind === 'saved' ? T.google : T.guest}</Body>}

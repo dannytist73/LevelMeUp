@@ -32,6 +32,14 @@ describe('Your game (M7b decision 2)', () => {
     expect(peekToast()?.message).toBe('Saved. It applies from your next quest day.'); // premium pass B1
   });
 
+  it('while loading, shows its own titled bar and a skeleton, not a System line (premium pass C3)', async () => {
+    const onBack = jest.fn();
+    await render(withStore(testStore({ view: null }), <GameSettings onDone={jest.fn()} onBack={onBack} />));
+    expect(screen.getByTestId('skeleton')).toBeTruthy();
+    expect(screen.getByRole('header', { name: SETTINGS_TEXT.game.title })).toBeTruthy();
+    expect(screen.queryByText(/preparing your trials/)).toBeNull();
+  });
+
   it('says when it has unsaved changes, so Back can ask first (M17)', async () => {
     const onDirty = jest.fn();
     await render(withStore(testStore({ view: project(adjustState(), []) }), <GameSettings onDone={jest.fn()} onBack={jest.fn()} onDirty={onDirty} />));

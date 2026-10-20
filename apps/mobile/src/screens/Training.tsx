@@ -2,21 +2,20 @@
 // `training` event: the server re-plans today's open workout and the next days follow the new setup. M16 (plan
 // 2026-10-20-m16-weekly-program.md, decisions 1 and 8): the plan, step by step or the weekly program, and its workouts a
 // week; a new plan starts with tomorrow's quests.
-import { ADJUST_TEXT, EQUIPMENT_NAMES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, PROGRAM_STYLE_CHOICES } from '@levelmeup/content';
+import { ADJUST_TEXT, EQUIPMENT_NAMES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, PROGRAM_STYLE_CHOICES } from '@levelmeup/content';
 import { EQUIPMENT, PROGRAM_DAYS_OPTIONS, PROGRAM_STYLES, TRAINING_PLANS, workoutsFit } from '@levelmeup/rules';
 import type { Equipment, ProgramStyle, TrainingPlan } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
-import { space } from '../theme/tokens.ts';
+import { radius, space } from '../theme/tokens.ts';
 import { BottomBarFrame } from '../ui/BottomBar.tsx';
 import { Button } from '../ui/Button.tsx';
-import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { Body, Label, Small } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
@@ -34,7 +33,6 @@ export type TrainingProps = {
 };
 
 export function Training({ onDone, onBack, onDirty }: TrainingProps) {
-  const insets = useSafeAreaInsets();
   const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const [equipment, setEquipment] = useState<Equipment[] | null>(null);
@@ -47,9 +45,10 @@ export function Training({ onDone, onBack, onDirty }: TrainingProps) {
 
   if (view === null) {
     return (
-      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: space.gutter, gap: 20 }}>
-        <NarrationBox>The System is preparing your trials.</NarrationBox>
-        <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} />
+      // Premium pass C3: loading looks like loading (it said "The System is preparing your trials."), under the screen's own bar.
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 20 }}>
+        <TopBar title={T.title} onBack={onBack} />
+        <Skeleton><Bone height={20} width="70%" /><Bone height={76} round={radius.card} /><Bone height={76} round={radius.card} /></Skeleton>
       </ScreenScroll>
     );
   }

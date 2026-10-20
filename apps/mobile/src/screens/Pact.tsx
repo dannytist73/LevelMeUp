@@ -21,7 +21,7 @@ import { TopBar } from '../ui/TopBar.tsx';
 import { toast } from '../ui/toast.ts';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { Panel } from '../ui/Panel.tsx';
-import { Body, Label, Small, Title } from '../ui/Text.tsx';
+import { Body, Label, Small } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 
 const T = PACT_TEXT;
@@ -100,8 +100,7 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
       {/* M17 (UX audit, old finding 10): Back like every other screen, not only "Not now" at the very end. */}
-      <TopBar onBack={onDone} disabled={busy} />
-      <Title accessibilityRole="header">{T.title}</Title>
+      <TopBar title={T.title} onBack={onDone} disabled={busy} />
       <NarrationBox>{T.lead}</NarrationBox>
       <View style={{ gap: 10 }}>
         <Label>{T.choose}</Label>

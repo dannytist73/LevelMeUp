@@ -14,7 +14,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Label, Title } from '../ui/Text.tsx';
+import { Body, Label } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
 import { toast } from '../ui/toast.ts';
@@ -37,7 +37,7 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
 
   const frame = (children: ReactNode) => (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 18 }}>
-      <TopBar onBack={onBack} />
+      <TopBar title={T.title} onBack={onBack} />
       {children}
     </ScreenScroll>
   );
@@ -71,7 +71,6 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
 
   return frame(
     <>
-      <Title accessibilityRole="header">{T.title}</Title>
       <Body>{fillText(T.lead, { left: today.swapsLeft, total: swapLimit(view.profile.classId, view.character.level) })}</Body>
       {quest === null ? (
         <View style={{ gap: 10 }}>

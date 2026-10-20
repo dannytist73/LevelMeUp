@@ -1,6 +1,6 @@
 // Class change (spec §2.5; M6b decision 9): the four classes with their typical day, stats and abilities; at most one
 // change every 14 days. Level, XP, stats and achievements stay; abilities follow the class at the player's level.
-import { ABILITY_LINES, ABILITY_NAMES, ADJUST_TEXT, CLASS_DAYS, CLASS_NAMES, FEEDBACK_TEXT, PLAY_TEXT, classStats, fillText } from '@levelmeup/content';
+import { ABILITY_LINES, ABILITY_NAMES, ADJUST_TEXT, CLASS_DAYS, CLASS_NAMES, FEEDBACK_TEXT, classStats, fillText } from '@levelmeup/content';
 import { ABILITIES, ABILITY_IDS, CLASSES, classChangeOpensAt } from '@levelmeup/rules';
 import type { AbilityId, ClassId } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -8,13 +8,14 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dateLine } from '../lib/dates.ts';
 import { useGame } from '../state/store.ts';
-import { space } from '../theme/tokens.ts';
+import { radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Small, Title } from '../ui/Text.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
+import { Body, Small } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
 import { toast } from '../ui/toast.ts';
@@ -52,9 +53,10 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
 
   if (view === null) {
     return (
-      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: space.gutter, gap: 20 }}>
-        <NarrationBox>The System is preparing your trials.</NarrationBox>
-        <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} />
+      // Premium pass C3: loading looks like loading (it said "The System is preparing your trials."), under the screen's own bar.
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 20 }}>
+        <TopBar title={T.title} onBack={onBack} />
+        <Skeleton><Bone height={20} width="70%" /><Bone height={76} round={radius.card} /><Bone height={76} round={radius.card} /></Skeleton>
       </ScreenScroll>
     );
   }
@@ -79,8 +81,7 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
-      <TopBar onBack={onBack} />
-      <Title accessibilityRole="header">{T.title}</Title>
+      <TopBar title={T.title} onBack={onBack} />
       <Body>{T.keeps}</Body>
       {lock !== null ? <NarrationBox>{lockLine(lock, view.profile.timeZone)}</NarrationBox> : <Small tone="chalk">{T.once}</Small>}
       <View style={{ gap: 10 }}>

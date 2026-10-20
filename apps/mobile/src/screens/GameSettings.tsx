@@ -1,23 +1,22 @@
 // Settings → Your game (spec §1.3; M7b decision 2): the voice, when the quest day ends, the minutes a day and the
 // difficulty. Saving sends one `settings` event with all four; the voice shows at once, the rest applies from the next
 // quest day. The minutes keep onboarding's notes (M2 review, M6c) for the player's own setup.
-import { DIFFICULTY_CHOICES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, SETTINGS_TEXT, VOICES, VOICE_NAMES, VOICE_SAMPLES } from '@levelmeup/content';
+import { DIFFICULTY_CHOICES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, SETTINGS_TEXT, VOICES, VOICE_NAMES, VOICE_SAMPLES } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import { DIFFICULTIES, MINUTES_OPTIONS, strengthClosed, workoutsFit } from '@levelmeup/rules';
 import type { Difficulty } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rulesProfile } from '../game/offlineDay.ts';
 import { useGame } from '../state/store.ts';
-import { space } from '../theme/tokens.ts';
+import { radius, space } from '../theme/tokens.ts';
 import { BottomBarFrame } from '../ui/BottomBar.tsx';
 import { Button } from '../ui/Button.tsx';
-import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { Body, Label, Small } from '../ui/Text.tsx';
 import { TimeStepper } from '../ui/TimeStepper.tsx';
 import { useLeavingView } from './leaving.ts';
@@ -39,7 +38,6 @@ export type GameSettingsProps = {
 };
 
 export function GameSettings({ onDone, onBack, onDirty }: GameSettingsProps) {
-  const insets = useSafeAreaInsets();
   const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
   const [edits, setEdits] = useState<Partial<Picked>>({});
@@ -49,9 +47,10 @@ export function GameSettings({ onDone, onBack, onDirty }: GameSettingsProps) {
 
   if (view === null) {
     return (
-      <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: space.gutter, gap: 20 }}>
-        <NarrationBox>The System is preparing your trials.</NarrationBox>
-        <Button label={PLAY_TEXT.quest.back} variant="secondary" onPress={onBack} />
+      // Premium pass C3: loading looks like loading (it said "The System is preparing your trials."), under the screen's own bar.
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 20 }}>
+        <TopBar title={T.title} onBack={onBack} />
+        <Skeleton><Bone height={20} width="70%" /><Bone height={76} round={radius.card} /><Bone height={76} round={radius.card} /></Skeleton>
       </ScreenScroll>
     );
   }
