@@ -16,6 +16,7 @@ import type { AdjustEvent, InsightEvent, PainEvent, PhoneEvent, ProvisionalDayEv
 import { isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { provisionalClock, sameQuests } from '../_shared/offline.ts';
 import { bodiesToSend, planInsight } from '../_shared/reading.ts';
+import { playerFromAuthHeader } from '../_shared/auth.ts';
 import { authenticate } from '../_shared/session.ts';
 import { playRecheckDue, plusView } from '../_shared/plus.ts';
 import { refreshPlay, revenueCatKey } from '../_shared/revenuecat.ts';
@@ -302,6 +303,13 @@ Deno.serve(async (req) => {
   // M9b decision 5: an app too old for this server updates first; nothing it sent is read.
   const old = tooOld(req);
   if (old !== null) return problemResponse(old);
+  // M17 (perf audit 2026-10-20): the session check (a call to Auth) and the first read of the player go out together.
+  // The gateway has already verified the token (verify_jwt), so the id is the token's; nothing read is used or returned
+  // unless Auth then confirms the session.
+  const claimed = playerFromAuthHeader(req.headers.get('authorization'), Date.now());
+  if ('code' in claimed) return problemResponse(claimed);
+  const reading = db().begin((tx) => loadSnapshot(tx, claimed.userId));
+  reading.catch(() => {}); // a refused session never waits on, or reports, this read
   const player = await authenticate(req);
   if (isProblem(player)) return problemResponse(player);
   const body = await readJson(req);
@@ -310,7 +318,7 @@ Deno.serve(async (req) => {
   if (isProblem(request)) return problemResponse(request);
 
   try {
-    const started = await db().begin((tx) => loadSnapshot(tx, player.userId));
+    const started = player.userId === claimed.userId ? await reading : await db().begin((tx) => loadSnapshot(tx, player.userId));
     if (started === null) return problemResponse(problem(404, 'not_started'));
     // M16: a character that has been on the weekly program needs an app that knows its quests (one may still be open
     // after switching back); an older one updates first, as above.
