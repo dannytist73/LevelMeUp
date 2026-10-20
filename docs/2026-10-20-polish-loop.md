@@ -118,6 +118,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 70 | Fifth review: one important finding, fixed test-first. After item 68, a failed first read let the account be known before the phone's own records (answered offers, the vow, the Codex) were loaded, so Today could re-show answered cards and an answer would overwrite the stored list; those records now load before the snapshot. Minor: the stepper's width moved to the onboarding row (on the stepper it could become a height); "Within reach" has the heading role; the Codex header keeps 16 dp; stale "07:40" comments | review | done |
 | 71 | The deck cover said "Today's reading" twice (bar and card): the card names the topic only. "about 4 min" broke across lines on Today's reading row: no-break spaces | critique 2, own pass | done |
 | 72 | Up next's "2 sets of 10 · about 5 min" broke between "5" and "min": no-break spaces in every quest summary. Accessibility sweep again on eleven screens: every control labelled (the switch rows' inner switches are hidden on purpose; the row is the switch) | own pass | done |
+| 73 | The first screen's name box was empty with nothing in it: a hint, "Your name or a nickname" (the label above still asks the question) | critique 2 | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -153,8 +154,8 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 3. **Reading deck: one counter.** "2 / 11", the dots and the story's "1 of 6" say similar things; keep the dots and the
    story's count, and keep "Card 2 of 11" for screen readers only.
 4. **Links that look like buttons** ("Restore purchases", "Take out"): accent text without the underline, 48 dp tall.
-5. **Onboarding's first screen:** a hint in the name box ("Your name or a nickname") and "Sign in with Google" as a quiet
-   text button, so the brightest thing isn't the option most new players don't need.
+5. **Onboarding's first screen:** "Sign in with Google" as a quiet text button, so the brightest thing isn't the option
+   most new players don't need. (The name box's hint is done: item 73.)
 
 ## Log
 
@@ -214,3 +215,5 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 | 04:12 | 70 | Fifth review fixes | app tests 1193/1193; emulator: rhythm step, Codex preview |
 | 04:15 | 71 | Deck cover topic; reading row | emulator (Vera's new day 7); app tests 1193/1193, content 1170/1170 |
 | 04:20 | 72 | Summaries; sweep; 2x text on the new day 7 and the deck cover | emulator; content 1170/1170, app 1193/1193 |
+| 04:28 | 73 | Name hint | test (placeholder shown); emulator (welcome opened, nothing typed) |
+| 04:23 | — | Candidate 0.9.0 preview APK build started from 6d20b2c (every check green: typecheck, portable, functions, all tests, bundle scan) | — |
