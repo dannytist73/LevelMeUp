@@ -10,6 +10,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
+import { BottomBarFrame } from '../ui/BottomBar.tsx';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
@@ -76,8 +77,11 @@ export function Training({ onDone, onBack }: TrainingProps) {
     onDone();
   };
 
+  // M17 (UX audit O5): Save stays in a bar at the bottom, in reach under any number of options.
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
+    <BottomBarFrame bar={<Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} />}>
+    {(barSpace) => (
+    <ScreenScroll contentContainerStyle={{ paddingBottom: barSpace + 24, paddingHorizontal: space.gutter, gap: 16 }}>
       <TopBar onBack={onBack} />
       <Title accessibilityRole="header">{T.title}</Title>
       <Body>{T.line}</Body>
@@ -118,7 +122,8 @@ export function Training({ onDone, onBack }: TrainingProps) {
         </NightCard>
       )}
       <Small>{pickedPlan !== currentPlan ? T.planTomorrow : T.today}</Small>
-      <Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} />
     </ScreenScroll>
+    )}
+    </BottomBarFrame>
   );
 }
