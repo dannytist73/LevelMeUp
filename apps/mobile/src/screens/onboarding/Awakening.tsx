@@ -69,7 +69,7 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
         <ChapterHead step="awakening" />
         <NarrationBox>{T.line}</NarrationBox>
-        <TextField label={T.ask} value={draft.name} onChangeText={(name) => editDraft({ name })} maxLength={NAME_MAX} />
+        <TextField label={T.ask} hint={T.askHint} value={draft.name} onChangeText={(name) => editDraft({ name })} maxLength={NAME_MAX} />
         <Button label={T.go} disabled={!complete(draft, 'awakening')} onPress={() => {
           setAwaiting(false);
           onNavigate(nextPath(draft, 'awakening'));

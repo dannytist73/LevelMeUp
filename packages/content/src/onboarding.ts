@@ -120,6 +120,8 @@ export const ONBOARDING_TEXT = {
     detected: 'A new player has been detected.',
     line: 'Before your trials begin, I need to know who you are.',
     ask: 'What should I call you?',
+    /** M17: the hint inside the empty name box (the label above stays the question). */
+    askHint: 'Your name or a nickname',
     go: 'Awaken',
     note: 'No account needed. You can save your character later.',
     restore: 'Saved a character before? Sign in with Google',

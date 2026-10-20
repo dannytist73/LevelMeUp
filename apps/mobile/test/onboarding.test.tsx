@@ -35,6 +35,7 @@ describe('Awakening (O01)', () => {
     expect(screen.getByText(ONBOARDING_TEXT.awakening.note)).toBeTruthy();
     const awaken = screen.getByRole('button', { name: ONBOARDING_TEXT.awakening.go });
     expect(awaken.props.accessibilityState).toMatchObject({ disabled: true });
+    expect(screen.getByPlaceholderText(ONBOARDING_TEXT.awakening.askHint)).toBeTruthy(); // M17: a hint in the empty box
     await fireEvent.changeText(screen.getByLabelText(ONBOARDING_TEXT.awakening.ask), 'Rin');
     expect(store.getState().draft.name).toBe('Rin');
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.awakening.go }));

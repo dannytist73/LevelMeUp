@@ -15,9 +15,11 @@ export type TextFieldProps = {
   oneLine?: boolean;
   /** The surface it sits on. */
   on?: 'night' | 'paper';
+  /** M17: a hint inside the empty box; the label above still says what the box is for. */
+  hint?: string;
 };
 
-export function TextField({ label, value, onChangeText, maxLength, multiline = false, oneLine = false, on = 'night' }: TextFieldProps) {
+export function TextField({ label, value, onChangeText, maxLength, multiline = false, oneLine = false, on = 'night', hint }: TextFieldProps) {
   const paper = on === 'paper';
   const [focused, setFocused] = useState(false);
   return (
@@ -34,6 +36,7 @@ export function TextField({ label, value, onChangeText, maxLength, multiline = f
         {...(multiline ? { textAlignVertical: 'top' as const } : {})}
         {...(multiline && oneLine ? { submitBehavior: 'blurAndSubmit' as const, returnKeyType: 'done' as const } : {})}
         maxFontSizeMultiplier={2}
+        {...(hint !== undefined ? { placeholder: hint, placeholderTextColor: paper ? colors.inkMuted : colors.ash } : {})}
         selectionColor={colors.accent}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
