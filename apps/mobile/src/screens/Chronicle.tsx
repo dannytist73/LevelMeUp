@@ -81,7 +81,7 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
   const today = view?.calendar.find((d) => d.mark === 'open')?.date ?? null;
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull} tab="chronicle">
       <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
         {/* M17: a title like the other tabs' (it was a small label). */}
         <TabTop onSettings={onSettings}><Title accessibilityRole="header">{C.label}</Title></TabTop>

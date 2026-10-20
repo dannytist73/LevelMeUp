@@ -298,7 +298,7 @@ export function Today({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <ScreenScroll contentContainerStyle={{ paddingBottom: snack === null ? 32 : 96 }} refresh={pull}>
+      <ScreenScroll contentContainerStyle={{ paddingBottom: snack === null ? 32 : 96 }} refresh={pull} tab="index">
         {/* M17: a shorter header (about 50 dp less), so Up next's button stays above the fold with a note waiting: the date
             beside "Day N", and the level on the XP bar's line (name and class live on Character). */}
         <ScreenHeader style={{ paddingTop: insets.top + 12, paddingBottom: 16, gap: 12, marginBottom: 16 }}>

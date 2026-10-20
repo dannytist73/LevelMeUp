@@ -104,7 +104,7 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
   }
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull} tab="library">
       <ScreenHeader style={{ paddingTop: insets.top + 12, gap: 4 }}>
         <TabTop onSettings={onSettings}>
           <Title accessibilityRole="header">{L.title}</Title>

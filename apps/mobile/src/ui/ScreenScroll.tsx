@@ -1,12 +1,14 @@
 // A screen's scroll view. Headers run behind the status bar (edge to edge), so a night band fades in behind the status
 // bar as the page scrolls: scrolled text never sits under the clock (device check 10, found on the emulator).
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { RefreshControl, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { interpolate, useAnimatedRef, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/tokens.ts';
+import { onTabTop } from './tabTop.ts';
+import { useReduce } from './useMotion.ts';
 
 /** M17: pull to refresh, where a screen offers it (Today: pull down to sync). */
 export type Refresh = { refreshing: boolean; onRefresh: () => void };
@@ -29,12 +31,21 @@ function useStatusBand() {
   return { insets, onScroll, bandView };
 }
 
-export function ScreenScroll({ children, contentContainerStyle, refresh }: { children: ReactNode; contentContainerStyle?: StyleProp<ViewStyle>; refresh?: Refresh }) {
+export function ScreenScroll({ children, contentContainerStyle, refresh, tab }: {
+  children: ReactNode;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  refresh?: Refresh;
+  /** M17: the tab this screen is (`index`, `library`, …): a tap on that tab while it shows scrolls back to the top. */
+  tab?: string;
+}) {
   const { insets, onScroll, bandView } = useStatusBand();
+  const scroll = useAnimatedRef<Animated.ScrollView>();
+  const reduce = useReduce();
+  useEffect(() => (tab === undefined ? undefined : onTabTop(tab, () => scroll.current?.scrollTo({ y: 0, animated: !reduce }))), [tab, reduce, scroll]);
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       {/* M17 (UX audit N8): a tap on a button lands even while the keyboard is up (it used to only close the keyboard). */}
-      <Animated.ScrollView contentContainerStyle={contentContainerStyle} onScroll={onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled"
+      <Animated.ScrollView ref={scroll} contentContainerStyle={contentContainerStyle} onScroll={onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled"
         refreshControl={refresh === undefined ? undefined : (
           <RefreshControl refreshing={refresh.refreshing} onRefresh={refresh.onRefresh} colors={[colors.onAccent]} progressBackgroundColor={colors.accent}
             tintColor={colors.accent} progressViewOffset={insets.top} />

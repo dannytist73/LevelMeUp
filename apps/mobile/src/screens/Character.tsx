@@ -75,7 +75,7 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
   const figure = figureFor(chosen, view.profile.programStyle);
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull} tab="character">
       <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
         {/* M17: the tab's title is the player's name, large like the other tabs' (it sat small under the portrait). */}
         <TabTop onSettings={onSettings}><Title accessibilityRole="header">{view.profile.name}</Title></TabTop>

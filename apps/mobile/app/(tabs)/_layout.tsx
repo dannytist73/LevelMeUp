@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../../src/state/store.ts';
 import { colors } from '../../src/theme/tokens.ts';
 import { InkTabBar } from '../../src/ui/InkTabBar.tsx';
+import { tabTop } from '../../src/ui/tabTop.ts';
 import { useReduce } from '../../src/ui/useMotion.ts';
 import type { TabItem } from '../../src/ui/InkTabBar.tsx';
 
@@ -28,7 +29,8 @@ export default function TabsLayout() {
         <InkTabBar
           tabs={TABS}
           active={state.routes[state.index]!.name}
-          onSelect={(key) => navigation.navigate(key)}
+          // M17: the tab already shown goes back to its top.
+          onSelect={(key) => (key === state.routes[state.index]!.name ? tabTop(key) : navigation.navigate(key))}
           bottomInset={insets.bottom}
         />
       )}
