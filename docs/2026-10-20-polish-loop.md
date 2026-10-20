@@ -121,6 +121,9 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 73 | The first screen's name box was empty with nothing in it: a hint, "Your name or a nickname" (the label above still asks the question) | critique 2 | done |
 | 74 | A sweep for leftovers (tsc --noUnusedLocals): this loop's one unused import (Reveal) removed. Older ones, left alone per CLAUDE.md: an unused `insets` in Notifications, Privacy and Settings, and `slots` in test/today.test.ts | own pass | done (older ones noted) |
 | 75 | The first screen: "Sign in with Google" is a quiet text button under "Saved a character before?" (an outline as large as Awaken drew the eye before a name was typed); Cleared, the level-up bench and the Shadow scene checked at 360 dp | critique 2, narrow pass | done |
+| 76 | UX dead-end audit (an agent reading the code for places a player gets stuck). Fixed: a kept lesson older than the last 30 readings never opened ("comes with the next sync", forever: the sync fetched its article and dropped it in the same transaction), now the Codex's articles are kept, test-first | dead-end audit | done |
+| 77 | A workout's or a rep log's sets and ticks reset to last time's numbers after Back to Today: now kept while the app runs (memory only, like the reading's takeaway) | dead-end audit | done |
+| 78 | The vow could never be opened again once Today's card was answered: Character shows "Change your vow" under it, or "Write a vow" when there's none | dead-end audit | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -144,6 +147,16 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
    offered with no penalty); it's a product call.
 7. **Which day a check-in is about.** Today's card asks "The day closed. What happened?"; naming the day ("Yesterday's
    quest day closed…") would say more at a glance. It's board F1's copy, so it's yours to change.
+
+8. **From the dead-end audit, bigger than a polish fix** (each needs a decision or a server-side look):
+   - The Shadow's note ("What got in the way?") is thrown away on Done or "Take back the day" unless "Keep the note" was
+     tapped; saving it on the way out would send a `checkin_note` event the player didn't ask for.
+   - An offline change of training plan locks today's workout log ("log this workout once it syncs"), though Training
+     says today stays as it is; a gym without signal can't log.
+   - A sync the server refuses for an unusual reason (not offline, not signed out) shows "will sync" with no retry and
+     no note on Today.
+   - The crash screen's only way out is Try again; a "Go to Today" needs checking on a real crash (the root boundary
+     replaces the whole navigator).
 
 ## Next round (proposed, not urgent)
 
@@ -219,3 +232,4 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 | 04:23 | — | Candidate 0.9.0 preview APK build started from 6d20b2c (every check green: typecheck, portable, functions, all tests, bundle scan) | — |
 | 04:36 | — | Candidate APK built in 9 min (04:32); installed over the dev build on the emulator (data kept): Today day 7, every tab, the deck, Notifications, Your look, tab tap to top all fine; Settings shows Version 0.9.0; cold start 0.76-1.04 s to first frame (release, emulator); no crash in the log. Dev build reinstalled to keep going | — |
 | 04:41 | 74, 75 | Leftovers sweep; sign-in link | onboarding tests 29/29; emulator (welcome, look only) |
+| 04:56 | 76-78 | Kept lessons' readings kept; log drafts; vow from Character | tests first for each (store, quest, clarity); app 1197/1197, content 1171/1171; emulator: Character (look only) |
