@@ -58,7 +58,7 @@ create function lmu_test.test_complete_guards() returns setof text language plpg
 declare
   a uuid := lmu_test.start(1);
   b uuid := lmu_test.start(2);
-  late uuid := lmu_test.start(3, now() - interval '60 hours', now() - interval '49 hours');
+  late uuid := lmu_test.start(3, now() - interval '8 days', now() - interval '7 days 1 hour');
   core bigint := lmu_test.quest(a, 'core');
   starts timestamptz := (select starts_at from levelmeup.quest_days where user_id = a);
   ends timestamptz := (select ends_at from levelmeup.quest_days where user_id = a);
@@ -73,8 +73,8 @@ begin
     'P0001', 'lmu:future', 'a completion stamped in the future');
   return next lives_ok(format('select levelmeup.complete_quest(%L, %L, %s, %L, null, null)', a, lmu_test.ev(2), lmu_test.quest(a, 'side1'), now() + interval '4 minutes'),
     'up to 5 minutes of clock skew is fine');
-  return next throws_ok(format('select levelmeup.complete_quest(%L, %L, %s, %L, null, null)', late, lmu_test.ev(1), lmu_test.quest(late, 'core'), now() - interval '55 hours'),
-    'P0001', 'lmu:too_late', 'more than 48 hours after the day ended');
+  return next throws_ok(format('select levelmeup.complete_quest(%L, %L, %s, %L, null, null)', late, lmu_test.ev(1), lmu_test.quest(late, 'core'), now() - interval '7 days 6 hours'),
+    'P0001', 'lmu:too_late', 'more than 7 days after the day ended (0020; it was 48 hours)');
   return next throws_ok(format('select levelmeup.complete_quest(%L, %L, %s, now(), %L, null)', a, lmu_test.ev(1), core, 'meh'),
     'P0001', 'lmu:bad_rating', 'an unknown rating');
   update levelmeup.quest_days set status = 'closed', resolution = 'protected', closed_at = now() where user_id = a;
@@ -84,12 +84,15 @@ begin
     'P0001', 'lmu:not_started', 'a player without a character');
 end $$;
 
-create function lmu_test.test_late_completion_within_48_hours() returns setof text language plpgsql as $$
+create function lmu_test.test_late_completion_within_7_days() returns setof text language plpgsql as $$
 declare
   a uuid := lmu_test.start(1, now() - interval '30 hours', now() - interval '6 hours');
+  b uuid := lmu_test.start(2, now() - interval '6 days 20 hours', now() - interval '6 days');
 begin
   return next lives_ok(format('select levelmeup.complete_quest(%L, %L, %s, %L, null, null)', a, lmu_test.ev(1), lmu_test.quest(a, 'core'), now() - interval '20 hours'),
-    'an offline completion inside the day counts until 48 hours after it ended');
+    'an offline completion inside the day counts after it ended');
+  return next lives_ok(format('select levelmeup.complete_quest(%L, %L, %s, %L, null, null)', b, lmu_test.ev(1), lmu_test.quest(b, 'core'), now() - interval '6 days 10 hours'),
+    'and still 6 days after it ended (premium pass A6: the late window is 7 days)');
 end $$;
 
 create function lmu_test.test_undo() returns setof text language plpgsql as $$

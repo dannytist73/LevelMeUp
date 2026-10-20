@@ -298,7 +298,7 @@ describe('planning an adjustment (adjust.ts)', () => {
     expect(plan(at({}, { protection: 'pain' }), { type: 'plan_rest', dayId: 2, tomorrow: true })).toEqual({ change: { restDay: 3 } });
   });
 
-  it('a rest tapped while the day ran protects it after it ended, within 48 hours (M7b decision 6)', () => {
+  it('a rest tapped while the day ran protects it after it ended, within the late window (M7b decision 6; 7 days since 0020)', () => {
     const { startsAt, endsAt } = manilaDay(2);
     const tapped = endsAt - HOUR;
     expect(plan(at(), { type: 'plan_rest', dayId: 2, at: tapped }, endsAt + HOUR)).toEqual({
@@ -306,7 +306,7 @@ describe('planning an adjustment (adjust.ts)', () => {
     });
     // While the day runs the tap time changes nothing.
     expect(plan(at(), { type: 'plan_rest', dayId: 2, at: startsAt + HOUR })).toEqual({ change: { day: { id: 2, protection: 'planned_rest' } } });
-    // Too late: tapped after the day ended, before it began, more than 48 hours ago, or without a tap time.
+    // Too late: tapped after the day ended, before it began, longer ago than the late window, or without a tap time.
     for (const [tap, now] of [[endsAt + 1, endsAt + HOUR], [startsAt - 1, endsAt + HOUR], [tapped, endsAt + LATE_SYNC_MS], [undefined, endsAt + HOUR]] as const) {
       expect(plan(at(), { type: 'plan_rest', dayId: 2, ...(tap === undefined ? {} : { at: tap }) }, now)).toEqual({ code: 'rest_late' });
     }

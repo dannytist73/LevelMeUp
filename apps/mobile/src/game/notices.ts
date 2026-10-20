@@ -6,7 +6,7 @@ const TEXT = {
   already_completed: 'That quest was already cleared.',
   day_closed: 'That day had already closed, so the change was not saved.',
   outside_day: "That completion was timed outside its quest day, so it wasn't counted.",
-  too_late: "That completion arrived more than 48 hours after its day closed, so it wasn't counted.",
+  too_late: "That completion arrived more than a week after its day closed, so it wasn't counted.",
   future: "That completion was stamped ahead of the server's clock. Check the phone's time, then try again.",
   not_completed: "That quest isn't cleared, so there was nothing to undo or rate.",
   bad_rating: "That rating wasn't one the System knows, so it was skipped.",

@@ -7,7 +7,7 @@ import {
   DAY1, DAY_TWO_SLOTS, afterDay1, characterRow, dayTwoSnapshot, historyOf, ladderRows,
 } from '../../../supabase/tests/unit/fixtures.ts';
 import type { CharacterRow } from '../../../supabase/functions/_shared/state.ts';
-import { offlineDay, offlineView } from '../src/game/offlineDay.ts';
+import { MAX_OFFLINE_DAYS, nextOfflineDay, offlineDay, offlineView } from '../src/game/offlineDay.ts';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import { checkinState, completeEvent, serverState } from './support/fixtures.ts';
@@ -50,6 +50,59 @@ describe('the day the phone builds offline (M6e decision 2)', () => {
     expect(offlineDay(s, shown, Date.parse(shown.today!.endsAt!) + HOUR, 'Asia/Manila')).toBeNull();
     const { ladders: _ladders, ...older } = s;
     expect(offlineDay(older as ServerState, project(older as ServerState, []), END + HOUR, 'Asia/Manila')).toBeNull();
+  });
+});
+
+describe('several days in a row offline (premium pass A6)', () => {
+  const id = (n: number) => `00000000-0000-4000-8000-${String(900 + n).padStart(12, '0')}`;
+  /** Builds each next day as the store does, once the one before has ended, `days` times. */
+  const chain = (s: ServerState, days: number, done: (event: PhoneEvent) => PhoneEvent[] = () => []) => {
+    const pending: PhoneEvent[] = [];
+    let at = END + HOUR;
+    for (let n = 0; n < days; n++) {
+      const event = nextOfflineDay(s, pending, at, 'Asia/Manila');
+      if (event === null) break;
+      const queued = { ...event, id: id(n) } as PhoneEvent;
+      pending.push(queued, ...done(queued));
+      at = event.window.endsAt + HOUR;
+    }
+    return pending;
+  };
+  const days = (pending: readonly PhoneEvent[]) => pending.flatMap((e) => (e.type === 'provisional_day' ? [e] : []));
+
+  it('builds the first day as before, then the next one once that has ended', () => {
+    const s = serverState();
+    const first = nextOfflineDay(s, [], END + HOUR, 'Asia/Manila')!;
+    expect(first).toEqual(offlineDay(s, project(s, []), END + HOUR, 'Asia/Manila'));
+    const pending = [{ ...first, id: id(0) } as PhoneEvent];
+    expect(nextOfflineDay(s, pending, first.window.endsAt - 1, 'Asia/Manila')).toBeNull(); // the day on screen still runs
+    const second = nextOfflineDay(s, pending, first.window.endsAt + HOUR, 'Asia/Manila')!;
+    expect(second.dayNumber).toBe(first.dayNumber + 1);
+    expect(second.window.startsAt).toBe(first.window.endsAt);
+    expect(second.articleId).toBeNull(); // only the server's next day has an article named
+    expect(second.quests.length).toBeGreaterThan(0);
+  });
+
+  it('stops at the late window: completions past it would reach the System too late to count', () => {
+    const built = days(chain(serverState(), MAX_OFFLINE_DAYS + 3));
+    expect(built).toHaveLength(MAX_OFFLINE_DAYS);
+    expect(built.map((d) => d.dayNumber)).toEqual(Array.from({ length: MAX_OFFLINE_DAYS }, (_, n) => 2 + n));
+  });
+
+  it('builds the same days from the same state and clock, each close starting from the last', () => {
+    const s = serverState();
+    const plain = chain(s, 2);
+    const again = chain(s, 2);
+    expect(days(again)).toEqual(days(plain)); // the same state and clock build the same days
+  });
+
+  it('a check-in answer on its way waits, as for the first day', () => {
+    const s = serverState();
+    const first = nextOfflineDay(s, [], END + HOUR, 'Asia/Manila')!;
+    const sick: PhoneEvent = { id: '00000000-0000-4000-8000-0000000000c1', type: 'checkin', checkinId: 7, answer: 'sick', secondWind: false };
+    const pending = [{ ...first, id: id(0) } as PhoneEvent];
+    expect(nextOfflineDay(s, [...pending, sick], first.window.endsAt + HOUR, 'Asia/Manila'))
+      .toEqual(nextOfflineDay(s, pending, first.window.endsAt + HOUR, 'Asia/Manila'));
   });
 });
 

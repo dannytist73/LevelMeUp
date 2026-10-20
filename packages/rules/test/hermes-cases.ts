@@ -180,8 +180,8 @@ export const TIME_CASES: readonly TimeCase[] = [
     actual: () => [
       isClosed(closingDay, closingDay.endsAt - 1),
       isClosed(closingDay, closingDay.endsAt),
-      acceptsCompletion(closingDay, inside, closingDay.endsAt + 48 * HOUR_MS),
-      acceptsCompletion(closingDay, inside, closingDay.endsAt + 48 * HOUR_MS + 1),
+      acceptsCompletion(closingDay, inside, closingDay.endsAt + 7 * 24 * HOUR_MS), // premium pass A6: 7 days late
+      acceptsCompletion(closingDay, inside, closingDay.endsAt + 7 * 24 * HOUR_MS + 1),
       acceptsCompletion(closingDay, closingDay.startsAt - 1, inside),
       acceptsCompletion(closingDay, closingDay.endsAt, closingDay.endsAt),
       acceptsCompletion(closingDay, inside + 10 * 60_000, inside),

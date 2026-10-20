@@ -1,4 +1,5 @@
-import { carriedTimers, findQuest, offlineToday, withRef } from '../src/game/offline.ts';
+import { LATE_SYNC_MS } from '@levelmeup/rules';
+import { carriedTimers, countsUntil, findQuest, offlineToday, withRef } from '../src/game/offline.ts';
 import { project } from '../src/game/project.ts';
 import { adjustState, offlineEvent, serverState } from './support/fixtures.ts';
 
@@ -40,5 +41,28 @@ describe('an offline day as the screens show it (M6e)', () => {
     expect(carriedTimers({ [-1]: RUNNING }, OFFLINE, otherCore)).toEqual({});
     expect(carriedTimers({ 7: RUNNING }, OFFLINE, after)).toBeNull();
     expect(carriedTimers({ [-1]: RUNNING }, after, after)).toBeNull();
+  });
+});
+
+describe('until when what is cleared offline still counts (premium pass A6)', () => {
+  it('the earliest day with a completion on its way, plus the late window', () => {
+    const s = serverState();
+    const core = s.today!.quests.find((q) => q.slot === 'core')!;
+    const day2 = offlineEvent(s);
+    const pending = [
+      day2,
+      { id: '00000000-0000-4000-8000-0000000000d1', type: 'complete', instanceId: null, ref: { dayNumber: 2, slot: 'core', templateId: day2.quests[0]!.templateId }, completedAt: day2.window.startsAt + 60_000, rating: null, payload: {} },
+      { id: '00000000-0000-4000-8000-0000000000d2', type: 'complete', instanceId: core.id, completedAt: Date.parse(s.today!.startsAt!) + 60_000, rating: null, payload: {} },
+    ] as never;
+    // Day 1's completion is the oldest: its end, plus the window.
+    expect(countsUntil(s, pending, project(s, pending))).toBe(Date.parse(s.today!.endsAt!) + LATE_SYNC_MS);
+    // Only day 2's: day 2's end.
+    expect(countsUntil(s, (pending as unknown[]).slice(0, 2) as never, project(s, (pending as unknown[]).slice(0, 2) as never))).toBe(day2.window.endsAt + LATE_SYNC_MS);
+  });
+
+  it('with nothing on its way, the end of the day on screen', () => {
+    const s = serverState();
+    const day2 = offlineEvent(s);
+    expect(countsUntil(s, [day2], project(s, [day2]))).toBe(day2.window.endsAt + LATE_SYNC_MS);
   });
 });

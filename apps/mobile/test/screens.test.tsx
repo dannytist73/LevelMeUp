@@ -626,6 +626,13 @@ describe('a day this phone built offline (M6e decision 8)', () => {
     expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(3); // + the reading card (M8b)
   });
 
+  it('says until when what is cleared here counts (premium pass A6)', async () => {
+    const day2 = offlineEvent();
+    const state = serverState();
+    await renderToday({ view: project(state, [day2]), cached: { state, syncedAt: 0 } as never, pending: [day2] });
+    expect(screen.getByText(/^Connect by \w{3} \d{1,2} \w{3}, \d{1,2}:\d{2} [AP]M so what you clear here counts\.$/)).toBeTruthy();
+  });
+
   it('shows none of it on a day from the server', async () => {
     await renderToday();
     expect(screen.queryByText(OFFLINE_TEXT.built)).toBeNull();

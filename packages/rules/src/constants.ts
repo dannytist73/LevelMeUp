@@ -51,7 +51,8 @@ export const DAY_MS = 24 * HOUR_MS;
 export const MIN_DAY_MS = 20 * HOUR_MS;
 export const MAX_DAY_MS = 28 * HOUR_MS;
 export const FIRST_DAY_MIN_MS = 6 * HOUR_MS;
-export const LATE_SYNC_MS = 48 * HOUR_MS;
+/** Premium pass A6 (0020): what is done on a day still counts if it reaches the server within 7 days of the day's end. */
+export const LATE_SYNC_MS = 7 * DAY_MS;
 /** Away days counted one by one when a player comes back; a longer absence starts a fresh day from now. */
 export const MAX_AWAY_DAYS = 400;
 export const CLOCK_SKEW_MS = 5 * MINUTE_MS;

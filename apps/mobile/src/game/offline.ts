@@ -2,12 +2,12 @@
 // −1 to −4 by slot, events about them name them by day and slot, and a timer started on one moves to the server's quest
 // in its slot.
 import { LIBRARY } from '@levelmeup/content';
-import { draftQuest, findTemplate, storedQuest } from '@levelmeup/rules';
+import { LATE_SYNC_MS, draftQuest, findTemplate, storedQuest } from '@levelmeup/rules';
 import type { Slot } from '@levelmeup/rules';
 import type { TimerState } from '../quest/timer.ts';
 import type { NewEvent } from '../state/store.ts';
 import type { Shown } from './project.ts';
-import type { ProvisionalDayEvent, QuestView, TodayView } from './types.ts';
+import type { PhoneEvent, ProvisionalDayEvent, QuestView, ServerState, TodayView } from './types.ts';
 
 /** Quest ids on a day the phone built: never a server id (those are positive). */
 export const OFFLINE_IDS: Readonly<Record<Slot, number>> = { core: -1, side1: -2, side2: -3, article: -4, recovery: -5 };
@@ -91,4 +91,24 @@ export function carriedTimers(
     if (real !== undefined && next[real.id] === undefined) next[real.id] = state;
   }
   return moved ? next : null;
+}
+
+/**
+ * Premium pass A6: until when what the player clears here still counts once it reaches the System, while the phone is
+ * offline: the end of the earliest day with a completion on its way (else of the day on screen), plus the late window.
+ * Null when nothing is open on the phone to count.
+ */
+export function countsUntil(server: ServerState, pending: readonly PhoneEvent[], shown: Pick<Shown, 'today'>): number | null {
+  const ends = new Map<number, number>();
+  if (server.today?.endsAt != null) ends.set(server.today.dayNumber, Date.parse(server.today.endsAt));
+  for (const e of pending) if (e.type === 'provisional_day') ends.set(e.dayNumber, e.window.endsAt);
+  const days = pending.flatMap((e) => {
+    if (e.type !== 'complete') return [];
+    if (e.ref != null) return [e.ref.dayNumber];
+    return server.today !== null && server.today.quests.some((q) => q.id === e.instanceId) ? [server.today.dayNumber] : [];
+  });
+  const shownEnd = shown.today?.endsAt != null ? Date.parse(shown.today.endsAt) : null;
+  const known = days.flatMap((d) => (ends.has(d) ? [ends.get(d)!] : []));
+  const earliest = known.length > 0 ? Math.min(...known) : shownEnd;
+  return earliest === null ? null : earliest + LATE_SYNC_MS;
 }

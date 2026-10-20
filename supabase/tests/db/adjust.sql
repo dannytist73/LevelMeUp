@@ -319,7 +319,7 @@ end $$;
 create function lmu_test.test_adjust_late_rest() returns setof text language plpgsql as $$
 declare
   late uuid := lmu_test.start(1, now() - interval '25 hours', now() - interval '1 minute');
-  old uuid := lmu_test.start(2, now() - interval '74 hours', now() - interval '49 hours');
+  old uuid := lmu_test.start(2, now() - interval '8 days', now() - interval '7 days 1 hour');
   day bigint := lmu_test.day_of(late);
   adj text := 'select levelmeup.adjust(%L, %L, 1, ''plan_rest'', ''{}'', %L)';
   rest jsonb := jsonb_build_object('id', lmu_test.day_of(late), 'protection', 'planned_rest');
@@ -333,8 +333,8 @@ begin
       jsonb_build_object('day', rest || jsonb_build_object('tappedAt', inside, 'hardDay', true))),
     'P0001', 'lmu:day_closed', 'after its end, only the protection can change');
   return next throws_ok(format(adj, old, lmu_test.ev(4), jsonb_build_object('day',
-      jsonb_build_object('id', lmu_test.day_of(old), 'protection', 'planned_rest', 'tappedAt', to_jsonb(now() - interval '50 hours')))),
-    'P0001', 'lmu:day_closed', 'not more than 48 hours after the day ended');
+      jsonb_build_object('id', lmu_test.day_of(old), 'protection', 'planned_rest', 'tappedAt', to_jsonb(now() - interval '7 days 2 hours')))),
+    'P0001', 'lmu:day_closed', 'not more than 7 days after the day ended (0020; it was 48 hours)');
   perform levelmeup.adjust(late, lmu_test.ev(5), 1, 'plan_rest', jsonb_build_object('dayId', day),
     jsonb_build_object('day', rest || jsonb_build_object('tappedAt', inside)));
   return next is((select protection from levelmeup.quest_days where id = day), 'planned_rest',

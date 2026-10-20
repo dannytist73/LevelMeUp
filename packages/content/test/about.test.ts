@@ -34,7 +34,7 @@ describe('About, privacy and the update card (M9b)', () => {
   it('the update card keeps the character and says how long what is logged waits (decision 5)', () => {
     expect(UPDATE_TEXT.line).toMatch(/too old/);
     expect(UPDATE_TEXT.line).toMatch(/character is safe/);
-    expect(UPDATE_TEXT.line).toMatch(/two days/);
+    expect(UPDATE_TEXT.line).toMatch(/about a week/); // premium pass A6: the late window is 7 days
     expect(ONBOARDING_TEXT.analysis.update).toMatch(/answers are kept/);
   });
 });

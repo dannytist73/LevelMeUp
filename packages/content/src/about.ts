@@ -69,7 +69,7 @@ export const PRIVACY_TEXT = {
 export const UPDATE_TEXT = {
   line:
     'This version of LevelMeUp is too old for the System. Install the newest one from the link you were sent. Your ' +
-    'character is safe; what you log meanwhile waits on this phone, and the System accepts it for about two days.',
+    'character is safe; what you log meanwhile waits on this phone, and the System accepts it for about a week.',
 } as const;
 
 /** A screen that failed (audit 2026-10-15): the app shows this instead of closing. What was logged stays in the outbox. */

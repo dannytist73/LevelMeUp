@@ -18,6 +18,7 @@ import { isExercise, isResting } from '../game/adjust.ts';
 import { trainingUnset } from '../game/character.ts';
 import { streakNote } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
+import { countsUntil } from '../game/offline.ts';
 import { marked, sealedQuest, shadowHold } from '../game/pact.ts';
 import { programOffered, setupCard } from '../game/setup.ts';
 import { weekRecap } from '../game/week.ts';
@@ -26,7 +27,7 @@ import type { ShadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { dayCleared, dayOff, openQuests, quickClearable, shownStreak, upNext } from '../game/today.ts';
 import type { QuestView, TodayView } from '../game/types.ts';
-import { dateLine, dayLabel } from '../lib/dates.ts';
+import { clockTime, dateLine, dayLabel } from '../lib/dates.ts';
 import { plusCard, plusOf } from '../plus/plus.ts';
 import { manageUrl, purchasesSetUp } from '../plus/purchases.ts';
 import { useGame } from '../state/store.ts';
@@ -397,6 +398,8 @@ function DayBody({
   view, today, hold, art, onOpenQuest, onOpenReading, onPain, onShadow, onTrial, onSwap, onVanish, onCheck, showDone, onToggleDone, enqueue,
 }: DayBodyProps) {
   const voice = view.profile.voice;
+  // Premium pass A6: on a day built offline, until when what is cleared still counts, said before it passes.
+  const countsBy = useGame((s) => (s.cached === null || !view.offline ? null : countsUntil(s.cached.state, s.pending, view)));
   const sealed = (q: QuestView) => sealedQuest(hold, q);
   const resting = (q: QuestView) => q.completedAt === null && isResting(q, view.paused);
   /** The day's must-dos are cleared (resting ones excused); or the rules protect the day, so nothing is asked of it. */
@@ -434,7 +437,10 @@ function DayBody({
     // M17: rows that arrive with the day don't fade in; those that come and go later do.
     <LayoutAnimationConfig skipEntering>
     <View style={{ gap: 26 }}>
-      {view.offline && <StateNote kind="offline" title={OFFLINE_TEXT.built} />}
+      {view.offline && (
+        <StateNote kind="offline" title={OFFLINE_TEXT.built} line={countsBy === null ? undefined
+          : fillText(OFFLINE_TEXT.countsBy, { when: `${dateLine(countsBy, today.timeZone)}, ${clockTime(new Date(countsBy).toISOString(), today.timeZone)}` })} />
+      )}
       <DayBanners today={today} restDay={view.character.restDay} />
       {hold !== null && hold.kind !== 'paused' && (
         <View style={{ gap: 8 }}>

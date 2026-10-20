@@ -64,12 +64,20 @@ describe('migrations stay inside the levelmeup schema (architecture §12)', () =
     });
   });
 
-  it('the completion window in SQL matches the rules (5 minutes of clock skew, 48 hours late)', () => {
-    const all = MIGRATIONS.map((m) => stripComments(m.sql)).join('\n');
+  it('the completion window in SQL matches the rules (5 minutes of clock skew, 7 days late since 0020)', () => {
+    // The definition that counts is the last migration's to create each function.
+    const latest = (fn: string): string => {
+      const head = `create or replace function levelmeup.${fn}(`;
+      const sql = [...MIGRATIONS].reverse().map((m) => stripComments(m.sql)).find((text) => text.includes(head))!;
+      const from = sql.indexOf(head);
+      return sql.slice(from, sql.indexOf('end $$;', from));
+    };
     expect(CLOCK_SKEW_MS).toBe(5 * 60_000);
-    expect(LATE_SYNC_MS).toBe(48 * 3_600_000);
-    expect(all).toMatch(/p_completed_at > now\(\) \+ interval '5 minutes'/);
-    expect(all).toMatch(/now\(\) > d\.ends_at \+ interval '48 hours'/);
+    expect(LATE_SYNC_MS).toBe(7 * 24 * 3_600_000);
+    expect(latest('complete_quest')).toMatch(/p_completed_at > now\(\) \+ interval '5 minutes'/);
+    expect(latest('complete_quest')).toMatch(/now\(\) > d\.ends_at \+ interval '7 days'/);
+    expect(latest('adjust')).toMatch(/now\(\) < d\.ends_at \+ interval '7 days'/);
+    expect(latest('adjust')).not.toMatch(/48 hours/);
   });
 
   it.each(MIGRATIONS)('$name creates objects only in levelmeup, and only LevelMeUp\'s roles', ({ sql }) => {

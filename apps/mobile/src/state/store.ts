@@ -4,7 +4,7 @@
 // M6a adds the celebration queue, the quest-art manifest and the quest timers.
 // M6b: adjustments go through the same outbox; a quest replaced by a swap, gentle movement or an ability loses its stored
 // timer.
-// M6e: when today has ended and the server can't be reached, the store builds the next day (`offlineDay`) and queues it;
+// M6e: when today has ended and the server can't be reached, the store builds the next day (`nextOfflineDay`) and queues it;
 // events on its quests name them by day and slot; their timers move to the server's quests.
 // M7c: the Shadow's scene shown once and the Trial's minutes are kept on the phone; a pact signed on the reveal goes when
 // the onboarding ends.
@@ -23,7 +23,7 @@ import type { SessionState } from '../auth/session.ts';
 import type { Blobs } from '../auth/sessionStorage.ts';
 import type { Cached, Local } from '../data/local.ts';
 import { carriedTimers, withRef } from '../game/offline.ts';
-import { offlineDay, offlineView } from '../game/offlineDay.ts';
+import { nextOfflineDay } from '../game/offlineDay.ts';
 import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
 import type { ArticleBody, PhoneEvent, Reveal, ServerState } from '../game/types.ts';
@@ -384,7 +384,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     const buildOffline = async (): Promise<void> => {
       const { cached, pending } = get();
       if (cached === null) return;
-      const event = offlineDay(cached.state, offlineView(cached.state, pending), deps.now(), deps.timeZone());
+      // Premium pass A6: after the server's day, or after one this phone built (a day at a time, up to the late window).
+      const event = nextOfflineDay(cached.state, pending, deps.now(), deps.timeZone());
       if (event === null) return;
       await deps.local.enqueue({ ...event, id: deps.newId() }, deps.now());
       await refresh();

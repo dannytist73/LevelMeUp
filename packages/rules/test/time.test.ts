@@ -199,9 +199,9 @@ describe('closing and late completions (spec §3.6, architecture §4.3)', () => 
     expect(isClosed(day, day.endsAt)).toBe(true);
   });
 
-  it('accepts a completion stamped inside the day until 48 h after it closes', () => {
-    expect(acceptsCompletion(day, inside, day.endsAt + 48 * HOUR_MS)).toBe(true);
-    expect(acceptsCompletion(day, inside, day.endsAt + 48 * HOUR_MS + 1)).toBe(false);
+  it('accepts a completion stamped inside the day until 7 days after it closes (premium pass A6; 48 h before)', () => {
+    expect(acceptsCompletion(day, inside, day.endsAt + 7 * 24 * HOUR_MS)).toBe(true);
+    expect(acceptsCompletion(day, inside, day.endsAt + 7 * 24 * HOUR_MS + 1)).toBe(false);
   });
 
   it('rejects completions stamped outside the day or in the future', () => {
