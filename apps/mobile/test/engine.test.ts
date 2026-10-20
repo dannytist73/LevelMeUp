@@ -70,7 +70,7 @@ describe('one sync run', () => {
     deps.wanted = () => ['article-1', 'article-7'];
     expect(await syncOnce(deps)).toMatchObject({ kind: 'synced' });
     expect(requests).toEqual([{ timeZone: 'Asia/Manila', events: [], have: ['article-1'], want: ['article-7'] }]);
-    expect(acknowledge).toHaveBeenCalledWith([], [], state(0), 1000, [SAMPLE_ARTICLE]);
+    expect(acknowledge).toHaveBeenCalledWith([], [], state(0), 1000, [SAMPLE_ARTICLE], []); // M17: and nothing extra to keep
   });
 
   it('never names more than 64 held articles or asks for more than 3 (M8b decision 3)', async () => {

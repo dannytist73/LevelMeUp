@@ -275,6 +275,14 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
+  it('keeps the article of a kept lesson, however old (M17: an old lesson said it would come with the next sync, forever)', async () => {
+    const { store, kv } = await setup([ok(SERVER, { articles: [{ ...SAMPLE_STORY_ARTICLE, id: 'article-77' }] })]);
+    kv.set(CODEX_KEY, JSON.stringify([{ articleId: 'article-77', title: 'Old', lesson: 'An old lesson.', keptAt: 1 }]));
+    await store.getState().boot();
+    expect(store.getState().articles['article-77']).toBeDefined();
+    store.getState().stop();
+  });
+
   it('a reading held from before its Story Deck is asked for again, once a launch (M11 review)', async () => {
     const withReading: ServerState = {
       ...SERVER, readings: [{ id: 'article-9', cluster: 'sleep', title: 'Wake time', minutes: 6, dayNumber: 0, date: '2026-10-09', takeaway: null }],

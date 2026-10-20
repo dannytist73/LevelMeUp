@@ -39,6 +39,8 @@ export type SyncDeps = {
   sessionAlive: () => Promise<boolean>;
   /** M8b: past readings a screen asked for (decision 7), sent until a request of the run succeeds. */
   wanted?: () => readonly string[];
+  /** M17: articles the phone keeps besides the ones the state names (the Codex's lessons, however old). */
+  keep?: () => readonly string[];
   /** M17: told how long each round took (development builds pass Metro's log). */
   log?: (line: string) => void;
 };
@@ -105,7 +107,7 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
       acknowledged.add(r.id);
       refused.push({ eventId: r.id, code: r.code });
     }
-    await deps.local.acknowledge([...acknowledged], refused, call.body.state, deps.now(), call.body.articles ?? []);
+    await deps.local.acknowledge([...acknowledged], refused, call.body.state, deps.now(), call.body.articles ?? [], deps.keep?.() ?? []);
     notices.push(...refused);
     newAchievements.push(...call.body.newAchievements);
     state = call.body.state;

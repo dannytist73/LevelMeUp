@@ -100,6 +100,7 @@ export function makeLocal(sql: Sql) {
     /** Drops the events the server acknowledged, records the refusals as notices and stores its state, all at once. */
     async acknowledge(
       ids: readonly string[], notices: readonly Notice[], state: ServerState, now: number, articles: readonly ArticleBody[] = [],
+      alsoKeep: readonly string[] = [],
     ): Promise<void> {
       await sql.transaction(async (tx) => {
         for (const id of ids) await tx.run('delete from outbox where id = ?', [id]);
@@ -110,8 +111,9 @@ export function makeLocal(sql: Sql) {
         for (const a of articles) {
           await tx.run('insert or replace into articles (id, json, saved_at) values (?, ?, ?)', [a.id, JSON.stringify(a), now]);
         }
-        // Only what today, the next day and the readings name stays (decision 3).
-        const keep = articleKeep(state);
+        // Only what today, the next day and the readings name stays (decision 3), and (M17) a kept lesson's reading,
+        // however old: the Codex opens it, and it would be fetched and dropped in the same sync, forever.
+        const keep = [...new Set([...articleKeep(state), ...alsoKeep])];
         if (keep.length === 0) await tx.run('delete from articles');
         else await tx.run(`delete from articles where id not in (${keep.map(() => '?').join(', ')})`, keep);
       });

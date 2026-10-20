@@ -481,7 +481,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         },
       };
       return syncOnce({
-        local, api: deps.api, timeZone: deps.timeZone, now: deps.now, sessionAlive: deps.sessionAlive, wanted: () => [...wanted],
+        local, api: deps.api, timeZone: deps.timeZone, now: deps.now, sessionAlive: deps.sessionAlive, wanted: () => [...wanted], keep: () => get().codex.map((e) => e.articleId),
         ...(deps.syncLog === undefined ? {} : { log: deps.syncLog }),
       });
     };
