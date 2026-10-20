@@ -1,6 +1,7 @@
 // The stats on Character (board D4; M6d decision 8): each stat's points and rank, a bar to its next point, and the line
 // under it (the XP still needed, the rank one point away, how Discipline grows). M10c: the rank as a quiet line beside
-// the points (Quest cleared stamps a new one), and no lead line: each bar's own line says what it measures.
+// the points (Quest cleared stamps a new one), and no lead line: each bar's own line says what it measures. M17 (UX audit
+// 2026-10-20, O7): two columns, so the five stats take three rows, not five; at large text each stat takes the full width.
 import { CHARACTER_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { STATS, pointProgress } from '@levelmeup/rules';
 import { View } from 'react-native';
@@ -14,13 +15,14 @@ const T = CHARACTER_TEXT.stats;
 
 export function StatsPanel({ character }: { character: CharacterView }) {
   return (
-    <NightCard>
+    <NightCard style={{ gap: 14 }}>
       <Label tone="chalk">{T.title}</Label>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 20, rowGap: 18 }}>
       {STATS.map((stat) => {
         const s = character.stats[stat];
         const { into, span } = pointProgress(s.xp);
         return (
-          <View key={stat} style={{ gap: 6 }}>
+          <View key={stat} testID="stat" style={{ gap: 6, flexGrow: 1, flexBasis: 130 }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
               <Label tone="chalk" style={{ flexGrow: 1 }}>{STAT_NAMES[stat]}</Label>
               <Heading>{String(s.points)}</Heading>
@@ -31,6 +33,7 @@ export function StatsPanel({ character }: { character: CharacterView }) {
           </View>
         );
       })}
+      </View>
     </NightCard>
   );
 }

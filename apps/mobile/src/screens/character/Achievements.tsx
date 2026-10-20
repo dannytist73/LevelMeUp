@@ -50,7 +50,8 @@ export function Achievements({ earned, progress }: { earned: readonly string[]; 
       {shown.map((a) => (
         <View key={a.id} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <MarkStamp text={a.name} rotate={-4} />
-          <Small style={{ flexShrink: 1 }}>{a.description}</Small>
+          {/* M17: the words keep beside their stamp (one wrapped under it while the next stayed beside, emulator). */}
+          <Small style={{ flexGrow: 1, flexShrink: 1, flexBasis: 150 }}>{a.description}</Small>
         </View>
       ))}
       {known.length > SHOWN_EARNED && (
