@@ -56,7 +56,7 @@ describe('the completion panels (spec §3.6)', () => {
     expect(onClaim).toHaveBeenCalledWith({ segments: [{ start: T0, end: T0 + 16 * MIN }] });
   });
 
-  it('timer: in the screen's bar, Start and Pause carry no XP; Claim does once the time is reached (M17)', async () => {
+  it('timer: in the screen bar, Start and Pause carry no XP; Claim does once the time is reached (M17)', async () => {
     const props = { targetMs: 20 * MIN, disabled: false, onChange: jest.fn(), onClaim: jest.fn() };
     const bar = (timer: TimerState, at: number) => (
       <ClaimBarHost suffix="· +10 XP">{() => <TimerPanel timer={timer} now={() => at} {...props} />}</ClaimBarHost>
