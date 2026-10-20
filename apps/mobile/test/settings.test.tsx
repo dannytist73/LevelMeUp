@@ -8,6 +8,7 @@ import { GameSettings } from '../src/screens/GameSettings.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
 import { adjustState, profileRow } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+import { peekToast } from '../src/ui/toast.ts';
 
 const G = SETTINGS_TEXT.game;
 
@@ -28,6 +29,7 @@ describe('Your game (M7b decision 2)', () => {
       type: 'settings', voice: 'questmaster', boundaryMinutes: (view.profile.boundaryMinutes + 30) % 1440, minutesPerDay: 40, difficulty: 'hard',
     });
     expect(onDone).toHaveBeenCalled();
+    expect(peekToast()?.message).toBe('Saved. It applies from your next quest day.'); // premium pass B1
   });
 
   it('says when it has unsaved changes, so Back can ask first (M17)', async () => {

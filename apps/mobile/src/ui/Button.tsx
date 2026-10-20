@@ -19,9 +19,17 @@ export type ButtonProps = {
   style?: StyleProp<ViewStyle>;
   /** What a screen reader says, when the label alone is ambiguous (defaults to the label). */
   accessibilityLabel?: string;
+  /**
+   * Premium pass B5: its work is on its way (a network call). The button is off, and says what it is doing
+   * (`busyLabel`, e.g. "Saving…"), so it never looks merely unavailable.
+   */
+  busy?: boolean;
+  busyLabel?: string;
 };
 
-export function Button({ label, onPress, variant = 'primary', on = 'night', disabled = false, style, accessibilityLabel }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', on = 'night', disabled: off = false, style, accessibilityLabel, busy = false, busyLabel }: ButtonProps) {
+  const disabled = off || busy;
+  const text = busy && busyLabel !== undefined ? busyLabel : label;
   const look = {
     primary: on === 'night' ? { bg: colors.accent, fg: colors.onAccent, border: colors.accent } : { bg: colors.ink, fg: colors.chalk, border: colors.ink },
     commitment: { bg: colors.commit, fg: colors.onAccent, border: colors.commit },
@@ -35,8 +43,8 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
   return (
     <Tap
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled }}
+      accessibilityLabel={busy && busyLabel !== undefined ? busyLabel : (accessibilityLabel ?? label)}
+      accessibilityState={busy ? { disabled: true, busy: true } : { disabled }}
       disabled={disabled}
       onPress={onPress}
       on={display ? 'accent' : on}
@@ -65,7 +73,7 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
           ...(display ? { fontFamily: fonts.display, fontSize: 17, lineHeight: 22 } : { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20 }),
         }}
       >
-        {label}
+        {text}
       </Text>
     </Tap>
   );

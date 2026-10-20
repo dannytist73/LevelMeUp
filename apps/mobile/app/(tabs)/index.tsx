@@ -3,6 +3,7 @@ import { useCallback, useRef } from 'react';
 import { shadowDue } from '../../src/game/pact.ts';
 import { Today } from '../../src/screens/Today.tsx';
 import { useGame } from '../../src/state/store.ts';
+export { ScreenCrashed as ErrorBoundary } from '../../src/screens/Crashed.tsx'; // premium pass A5: a failing screen keeps the app around it
 
 export default function TodayRoute() {
   // M7c decision 5: a consequence the phone hasn't shown opens the Shadow's scene, once, while Today is in front. It is

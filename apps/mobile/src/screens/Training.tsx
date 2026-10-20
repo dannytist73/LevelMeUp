@@ -2,7 +2,7 @@
 // `training` event: the server re-plans today's open workout and the next days follow the new setup. M16 (plan
 // 2026-10-20-m16-weekly-program.md, decisions 1 and 8): the plan, step by step or the weekly program, and its workouts a
 // week; a new plan starts with tomorrow's quests.
-import { ADJUST_TEXT, EQUIPMENT_NAMES, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, PROGRAM_STYLE_CHOICES } from '@levelmeup/content';
+import { ADJUST_TEXT, EQUIPMENT_NAMES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, PROGRAM_STYLE_CHOICES } from '@levelmeup/content';
 import { EQUIPMENT, PROGRAM_DAYS_OPTIONS, PROGRAM_STYLES, TRAINING_PLANS, workoutsFit } from '@levelmeup/rules';
 import type { Equipment, ProgramStyle, TrainingPlan } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -15,10 +15,12 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
+import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label, Small } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
+import { toast } from '../ui/toast.ts';
 
 const T = ADJUST_TEXT.training;
 const G = ONBOARDING_TEXT.gear;
@@ -40,6 +42,8 @@ export function Training({ onDone, onBack, onDirty }: TrainingProps) {
   const [plan, setPlan] = useState<TrainingPlan | null>(null);
   const [days, setDays] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Premium pass A7: the phone couldn't save it. */
+  const [failed, setFailed] = useState(false);
 
   if (view === null) {
     return (
@@ -72,20 +76,23 @@ export function Training({ onDone, onBack, onDirty }: TrainingProps) {
   const save = async (): Promise<void> => {
     if (!changed || busy) return;
     setBusy(true);
+    setFailed(false);
     leave();
     try {
       await enqueue({ type: 'training', equipment: picked, programStyle: pickedStyle, trainingPlan: pickedPlan, programDays: sentDays });
     } catch {
       stay();
       setBusy(false);
+      setFailed(true);
       return;
     }
     onDone();
+    toast(FEEDBACK_TEXT.training); // premium pass B1
   };
 
   // M17 (UX audit O5): Save stays in a bar at the bottom, in reach under any number of options.
   return (
-    <BottomBarFrame bar={<Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} />}>
+    <BottomBarFrame bar={<><Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} /><SaveFailed shown={failed} /></>}>
     {(barSpace) => (
     <ScreenScroll contentContainerStyle={{ paddingBottom: barSpace + 24, paddingHorizontal: space.gutter, gap: 16 }}>
       {/* M17: the name in the bar, as on the other Settings screens (review). */}

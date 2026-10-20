@@ -32,6 +32,8 @@ export const SETTINGS_TEXT = {
     label: 'Sounds',
     line: 'Short tones when you clear a quest, level up or a timer ends. Quiet while the phone is on silent; music keeps playing.',
   },
+  /** Premium pass B5: what a button says while its work is on its way. */
+  busy: { saving: 'Saving…', syncing: 'Syncing…', deleting: 'Deleting…' },
   account: {
     /** M10c: the last section of Settings, after About. */
     section: 'Your character',
@@ -72,5 +74,7 @@ export const SETTINGS_TEXT = {
     keep: 'Keep my character',
     network: "The System couldn't be reached, so nothing was deleted. Try again with a connection.",
     failed: "The System couldn't delete your character, so nothing changed. Try again later.",
+    /** Premium pass B5: said on the first screen after the deletion, so it never just looks like a fresh start. */
+    deleted: 'Your character and its data were deleted.',
   },
 } as const;

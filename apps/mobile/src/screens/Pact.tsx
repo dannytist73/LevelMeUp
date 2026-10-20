@@ -2,7 +2,7 @@
 // the five rules, then hold to sign a higher level (it starts with the next quest day) or one tap for a lower one (at
 // once, today included). From Settings it sends `accountability_set`; from the reveal it keeps the level in the
 // onboarding draft, sent when the onboarding ends.
-import { PACT_TEXT, SHADOW_LINES, fillText } from '@levelmeup/content';
+import { FEEDBACK_TEXT, PACT_TEXT, SHADOW_LINES, fillText } from '@levelmeup/content';
 import { ACCOUNTABILITY_LEVELS } from '@levelmeup/rules';
 import type { AccountabilityLevel } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -15,8 +15,10 @@ import { Button } from '../ui/Button.tsx';
 import { HoldButton } from '../ui/HoldButton.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
+import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
+import { toast } from '../ui/toast.ts';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { Panel } from '../ui/Panel.tsx';
 import { Body, Label, Small, Title } from '../ui/Text.tsx';
@@ -42,6 +44,8 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
   const [choice, setChoice] = useState<AccountabilityLevel>(current === 0 ? 1 : current);
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Premium pass A7: the phone couldn't save it. */
+  const [failed, setFailed] = useState(false);
   const startsNext = mode === 'game' && view !== null && pactStartsNext(view);
 
   const commit = async (level: AccountabilityLevel): Promise<void> => {
@@ -52,15 +56,19 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
       return;
     }
     setBusy(true);
+    setFailed(false);
     leave();
     try {
       await enqueue({ type: 'accountability_set', level });
     } catch {
       stay();
       setBusy(false);
+      setFailed(true);
       return;
     }
     onDone();
+    // Premium pass B1: on, at a new level, or off, and from when.
+    toast(level === 0 ? FEEDBACK_TEXT.pactOff : fillText(level > current ? FEEDBACK_TEXT.pactOn : FEEDBACK_TEXT.pactLevel, { level }));
   };
 
   let action;
@@ -112,6 +120,7 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
         {T.rules.map((rule, i) => <Body key={rule} tone="ink">{`${i + 1}. ${rule}`}</Body>)}
       </Panel>
       {action}
+      <SaveFailed shown={failed} />
       <Button label={T.notNow} variant="secondary" onPress={onDone} />
     </ScreenScroll>
   );

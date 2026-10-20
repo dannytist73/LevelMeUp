@@ -1,7 +1,7 @@
 // The missed-day check-in (spec §3.7, board F1; M7a decisions 3, 7): five answers, each with what it does here; "sick or
 // injured" asks which, and "I just didn't" offers Second Wind when the server does. "Answer later" keeps it for the next
 // open; the streak stays paused until then.
-import { CHECKIN_TEXT, LIBRARY, authoredTemplate, fillText } from '@levelmeup/content';
+import { CHECKIN_TEXT, FEEDBACK_TEXT, LIBRARY, authoredTemplate, fillText } from '@levelmeup/content';
 import { findTemplate } from '@levelmeup/rules';
 import type { CheckinAnswer } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -18,8 +18,10 @@ import { Button } from '../ui/Button.tsx';
 import { LinkButton } from '../ui/LinkButton.tsx';
 import { NarrationBox, SystemCard } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
+import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Heading, Small } from '../ui/Text.tsx';
+import { toast } from '../ui/toast.ts';
 import { useLeavingView } from './leaving.ts';
 
 const T = CHECKIN_TEXT;
@@ -35,6 +37,8 @@ export function Checkin({ onDone }: CheckinProps) {
   const [injured, setInjured] = useState<boolean | null>(null);
   const [secondWind, setSecondWind] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Premium pass A7: the phone couldn't save the answer. */
+  const [failed, setFailed] = useState(false);
   const checkin = view?.checkin ?? null;
 
   const frame = (children: ReactNode) => (
@@ -65,17 +69,21 @@ export function Checkin({ onDone }: CheckinProps) {
     setSecondWind(false);
   };
   const send = async (): Promise<void> => {
-    if (answer === null || busy) return;
+    if (answer === null || choice === null || busy) return;
     setBusy(true);
+    setFailed(false);
     leave();
     try {
       await enqueue({ type: 'checkin', checkinId: checkin.id, answer, secondWind: answer === 'just_didnt' && secondWind && redo !== null });
     } catch {
       stay();
       setBusy(false);
+      setFailed(true);
       return;
     }
     onDone();
+    // Premium pass B3: what the answer does, said at once (the System's result card follows with the next sync).
+    toast(fillText(FEEDBACK_TEXT.answered, { outcome: T.answers[choice].outcome }));
   };
 
   // M17 (UX audit N14): Answer stays in a bar at the bottom, with Answer later as a link under it; the follow-up questions
@@ -83,6 +91,7 @@ export function Checkin({ onDone }: CheckinProps) {
   const bar = (
     <>
       <Button label={T.answer} variant="commitment" disabled={answer === null || busy} onPress={() => void send()} />
+      <SaveFailed shown={failed} />
       <LinkButton label={T.later} onPress={() => { answerLater(checkin.id); onDone(); }} style={{ alignSelf: 'center' }} />
     </>
   );

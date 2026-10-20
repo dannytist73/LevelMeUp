@@ -1,5 +1,5 @@
 import {
-  ABILITY_LINES, ADJUST_TEXT, EQUIPMENT_NAMES, LIGHTER_TEXT, ONBOARDING_TEXT, PLAY_TEXT, TODAY_TEXT, authoredTemplate, fillText,
+  ABILITY_LINES, ADJUST_TEXT, EQUIPMENT_NAMES, FEEDBACK_TEXT, LIGHTER_TEXT, ONBOARDING_TEXT, PLAY_TEXT, TODAY_TEXT, authoredTemplate, fillText,
 } from '@levelmeup/content';
 import { DAY_MS, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -12,6 +12,7 @@ import { ClassChange } from '../src/screens/ClassChange.tsx';
 import { DayActions, DayBanners, PausedExercises } from '../src/screens/DayActions.tsx';
 import { Pain, gentleLine } from '../src/screens/Pain.tsx';
 import { Swap } from '../src/screens/Swap.tsx';
+import { peekToast } from '../src/ui/toast.ts';
 import { Training } from '../src/screens/Training.tsx';
 import { Vanish } from '../src/screens/Vanish.tsx';
 import { DAY_TWO_NOW, adjustState, characterRow, ladderRows, profileRow, workoutState } from './support/fixtures.ts';
@@ -202,6 +203,19 @@ describe('the swap sheet (spec §3.5)', () => {
     await fireEvent.press(screen.getByRole('button', { name: A.swap.choose }));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'swap', instanceId: 200, templateId: option.templateId });
     expect(onDone).toHaveBeenCalled();
+    expect(peekToast()?.message).toBe(`Swapped to ${title(option.templateId)}.`); // premium pass B1
+  });
+
+  it('a swap the phone could not save says so and stays (premium pass A7)', async () => {
+    const view = shown();
+    const store = testStore({ view, enqueue: jest.fn(async () => { throw new Error('disk'); }) });
+    const onDone = jest.fn();
+    await render(withStore(store, <Swap questId={200} now={now} onDone={onDone} onBack={jest.fn()} />));
+    const option = view.today!.quests.find((q) => q.id === 200)!.swaps[0]!;
+    await fireEvent.press(screen.getByText(title(option.templateId)));
+    await fireEvent.press(screen.getByRole('button', { name: A.swap.choose }));
+    expect(onDone).not.toHaveBeenCalled();
+    expect(screen.getByText(FEEDBACK_TEXT.saveFailed)).toBeTruthy();
   });
 
   it('from Today: asks which quest first', async () => {
@@ -284,8 +298,16 @@ describe('class change (spec §2.5)', () => {
     await fireEvent.press(screen.getByText('Monk'));
     expect(screen.getByText(`Stillness: ${ABILITY_LINES.stillness}`)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Become a Monk' }));
+    // Premium pass B2: it locks for 14 days, so it asks once more, with the date.
+    expect(store.getState().enqueue).not.toHaveBeenCalled();
+    expect(screen.getByText(/^Become a Monk\? Your next class change opens on /)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Not now' }));
+    expect(store.getState().enqueue).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Become a Monk' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Yes, become a Monk' }));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'class_change', classId: 'monk' });
     expect(onDone).toHaveBeenCalled();
+    expect(peekToast()?.message).toBe("You're a Monk now. Tomorrow is built for it.");
   });
 
   it('within 14 days of the last change, says when it opens and sends nothing', async () => {
@@ -356,6 +378,7 @@ describe('a screen that sends a change keeps what it shows while it closes (M6b 
     await render(withStore(applying(), <ClassChange now={now} onDone={onDone} onBack={jest.fn()} />));
     await fireEvent.press(screen.getByText('Monk'));
     await fireEvent.press(screen.getByRole('button', { name: 'Become a Monk' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Yes, become a Monk' })); // premium pass B2
     expect(onDone).toHaveBeenCalled();
     expect(screen.getByText('Warrior · current')).toBeTruthy();
     expect(screen.queryByText(A.classChange.willSync)).toBeNull();
@@ -374,8 +397,10 @@ describe('a screen that sends a change keeps what it shows while it closes (M6b 
     await render(withStore(store, <ClassChange now={now} onDone={onDone} onBack={jest.fn()} />));
     await fireEvent.press(screen.getByText('Monk'));
     await fireEvent.press(screen.getByRole('button', { name: 'Become a Monk' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Yes, become a Monk' })); // premium pass B2
     expect(onDone).not.toHaveBeenCalled();
     expect(screen.getByText(A.classChange.willSync)).toBeTruthy(); // the live view again
+    expect(screen.getByText(FEEDBACK_TEXT.saveFailed)).toBeTruthy(); // premium pass A7: and it says so
   });
 
   it('the swap sheet', async () => {

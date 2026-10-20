@@ -128,7 +128,8 @@ describe('past readings (board D5, decision 7)', () => {
 
   it('M11: a past reading with a Story Deck opens on its cover; Your turn shows the line written that day', async () => {
     const store = testStore({ view: project(state, []), articles: { 'article-9': { ...SAMPLE_ARTICLE, id: 'article-9' } } });
-    await render(withStore(store, <Reading articleId="article-9" onBack={jest.fn()} />));
+    const onBack = jest.fn();
+    await render(withStore(store, <Reading articleId="article-9" onBack={onBack} />));
     expect(screen.getByTestId('deck-card-cover')).toBeTruthy();
     expect(screen.getByText('Past reading · Fri 9 Oct')).toBeTruthy();
     for (let i = 0; i < 5; i++) {
@@ -138,6 +139,8 @@ describe('past readings (board D5, decision 7)', () => {
     expect(screen.getByTestId('deck-card-turn')).toBeTruthy();
     expect(screen.getByText(READING_TEXT.deck.yourLine)).toBeTruthy();
     expect(screen.getByText('Wake at seven.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.deck.done })); // premium pass B6: a way out at the end
+    expect(onBack).toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /Claim/ })).toBeNull();
     expect(store.getState().fetchArticle).not.toHaveBeenCalled();
   });

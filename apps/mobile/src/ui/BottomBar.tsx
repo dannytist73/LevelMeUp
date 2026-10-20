@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '../theme/tokens.ts';
+import { useToastLift } from './toast.ts';
 
 /** The bar's height before it is measured. */
 export const BOTTOM_BAR_SPACE = 84;
@@ -13,6 +14,7 @@ export const BOTTOM_BAR_SPACE = 84;
 export function BottomBarFrame({ bar, children, testID = 'bottom-bar' }: { bar: ReactNode; children: (space: number) => ReactNode; testID?: string }) {
   const insets = useSafeAreaInsets();
   const [height, setHeight] = useState(BOTTOM_BAR_SPACE + insets.bottom);
+  useToastLift(height); // premium pass B: the app's note sits above the bar, never on its button
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       {children(height)}

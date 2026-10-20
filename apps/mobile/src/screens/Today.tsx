@@ -6,7 +6,7 @@
 // M12 (Round 3, boards R3-1 and R3-4; audit 1, 3, 11, 12): a tighter header, the notices in one strip, "Up next" with the
 // screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
 // the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
-import { ADJUST_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
+import { ADJUST_TEXT, FEEDBACK_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
 import { Image, Linking, View } from 'react-native';
@@ -47,6 +47,7 @@ import { Snackbar } from '../ui/Snackbar.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
 import { SettingsButton } from '../ui/TabTop.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { toast } from '../ui/toast.ts';
 import { buzz } from '../ui/haptics.ts';
 import { play, warm } from '../ui/sound.ts';
 import { Thud } from '../ui/Thud.tsx';
@@ -261,8 +262,13 @@ export function Today({
     clearing.current.add(q.id);
     play('claim');
     buzz('stamp'); // M17: a check you can feel, as a stamp landing
-    enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} }).catch(() => clearing.current.delete(q.id));
     setSnack({ id: q.id, title });
+    enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} }).catch(() => {
+      // Premium pass A7: not saved, so never "cleared": the Undo note goes and the app says so.
+      clearing.current.delete(q.id);
+      setSnack((s) => (s?.id === q.id ? null : s));
+      toast(FEEDBACK_TEXT.saveFailed);
+    });
   };
   const undo = (id: number) => {
     if (!open()) return;

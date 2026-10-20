@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Quest } from '../../src/screens/Quest.tsx';
+export { ScreenCrashed as ErrorBoundary } from '../../src/screens/Crashed.tsx'; // premium pass A5: a failing screen keeps the app around it
 
 export default function QuestRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();

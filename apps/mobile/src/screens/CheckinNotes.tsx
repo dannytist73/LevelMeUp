@@ -1,13 +1,14 @@
 // Today's part of the check-in (M7a, board F3 without the Pact's parts): a settled "I just didn't" once, the question while
 // a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer. M12 (audit 1): its buttons are
 // quiet, so Up next keeps the screen's one bright button. M17: each note is one card, its answers inside it.
-import { CHECKIN_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
+import { CHECKIN_TEXT, FEEDBACK_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import { checkinLead, resultText } from '../game/checkin.ts';
 import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { useGame } from '../state/store.ts';
 import { SystemCard } from '../ui/NarrationBox.tsx';
+import { toast } from '../ui/toast.ts';
 
 const T = CHECKIN_TEXT;
 
@@ -21,9 +22,16 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
   const dismissResult = useGame((s) => s.dismissCheckinResult);
   // The offer goes at the first tap: a second accept would drop the minutes another step (review).
   const [answeredOffer, setAnsweredOffer] = useState(false);
-  const answerOffer = (accept: boolean) => {
+  const answerOffer = (accept: boolean, to: number) => {
     setAnsweredOffer(true);
-    void enqueue({ type: 'lighter_plan', accept });
+    // Premium pass B4: the offer says what the answer did instead of vanishing; one that can't be saved comes back.
+    enqueue({ type: 'lighter_plan', accept }).then(
+      () => toast(accept ? fillText(FEEDBACK_TEXT.lighter, { minutes: to }) : FEEDBACK_TEXT.lighterNo),
+      () => {
+        setAnsweredOffer(false);
+        toast(FEEDBACK_TEXT.saveFailed);
+      },
+    );
   };
   const { checkin, checkinResult: result, lighterPlan } = view;
   // Once the answer is in the view the offer is quiet anyway; a later offer (after its 14 days) shows again.
@@ -57,8 +65,8 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
       )}
       {lighterPlan !== null && offered && !answeredOffer && (
         <SystemCard text={fillText(LIGHTER_TEXT.offer, { from: lighterPlan.from, to: lighterPlan.to })} actions={[
-          { label: LIGHTER_TEXT.accept, onPress: () => answerOffer(true) },
-          { label: LIGHTER_TEXT.decline, onPress: () => answerOffer(false) },
+          { label: LIGHTER_TEXT.accept, onPress: () => answerOffer(true, lighterPlan.to) },
+          { label: LIGHTER_TEXT.decline, onPress: () => answerOffer(false, lighterPlan.to) },
         ]} />
       )}
     </>

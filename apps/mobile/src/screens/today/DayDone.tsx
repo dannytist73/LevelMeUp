@@ -1,6 +1,6 @@
 // The day done (Round 3, M12 board R3-4; plan decisions 2 and 9): what the day earned, the level it brought, when the
 // next day starts, and once, the first time, the offer of a morning briefing.
-import { CLASS_NAMES, TODAY_TEXT, fillText } from '@levelmeup/content';
+import { CLASS_NAMES, FEEDBACK_TEXT, TODAY_TEXT, fillText } from '@levelmeup/content';
 import { View } from 'react-native';
 import type { Shown } from '../../game/project.ts';
 import { shownStreak, xpToday } from '../../game/today.ts';
@@ -13,6 +13,7 @@ import { Button } from '../../ui/Button.tsx';
 import { Icon } from '../../ui/icons.tsx';
 import { Panel } from '../../ui/Panel.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../../ui/Text.tsx';
+import { toast } from '../../ui/toast.ts';
 import { XpBar } from '../../ui/XpBar.tsx';
 
 /** The lessons kept from the Codex during today. */
@@ -67,6 +68,8 @@ export function ReminderOffer() {
     await markOffer('reminder');
     const allowed = permission === 'granted' ? 'granted' : await allowNotify();
     if (allowed === 'granted') await setNotify({ ...notify, briefing: { ...notify.briefing, on: true }, optedIn: true });
+    // Premium pass B4: the card goes either way, so it says which way it went.
+    toast(allowed === 'granted' ? fillText(FEEDBACK_TEXT.reminderOn, { time }) : FEEDBACK_TEXT.reminderRefused);
   };
   return (
     <View testID="reminder-offer" style={{ gap: 12, padding: 16, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.lineStrong, backgroundColor: colors.panel }}>

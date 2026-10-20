@@ -13,6 +13,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Small, Title } from '../ui/Text.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
+import { toast } from '../ui/toast.ts';
 
 const T = SETTINGS_TEXT.delete;
 
@@ -39,6 +40,7 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
     const result = await deleteCharacter();
     if (result.ok) {
       onDeleted();
+      toast(T.deleted); // premium pass B5
       return;
     }
     setBusy(false);
@@ -66,7 +68,7 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
           {/* M17 (UX audit 2026-10-20, O9): keeping is the bright button; deleting is the quiet outline, never the colour
               of a reward (red stays the Shadow's). */}
           <Button label={T.keep} disabled={busy} onPress={() => setSure(false)} />
-          <Button label={T.yes} variant="secondary" disabled={busy} onPress={() => void confirm()} />
+          <Button label={T.yes} variant="secondary" busy={busy} busyLabel={SETTINGS_TEXT.busy.deleting} onPress={() => void confirm()} />
         </>
       ) : (
         <Button label={T.start} variant="secondary" onPress={() => setSure(true)} />

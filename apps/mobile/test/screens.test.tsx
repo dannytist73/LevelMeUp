@@ -17,6 +17,7 @@ import {
   DAY_TWO_NOW, adjustState, characterRow, checkinState, completeEvent, ladderRows, offlineEvent, profileRow, serverState,
 } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+import { peekToast } from '../src/ui/toast.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
 const now = () => NOW;
@@ -546,6 +547,7 @@ describe("Scholar's Path: the book screen (M6d decision 12)", () => {
     await fireEvent.press(screen.getByRole('button', { name: BOOK_TEXT.finishYes }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'book', title: null, finished: true });
     expect(onDone).toHaveBeenCalled();
+    expect(peekToast()?.message).toBe('"Dune" joins your finished books.'); // premium pass B1
   });
 
   it('"Set it aside" asks first; "Not now" changes nothing', async () => {
@@ -695,5 +697,13 @@ describe('Today after a missed day (M7a)', () => {
     await fireEvent.press(screen.getByText(LIGHTER_TEXT.decline));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'lighter_plan', accept: false });
     expect(screen.queryByText(LIGHTER_TEXT.accept)).toBeNull(); // gone at the first tap: no second step down (review)
+    expect(peekToast()?.message).toBe('Your plan stays as it is.'); // premium pass B4
+  });
+
+  it('a lighter plan, accepted, says what it does and from when (premium pass B4)', async () => {
+    const state = { ...checkinState(), checkin: null, lighterPlan: { from: 25, to: 15, offered: true } };
+    await renderToday(testStore({ view: project(state, []) }), DAY_TWO_NOW);
+    await fireEvent.press(screen.getByText(LIGHTER_TEXT.accept));
+    expect(peekToast()?.message).toBe('Lighter from your next quest day: 15 minutes a day. Change it in Your game.');
   });
 });

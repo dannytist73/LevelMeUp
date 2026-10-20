@@ -76,4 +76,10 @@ export const UPDATE_TEXT = {
 export const CRASH_TEXT = {
   line: 'Something went wrong on this screen. What you logged is kept on this phone. Try again, or close the app and open it again.',
   retry: 'Try again',
+  /** Premium pass A5: a screen that fails has its own way out. */
+  today: 'Go to Today',
+  /** Premium pass A5: the phone's records couldn't be opened at launch. */
+  records:
+    "The System couldn't open its records on this phone. Nothing on it was deleted. Close the app fully (swipe it away " +
+    'from your recent apps) and open it again.',
 } as const;

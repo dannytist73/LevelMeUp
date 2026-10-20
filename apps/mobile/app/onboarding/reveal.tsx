@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { purchasesSetUp } from '../../src/plus/purchases.ts';
 import { Reveal } from '../../src/screens/onboarding/Reveal.tsx';
 import { useGame } from '../../src/state/store.ts';
+export { ScreenCrashed as ErrorBoundary } from '../../src/screens/Crashed.tsx'; // premium pass A5: a failing screen keeps the app around it
 
 export default function RevealRoute() {
   const finishOnboarding = useGame((s) => s.finishOnboarding);

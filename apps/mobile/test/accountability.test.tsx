@@ -16,6 +16,7 @@ import { ShadowBox } from '../src/ui/ShadowBox.tsx';
 import { ShadowMark } from '../src/ui/ShadowMark.tsx';
 import { DAY_TWO_NOW, READY_DRAFT, adjustState, claimedState, profileRow } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+import { peekToast } from '../src/ui/toast.ts';
 
 jest.mock('expo-keep-awake', () => ({
   activateKeepAwakeAsync: jest.fn(async () => {}),
@@ -63,6 +64,7 @@ describe('the Accountability Pact (board F5)', () => {
     await fireEvent.press(screen.getByRole('button', { name: fillText(PACT_TEXT.signConfirm, { level: 1 }) }));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'accountability_set', level: 1 });
     expect(onDone).toHaveBeenCalled();
+    expect(peekToast()?.message).toBe('The Pact is on at level 1. It starts with your next quest day.'); // premium pass B1
     expect(screen.getByText(PACT_TEXT.signNote)).toBeTruthy();
   });
 
@@ -73,6 +75,7 @@ describe('the Accountability Pact (board F5)', () => {
     expect(screen.getByText(PACT_TEXT.lowerNote)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: PACT_TEXT.off }));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'accountability_set', level: 0 });
+    expect(peekToast()?.message).toBe('The Pact is off.'); // premium pass B1
   });
 
   it('from the reveal it keeps the level in the draft, sent when the onboarding ends', async () => {

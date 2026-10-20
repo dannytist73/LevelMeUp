@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { APP_VERSION } from '../src/appVersion.ts';
 import { Settings } from '../src/screens/Settings.tsx';
 import { deviceZone } from '../src/state/appStore.ts';
+export { ScreenCrashed as ErrorBoundary } from '../src/screens/Crashed.tsx'; // premium pass A5: a failing screen keeps the app around it
 
 export default function SettingsRoute() {
   return (

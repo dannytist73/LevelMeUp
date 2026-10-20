@@ -29,6 +29,9 @@ export const PLUS_TEXT = {
   renews: 'Subscriptions renew automatically until you cancel. Cancel any time in Google Play, under Payments and subscriptions.',
   lifetimeNote: 'Lifetime is one payment, not a subscription.',
   restore: 'Restore purchases',
+  /** Premium pass B5, B7: while Restore asks, and when it couldn't. */
+  restoring: 'Checking Google Play…',
+  restoreFailed: "Couldn't reach Google Play to check, so nothing changed. Try again with a connection.",
   terms: 'Terms of use',
   privacy: 'Privacy policy',
   notSetUp: "Plus isn't on sale yet. Everything else works as it is.",
@@ -38,7 +41,9 @@ export const PLUS_TEXT = {
   thanks: 'Plus is on. Thank you for supporting LevelMeUp.',
   pending: "Google Play is still processing the payment. Plus starts once it's done.",
   restored: 'Plus is back on.',
-  nothingToRestore: 'No Plus purchase was found for the Google account on this phone.',
+  nothingToRestore:
+    'No Plus purchase was found for the Google account on this phone. Bought it with another account? Switch accounts ' +
+    'in the Play Store, then restore again.',
   failed: "That didn't go through. Try again in a moment; if Google Play did charge you, Restore purchases brings Plus here.",
   owned: 'This Google account already has Plus. Tap Restore purchases to bring it to this character.',
   serverLate: 'Google Play took the payment, but the System has not heard yet. It checks again each time you open the app.',

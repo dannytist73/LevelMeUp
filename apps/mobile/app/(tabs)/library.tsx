@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Library } from '../../src/screens/Library.tsx';
+export { ScreenCrashed as ErrorBoundary } from '../../src/screens/Crashed.tsx'; // premium pass A5: a failing screen keeps the app around it
 
 export default function LibraryRoute() {
   return (

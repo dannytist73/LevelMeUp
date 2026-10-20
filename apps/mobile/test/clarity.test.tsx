@@ -12,6 +12,7 @@ import { SNACKBAR_MS } from '../src/ui/Snackbar.tsx';
 import { play } from '../src/ui/sound.ts';
 import { serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+import { peekToast } from '../src/ui/toast.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // inside day 1 (12:00–20:00 UTC)
 const titleOf = (s: ServerState, slot: string) => authoredTemplate(s.today!.quests.find((q) => q.slot === slot)!.templateId).voice.system.title;
@@ -125,6 +126,7 @@ describe('Today (M10c, M12)', () => {
     expect(store.getState().allowNotify).toHaveBeenCalled();
     expect(store.getState().setNotify).toHaveBeenCalledWith(expect.objectContaining({ optedIn: true, briefing: expect.objectContaining({ on: true }) }));
     expect(screen.queryByTestId('reminder-offer')).toBeNull();
+    expect(peekToast()?.message).toMatch(/^The morning reminder is on, at /); // premium pass B4
   });
 
   it('never offers it again, nor when refused for good or already on', async () => {

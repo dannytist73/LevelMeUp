@@ -1,5 +1,6 @@
 // The root: fonts, the splash screen, the game store and when it syncs (launch, foreground, network back); M7d:
 // notification taps. M10c: the home-screen widget follows the game. A screen that fails shows Crashed (audit 2026-10-15).
+import { CRASH_TEXT } from '@levelmeup/content';
 import { useFonts } from 'expo-font';
 import * as Network from 'expo-network';
 import { Stack, router, usePathname } from 'expo-router';
@@ -139,7 +140,7 @@ export default function RootLayout() {
       <StatusBar style="light" />
       {store === null ? (
         <View style={{ flex: 1, justifyContent: 'center', padding: space.gutter, backgroundColor: colors.night }}>
-          <NarrationBox>The System could not open its records on this phone. Close the app and open it again.</NarrationBox>
+          <NarrationBox>{CRASH_TEXT.records}</NarrationBox>
         </View>
       ) : (
         <GameProvider store={store}>

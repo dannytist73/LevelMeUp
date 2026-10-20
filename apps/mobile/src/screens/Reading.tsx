@@ -59,7 +59,12 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
         article={{ ...article, deck }}
         label={label}
         xp={null}
-        turn={takeaway}
+        turn={(
+          <View style={{ gap: 16 }}>
+            {takeaway}
+            <Button label={R.deck.done} variant="secondary" onPress={onBack} />
+          </View>
+        )}
         onClose={onBack}
         onFullArticle={() => setFullArticle(true)}
         initialStep={deckStep}

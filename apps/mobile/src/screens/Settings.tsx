@@ -65,7 +65,7 @@ export function Settings({
     setRestoring(false);
     const words: Partial<Record<typeof outcome, string>> = {
       on: PLUS_TEXT.restored, none: PLUS_TEXT.nothingToRestore, not_set_up: PLUS_TEXT.notSetUp, server_late: PLUS_TEXT.serverLate,
-      failed: PLUS_TEXT.unavailable,
+      failed: PLUS_TEXT.restoreFailed, // premium pass B7: a restore that couldn't ask, not "can't be bought"
     };
     setPlusNote(words[outcome] ?? null);
   };
@@ -78,6 +78,8 @@ export function Settings({
   const setSounds = useGame((s) => s.setSounds);
   const slotLine = (slot: { on: boolean; minutes: number }) => notifyLine(slot, permission);
   const account = useGame((s) => s.account);
+  /** Premium pass B5: Sync now says it is working, then the time above it changes. */
+  const syncing = useGame((s) => s.status === 'syncing');
   // M17 (review): until the phone has read who is signed in, the card waits rather than calling a saved player a guest.
   const accountKnown = useGame((s) => s.accountKnown);
   const phase = useGame((s) => s.phase);
@@ -154,7 +156,7 @@ export function Settings({
               <Button label={PLUS_TEXT.settings.manage} variant="secondary" onPress={() => void Linking.openURL(manageUrl(plus.product)).catch(() => {})} />
             )}
             {plus.source !== 'beta_founder' && (
-              <LinkButton label={PLUS_TEXT.restore} tone="accentText" disabled={restoring} onPress={() => void restore()} />
+              <LinkButton label={restoring ? PLUS_TEXT.restoring : PLUS_TEXT.restore} tone="accentText" disabled={restoring} onPress={() => void restore()} />
             )}
             {plusNote !== null && <View accessibilityLiveRegion="polite"><Small>{plusNote}</Small></View>}
           </GroupBody>
@@ -175,7 +177,7 @@ export function Settings({
             <>
               <Body weight="bold">Playing as a guest.</Body>
               <Small>For now, only this phone can reach your character. Save it with Google so a new or lost phone costs you nothing.</Small>
-              <Button label="Save with Google" variant="secondary" disabled={saving || account.kind !== 'guest'} onPress={() => void save()} />
+              <Button label="Save with Google" variant="secondary" disabled={account.kind !== 'guest'} busy={saving} busyLabel={SETTINGS_TEXT.busy.saving} onPress={() => void save()} />
               {note !== null && <View accessibilityLiveRegion="polite"><Small>{note}</Small></View>}
             </>
           )}
@@ -193,7 +195,7 @@ export function Settings({
               {/* M12 (audit 23): plain words, never the server's code. */}
               {error !== null && <Small>The last sync didn't go through. Sync now tries again.</Small>}
             </View>
-            <Button label="Sync now" variant="secondary" onPress={() => void syncNow()} />
+            <Button label="Sync now" variant="secondary" busy={syncing} busyLabel={SETTINGS_TEXT.busy.syncing} onPress={() => void syncNow()} />
           </View>
         </Group>
       </View>

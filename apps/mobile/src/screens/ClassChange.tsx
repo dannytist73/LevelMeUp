@@ -1,6 +1,6 @@
 // Class change (spec §2.5; M6b decision 9): the four classes with their typical day, stats and abilities; at most one
 // change every 14 days. Level, XP, stats and achievements stay; abilities follow the class at the player's level.
-import { ABILITY_LINES, ABILITY_NAMES, ADJUST_TEXT, CLASS_DAYS, CLASS_NAMES, PLAY_TEXT, classStats, fillText } from '@levelmeup/content';
+import { ABILITY_LINES, ABILITY_NAMES, ADJUST_TEXT, CLASS_DAYS, CLASS_NAMES, FEEDBACK_TEXT, PLAY_TEXT, classStats, fillText } from '@levelmeup/content';
 import { ABILITIES, ABILITY_IDS, CLASSES, classChangeOpensAt } from '@levelmeup/rules';
 import type { AbilityId, ClassId } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -11,11 +11,13 @@ import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Small, Title } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
+import { toast } from '../ui/toast.ts';
 
 const T = ADJUST_TEXT.classChange;
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
@@ -43,6 +45,10 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
   const enqueue = useGame((s) => s.enqueue);
   const [picked, setPicked] = useState<ClassId | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Premium pass A7: the phone couldn't save it. */
+  const [failed, setFailed] = useState(false);
+  /** Premium pass B2: a change that locks for 14 days asks once more. */
+  const [sure, setSure] = useState(false);
 
   if (view === null) {
     return (
@@ -57,15 +63,18 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
   const choose = async (): Promise<void> => {
     if (picked === null || picked === current || lock !== null || busy) return;
     setBusy(true);
+    setFailed(false);
     leave();
     try {
       await enqueue({ type: 'class_change', classId: picked });
     } catch {
       stay();
       setBusy(false);
+      setFailed(true);
       return;
     }
     onDone();
+    toast(fillText(FEEDBACK_TEXT.classChanged, { class: CLASS_NAMES[picked] })); // premium pass B2
   };
 
   return (
@@ -86,18 +95,27 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
               disabled={lock !== null || c === current}
               // M17 (UX audit O11): every class stays readable, the current one and while changes are locked too.
               dim={false}
-              onPress={() => setPicked(c)}
+              onPress={() => { setPicked(c); setSure(false); }}
             />
           );
         })}
       </View>
       {picked !== null && abilitiesOf(picked).map((a) => <Small key={a}>{`${ABILITY_NAMES[a]}: ${ABILITY_LINES[a]}`}</Small>)}
-      <Button
-        label={picked === null ? T.title : fillText(T.confirm, { class: CLASS_NAMES[picked] })}
-        variant="commitment"
-        disabled={picked === null || lock !== null || busy}
-        onPress={() => void choose()}
-      />
+      {picked !== null && sure && lock === null ? (
+        <View style={{ gap: 10 }}>
+          <Small tone="chalk">{fillText(T.sure, { class: CLASS_NAMES[picked], date: dateLine(classChangeOpensAt(now(), now()) ?? now(), view.profile.timeZone) })}</Small>
+          <Button label={fillText(T.yes, { class: CLASS_NAMES[picked] })} variant="commitment" disabled={busy} onPress={() => void choose()} />
+          <Button label={T.notNow} variant="secondary" disabled={busy} onPress={() => setSure(false)} />
+        </View>
+      ) : (
+        <Button
+          label={picked === null ? T.title : fillText(T.confirm, { class: CLASS_NAMES[picked] })}
+          variant="commitment"
+          disabled={picked === null || lock !== null || busy}
+          onPress={() => setSure(true)}
+        />
+      )}
+      <SaveFailed shown={failed} />
     </ScreenScroll>
   );
 }

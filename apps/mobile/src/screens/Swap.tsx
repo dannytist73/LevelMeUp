@@ -1,6 +1,6 @@
 // The swap sheet (spec §3.5, visual design §4.2; M6b decision 3): pick an open quest (from Today) or start from one (its
 // quest screen), then one of the options the server offered for its slot. The count says how many swaps are left today.
-import { ADJUST_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary } from '@levelmeup/content';
+import { ADJUST_TEXT, FEEDBACK_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary } from '@levelmeup/content';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -11,10 +11,12 @@ import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
+import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label, Title } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
+import { toast } from '../ui/toast.ts';
 
 const T = ADJUST_TEXT.swap;
 
@@ -29,6 +31,8 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   const [picked, setPicked] = useState<number | null>(questId ?? (swappable.length === 1 ? swappable[0]!.id : null));
   const [choice, setChoice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Premium pass A7: the phone couldn't save the swap. */
+  const [failed, setFailed] = useState(false);
 
   const frame = (children: ReactNode) => (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 18 }}>
@@ -49,15 +53,19 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   const send = async (): Promise<void> => {
     if (quest === null || choice === null || busy) return;
     setBusy(true);
+    setFailed(false);
     leave();
     try {
       await enqueue({ type: 'swap', instanceId: quest.id, templateId: choice });
     } catch {
       stay();
       setBusy(false);
+      setFailed(true);
       return;
     }
     onDone();
+    // Premium pass B1: the swap says it worked, on the screen the player lands on.
+    toast(fillText(FEEDBACK_TEXT.swapped, { title: authoredTemplate(choice).voice[view.profile.voice].title }));
   };
 
   return frame(
@@ -78,6 +86,7 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
             <OptionCard key={o.templateId} {...card(o)} selected={choice === o.templateId} onPress={() => setChoice(o.templateId)} />
           ))}
           <Button label={T.choose} disabled={choice === null || busy} onPress={() => void send()} />
+          <SaveFailed shown={failed} />
         </View>
       )}
     </>,

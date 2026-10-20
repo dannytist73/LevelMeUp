@@ -1,6 +1,6 @@
 // Scholar's Path (spec §2.5, Mage level 10; M6d decision 12): set the book the reading quests track, finish it, or set
 // it aside. Each choice sends one `book` event; the server keeps the finished books with their sessions.
-import { BOOK_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { BOOK_TEXT, FEEDBACK_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,12 +10,14 @@ import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Heading, Label, Small } from '../ui/Text.tsx';
 import { TextField } from '../ui/TextField.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
+import { toast } from '../ui/toast.ts';
 
 const B = BOOK_TEXT;
 
@@ -28,6 +30,8 @@ export function Book({ onDone, onBack }: BookProps) {
   const [title, setTitle] = useState('');
   const [confirm, setConfirm] = useState<'finish' | 'aside' | 'switch' | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Premium pass A7: the phone couldn't save it. */
+  const [failed, setFailed] = useState(false);
 
   if (view === null) {
     return (
@@ -44,15 +48,20 @@ export function Book({ onDone, onBack }: BookProps) {
   const send = async (next: string | null, finished: boolean): Promise<void> => {
     if (busy) return;
     setBusy(true);
+    setFailed(false);
     leave();
     try {
       await enqueue({ type: 'book', title: next, finished });
     } catch {
       stay();
       setBusy(false);
+      setFailed(true);
       return;
     }
     onDone();
+    // Premium pass B1: the book set, finished or set aside, said on the screen the player lands on.
+    toast(next !== null ? fillText(FEEDBACK_TEXT.bookSet, { title: next })
+      : fillText(finished ? FEEDBACK_TEXT.bookFinished : FEEDBACK_TEXT.bookAside, { title: current ?? '' }));
   };
 
   return (
@@ -85,6 +94,7 @@ export function Book({ onDone, onBack }: BookProps) {
               </View>
             </NightCard>
           )}
+          <SaveFailed shown={failed} />
           <TextField label={B.field} value={title} onChangeText={setTitle} maxLength={MAX_BOOK_TITLE} />
           <Button label={current === null ? B.start : B.switchTo} variant="commitment"
             disabled={busy || clean.length === 0 || clean === current}

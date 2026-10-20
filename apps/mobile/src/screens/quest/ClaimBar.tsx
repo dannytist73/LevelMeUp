@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Caption } from '../../ui/Text.tsx';
+import { useToastLift } from '../../ui/toast.ts';
 
 /** `bare`: a step before the claim (a timer's Start or Pause, M17), shown without the XP suffix. */
 export type Claim = { label: string; disabled: boolean; onPress: () => void; bare?: boolean };
@@ -43,6 +44,7 @@ export function ClaimBarHost({ children, suffix, note }: { children: (space: num
   // A panel reports only when its label or its state changes, so the bar redraws no more often than the panel.
   const [claim, setClaim] = useState<Claim | null>(null);
   const [height, setHeight] = useState(CLAIM_BAR_SPACE);
+  useToastLift(claim === null ? null : height); // premium pass B: the app's note sits above the bar, never on Claim
   return (
     <Report.Provider value={setClaim}>
       <View style={{ flex: 1, backgroundColor: colors.night }}>

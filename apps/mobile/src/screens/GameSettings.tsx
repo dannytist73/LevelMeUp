@@ -1,7 +1,7 @@
 // Settings → Your game (spec §1.3; M7b decision 2): the voice, when the quest day ends, the minutes a day and the
 // difficulty. Saving sends one `settings` event with all four; the voice shows at once, the rest applies from the next
 // quest day. The minutes keep onboarding's notes (M2 review, M6c) for the player's own setup.
-import { DIFFICULTY_CHOICES, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, SETTINGS_TEXT, VOICES, VOICE_NAMES, VOICE_SAMPLES } from '@levelmeup/content';
+import { DIFFICULTY_CHOICES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, PLAY_TEXT, SETTINGS_TEXT, VOICES, VOICE_NAMES, VOICE_SAMPLES } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
 import { DIFFICULTIES, MINUTES_OPTIONS, strengthClosed, workoutsFit } from '@levelmeup/rules';
 import type { Difficulty } from '@levelmeup/rules';
@@ -16,11 +16,13 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
+import { SaveFailed } from '../ui/SaveFailed.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label, Small } from '../ui/Text.tsx';
 import { TimeStepper } from '../ui/TimeStepper.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
+import { toast } from '../ui/toast.ts';
 
 const T = SETTINGS_TEXT.game;
 const R = ONBOARDING_TEXT.rhythm;
@@ -42,6 +44,8 @@ export function GameSettings({ onDone, onBack, onDirty }: GameSettingsProps) {
   const enqueue = useGame((s) => s.enqueue);
   const [edits, setEdits] = useState<Partial<Picked>>({});
   const [busy, setBusy] = useState(false);
+  /** Premium pass A7: the phone couldn't save it. */
+  const [failed, setFailed] = useState(false);
 
   if (view === null) {
     return (
@@ -65,20 +69,24 @@ export function GameSettings({ onDone, onBack, onDirty }: GameSettingsProps) {
   const save = async (): Promise<void> => {
     if (!changed || busy) return;
     setBusy(true);
+    setFailed(false);
     leave();
     try {
       await enqueue({ type: 'settings', ...picked });
     } catch {
       stay();
       setBusy(false);
+      setFailed(true);
       return;
     }
     onDone();
+    // Premium pass B1: said on the screen the player lands on, with when it applies.
+    toast(KEYS.some((k) => k !== 'voice' && picked[k] !== saved[k]) ? FEEDBACK_TEXT.game : FEEDBACK_TEXT.voice);
   };
 
   // M17 (UX audit O5): Save stays in a bar at the bottom, in reach under any number of options.
   return (
-    <BottomBarFrame bar={<Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} />}>
+    <BottomBarFrame bar={<><Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} /><SaveFailed shown={failed} /></>}>
     {(barSpace) => (
     <ScreenScroll contentContainerStyle={{ paddingBottom: barSpace + 24, paddingHorizontal: space.gutter, gap: 16 }}>
       {/* M17: the name in the bar, as on the other Settings screens (review). */}

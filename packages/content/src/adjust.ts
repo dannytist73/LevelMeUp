@@ -88,6 +88,10 @@ export const ADJUST_TEXT = {
     confirm: 'Become a {class}',
     locked: 'Your next class change opens on {date}.',
     willSync: 'Your class change will sync.',
+    /** Premium pass B2: a change that locks for 14 days asks once more, with the date it opens again. */
+    sure: 'Become a {class}? Your next class change opens on {date}.',
+    yes: 'Yes, become a {class}',
+    notNow: 'Not now',
   },
   vanish: {
     title: 'Vanish',

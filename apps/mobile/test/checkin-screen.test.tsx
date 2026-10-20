@@ -5,6 +5,7 @@ import { project } from '../src/game/project.ts';
 import { Checkin } from '../src/screens/Checkin.tsx';
 import { SECOND_WIND_SLOTS, checkinState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+import { peekToast } from '../src/ui/toast.ts';
 
 const T = CHECKIN_TEXT;
 
@@ -31,6 +32,7 @@ describe('the check-in screen (board F1)', () => {
     await fireEvent.press(screen.getByText(T.answer));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin', checkinId: 7, answer: 'just_didnt', secondWind: false });
     expect(onDone).toHaveBeenCalled();
+    expect(peekToast()?.message).toBe('Noted. A 5-minute recovery quest today keeps your streak.'); // premium pass B3
   });
 
   it('"sick or injured" asks which before it can be sent', async () => {

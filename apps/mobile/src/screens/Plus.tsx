@@ -62,12 +62,17 @@ export function Plus({ onClose }: PlusProps) {
     void load();
   }, [load]);
 
-  const run = async (act: () => Promise<PlusOutcome>, restoring: boolean) => {
+  /** Premium pass B5: a restore on its way says so on its link. */
+  const [restoring, setRestoring] = useState(false);
+  const run = async (act: () => Promise<PlusOutcome>, restore: boolean) => {
     setBusy(true);
+    setRestoring(restore);
     setNote(null);
     const outcome = await act();
     setBusy(false);
-    setNote(restoring && outcome === 'on' ? PLUS_TEXT.restored : (OUTCOME[outcome] ?? null));
+    setRestoring(false);
+    // Premium pass B7: a restore that couldn't ask Google Play says that, not what a failed purchase says.
+    setNote(restore && outcome === 'on' ? PLUS_TEXT.restored : restore && outcome === 'failed' ? PLUS_TEXT.restoreFailed : (OUTCOME[outcome] ?? null));
   };
 
   const plans = shop !== null && shop.ok ? shop.plans : [];
@@ -137,7 +142,7 @@ export function Plus({ onClose }: PlusProps) {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 16 }}>
         {!plus.active && shop !== null && shop.ok && (
-          <LinkButton label={PLUS_TEXT.restore} tone="accentText" disabled={busy} onPress={() => void run(restorePlus, true)} />
+          <LinkButton label={restoring ? PLUS_TEXT.restoring : PLUS_TEXT.restore} tone="accentText" disabled={busy} onPress={() => void run(restorePlus, true)} />
         )}
         <LinkButton label={PLUS_TEXT.terms} onPress={() => open('terms')} />
         <LinkButton label={PLUS_TEXT.privacy} onPress={() => open('privacy')} />

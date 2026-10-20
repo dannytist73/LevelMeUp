@@ -42,6 +42,8 @@ export const READING_TEXT = {
     storyCount: '{n} of {total}',
     card: 'Card {n} of {total}',
     close: 'Close',
+    /** Premium pass B6: a reading read again ends on its last card with a way out, not only the X at the top. */
+    done: 'Done',
     previous: 'Previous card',
     next: 'Next card',
     lesson: 'What it teaches',
