@@ -55,6 +55,8 @@ export default function ShadowPreview() {
       },
     }, []);
     return createStore(() => ({
+      // M17: what Today reads since M12/M13 (the preview crashed on `account` without it).
+      account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
       phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null, shadowSeen: null, draft: { pact: null }, pending: [],
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop, editDraft: () => {},

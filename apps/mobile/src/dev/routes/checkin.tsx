@@ -37,6 +37,8 @@ export default function CheckinPreview() {
       lighterPlan: state.lighterPlan === null ? null : { ...state.lighterPlan, offered: true },
     }, []);
     return createStore(() => ({
+      // M17: what Today reads since M12/M13 (the preview crashed on `account` without it).
+      account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
       phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null, shadowSeen: null,
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,

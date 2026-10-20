@@ -34,6 +34,8 @@ export default function OfflinePreview() {
     if (event === null) return null;
     const view = project(cached.state, [{ ...event, id: '00000000-0000-4000-8000-0000000000ff' }]);
     const store = createStore(() => ({
+      // M17: what Today reads since M12/M13 (the preview crashed on `account` without it).
+      account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
       phase: 'ready', view, art, status: 'offline', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null,
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,
