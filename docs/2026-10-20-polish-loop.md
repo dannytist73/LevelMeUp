@@ -103,6 +103,8 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 63 | Pull down to sync worked on Today only; now on all four tabs through one hook (a failed sync ends the spinner instead of rethrowing) | own pass | done |
 | 64 | Fourth review (no critical or important findings): Codex rows redrew or remounted on every update (now stable); tests for a locked look's spoken "Plus" and for ScreenList's band; Your game, Training and Vanish's chooser name themselves in the bar like the other Settings and ability screens (Class, Pact and Delete keep their large titles: they are decisions) | review | done |
 | 65 | A tap on the tab already shown did nothing; now it scrolls that tab back to the top (still with reduced motion) | own pass | done |
+| 66 | Onboarding's "Your day": the wake and sleep steppers sat side by side at 150 dp each, so "7:00 AM" broke onto two lines on a 411 dp phone; they now stack on a phone (side by side only where there's room). The other question steps read well | onboarding pass | done |
+| 67 | Seen in development only: changing the emulator's display size reloads the app's code mid-write, and the next start's first database transaction fails once ("cannot start a transaction within a transaction"), so Today shows "quests aren't here yet" until the next sync. Release builds never reload the code (no expo-updates, no reload call), so no change | onboarding pass | noted, not a bug in release |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -173,3 +175,4 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 03:34 | 62, 63 | Stats rows; pull on every tab | emulator: stats at 360 dp and normal width; a pull on Library showed the spinner and a 0.5 s sync in the log; hook tests; app tests 1190/1190 |
 | 03:39 | 64 | Fourth review fixes | app tests 1191/1191; emulator: Your game, Training, Codex preview |
 | 03:40 | 65 | Tab tap to top | emulator: Character scrolled down, its tab tapped, back at the top; other tabs still switch; app tests 1192/1192 |
+| 03:45 | 66, 67 | Onboarding pass | emulator, look only (Analysis not opened: it creates a character): welcome, goals, body, rhythm (fixed), safety; Your game and Notifications steppers unchanged |
