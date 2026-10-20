@@ -153,7 +153,7 @@ describe('Today after a miss (board F3)', () => {
   };
   it('puts the recovery quest Up next while it is open, for every player (M12 decision 3)', async () => {
     await today(claimedState(null));
-    expect(within(screen.getByTestId('up-next')).getByText(/^Recovery quest · /)).toBeTruthy();
+    expect(within(screen.getByTestId('up-next')).getByText(/^Up next · Recovery quest · /)).toBeTruthy();
     expect(screen.getByText(CHECKIN_TEXT.held)).toBeTruthy(); // no pact: M7a's line
   });
 

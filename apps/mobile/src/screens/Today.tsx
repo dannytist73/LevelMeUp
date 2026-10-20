@@ -163,6 +163,8 @@ export function Today({
   const offers = useGame((s) => s.offers);
   const markOffer = useGame((s) => s.markOffer);
   const saved = useGame((s) => s.account.kind === 'saved');
+  // M17: the offers wait until the phone knows who is signed in, so a saved player never sees "save your character" flash.
+  const accountKnown = useGame((s) => s.accountKnown);
   const vow = useGame((s) => s.vow);
   /** The quest a check circle just cleared, while its Undo shows. */
   const [snack, setSnack] = useState<{ id: number; title: string } | null>(null);
@@ -190,12 +192,12 @@ export function Today({
     ...notices.map((n) => ({ key: n.eventId, text: noticeText(n.code), actions: [{ label: TODAY_TEXT.gotIt, onPress: () => void dismissNotice(n.eventId) }] })),
   ];
   // M12 decision 8: one set-up card at a time, after the System's notices.
-  const card = view === null ? null : setupCard({ view, offers, saved, vow });
+  const card = view === null || !accountKnown ? null : setupCard({ view, offers, saved, vow });
   if (card !== null) strip.push(setupNotice(card, (go) => { void markOffer(`setup:${card}`); go?.(); }, { onSettings, onGame, onTraining, onSlip, onVow }));
   // M13: Plus's one-time cards (a week in; a free trial's last two days), never while a set-up card waits.
-  const plusNote = card !== null || view === null ? null : plusCard(view, offers, now(), purchasesSetUp());
+  const plusNote = card !== null || view === null || !accountKnown ? null : plusCard(view, offers, now(), purchasesSetUp());
   // M16 decision 9: the weekly program, offered once, never beside another card.
-  if (card === null && plusNote === null && view !== null && programOffered(view, offers)) {
+  if (accountKnown && card === null && plusNote === null && view !== null && programOffered(view, offers)) {
     const T = ADJUST_TEXT.training;
     strip.push({ key: 'program', text: T.offer, actions: [
       { label: T.offerGo, onPress: () => { void markOffer('program'); onTraining(); } },

@@ -171,6 +171,12 @@ export type GameState = {
   /** The words of the reveal the last analysis returned. */
   reveal: Reveal | null;
   account: Account;
+  /**
+   * M17: whether `account` has been read. Reading it can wait on a token refresh over the network, so launch no longer
+   * waits for it (perf audit 2026-10-20: a blank screen after the splash on most morning launches); what depends on it
+   * (the "save your character" card) waits instead.
+   */
+  accountKnown: boolean;
   /** Level-ups and achievements the server confirmed, shown one at a time. */
   celebrations: Celebration[];
   /** Which quest pictures exist online. */
@@ -507,7 +513,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
         shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, codex: [], offers: [], frame: 'none',
-        account: await deps.account(),
+        account: await deps.account(), accountKnown: true,
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
     };
@@ -590,6 +596,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       draft: NEW_DRAFT,
       reveal: null,
       account: { kind: 'none' },
+      accountKnown: false,
       celebrations: [],
       art: null,
       vow: null,
@@ -613,9 +620,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       lookReady: false,
 
       boot: async () => {
-        const [saved, account, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText] = await Promise.all([
+        // M17: asked now, waited for after the first screen (see `accountKnown`).
+        const accountRead = deps.account().catch((): Account => ({ kind: 'none' }));
+        const [saved, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
-          deps.account(),
           deps.kv.getItem(ART_KEY).catch(() => null),
           deps.kv.getItem(VOW_KEY).catch(() => null),
           deps.kv.getItem(TRAINING_NOTICE_KEY).catch(() => null),
@@ -649,11 +657,12 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         // A character already exists, so the onboarding is over: its draft (a name, goals, limits) isn't kept (M5 review).
         if (holding && saved !== null) await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
         set({
-          draft: holding ? NEW_DRAFT : restoreDraft(saved), account, phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
+          draft: holding ? NEW_DRAFT : restoreDraft(saved), phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
           shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
           offers: readOffers(offersText), theme: asTheme(themeText), frame: asFrame(frameText),
         });
+        void accountRead.then((account) => set({ account, accountKnown: true }));
         await scheduler.request();
         void checkPlus();
       },
@@ -704,7 +713,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
             // reveal (review); a character restored with Google never comes this way.
             await get().markOffer('setup');
             await refresh({
-              phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account(), trainingNoticeSeen: true,
+              phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account(), accountKnown: true, trainingNoticeSeen: true,
             });
             // A new player's first launch never synced a character, so the quest art is fetched now (M6e device check).
             checkArt();
@@ -838,7 +847,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       saveWithGoogle: async () => {
         const result = await deps.google.link();
-        set({ account: await deps.account() });
+        set({ account: await deps.account(), accountKnown: true });
         return result;
       },
 
@@ -847,7 +856,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           async (): Promise<GoogleResult> =>
             get().cached !== null || get().pending.length > 0 ? { ok: false, code: 'failed' } : deps.google.signIn(),
         );
-        set({ account: await deps.account() });
+        set({ account: await deps.account(), accountKnown: true });
         if (!result.ok) return result;
         await scheduler.request();
         const { phase, status, error } = get();

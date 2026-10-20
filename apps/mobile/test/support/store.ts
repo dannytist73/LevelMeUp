@@ -25,6 +25,7 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     draft: NEW_DRAFT,
     reveal: null,
     account: { kind: 'guest' },
+    accountKnown: true,
     celebrations: [],
     art: null,
     vow: null,
