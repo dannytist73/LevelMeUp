@@ -8,6 +8,7 @@ import {
   questSummary,
 } from '@levelmeup/content';
 import type { Voice } from '@levelmeup/content';
+import { useState } from 'react';
 import { View } from 'react-native';
 import type { QuestView } from '../game/types.ts';
 import { clockTime } from '../lib/dates.ts';
@@ -118,12 +119,21 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, restin
   );
 }
 
-/** A check-off quest's check circle (M12 decision 3): 48 dp, beside its row, never inside it. */
+/**
+ * A check-off quest's check circle (M12 decision 3): 48 dp, beside its row, never inside it. M17: it fills with a check
+ * the moment it's pressed, so the row fades away checked rather than blank.
+ */
 function CheckCircle({ title, onPress }: { title: string; onPress: () => void }) {
+  const [checked, setChecked] = useState(false);
   return (
-    <Tap accessibilityRole="checkbox" accessibilityLabel={fillText(TODAY_TEXT.markDone, { title })} accessibilityState={{ checked: false }}
-      onPress={onPress} radius={radius.pill} style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.lineStrong }} />
+    <Tap accessibilityRole="checkbox" accessibilityLabel={fillText(TODAY_TEXT.markDone, { title })} accessibilityState={{ checked }}
+      onPress={() => { setChecked(true); onPress(); }} radius={radius.pill} style={{ width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
+        borderColor: checked ? colors.commit : colors.lineStrong, backgroundColor: checked ? colors.commit : 'transparent',
+      }}>
+        {checked && <Icon name="check" size={18} color={colors.onAccent} />}
+      </View>
     </Tap>
   );
 }
