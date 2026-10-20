@@ -6,7 +6,7 @@ import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { Today } from '../src/screens/Today.tsx';
 import type { Offer } from '../src/state/store.ts';
-import { serverState } from './support/fixtures.ts';
+import { checkinState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // inside day 1
@@ -64,6 +64,17 @@ describe('on Today', () => {
     expect(screen.getByLabelText('System: Last week: 1 of 3 days cleared, 1 rested. A new week starts today.')).toBeTruthy();
     await fireEvent.press(within(screen.getByTestId('notice-strip')).getByRole('button', { name: 'Got it' }));
     expect(store.getState().markOffer).toHaveBeenCalledWith('week:2026-10-19');
+  });
+
+  it('the recap waits while a check-in asks its question (M17)', async () => {
+    const calendar = [
+      { dayNumber: 9, date: '2026-10-19', mark: 'open' }, { dayNumber: 8, date: '2026-10-18', mark: 'cleared' },
+      { dayNumber: 7, date: '2026-10-17', mark: 'none' },
+    ] as ServerState['calendar'];
+    const store = testStore({ view: project({ ...checkinState(), calendar }, []), offers: [] });
+    await render(withStore(store, <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
+      onTraining={jest.fn()} onCheckin={jest.fn()} now={() => NOW} />));
+    expect(screen.queryByText(/^Last week: /)).toBeNull();
   });
 
   it('shows one card in the notice strip; its button marks it and goes there', async () => {
