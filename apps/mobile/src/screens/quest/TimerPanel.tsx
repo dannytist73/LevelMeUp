@@ -1,5 +1,7 @@
 // Timer quests (spec §3.6, M6a decision 3): start, pause, resume. It counts from timestamps, so it keeps going with the
-// screen off; the panel only redraws once a second while it runs. Claim unlocks at the server's own 80 %.
+// screen off; the panel only redraws once a second while it runs. Claim unlocks at the server's own 80 %. M17 (UX audit
+// N2): the screen's one button does what's next: Start, then Pause (or Resume), then Claim once the time is reached, when
+// a quiet Pause or Resume stays beside the clock. Before, a disabled Claim sat in the bright bar for the whole timer.
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import { TIMER_COMPLETE_FRACTION } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -49,6 +51,11 @@ export function TimerPanel({ timer, targetMs, now, endsAt, disabled, onChange, o
   const elapsed = timerElapsed(timer, at);
   const done = timerDone(timer, at, targetMs);
   const started = running || timer.segments.length > 0;
+  const toggleLabel = running ? T.pause : started ? T.resume : T.start;
+  const toggle = () => {
+    if (!running) play('timerStart');
+    onChange(running ? pauseTimer(timer, now()) : startTimer(timer, now()));
+  };
   // M12 decision 11: a bell the moment a running timer reaches its time here (never for one opened already done).
   const wasDone = useRef(done);
   useEffect(() => {
@@ -64,16 +71,10 @@ export function TimerPanel({ timer, targetMs, now, endsAt, disabled, onChange, o
       </View>
       <XpBar value={Math.min(elapsed, targetMs)} max={targetMs} label={T.progress} />
       <Small>{done ? T.ready : fillText(T.note, { at: clock(targetMs * TIMER_COMPLETE_FRACTION) })}</Small>
-      <Button
-        label={running ? T.pause : started ? T.resume : T.start}
-        variant="secondary"
-        disabled={disabled}
-        onPress={() => {
-          if (!running) play('timerStart');
-          onChange(running ? pauseTimer(timer, now()) : startTimer(timer, now()));
-        }}
-      />
-      <ClaimButton label={PLAY_TEXT.claim.timer} disabled={disabled || !done} onPress={() => onClaim(timerPayload(timer, clamped()))} />
+      {done && <Button label={toggleLabel} variant="secondary" disabled={disabled} onPress={toggle} />}
+      {done
+        ? <ClaimButton label={PLAY_TEXT.claim.timer} disabled={disabled} onPress={() => onClaim(timerPayload(timer, clamped()))} />
+        : <ClaimButton label={toggleLabel} disabled={disabled} onPress={toggle} bare />}
     </View>
   );
 }

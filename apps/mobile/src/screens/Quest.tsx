@@ -255,15 +255,6 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
     };
     panel = (
       <View style={{ gap: 12 }}>
-      {offerLive && (
-        <View testID="live-offer" style={{ gap: 10, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.lineStrong }}>
-          <Small tone="chalk">{NOTIFY_TEXT.live.offer}</Small>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <Button label={NOTIFY_TEXT.live.allow} variant="secondary" onPress={() => void allowLive()} style={{ flexGrow: 1 }} />
-            <Button label={NOTIFY_TEXT.live.no} variant="secondary" onPress={() => void markOffer('live-timer')} style={{ flexGrow: 1 }} />
-          </View>
-        </View>
-      )}
       <TimerPanel
         timer={timer}
         targetMs={timerTargetMs(quest)}
@@ -277,6 +268,16 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
         }}
         onClaim={(payload) => void claim(payload)}
       />
+      {/* M17 (UX audit N2): the offer sits under the clock, so Pause stays where the thumb was. */}
+      {offerLive && (
+        <View testID="live-offer" style={{ gap: 10, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.lineStrong }}>
+          <Small tone="chalk">{NOTIFY_TEXT.live.offer}</Small>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            <Button label={NOTIFY_TEXT.live.allow} variant="secondary" onPress={() => void allowLive()} style={{ flexGrow: 1 }} />
+            <Button label={NOTIFY_TEXT.live.no} variant="secondary" onPress={() => void markOffer('live-timer')} style={{ flexGrow: 1 }} />
+          </View>
+        </View>
+      )}
       </View>
     );
   } else if (quest.condition.kind === 'session') {

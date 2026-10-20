@@ -8,6 +8,7 @@ import type { PhoneEvent, QuestView, ServerState } from '../src/game/types.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
 import { NEW_TIMER, startTimer } from '../src/quest/timer.ts';
 import type { TimerState } from '../src/quest/timer.ts';
+import { ClaimBarHost } from '../src/screens/quest/ClaimBar.tsx';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import type { ClearedProps } from '../src/screens/quest/Cleared.tsx';
 import { Quest } from '../src/screens/Quest.tsx';
@@ -42,7 +43,8 @@ describe('the completion panels (spec §3.6)', () => {
     expect(screen.getByText('00:00')).toBeTruthy(); // the elapsed time, large
     expect(screen.getByText('/ 20:00')).toBeTruthy(); // the target beside it
     expect(screen.getByText(/claim it from 16:00/)).toBeTruthy();
-    expect(disabled('Claim')).toBe(true);
+    // M17: before its time the one button starts and pauses; Claim comes once the time is reached.
+    expect(screen.queryByRole('button', { name: 'Claim' })).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Start' }));
     expect(onChange).toHaveBeenCalledWith({ segments: [], runningSince: T0 });
 
@@ -52,6 +54,20 @@ describe('the completion panels (spec §3.6)', () => {
     expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
     expect(onClaim).toHaveBeenCalledWith({ segments: [{ start: T0, end: T0 + 16 * MIN }] });
+  });
+
+  it('timer: in the screen's bar, Start and Pause carry no XP; Claim does once the time is reached (M17)', async () => {
+    const props = { targetMs: 20 * MIN, disabled: false, onChange: jest.fn(), onClaim: jest.fn() };
+    const bar = (timer: TimerState, at: number) => (
+      <ClaimBarHost suffix="· +10 XP">{() => <TimerPanel timer={timer} now={() => at} {...props} />}</ClaimBarHost>
+    );
+    const view = await render(bar(NEW_TIMER, T0));
+    expect(screen.getByRole('button', { name: 'Start' })).toBeTruthy();
+    await view.rerender(bar(startTimer(NEW_TIMER, T0), T0 + MIN));
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
+    await view.rerender(bar(startTimer(NEW_TIMER, T0), T0 + 16 * MIN));
+    expect(screen.getByRole('button', { name: 'Claim · +10 XP' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy(); // quiet, beside the clock
   });
 
   it('timer: a paused timer offers Resume', async () => {
@@ -65,7 +81,7 @@ describe('the completion panels (spec §3.6)', () => {
     const endsAt = T0 + 10 * MIN; // started 10 minutes before the day ends
     await render(<TimerPanel timer={startTimer(NEW_TIMER, T0)} now={() => T0 + 30 * MIN} endsAt={endsAt} targetMs={20 * MIN} disabled={false} onChange={jest.fn()} onClaim={jest.fn()} />);
     expect(screen.getByLabelText('10:00 of 20:00')).toBeTruthy();
-    expect(disabled('Claim')).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Claim' })).toBeNull();
   });
 
   it('formats long timers with hours, and never below zero', () => {

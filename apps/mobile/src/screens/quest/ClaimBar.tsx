@@ -10,18 +10,19 @@ import { colors, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Caption } from '../../ui/Text.tsx';
 
-export type Claim = { label: string; disabled: boolean; onPress: () => void };
+/** `bare`: a step before the claim (a timer's Start or Pause, M17), shown without the XP suffix. */
+export type Claim = { label: string; disabled: boolean; onPress: () => void; bare?: boolean };
 
 const Report = createContext<((claim: Claim | null) => void) | null>(null);
 
 /** A panel's claim: inline, or in the bar of the screen around it. */
-export function ClaimButton({ label, disabled, onPress }: Claim) {
+export function ClaimButton({ label, disabled, onPress, bare = false }: Claim) {
   const report = useContext(Report);
   const latest = useRef(onPress);
   latest.current = onPress;
   useLayoutEffect(() => {
-    report?.({ label, disabled, onPress: () => latest.current() });
-  }, [report, label, disabled]);
+    report?.({ label, disabled, onPress: () => latest.current(), bare });
+  }, [report, label, disabled, bare]);
   useLayoutEffect(() => () => report?.(null), [report]);
   if (report !== null) return null;
   return <Button label={label} variant="commitment" disabled={disabled} onPress={onPress} />;
@@ -48,7 +49,8 @@ export function ClaimBarHost({ children, suffix, note }: { children: (space: num
             position: 'absolute', left: 0, right: 0, bottom: 0, gap: 6, paddingTop: 12, paddingHorizontal: space.gutter,
             paddingBottom: insets.bottom + 12, backgroundColor: colors.night, borderTopWidth: 1, borderTopColor: colors.divider,
           }}>
-            <Button label={suffix === undefined ? claim.label : `${claim.label} ${suffix}`} accessibilityLabel={suffix === undefined ? claim.label : `${claim.label} ${suffix}`}
+            <Button label={suffix === undefined || claim.bare === true ? claim.label : `${claim.label} ${suffix}`}
+              accessibilityLabel={suffix === undefined || claim.bare === true ? claim.label : `${claim.label} ${suffix}`}
               variant="commitment" disabled={claim.disabled} onPress={claim.onPress} />
             {note !== undefined && <Caption style={{ textAlign: 'center' }}>{note}</Caption>}
           </View>
