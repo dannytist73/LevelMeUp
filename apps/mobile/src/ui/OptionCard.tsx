@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { colors, radius, space } from '../theme/tokens.ts';
+import { Icon } from './icons.tsx';
 import { Tap } from './Tap.tsx';
 import { Body, Small } from './Text.tsx';
 
@@ -48,10 +49,37 @@ export function OptionCard({ label, detail, selected, onPress, kind = 'radio', d
           opacity: dim ? 0.45 : 1,
         }}
       >
-        <Body weight="bold" tone={selected ? 'ink' : 'chalk'} style={center ? { textAlign: 'center' } : undefined}>{label}</Body>
-        {detail !== undefined && <Small tone={selected ? 'inkSoft' : 'ashLight'}>{detail}</Small>}
-        {aside !== undefined && <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ marginTop: 6 }}>{aside}</View>}
+        {center ? (
+          <Body weight="bold" tone={selected ? 'ink' : 'chalk'} style={{ textAlign: 'center' }}>{label}</Body>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <Marker kind={kind} selected={selected} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Body weight="bold" tone={selected ? 'ink' : 'chalk'}>{label}</Body>
+              {detail !== undefined && <Small tone={selected ? 'inkSoft' : 'ashLight'}>{detail}</Small>}
+              {aside !== undefined && <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ marginTop: 6 }}>{aside}</View>}
+            </View>
+          </View>
+        )}
       </View>
     </Tap>
+  );
+}
+
+/**
+ * M17 (design critique): what kind of choice a card is, at a glance: a circle for one of several, a rounded square for
+ * any of several, filled when chosen. Drawn only; the card itself is the radio or checkbox for screen readers.
+ */
+function Marker({ kind, selected }: { kind: 'radio' | 'checkbox'; selected: boolean }) {
+  const round = kind === 'radio';
+  return (
+    <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{
+      width: 22, height: 22, borderRadius: round ? 11 : 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
+      borderColor: selected ? colors.accentInk : colors.lineStrong, backgroundColor: selected && !round ? colors.accentInk : 'transparent',
+    }}>
+      {selected && (round
+        ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accentInk }} />
+        : <Icon name="check" size={14} color={colors.paper} />)}
+    </View>
   );
 }
