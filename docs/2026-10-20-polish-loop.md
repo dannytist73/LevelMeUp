@@ -63,6 +63,11 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 37 | Class change fades the current class to 2.45:1; an empty Codex is one small line | O11, emulator | done |
 | 38 | Body limits (knees, back…) can't be changed after onboarding: a safety gap. Needs the `adjust` SQL function, so a migration | 2026-10-15 audit | proposed: needs a migration number agreed with the studio session |
 | 39 | Dev previews (Shadow, check-in, offline) crashed: their made-up state lacked fields Today reads since M12 | emulator | done |
+| 40 | Tabs snap: cross-fade (none with reduced motion) | own pass | done |
+| 41 | Library's empty lessons card had a button duplicating today's card above it | emulator | done |
+| 42 | Pull down on Today to sync; a check-off gives a stamp's click; the check circle fills before the row fades | research §1, §5 | done |
+| 43 | lmu-sync waits for Auth before its first read: run them together (nothing used unless Auth confirms) | perf 4d | done, deployed (v29), live 51/51; no clear gain over the noise (0.5-0.7 s either way) |
+| 44 | Long titles leave one word alone on the last line: balanced line breaks for titles and headings | emulator | done |
 
 ## Log
 
@@ -88,3 +93,12 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 01:48 | 19, 24, 25 | X screens rise from the bottom; rows at 14 pt; pain and Change today in one row | emulator: Today |
 | 01:51 | 21 | Deck's Claim in the bottom row on Your turn | emulator: Vera's deck paged to Your turn (nothing typed or claimed) |
 | 01:54 | 12 (part) | Check-in's Answer pinned; Pact gets Back; Library's repeated heading gone | emulator: check-in (not answered) |
+| 01:57 | QA | Today, Settings, Character at 2× text: everything wraps, nothing cut | emulator screenshots |
+| 01:59 | 23, 36 | Topic pills; Today ignores syncs over a usable day | app tests |
+| 02:01 | 37 | Class cards readable; Codex empty state | emulator |
+| 02:05 | 39 | Dev previews open again | emulator (Shadow preview and scene) |
+| 02:08 | 30 | Sync timing in dev builds: quiet syncs 0.5-0.7 s | Metro log, 7 syncs |
+| 02:11 | 40, 41 | Tab cross-fade; Library duplicate button | emulator; app tests |
+| 02:17 | 42 | Pull to refresh; check-off haptic | emulator (spinner and a logged sync) |
+| 02:19 | 43 | Auth and first read together | server unit 585/585; deployed v29; live 51/51 |
+| 02:22 | 42, 44 | Check circle fills; balanced title breaks | emulator (Library title) |
