@@ -101,7 +101,7 @@ describe('the story lesson on screen (M14)', () => {
     await renderStory();
     expect(screen.getByText(D.todaysStory)).toBeTruthy();
     expect(screen.getByText('Amara, 19, first-year student')).toBeTruthy();
-    expect(screen.getAllByText('Small promises')).toHaveLength(2); // the top bar and the cover
+    expect(screen.getAllByText('Small promises')).toHaveLength(1); // M17: the cover's own; the top bar doesn't repeat it
     expect(screen.getByText('9 cards · about 3 min · +10 XP')).toBeTruthy();
     await next();
     expect(screen.getByText("Amara's story")).toBeTruthy();
