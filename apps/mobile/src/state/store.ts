@@ -652,6 +652,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       boot: async () => {
         // M17: asked now, waited for after the first screen (see `accountKnown`).
         const accountRead = deps.account().catch((): Account => ({ kind: 'none' }));
+        // Review: never over an account something newer already set (a sign-in, a save, a fresh start). Chained here, not
+        // after the records are read: if that read fails, the account still becomes known (M17: Settings waited forever).
+        accountReading = accountRead.then((account) => {
+          if (!get().accountKnown) set({ account, accountKnown: true });
+        });
         const [saved, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
           deps.kv.getItem(ART_KEY).catch(() => null),
@@ -691,10 +696,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
           shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
           offers: readOffers(offersText), theme: asTheme(themeText), frame: asFrame(frameText),
-        });
-        // Review: never over an account something newer already set (a sign-in, a save, a fresh start).
-        accountReading = accountRead.then((account) => {
-          if (!get().accountKnown) set({ account, accountKnown: true });
         });
         await scheduler.request();
         void checkPlus();

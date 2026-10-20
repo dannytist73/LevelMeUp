@@ -113,6 +113,20 @@ function guestSession(signedIn = false) {
 const lastAllowNewGuest = (deps: GameDeps) => ((deps.ensureSession as jest.Mock).mock.calls.at(-1)![0] as () => boolean)();
 
 describe('the game store', () => {
+  it('learns the account even when the first read of the local records fails (M17: Settings waited forever)', async () => {
+    const { store, local } = await setup([{ ok: false, status: 0, code: 'network' }]);
+    const real = local.snapshot.bind(local);
+    let failed = false;
+    local.snapshot = async () => {
+      if (failed) return real();
+      failed = true;
+      throw new Error('cannot start a transaction within a transaction');
+    };
+    await expect(store.getState().boot()).rejects.toThrow('transaction');
+    await settle();
+    expect(store.getState()).toMatchObject({ accountKnown: true, account: { kind: 'guest' } });
+  });
+
   it('shows the cached state before the network answers', async () => {
     const { store, local } = await setup([{ ok: false, status: 0, code: 'network' }]);
     await local.acknowledge([], [], SERVER, 42);
