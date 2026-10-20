@@ -75,7 +75,8 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
-        <TabTop onSettings={onSettings}><Label accessibilityRole="header">{T.label}</Label></TabTop>
+        {/* M17: the tab's title is the player's name, large like the other tabs' (it sat small under the portrait). */}
+        <TabTop onSettings={onSettings}><Title accessibilityRole="header">{view.profile.name}</Title></TabTop>
         <View style={{ alignSelf: 'center' }}>
           <Portrait classId={classId} level={level} figure={figure} marked={mark} frame={frame}
             label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
@@ -88,7 +89,6 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
             <Icon name="switch" size={24} color={colors.onAccent} />
           </Tap>
         </View>
-        <Title accessibilityRole="header">{view.profile.name}</Title>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <View style={{ paddingVertical: 3, paddingHorizontal: 12, backgroundColor: colors.paper, borderRadius: radius.pill }}>
             <Label tone="ink">{`Lv ${level} ${className}`}</Label>

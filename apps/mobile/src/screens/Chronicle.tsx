@@ -81,7 +81,8 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
       <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
-        <TabTop onSettings={onSettings}><Label accessibilityRole="header">{C.label}</Label></TabTop>
+        {/* M17: a title like the other tabs' (it was a small label). */}
+        <TabTop onSettings={onSettings}><Title accessibilityRole="header">{C.label}</Title></TabTop>
         {streak !== undefined && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
             <Tile value={shown!.current} label={C.streak} />
