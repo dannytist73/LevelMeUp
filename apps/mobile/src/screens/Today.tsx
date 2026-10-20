@@ -46,6 +46,7 @@ import { Snackbar } from '../ui/Snackbar.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
 import { SettingsButton } from '../ui/TabTop.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { buzz } from '../ui/haptics.ts';
 import { play, warm } from '../ui/sound.ts';
 import { Thud } from '../ui/Thud.tsx';
 import { useGrowth } from '../ui/useMotion.ts';
@@ -180,6 +181,12 @@ export function Today({
   /** Quests a check is on its way for: a quick second tap sends nothing (review). */
   const clearing = useRef(new Set<number>());
   const [showDone, setShowDone] = useState(false);
+  /** M17: a pull down on Today syncs now; the spinner stays until that sync is done. */
+  const [pulling, setPulling] = useState(false);
+  const pull = () => {
+    setPulling(true);
+    void syncNow().finally(() => setPulling(false));
+  };
 
   const today = view?.today ?? null;
   const usable = today !== null && today.quests.length > 0 && Date.parse(today.endsAt!) > now();
@@ -236,6 +243,7 @@ export function Today({
     if (!open() || clearing.current.has(q.id)) return;
     clearing.current.add(q.id);
     play('claim');
+    buzz('stamp'); // M17: a check you can feel, as a stamp landing
     enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} }).catch(() => clearing.current.delete(q.id));
     setSnack({ id: q.id, title });
   };
@@ -281,7 +289,7 @@ export function Today({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <ScreenScroll contentContainerStyle={{ paddingBottom: snack === null ? 32 : 96 }}>
+      <ScreenScroll contentContainerStyle={{ paddingBottom: snack === null ? 32 : 96 }} refresh={{ refreshing: pulling, onRefresh: pull }}>
         {/* M17: a shorter header (about 50 dp less), so Up next's button stays above the fold with a note waiting: the date
             beside "Day N", and the level on the XP bar's line (name and class live on Character). */}
         <ScreenHeader style={{ paddingTop: insets.top + 12, paddingBottom: 16, gap: 12, marginBottom: 16 }}>
