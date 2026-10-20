@@ -85,11 +85,13 @@ function MovingBar({ value, max, label, on = 'night', level, from, delay, reduce
     ));
     flash.value = delayed(wait + WRAP_FILL_MS, withSequence(ReduceMotion.Never, withTiming(1, timing(FLASH_MS / 2)), withTiming(0, timing(FLASH_MS / 2))));
   }, [level, value, max, reduce, delay, fill, flash]);
-  const width = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
+  // M17 (UX audit N15): the fill grows by scaling from its left edge, not by its width, so a moving bar never asks for a
+  // new layout on each frame.
+  const width = useAnimatedStyle(() => ({ transform: [{ scaleX: fill.value }] }));
   const flashing = useAnimatedStyle(() => ({ opacity: flash.value }));
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{ min: 0, max, now: value }} style={frame(on)}>
-      <Animated.View testID="xp-fill" style={[{ height: '100%', backgroundColor: fillColor(on) }, width]} />
+      <Animated.View testID="xp-fill" style={[{ width: '100%', height: '100%', backgroundColor: fillColor(on), transformOrigin: 'left' }, width]} />
       {!reduce && <Animated.View testID="xp-flash" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.chalk }, flashing]} />}
     </View>
   );

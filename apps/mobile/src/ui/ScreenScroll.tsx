@@ -16,7 +16,8 @@ export function ScreenScroll({ children, contentContainerStyle }: { children: Re
   const band = useAnimatedStyle(() => ({ opacity: interpolate(scrolled.value, [0, Math.max(insets.top, 1)], [0, 1], 'clamp') }));
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <Animated.ScrollView contentContainerStyle={contentContainerStyle} onScroll={onScroll} scrollEventThrottle={16}>
+      {/* M17 (UX audit N8): a tap on a button lands even while the keyboard is up (it used to only close the keyboard). */}
+      <Animated.ScrollView contentContainerStyle={contentContainerStyle} onScroll={onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled">
         {children}
       </Animated.ScrollView>
       <Animated.View

@@ -237,19 +237,19 @@ describe('the XP bar (M10a decisions 3, 5, 7)', () => {
 
   it('with a level, it starts where it was, and says the new value at once', async () => {
     await render(<XpBar value={87} max={130} level={6} from={at(6, 67)} label="moving" />);
-    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(67 / 130) * 100}%`);
+    expect(flat(screen.getByTestId('xp-fill').props.style).transform).toEqual([{ scaleX: 67 / 130 }]);
     expect(screen.getByRole('progressbar', { name: 'moving' }).props.accessibilityValue).toEqual({ min: 0, max: 130, now: 87 });
     expect(screen.getByTestId('xp-flash')).toBeTruthy();
   });
 
   it('opened without a "from", it shows the value: Today opening never moves the bar', async () => {
     await render(<XpBar value={87} max={130} level={6} label="opened" />);
-    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
+    expect(flat(screen.getByTestId('xp-fill').props.style).transform).toEqual([{ scaleX: 87 / 130 }]);
   });
 
   it('with reduced motion, the new value at once and no flash', async () => {
     await render(<XpBar value={87} max={130} level={6} from={at(6, 67)} label="reduced" reduceMotion />);
-    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
+    expect(flat(screen.getByTestId('xp-fill').props.style).transform).toEqual([{ scaleX: 87 / 130 }]);
     expect(screen.queryByTestId('xp-flash')).toBeNull();
   });
 });
@@ -286,7 +286,7 @@ describe('Quest cleared moves (M10a decision 4)', () => {
 
   it('opened later (no before): no fill, no count', async () => {
     await cleared({ ...NUMBERS, levelBefore: null });
-    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
+    expect(flat(screen.getByTestId('xp-fill').props.style).transform).toEqual([{ scaleX: 87 / 130 }]);
     expect(screen.getByText('Lv 6 · 87 / 130 XP')).toBeTruthy();
   });
 

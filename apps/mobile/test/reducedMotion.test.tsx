@@ -80,7 +80,7 @@ describe('"Remove animations" on: the moments only fade (M10a decision 3)', () =
     for (const id of ['slam-in', 'xp-stamp-thud', 'rank-thud']) {
       for (const el of screen.getAllByTestId(id)) expect(flat(el.props.style).transform).toBeUndefined();
     }
-    expect(flat(screen.getByTestId('xp-fill').props.style).width).toBe(`${(87 / 130) * 100}%`);
+    expect(flat(screen.getByTestId('xp-fill').props.style).transform).toEqual([{ scaleX: 87 / 130 }]);
     expect(screen.getByText('Lv 6 · 87 / 130 XP')).toBeTruthy();
   });
 

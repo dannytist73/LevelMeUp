@@ -21,7 +21,6 @@ const T = PLAY_TEXT.rest;
 export function useRest(now: () => number, ms: number) {
   const [rest, setRest] = useState<Rest>(null);
   const [over, setOver] = useState(false);
-  const [, redraw] = useState(0);
   // The shade's countdown follows the rest: shown (or moved) while it runs, gone when it ends, is skipped or is left.
   useEffect(() => {
     if (rest === null) return;
@@ -30,11 +29,10 @@ export function useRest(now: () => number, ms: number) {
   }, [rest, now]);
   useEffect(() => {
     if (rest === null) return;
+    // M17 (UX audit 2026-10-20, N4): this only watches for the end; the bar redraws itself, so the whole log no longer
+    // draws again four times a second while a rest runs.
     const id = setInterval(() => {
-      if (restLeft(rest, now()) > 0) {
-        redraw((n) => n + 1);
-        return;
-      }
+      if (restLeft(rest, now()) > 0) return;
       clearInterval(id);
       buzz('stamp');
       play('timerDone');
@@ -59,6 +57,13 @@ export function useRest(now: () => number, ms: number) {
 }
 
 export function RestBar({ rest, over, now, onMore, onSkip }: { rest: Rest; over: boolean; now: () => number; onMore: () => void; onSkip: () => void }) {
+  // The countdown as shown: set four times a second, drawn again only when the second changes (same text, no redraw).
+  const [, setShown] = useState('');
+  useEffect(() => {
+    if (rest === null) return;
+    const id = setInterval(() => setShown(restClock(restLeft(rest, now()))), 250);
+    return () => clearInterval(id);
+  }, [rest, now]);
   if (rest !== null) {
     const clock = restClock(restLeft(rest, now()));
     return (
