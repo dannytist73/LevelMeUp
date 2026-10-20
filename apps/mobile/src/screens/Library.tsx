@@ -2,6 +2,7 @@
 // kept from the Story Decks (each opens its reading) and the past readings, in one tab, where they used to be spread over
 // Character (the Codex) and the Chronicle (past readings).
 import { CLUSTER_NAMES, READING_TEXT, fillText } from '@levelmeup/content';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReadingView } from '../game/types.ts';
@@ -16,6 +17,7 @@ import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
+import { Appear } from '../ui/Appear.tsx';
 import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { TabTop } from '../ui/TabTop.tsx';
 import { Tap } from '../ui/Tap.tsx';
@@ -67,7 +69,11 @@ function PastRow({ reading, onOpen }: { reading: ReadingView; onOpen: () => void
   );
 }
 
+/** M17: past readings shown before Show all. */
+export const PAST_SHOWN = 5;
+
 export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }: LibraryProps) {
+  const [allPast, setAllPast] = useState(false);
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const codex = useGame((s) => s.codex);
@@ -132,9 +138,16 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
 
         <View style={{ gap: 10 }}>
           <SectionTitle title={READING_TEXT.past.title} />
+          {/* M17: the latest five; the rest (up to 30) open in place, so the Library doesn't grow into a long list. */}
           {past.length === 0
             ? <Small>{READING_TEXT.past.empty}</Small>
-            : past.map((r) => <PastRow key={`${r.dayNumber}-${r.id}`} reading={r} onOpen={() => onOpenReading(r.id, r.dayNumber)} />)}
+            : (allPast ? past : past.slice(0, PAST_SHOWN)).map((r) => (
+              <Appear key={`${r.dayNumber}-${r.id}`}><PastRow reading={r} onOpen={() => onOpenReading(r.id, r.dayNumber)} /></Appear>
+            ))}
+          {past.length > PAST_SHOWN && (
+            <LinkButton label={allPast ? READING_TEXT.past.fewer : fillText(READING_TEXT.past.showAll, { n: past.length })} tone="accentText"
+              onPress={() => setAllPast((a) => !a)} />
+          )}
         </View>
         </>}
         {stale && <Caption>{lastSynced(lastSyncedAt ?? null, view?.profile.timeZone ?? 'UTC')}</Caption>}

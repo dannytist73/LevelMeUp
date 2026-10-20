@@ -68,3 +68,18 @@ describe('the Library (M12 decision 1)', () => {
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
   });
 });
+
+describe('past readings in the Library (M17)', () => {
+  it('shows the latest five; Show all opens the rest in place', async () => {
+    const readings = Array.from({ length: 7 }, (_, i) => ({
+      id: `article-p${i}`, cluster: 'sleep' as const, title: `Past ${i}`, minutes: 5, dayNumber: -i, date: `2026-10-0${9 - i}`, takeaway: null,
+    }));
+    await renderLibrary({ ...base, readings });
+    expect(screen.getByText('Past 4')).toBeTruthy();
+    expect(screen.queryByText('Past 5')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: fillText(READING_TEXT.past.showAll, { n: 7 }) }));
+    expect(screen.getByText('Past 6')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.past.fewer }));
+    expect(screen.queryByText('Past 6')).toBeNull();
+  });
+});

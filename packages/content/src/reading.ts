@@ -28,6 +28,9 @@ export const READING_TEXT = {
     title: 'Past readings',
     label: 'Past reading · {date}',
     empty: 'Your readings gather here, one a day.',
+    /** M17: the latest five show; the rest open in place. */
+    showAll: 'Show all {n}',
+    fewer: 'Show fewer',
   },
   // M11: the Story Deck and the Codex.
   deck: {
