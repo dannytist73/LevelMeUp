@@ -120,6 +120,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 72 | Up next's "2 sets of 10 · about 5 min" broke between "5" and "min": no-break spaces in every quest summary. Accessibility sweep again on eleven screens: every control labelled (the switch rows' inner switches are hidden on purpose; the row is the switch) | own pass | done |
 | 73 | The first screen's name box was empty with nothing in it: a hint, "Your name or a nickname" (the label above still asks the question) | critique 2 | done |
 | 74 | A sweep for leftovers (tsc --noUnusedLocals): this loop's one unused import (Reveal) removed. Older ones, left alone per CLAUDE.md: an unused `insets` in Notifications, Privacy and Settings, and `slots` in test/today.test.ts | own pass | done (older ones noted) |
+| 75 | The first screen: "Sign in with Google" is a quiet text button under "Saved a character before?" (an outline as large as Awaken drew the eye before a name was typed); Cleared, the level-up bench and the Shadow scene checked at 360 dp | critique 2, narrow pass | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -155,8 +156,6 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 3. **Reading deck: one counter.** "2 / 11", the dots and the story's "1 of 6" say similar things; keep the dots and the
    story's count, and keep "Card 2 of 11" for screen readers only.
 4. **Links that look like buttons** ("Restore purchases", "Take out"): accent text without the underline, 48 dp tall.
-5. **Onboarding's first screen:** "Sign in with Google" as a quiet text button, so the brightest thing isn't the option
-   most new players don't need. (The name box's hint is done: item 73.)
 
 ## Log
 
@@ -219,3 +218,4 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 | 04:28 | 73 | Name hint | test (placeholder shown); emulator (welcome opened, nothing typed) |
 | 04:23 | — | Candidate 0.9.0 preview APK build started from 6d20b2c (every check green: typecheck, portable, functions, all tests, bundle scan) | — |
 | 04:36 | — | Candidate APK built in 9 min (04:32); installed over the dev build on the emulator (data kept): Today day 7, every tab, the deck, Notifications, Your look, tab tap to top all fine; Settings shows Version 0.9.0; cold start 0.76-1.04 s to first frame (release, emulator); no crash in the log. Dev build reinstalled to keep going | — |
+| 04:45 | 74, 75 | Leftovers sweep; sign-in link | onboarding tests 29/29; emulator (welcome, look only) |
