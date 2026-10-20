@@ -819,7 +819,11 @@ Plan and why: `docs/2026-10-20-premium-pass.md`. Server: migration 0020 (the lat
 (`restOpens`, the `more` signal for a long outbox, old phone-built days applied when built), deployed with the owner's
 yes; the database tests passed on live. Rows marked emulator were checked on the
 development build (Vera look-only: nothing claimed, saved or answered; the outbox stayed empty). The Find X9 column is
-the owner's, on the 0.10.0 APK (details below once built).
+the owner's, on the 0.10.0 APK: built 2026-10-20 17:31 UTC from beac9b2 on this PC,
+`apps/mobile/dist/levelmeup-0.10.0-preview.apk` (version code 12, sha256 9588501553…); the bundle scan is clean. On the
+emulator it installed over the development build and kept the character (Vera), opened in 0.55 s, showed Version 0.10.0
+and synced with lmu-sync v32; nothing in the crash log. Over 0.9.0 on the phone it should do the same (higher version
+code, same signing), not yet seen.
 
 | # | Check | Result |
 |---|---|---|
