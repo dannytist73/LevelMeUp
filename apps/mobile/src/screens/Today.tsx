@@ -9,10 +9,11 @@
 import { ADJUST_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { Image, Linking, View } from 'react-native';
 import { LayoutAnimationConfig } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
+import { figureFor, portraitUrl } from '../art/portraits.ts';
 import { isExercise, isResting } from '../game/adjust.ts';
 import { trainingUnset } from '../game/character.ts';
 import { streakNote } from '../game/checkin.ts';
@@ -45,7 +46,7 @@ import { Snackbar } from '../ui/Snackbar.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
 import { SettingsButton } from '../ui/TabTop.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
-import { play } from '../ui/sound.ts';
+import { play, warm } from '../ui/sound.ts';
 import { Thud } from '../ui/Thud.tsx';
 import { useGrowth } from '../ui/useMotion.ts';
 import { XpBar } from '../ui/XpBar.tsx';
@@ -238,6 +239,16 @@ export function Today({
     play('undo');
     void enqueue({ type: 'undo', instanceId: id });
   };
+  // M17 (perf audit 2026-10-20): once Today is drawn, the day's sounds get their players and the portrait its picture,
+  // so the first Claim sounds as it lands and Character opens with its portrait already there.
+  const portrait = useGame((s) => (s.view === null ? null : portraitUrl(s.view.profile.classId, figureFor(s.portrait, s.view.profile.programStyle), s.view.character.level)));
+  useEffect(() => {
+    const t = setTimeout(() => warm(['claim', 'undo', 'streak', 'dayDone', 'cardTurn']), 1500);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (portrait !== null) Promise.resolve().then(() => Image.prefetch(portrait)).catch(() => {});
+  }, [portrait]);
   // M12 decision 11: a warm chord the moment the day becomes done while Today is in front (never on opening).
   const paused = view?.paused;
   const doneNow = today !== null && usable && dayCleared(today, (q) => q.completedAt === null && isResting(q, paused ?? []));

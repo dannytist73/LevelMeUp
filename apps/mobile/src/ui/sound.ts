@@ -39,22 +39,40 @@ export function setSounding(next: boolean): void {
   on = next;
 }
 
+/** The cue's player, made at its first use (or by `warm`). */
+function playerFor(audio: typeof ExpoAudio, cue: Cue): ExpoAudio.AudioPlayer {
+  if (!moded) {
+    moded = true;
+    void audio.setAudioModeAsync({ interruptionMode: 'mixWithOthers', playsInSilentMode: false, shouldPlayInBackground: false }).catch(() => {});
+  }
+  let player = players.get(cue);
+  if (player === undefined) {
+    player = audio.createAudioPlayer(source(cue));
+    players.set(cue, player);
+  }
+  return player;
+}
+
+/**
+ * M17 (perf audit 2026-10-20): makes the players of the cues a day plays most, after the first screen is drawn, so the
+ * first Claim of a session sounds as it lands instead of a beat late. Silent; nothing with the switch off.
+ */
+export function warm(cues: readonly Cue[]): void {
+  if (!on) return;
+  try {
+    const audio = lib();
+    for (const cue of cues) playerFor(audio, cue);
+  } catch {
+    // Quiet, as play is.
+  }
+}
+
 /** Plays a cue from its start, with the switch on. */
 export function play(cue: Cue): void {
   if (!on) return;
   if (__DEV__) console.info(`[sound] ${cue}`);
   try {
-    const audio = lib();
-    if (!moded) {
-      moded = true;
-      void audio.setAudioModeAsync({ interruptionMode: 'mixWithOthers', playsInSilentMode: false, shouldPlayInBackground: false }).catch(() => {});
-    }
-    let player = players.get(cue);
-    if (player === undefined) {
-      player = audio.createAudioPlayer(source(cue));
-      players.set(cue, player);
-    }
-    const p = player;
+    const p = playerFor(lib(), cue);
     void Promise.resolve(p.seekTo(0)).then(() => p.play(), () => p.play()).catch(() => {});
   } catch {
     // A build without the module, or a player that failed: quiet.

@@ -12,7 +12,7 @@ jest.mock('react-native-reanimated', () => ({
 // reaches the real module with jest.requireActual.
 jest.mock('../../src/ui/haptics.ts', () => ({ ...jest.requireActual('../../src/ui/haptics.ts'), buzz: jest.fn(), setBuzzing: jest.fn() }));
 // M12 (plan decision 11): no test plays a sound either; test/sound.test.ts reaches the real module.
-jest.mock('../../src/ui/sound.ts', () => ({ ...jest.requireActual('../../src/ui/sound.ts'), play: jest.fn(), setSounding: jest.fn() }));
+jest.mock('../../src/ui/sound.ts', () => ({ ...jest.requireActual('../../src/ui/sound.ts'), play: jest.fn(), setSounding: jest.fn(), warm: jest.fn() }));
 // M13: RevenueCat is native. With no public key in config.ts (and Jest's iOS), src/plus/purchases.ts never reaches it;
 // test/purchases.test.ts drives it through this fake, and screen tests spy on src/plus/purchases.ts itself.
 jest.mock('react-native-purchases', () => ({
