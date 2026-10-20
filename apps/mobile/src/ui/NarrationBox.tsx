@@ -4,7 +4,18 @@ import { PLAY_TEXT } from '@levelmeup/content';
 import { Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { colors, fonts, radius, space } from '../theme/tokens.ts';
-import { Body } from './Text.tsx';
+import { Button } from './Button.tsx';
+import { Body, Caption, Small } from './Text.tsx';
+
+const BOX = { borderRadius: radius.control, borderWidth: space.border, borderColor: colors.accent, backgroundColor: colors.panel } as const;
+
+function Speaker() {
+  return (
+    <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.bodyBold, fontSize: 12, lineHeight: 16, letterSpacing: 0.3, color: colors.accentText }}>
+      {PLAY_TEXT.speakers.system}
+    </Text>
+  );
+}
 
 export function NarrationBox({ children, style }: { children: string; style?: StyleProp<ViewStyle> }) {
   return (
@@ -12,14 +23,47 @@ export function NarrationBox({ children, style }: { children: string; style?: St
       accessible
       accessibilityLabel={`${PLAY_TEXT.speakers.system}: ${children}`}
       style={[
-        { gap: 6, paddingTop: 14, paddingHorizontal: 16, paddingBottom: 14, borderRadius: radius.control, borderWidth: space.border, borderColor: colors.accent, backgroundColor: colors.panel },
+        { gap: 6, paddingTop: 14, paddingHorizontal: 16, paddingBottom: 14, ...BOX },
         style,
       ]}
     >
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.bodyBold, fontSize: 12, lineHeight: 16, letterSpacing: 0.3, color: colors.accentText }}>
-        {PLAY_TEXT.speakers.system}
-      </Text>
+      <Speaker />
       <Body weight="medium">{children}</Body>
+    </View>
+  );
+}
+
+export type SystemAction = { label: string; onPress: () => void };
+
+/**
+ * M17: a System note that asks something, as one card: its words, a line of detail, and its answers inside it. Before,
+ * the box, its detail and its buttons stood apart on Today, three blocks for one question (emulator, 0.8.0). The words
+ * read as one stop; each answer is its own button. Answers are quiet outlines and the card's edge is a quiet line, so Up
+ * next stays the one card outlined in the accent with Today's one bright button (UX audit 2026-10-20, N6).
+ */
+export function SystemCard({ text, detail, actions = [], count, testID }: {
+  text: string;
+  detail?: string;
+  actions?: readonly SystemAction[];
+  /** "1 of 3" while more notes wait. */
+  count?: string;
+  testID?: string;
+}) {
+  return (
+    <View testID={testID} style={{ gap: 14, padding: 16, ...BOX, borderColor: colors.line }}>
+      <View accessible accessibilityLabel={[`${PLAY_TEXT.speakers.system}: ${text}`, detail].filter((x) => x !== undefined).join(' ')} style={{ gap: 6 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <Speaker />
+          {count !== undefined && <Caption>{count}</Caption>}
+        </View>
+        <Body weight="medium">{text}</Body>
+        {detail !== undefined && <Small tone="ashLight">{detail}</Small>}
+      </View>
+      {actions.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {actions.map((a) => <Button key={a.label} label={a.label} variant="secondary" onPress={a.onPress} style={{ flexGrow: 1 }} />)}
+        </View>
+      )}
     </View>
   );
 }

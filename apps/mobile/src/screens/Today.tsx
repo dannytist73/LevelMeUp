@@ -6,7 +6,7 @@
 // M12 (Round 3, boards R3-1 and R3-4; audit 1, 3, 11, 12): a tighter header, the notices in one strip, "Up next" with the
 // screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
 // the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
-import { ADJUST_TEXT, CLASS_NAMES, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
+import { ADJUST_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine } from '@levelmeup/content';
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
@@ -31,8 +31,7 @@ import type { Status } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { Icon } from '../ui/icons.tsx';
-import { LinkButton } from '../ui/LinkButton.tsx';
-import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { SystemCard } from '../ui/NarrationBox.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
@@ -43,7 +42,7 @@ import { TodaySkeleton } from '../ui/Skeleton.tsx';
 import { Snackbar } from '../ui/Snackbar.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
 import { Tap } from '../ui/Tap.tsx';
-import { Body, Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { play } from '../ui/sound.ts';
 import { Thud } from '../ui/Thud.tsx';
 import { useGrowth } from '../ui/useMotion.ts';
@@ -90,18 +89,13 @@ export type TodayProps = {
 /** One item of the notice strip (M12 decision 4): its words and what it offers. */
 type Notice = { key: string; text: string; actions: { label: string; onPress: () => void }[] };
 
-/** The notices, one at a time, in one strip (audit 3): "1 of 3" while more wait. */
+/** The notices, one at a time, in one strip (audit 3): "1 of 3" while more wait. M17: one card, its answers inside it. */
 function NoticeStrip({ items }: { items: readonly Notice[] }) {
   const first = items[0];
   if (first === undefined) return null;
   return (
-    <View key={first.key} testID="notice-strip" style={{ gap: 6 }}>
-      <NarrationBox>{first.text}</NarrationBox>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 16 }}>
-        {first.actions.map((a) => <LinkButton key={a.label} label={a.label} tone="accentText" onPress={a.onPress} />)}
-        {items.length > 1 && <Caption>{fillText(TODAY_TEXT.notices, { n: 1, total: items.length })}</Caption>}
-      </View>
-    </View>
+    <SystemCard key={first.key} testID="notice-strip" text={first.text} actions={first.actions}
+      {...(items.length > 1 ? { count: fillText(TODAY_TEXT.notices, { n: 1, total: items.length }) } : {})} />
   );
 }
 
@@ -265,13 +259,15 @@ export function Today({
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <ScreenScroll contentContainerStyle={{ paddingBottom: snack === null ? 32 : 96 }}>
-        <ScreenHeader style={{ paddingTop: insets.top + 16, paddingBottom: 18, gap: 10, marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            <View style={{ flexShrink: 1, gap: 2 }}>
+        {/* M17: a shorter header (about 50 dp less), so Up next's button stays above the fold with a note waiting: the date
+            beside "Day N", and the level on the XP bar's line (name and class live on Character). */}
+        <ScreenHeader style={{ paddingTop: insets.top + 12, paddingBottom: 16, gap: 12, marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <View style={{ flexShrink: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 12 }}>
+              <Title accessibilityRole="header">{today !== null ? `Day ${today.dayNumber}` : 'Today'}</Title>
               {today !== null && (
                 <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
               )}
-              <Title accessibilityRole="header">{today !== null ? `Day ${today.dayNumber}` : 'Today'}</Title>
             </View>
             <Tap
               accessibilityRole="button"
@@ -303,12 +299,11 @@ export function Today({
                   <Heading>{String(view.character.streak.shields)}</Heading>
                 </View>
               </View>
-              <View style={{ gap: 6 }}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', columnGap: 12 }}>
-                  <Body weight="bold">{`${view.profile.name} · Lv ${view.character.level} ${CLASS_NAMES[view.profile.classId]}`}</Body>
-                  <Caption>{`${view.character.xpIntoLevel} / ${view.character.xpForLevel} XP`}</Caption>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 4 }}>
+                <View style={{ flexGrow: 1, flexBasis: 160 }}>
+                  <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} level={view.character.level} label={`Level ${view.character.level} progress`} />
                 </View>
-                <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} level={view.character.level} label={`Level ${view.character.level} progress`} />
+                <Caption tone="ashLight">{fillText(TODAY_TEXT.levelLine, { level: view.character.level, xp: view.character.xpIntoLevel, max: view.character.xpForLevel })}</Caption>
               </View>
               {marked(hold) && <ShadowMark label={SHADOW_TEXT.mark} accessibilityLabel={SHADOW_TEXT.markLabel} />}
               {mark !== null && usable && <Caption>{mark}</Caption>}

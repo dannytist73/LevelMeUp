@@ -126,6 +126,8 @@ export const TODAY_TEXT = {
   streak: 'day streak',
   counts: 'today counts',
   shields: '{n} of {max} shields',
+  /** M17: the level on the XP bar's line, in Today's header. */
+  levelLine: 'Lv {level} · {xp} / {max} XP',
   begin: 'Begin',
   cleared: 'Cleared +{xp}',
   clearedAt: '{stat} · cleared {time}',

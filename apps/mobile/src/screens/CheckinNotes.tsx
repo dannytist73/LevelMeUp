@@ -1,16 +1,13 @@
 // Today's part of the check-in (M7a, board F3 without the Pact's parts): a settled "I just didn't" once, the question while
 // a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer. M12 (audit 1): its buttons are
-// quiet, so Up next keeps the screen's one bright button.
+// quiet, so Up next keeps the screen's one bright button. M17: each note is one card, its answers inside it.
 import { CHECKIN_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
 import { checkinLead, resultText } from '../game/checkin.ts';
 import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { useGame } from '../state/store.ts';
-import { Button } from '../ui/Button.tsx';
-import { NarrationBox } from '../ui/NarrationBox.tsx';
-import { Small } from '../ui/Text.tsx';
+import { SystemCard } from '../ui/NarrationBox.tsx';
 
 const T = CHECKIN_TEXT;
 
@@ -41,36 +38,26 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
   useEffect(() => {
     if (!offered) setAnsweredOffer(false);
   }, [offered]);
+  // M17: each note is one System card with its answers inside it.
   return (
     <>
       {result !== null && result.id !== seen && (
-        <View style={{ gap: 8 }}>
-          <NarrationBox>{resultText(result.outcome, view.character.streak.best)}</NarrationBox>
-          <Button label={T.done} variant="secondary" onPress={() => void dismissResult(result.id)} />
-        </View>
+        <SystemCard text={resultText(result.outcome, view.character.streak.best)} actions={[{ label: T.done, onPress: () => void dismissResult(result.id) }]} />
       )}
       {checkin !== null && checkin.answer === null && checkin.id !== later && (
-        <View style={{ gap: 8 }}>
-          <NarrationBox>{T.title}</NarrationBox>
-          <Small tone="chalk">{checkinLead(checkin, view.today?.dayNumber ?? null)}</Small>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <Button label={T.open} variant="secondary" onPress={onCheckin} />
-            <Button label={T.openLater} variant="secondary" onPress={() => answerLater(checkin.id)} />
-          </View>
-        </View>
+        <SystemCard text={T.title} detail={checkinLead(checkin, view.today?.dayNumber ?? null)} actions={[
+          { label: T.open, onPress: onCheckin },
+          { label: T.openLater, onPress: () => answerLater(checkin.id) },
+        ]} />
       )}
       {checkin !== null && checkin.answer === 'just_didnt' && (
-        <View style={{ gap: 8 }}>
-          <NarrationBox>{held}</NarrationBox>
-          {view.answering && <Small tone="chalk">{T.waiting}</Small>}
-        </View>
+        <SystemCard text={held} {...(view.answering ? { detail: T.waiting } : {})} />
       )}
       {lighterPlan !== null && offered && !answeredOffer && (
-        <View style={{ gap: 8 }}>
-          <NarrationBox>{fillText(LIGHTER_TEXT.offer, { from: lighterPlan.from, to: lighterPlan.to })}</NarrationBox>
-          <Button label={LIGHTER_TEXT.accept} variant="secondary" onPress={() => answerOffer(true)} />
-          <Button label={LIGHTER_TEXT.decline} variant="secondary" onPress={() => answerOffer(false)} />
-        </View>
+        <SystemCard text={fillText(LIGHTER_TEXT.offer, { from: lighterPlan.from, to: lighterPlan.to })} actions={[
+          { label: LIGHTER_TEXT.accept, onPress: () => answerOffer(true) },
+          { label: LIGHTER_TEXT.decline, onPress: () => answerOffer(false) },
+        ]} />
       )}
     </>
   );

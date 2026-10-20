@@ -22,8 +22,11 @@ import { Body, Caption, Heading, Label, Meta, Small, Title } from '../ui/Text.ts
 
 export const COMPLETION_NAMES = { tap: 'Check off', timer: 'Timer', reps: 'Rep log', text: 'One sentence' } as const;
 
-/** M10c: the core card's picture is a wider crop than the quest screen's 16:9 (emulator: Begin fell below the fold). */
-export const TODAY_ART_RATIO = 2;
+/**
+ * M10c: the core card's picture is a wider crop than the quest screen's 16:9 (emulator: Begin fell below the fold). M17:
+ * wider again (2.6:1, about 40 dp less), so Begin stays in view with a System note above it (UX audit 2026-10-20, N1).
+ */
+export const TODAY_ART_RATIO = 2.6;
 
 export const questXp = (quest: QuestView): number => Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0);
 

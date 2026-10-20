@@ -59,11 +59,11 @@ describe('Today', () => {
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
   });
 
-  it('shows the day, the player, the XP bar, the streak and shields', async () => {
+  it('shows the day, the level, the XP bar, the streak and shields', async () => {
     await renderToday();
     expect(screen.getByText('Saturday, 10 Oct')).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Day 1' })).toBeTruthy();
-    expect(screen.getByText(/^Rin · Lv \d+ Warrior$/)).toBeTruthy(); // M12: one line
+    expect(screen.getByText(/^Lv \d+ · \d+ \/ \d+ XP$/)).toBeTruthy(); // M17: the level on the bar's line; name and class on Character
     expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ })).toBeTruthy();
     expect(screen.getByText('day streak')).toBeTruthy();
     // M10c: shields as the icon and the number; the label still says it in full.
