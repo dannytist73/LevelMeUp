@@ -23,6 +23,7 @@ import { TabTop } from '../ui/TabTop.tsx';
 import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Small, Title } from '../ui/Text.tsx';
 import { ClearedRow, questXp } from './QuestCard.tsx';
+import { usePullToSync } from './pull.ts';
 import { ReadingHero, ReadingRow } from './reading/ReadingCard.tsx';
 import { lastSynced, staleSince } from './syncLine.ts';
 
@@ -75,6 +76,7 @@ export const PAST_SHOWN = 5;
 export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }: LibraryProps) {
   const [allPast, setAllPast] = useState(false);
   const insets = useSafeAreaInsets();
+  const pull = usePullToSync();
   const view = useGame((s) => s.view);
   const codex = useGame((s) => s.codex);
   const articles = useGame((s) => s.articles);
@@ -102,7 +104,7 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
   }
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull}>
       <ScreenHeader style={{ paddingTop: insets.top + 12, gap: 4 }}>
         <TabTop onSettings={onSettings}>
           <Title accessibilityRole="header">{L.title}</Title>

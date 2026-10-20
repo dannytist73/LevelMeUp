@@ -21,6 +21,7 @@ import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { TabTop } from '../ui/TabTop.tsx';
 import { Calendar } from './chronicle/Calendar.tsx';
 import { StatChart } from './chronicle/StatChart.tsx';
+import { usePullToSync } from './pull.ts';
 import { lastSynced, staleSince } from './syncLine.ts';
 
 const C = CHRONICLE_TEXT;
@@ -71,6 +72,7 @@ export type ChronicleProps = { onPlus?: () => void; onSettings?: () => void };
 
 export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
   const insets = useSafeAreaInsets();
+  const pull = usePullToSync();
   const view = useGame((s) => s.view);
   const lastSyncedAt = useGame(staleSince);
   const stale = lastSyncedAt !== undefined;
@@ -79,7 +81,7 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
   const today = view?.calendar.find((d) => d.mark === 'open')?.date ?? null;
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull}>
       <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
         {/* M17: a title like the other tabs' (it was a small label). */}
         <TabTop onSettings={onSettings}><Title accessibilityRole="header">{C.label}</Title></TabTop>

@@ -27,6 +27,7 @@ import { ClassPath } from './character/ClassPath.tsx';
 import { ScholarsPath } from './character/ScholarsPath.tsx';
 import { StatsPanel } from './character/StatsPanel.tsx';
 import { classLock, lockLine } from './ClassChange.tsx';
+import { usePullToSync } from './pull.ts';
 import { lastSynced, staleSince } from './syncLine.ts';
 
 const T = CHARACTER_TEXT;
@@ -35,6 +36,7 @@ export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void
 
 export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.now }: CharacterProps) {
   const insets = useSafeAreaInsets();
+  const pull = usePullToSync();
   const view = useGame((s) => s.view);
   const vow = useGame((s) => s.vow);
   const lastSyncedAt = useGame(staleSince);
@@ -73,7 +75,7 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
   const figure = figureFor(chosen, view.profile.programStyle);
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull}>
       <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
         {/* M17: the tab's title is the player's name, large like the other tabs' (it sat small under the portrait). */}
         <TabTop onSettings={onSettings}><Title accessibilityRole="header">{view.profile.name}</Title></TabTop>
