@@ -9,7 +9,8 @@ export const SETTINGS_TEXT = {
   game: {
     /** M10c: the row in Settings, with what's set now as its line. */
     open: 'Daily plan',
-    row: '{voice} voice · day ends {time} · {minutes} min a day',
+    // M17: no-break spaces, so a narrow row never leaves "day" alone on its last line.
+    row: '{voice} voice · day ends {time} · {minutes}\u00a0min a\u00a0day',
     title: 'Your game',
     line: 'How the System speaks to you, when your quest day ends, and how much each day asks of you.',
     voice: 'Voice',

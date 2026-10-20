@@ -96,7 +96,7 @@ export const READING_TEXT = {
     noKeptLine: "Tap Keep on a reading's lesson card and it lands here.",
     openToday: "Open today's reading",
     pastLine: '{date} · {topic}',
-    lineSaved: 'your line saved',
+    lineSaved: 'your\u00a0line\u00a0saved', // M17: kept on one line ("saved" wrapped alone)
   },
   insight: {
     title: 'Insight',

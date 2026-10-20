@@ -110,7 +110,7 @@ describe('Settings → Account and Game (M7b)', () => {
     const onDelete = jest.fn();
     await render(withStore(testStore({ view: project(adjustState(), []) }), settings(onGame, onDelete)));
     // M10c: Daily plan is a row with what's set now as its line.
-    await fireEvent.press(screen.getByRole('button', { name: /^Daily plan\. \w+ voice · day ends .+ · \d+ min a day$/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Daily plan\. \w+ voice · day ends .+ · \d+\smin a\sday$/ }));
     expect(onGame).toHaveBeenCalled();
     await fireEvent.press(screen.getByRole('button', { name: SETTINGS_TEXT.account.delete }));
     expect(onDelete).toHaveBeenCalled();
