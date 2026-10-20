@@ -50,7 +50,7 @@ function Tags({ quest, resting }: { quest: QuestView; resting: boolean }) {
 /** The bright bar at the foot of Up next: the only accent button on Today (audit 1). */
 function GoBar({ label, xp }: { label: string; xp: number }) {
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 8, minHeight: 54, marginTop: 4, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.commit }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', justifyContent: 'center', columnGap: 8, minHeight: 54, marginTop: 4, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.commit }}>
       <Heading tone="onAccent">{label}</Heading>
       <Label tone="onAccent">{`· +${xp} XP`}</Label>
       <Icon name="chevronRight" size={22} color={colors.onAccent} />
@@ -152,7 +152,7 @@ export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting 
         accessibilityHint={PLAY_TEXT.quest.open}
         onPress={onOpen}
         radius={radius.control}
-        style={{ flex: 1, minHeight: 60, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 4, paddingLeft: onCheck === undefined ? 16 : 0, paddingRight: 14, paddingVertical: 10 }}
+        style={{ flex: 1, minHeight: 60, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', columnGap: 12, rowGap: 4, paddingLeft: onCheck === undefined ? 16 : 0, paddingRight: 14, paddingVertical: 10 }}
       >
         <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
           <Body weight="bold">{title}</Body>
