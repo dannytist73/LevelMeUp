@@ -12,7 +12,7 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { Body, Heading, Label, Small } from '../ui/Text.tsx';
 import { TextField } from '../ui/TextField.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
@@ -57,8 +57,8 @@ export function Book({ onDone, onBack }: BookProps) {
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
-      <TopBar onBack={onBack} />
-      <Title accessibilityRole="header">{B.title}</Title>
+      {/* M17: the name in the top bar, as on every screen opened from another (it sat under an empty bar). */}
+      <TopBar title={B.title} onBack={onBack} />
       {!open ? (
         <NarrationBox>{B.closed}</NarrationBox>
       ) : (

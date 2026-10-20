@@ -63,7 +63,9 @@ export function Look({ onBack, onPlus }: LookProps) {
             <OptionCard
               key={name}
               label={PLUS_TEXT.themes[name].name}
-              detail={locked ? `${PLUS_TEXT.themes[name].line} ${PLUS_TEXT.look.plus}.` : PLUS_TEXT.themes[name].line}
+              detail={PLUS_TEXT.themes[name].line}
+              // M17: the Plus pill says it on screen (the words said it twice); a screen reader hears it in the name.
+              {...(locked ? { accessibilityLabel: `${PLUS_TEXT.themes[name].name}. ${PLUS_TEXT.themes[name].line} ${PLUS_TEXT.look.plus}.` } : {})}
               selected={shownTheme === name}
               onPress={() => pickTheme(name)}
               aside={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Swatches theme={name} />{lock(locked)}</View>}
@@ -80,7 +82,9 @@ export function Look({ onBack, onPlus }: LookProps) {
             <OptionCard
               key={name}
               label={PLUS_TEXT.frames[name]}
-              detail={name === 'founder' ? PLUS_TEXT.look.founderOnly : locked ? PLUS_TEXT.look.plus : undefined}
+              // M17: a locked frame wears the same Plus pill as a locked colour (it was a grey word under the name).
+              {...(name === 'founder' ? { detail: PLUS_TEXT.look.founderOnly } : {})}
+              {...(locked ? { aside: lock(true), accessibilityLabel: `${PLUS_TEXT.frames[name]}. ${PLUS_TEXT.look.plus}` } : {})}
               selected={(frameAllowed(frame, plus) ? frame : 'none') === name}
               onPress={() => pickFrame(name)}
             />
