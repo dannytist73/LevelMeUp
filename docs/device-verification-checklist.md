@@ -804,3 +804,7 @@ APK.
 | 24 | Character: each stat's rank starts the line under its bar, and the two columns line up (also on a small phone). | **Pass** 2026-10-20, emulator (411 dp and 360 dp). Find X9: |
 | 25 | A new character's "Your day" step: Wake up and Sleep stacked, each time on one line. | **Pass** 2026-10-20, emulator (the step opened directly; nothing chosen). Find X9 (next new character): |
 | 26 | The Codex with many kept lessons opens at once and scrolls without stutter. | Emulator: a 200-lesson developer preview scrolled; smoothness only on the phone. Find X9: |
+| 27 | Times read the same everywhere, 12-hour: "Last synced 3:51 AM" (offline), "cleared 9:00 PM" under Done today, the next day's start, Vanish's "back at". | **Pass** 2026-10-20, emulator (Last synced). Find X9: |
+| 28 | The reading deck: the top bar stays put when you swipe from the cover to the first card. | **Pass** 2026-10-20, emulator (the bar's caption at the same height on both). Find X9: |
+| 29 | Settings → Account always shows (a guest, or saved with Google), never two grey bars that stay. | **Pass** 2026-10-20, emulator (after a restart that had failed one local read). Find X9: |
+| 30 | Character: a locked ability shows a small lock beside "Level 5 · 3 to go"; "Within reach" reads as a heading. A new character's safety check counts up ("0 of 7 answered"). | **Pass** 2026-10-20, emulator (safety: unit test). Find X9: |
