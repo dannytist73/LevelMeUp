@@ -25,7 +25,9 @@ export function Codex({ onBack, onOpenReading = () => {} }: { onBack: () => void
   const [removed, setRemoved] = useState<CodexEntry | null>(null);
   // M17 (review): one function across redraws, so the snackbar coming and going doesn't redraw every drawn lesson.
   const renderRow = useCallback((entry: CodexEntry) => (
-    <View style={{ gap: 4 }}>
+    // M17 (design critique): Take out hugs its own card (its 48 dp touch area is its gap) and the next lesson starts 28 dp
+    // below it; at 4 and 16 the link sat halfway between two cards.
+    <View>
       <LessonCard entry={entry} onOpen={() => onOpenReading(entry.articleId)} />
       <LinkButton label={C.remove} accessibilityLabel={fillText(C.removeLabel, { lesson: entry.lesson })}
         onPress={() => { setRemoved(entry); void toggleKeep(entry); }} />
@@ -37,7 +39,7 @@ export function Codex({ onBack, onOpenReading = () => {} }: { onBack: () => void
       <ScreenList
         data={codex}
         keyOf={(entry) => entry.articleId}
-        space={16}
+        space={28}
         contentContainerStyle={{ paddingBottom: insets.bottom + (removed === null ? 32 : 96), paddingHorizontal: space.gutter }}
         header={<>
           <TopBar title={C.title} onBack={onBack} />
