@@ -93,6 +93,15 @@ describe('the studio takes one job at a time (M15)', () => {
     expect(third).toMatchObject({ job: { id: 58, attempt: 1 } });
   });
 
+  it('lets a check-only run take its job without using a try', async () => {
+    const store = new FakeStudio();
+    await claim(store);
+    expect(await claim(store, true)).toMatchObject({ job: { id: 57, attempt: 1 } });
+    expect(await claim(store, true)).toMatchObject({ job: { id: 57, attempt: 1 } });
+    expect(await claim(store)).toMatchObject({ job: { id: 57, attempt: 2 } });
+    expect(store.jobs).toHaveLength(1);
+  });
+
   it('says so when every topic has been used', async () => {
     const store = new FakeStudio();
     for (const [cluster, topics] of Object.entries(ARTICLE_TOPICS)) {

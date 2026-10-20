@@ -9,7 +9,7 @@ import { BRIEF_LIMITS, pageUrl } from '../../supabase/functions/_shared/articles
 import type { Brief } from '../../supabase/functions/_shared/articles/brief.ts';
 import type { StoryDeck } from '../../supabase/functions/_shared/articles/deck.ts';
 import { RESEARCH_SYSTEM } from '../../supabase/functions/_shared/prompts/articles.ts';
-import { clip, shingles, wordCount } from '../../supabase/functions/_shared/articles/text.ts';
+import { clip, shingles, wordCount, wordsOf } from '../../supabase/functions/_shared/articles/text.ts';
 import { pageWords, quoteOnPage } from './page.ts';
 
 /** Searches the researcher may make (the tick's is 5; reading the pages itself, the studio can afford a few more). */
@@ -132,6 +132,28 @@ export function verifyResearch(r: Research, pages: ReadonlyMap<string, PageRead>
     if (cited.size > 0) facts.push({ id: facts.length + 1, text: clip(fact.text.replace(/\s+/g, ' ').trim(), BRIEF_LIMITS.factChars), sources: [...cited] });
   }
   return { brief: { sources, facts, excerpts: [...new Set(excerpts)].slice(0, MAX_EXCERPTS) }, dropped };
+}
+
+/**
+ * The phrases in the brief's facts that repeat 8 or more words of a source (overlapping runs joined): the writer copies
+ * from the facts, so it is warned about these before it writes. Lowercase words, as the copying check compares them.
+ */
+export function sharedRuns(brief: Brief, max = 30): string[] {
+  const source = new Set(brief.excerpts.flatMap((e) => shingles(e, 8)));
+  const runs: string[] = [];
+  for (const fact of brief.facts) {
+    const words = wordsOf(fact.text);
+    let start = -1;
+    for (let i = 0; i <= words.length - 7; i++) {
+      const hit = i + 8 <= words.length && source.has(words.slice(i, i + 8).join(' '));
+      if (hit && start < 0) start = i;
+      if (!hit && start >= 0) {
+        runs.push(words.slice(start, i + 7).join(' '));
+        start = -1;
+      }
+    }
+  }
+  return [...new Set(runs)].slice(0, max);
 }
 
 /** The page's paragraphs that share a run of 8 words with a quote: the source's wording around it. */

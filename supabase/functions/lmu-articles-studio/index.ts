@@ -2,7 +2,7 @@
 // owner's PC takes a topic, and hands back the article, its story and its picture, which are checked again and stored
 // here. It answers only to the studio secret, compared in constant time like the tick's; off until LMU_STUDIO_SECRET is
 // set. The picture is uploaded with the service key, which never leaves the server.
-//   { "action": "claim" }                                  -> { job } or { none: "busy" | "no_topics" }
+//   { "action": "claim", "dry"? }                         -> { job } or { none: "busy" | "no_topics" }
 //   { "action": "fail", "jobId", "error" }                 -> { recorded }
 //   { "action": "submit", "jobId", "brief", "article", "deck", "picture"?, "dry"? }
 //                                                          -> { stored | checked, picture, words }, or 422 { problems }
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   if (!isObject(body)) return problemResponse(problem(400, 'bad_request'));
   const store = studioStore(db());
   try {
-    if (body.action === 'claim') return json(200, await claim(store));
+    if (body.action === 'claim') return json(200, await claim(store, body.dry === true));
     if (body.action === 'fail') {
       if (!Number.isInteger(body.jobId) || typeof body.error !== 'string') return problemResponse(problem(400, 'bad_request'));
       return json(200, { recorded: await recordFailure(store, body.jobId as number, body.error) });

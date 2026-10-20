@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { checkBrief } from '../../functions/_shared/articles/brief.ts';
 import { parseStudioBrief } from '../../functions/_shared/articles/studio.ts';
 import { RESEARCH_SYSTEM } from '../../functions/_shared/prompts/articles.ts';
-import { STUDIO_RESEARCH_SYSTEM, STUDIO_SEARCHES, pickSystem, verifyResearch } from '../../../scripts/studio/lib.ts';
+import { STUDIO_RESEARCH_SYSTEM, STUDIO_SEARCHES, pickSystem, sharedRuns, verifyResearch } from '../../../scripts/studio/lib.ts';
 import type { PageRead, Research } from '../../../scripts/studio/lib.ts';
 import { decodeEntities, htmlText, pageWords, quoteOnPage } from '../../../scripts/studio/page.ts';
 
@@ -79,6 +79,20 @@ describe('the research check (M15)', () => {
     expect(brief.facts).toEqual([]);
     expect(dropped).toEqual(['fact 1: a quote of 7 words', 'fact 2: quotes a source it doesn\'t list (9)']);
     expect(checkBrief(brief)).toEqual(['the research cites 0 source(s); it needs 2', 'the research has 0 cited facts; it needs 6']);
+  });
+});
+
+describe('the wording the writer is warned about (M15)', () => {
+  it('names each phrase a fact shares with a source, overlapping runs joined', () => {
+    const brief = {
+      sources: [{ id: 1, url: 'https://a.org/x', title: 'A' }],
+      facts: [
+        { id: 1, text: 'Beginners can add 500 to 1,000 daily steps every week or two, the hospital says.', sources: [1] },
+        { id: 2, text: 'Nothing here is taken from any page at all, it is all new words.', sources: [1] },
+      ],
+      excerpts: ['For beginners, add 500 to 1,000 daily steps every week or two until you reach your goal.'],
+    };
+    expect(sharedRuns(brief)).toEqual(['add 500 to 1 000 daily steps every week or two']);
   });
 });
 

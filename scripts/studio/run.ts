@@ -24,7 +24,7 @@ import { ARTICLE_SCHEMA, writeRequest } from '../../supabase/functions/_shared/p
 import { PROJECT_REF } from '../lib/guard.ts';
 import { supabase } from '../sb.ts';
 import {
-  PICK_SCHEMA, RESEARCH_SCHEMA, SCENE_SCHEMA, SCENE_SYSTEM, STUDIO_RESEARCH_SYSTEM, pickSystem, researchPrompt, researchUrls, scenePrompt, verifyResearch,
+  PICK_SCHEMA, RESEARCH_SCHEMA, SCENE_SCHEMA, SCENE_SYSTEM, STUDIO_RESEARCH_SYSTEM, pickSystem, researchPrompt, researchUrls, scenePrompt, sharedRuns, verifyResearch,
 } from './lib.ts';
 import type { PageRead, Research } from './lib.ts';
 import { fetchPage } from './page.ts';
@@ -145,35 +145,47 @@ async function verify(r: Research): Promise<{ brief: Brief; dropped: string[] }>
   return verified;
 }
 
-/** The article from the brief with the tick's own prompt; refused drafts are written once more, told why (as the tick). */
+/** Tries at the article and at the story: free on the PC, so one more than the tick's two. */
+const DRAFTS = 3;
+
+/**
+ * The article from the brief with the tick's own prompt, warned up front about the wording its facts share with the
+ * sources (the copying check refused both drafts of the first test over such runs); a refused draft is written again,
+ * told every reason so far, as the tick tells its one rewrite.
+ */
 function write(env: Env, job: StudioJob, brief: Brief): unknown {
-  let error: string | null = null;
-  for (const attempt of [1, 2]) {
+  const runs = sharedRuns(brief);
+  const warning = runs.length === 0 ? ''
+    : `\n\nSome wording in the facts is word for word from the sources. Never repeat 8 or more of a source's words in a row: say these in your own words: ${runs.map((r) => `"${r}"`).join('; ')}`;
+  const refused: string[] = [];
+  for (let attempt = 1; attempt <= DRAFTS; attempt++) {
+    const error = refused.length === 0 ? null : refused.join('; ');
     const params = writeRequest({ id: job.id, attempt, cluster: job.cluster, topic: job.topic, error }, brief).params as { system: string; messages: { content: string }[] };
-    const value = claude(env, { system: params.system, prompt: params.messages[0]!.content, schema: ARTICLE_SCHEMA, cwd: HERE, minutes: 20 });
+    const value = claude(env, { system: params.system, prompt: params.messages[0]!.content + warning, schema: ARTICLE_SCHEMA, cwd: HERE, minutes: 20 });
     const draft = parseArticle(value);
     const problems = draft === null ? ['the article does not match its schema'] : checkArticle(draft, brief);
     if (problems.length === 0) return value;
-    error = problems.join('; ');
-    log(`job ${job.id}: draft ${attempt} refused: ${error.slice(0, 300)}`);
+    refused.push(...problems.filter((p) => !refused.includes(p)));
+    log(`job ${job.id}: draft ${attempt} refused: ${problems.join('; ').slice(0, 300)}`);
   }
-  throw new Refused(`article: ${error}`);
+  throw new Refused(`article: ${refused.join('; ')}`);
 }
 
-/** The story with the tick's own deck prompt; a refused one is written once more, told why. */
+/** The story with the tick's own deck prompt; a refused one is written again, told every reason so far. */
 function deck(env: Env, job: StudioJob, article: unknown, brief: Brief): unknown {
   const draft = parseArticle(article)!;
   const params = deckParams(draft) as { system: string; messages: { content: string }[]; output_config: { format: { schema: object } } };
-  let fix = '';
-  for (const attempt of [1, 2]) {
+  const refused: string[] = [];
+  for (let attempt = 1; attempt <= DRAFTS; attempt++) {
+    const fix = refused.length === 0 ? '' : `\n\nYour earlier story lessons for this article failed these checks, so write it again and fix every one: ${refused.join('; ')}`;
     const value = claude(env, { system: params.system, prompt: params.messages[0]!.content + fix, schema: params.output_config.format.schema, cwd: HERE, effort: 'low', minutes: 10 });
     const d = parseDeck(value);
     const problems = d === null ? ['the deck does not match its schema'] : checkDeck(d, draft, brief.excerpts);
     if (problems.length === 0) return value;
-    fix = `\n\nYour first story lesson for this article failed these checks, so write it again and fix every one: ${problems.join('; ')}`;
+    refused.push(...problems.filter((p) => !refused.includes(p)));
     log(`job ${job.id}: story ${attempt} refused: ${problems.join('; ').slice(0, 300)}`);
   }
-  throw new Refused('story: refused twice');
+  throw new Refused(`story: ${refused.join('; ')}`);
 }
 
 const comfyUp = async (): Promise<boolean> => {
@@ -283,7 +295,7 @@ async function run(dry: boolean): Promise<void> {
   for (const key of ['LMU_SUPABASE_URL', 'LMU_SUPABASE_PUBLISHABLE_KEY', 'LMU_STUDIO_SECRET', 'CLAUDE_CODE_OAUTH_TOKEN']) {
     if (!env[key]) throw new Error(`${key} is missing from ${ENV_FILE}: run \`npm run studio -- ${key === 'CLAUDE_CODE_OAUTH_TOKEN' ? 'token' : 'setup'}\``);
   }
-  const claimed = await studio(env, { action: 'claim' });
+  const claimed = await studio(env, { action: 'claim', dry });
   if (claimed.status !== 200) throw new Error(`claim: ${claimed.status} ${JSON.stringify(claimed.body)}`);
   if ('none' in claimed.body) {
     log(`no job today: ${String(claimed.body.none)}`);

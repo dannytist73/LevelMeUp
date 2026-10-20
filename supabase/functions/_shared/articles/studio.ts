@@ -47,12 +47,14 @@ const asStudioJob = (j: { id: number; cluster: ArticleCluster; topic: string }, 
 
 /**
  * The job the PC works on today: its own unfinished one (each run is a try, so a run that died is finished by the next),
- * else a new topic, picked like the tick's. Under the tick's lease, so the two never take the same topic.
+ * else a new topic, picked like the tick's. Under the tick's lease, so the two never take the same topic. A check-only
+ * run (`dry`) takes the job without using a try, so the real run that follows can store what it checked.
  */
-export async function claim(store: StudioStore): Promise<ClaimResult> {
+export async function claim(store: StudioStore, dry = false): Promise<ClaimResult> {
   if (!(await store.begin(LEASE_SECONDS))) return { none: 'busy' };
   try {
     for (const job of (await store.openJobs()).filter((j) => j.status === 'studio')) {
+      if (dry) return { job: asStudioJob(job, job.attempt) };
       if (job.attempt < STUDIO_ATTEMPTS && (await store.move(job.id, 'studio', 'studio', { attempt: job.attempt + 1 }))) {
         return { job: asStudioJob(job, job.attempt + 1) };
       }
