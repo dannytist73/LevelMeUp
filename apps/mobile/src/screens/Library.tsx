@@ -116,8 +116,8 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
             {codex.length > LIBRARY_LESSONS && <LinkButton label={L.seeAll} tone="accentText" onPress={onOpenCodex} />}
           </View>
           {codex.length === 0 ? (
-            <StateNote kind="empty" title={L.noKept} line={L.noKeptLine}
-              action={quest !== null && article !== null && open && quest.completedAt === null ? { label: L.openToday, onPress: () => onOpenQuest(quest.id) } : undefined} />
+            // M17: no "Open today's reading" here: it showed only while today's card, with its own button, sat right above.
+            <StateNote kind="empty" title={L.noKept} line={L.noKeptLine} />
           ) : (
             codex.slice(0, LIBRARY_LESSONS).map((entry) => <LessonCard key={entry.articleId} entry={entry} onOpen={() => onOpenReading(entry.articleId, null)} />)
           )}

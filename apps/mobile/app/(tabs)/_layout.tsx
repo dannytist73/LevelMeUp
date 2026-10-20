@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGame } from '../../src/state/store.ts';
 import { colors } from '../../src/theme/tokens.ts';
 import { InkTabBar } from '../../src/ui/InkTabBar.tsx';
+import { useReduce } from '../../src/ui/useMotion.ts';
 import type { TabItem } from '../../src/ui/InkTabBar.tsx';
 
 const TABS: readonly TabItem[] = [
@@ -16,11 +17,13 @@ const TABS: readonly TabItem[] = [
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const phase = useGame((s) => s.phase);
+  const reduce = useReduce();
   // No character yet (M5): the onboarding, never Today's empty state.
   if (phase === 'not_started') return <Redirect href="/onboarding" />;
   return (
     <Tabs
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.night } }}
+      // M17: tabs cross-fade instead of snapping; still with reduced motion.
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.night }, animation: reduce ? 'none' : 'fade' }}
       tabBar={({ state, navigation }) => (
         <InkTabBar
           tabs={TABS}

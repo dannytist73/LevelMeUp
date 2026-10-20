@@ -56,12 +56,11 @@ describe('the Library (M12 decision 1)', () => {
     expect(props.onOpenCodex).toHaveBeenCalled();
   });
 
-  it("with none kept: says how, and offers today's reading", async () => {
-    const props = await renderLibrary(withArticle(false));
+  it('with none kept: says how; the card above is the one way in to today (M17: no second button)', async () => {
+    await renderLibrary(withArticle(false));
     expect(screen.getByText(L.noKept)).toBeTruthy();
     expect(screen.getByText(L.noKeptLine)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: L.openToday }));
-    expect(props.onOpenQuest).toHaveBeenCalledWith(article.id);
+    expect(screen.queryByRole('button', { name: L.openToday })).toBeNull();
   });
 
   it('waits for the article while the day has none', async () => {
