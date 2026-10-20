@@ -16,6 +16,7 @@ import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { TabTop } from '../ui/TabTop.tsx';
 import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Small, Title } from '../ui/Text.tsx';
@@ -103,6 +104,9 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
         </TabTop>
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 26 }}>
+        {/* M17 (UX audit O8): loading looks like loading, not like an empty library. */}
+        {view === null && <Skeleton><Bone height={16} width="40%" /><Bone height={180} round={radius.card} /><Bone height={72} round={radius.card} /></Skeleton>}
+        {view !== null && <>
         {todays !== null && (
           <View style={{ gap: 10 }}>
             <SectionTitle title={L.today} />
@@ -130,6 +134,7 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
             ? <Small>{READING_TEXT.past.empty}</Small>
             : past.map((r) => <PastRow key={`${r.dayNumber}-${r.id}`} reading={r} onOpen={() => onOpenReading(r.id, r.dayNumber)} />)}
         </View>
+        </>}
         {stale && <Caption>{lastSynced(lastSyncedAt ?? null, view?.profile.timeZone ?? 'UTC')}</Caption>}
       </View>
     </ScreenScroll>

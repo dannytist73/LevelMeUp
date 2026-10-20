@@ -337,8 +337,14 @@ describe('Chronicle (M6d)', () => {
   });
 
   it('before any day: "your chronicle begins today"', async () => {
-    await render(withStore(testStore({ view: null }), <Chronicle />));
+    await render(withStore(testStore({ view: project({ ...SERVER, calendar: [] }, []) }), <Chronicle />));
     expect(screen.getByLabelText(`System: ${CHRONICLE_TEXT.empty}`)).toBeTruthy();
+  });
+
+  it('while the phone has no state yet, it shows loading, not an empty chronicle (M17)', async () => {
+    await render(withStore(testStore({ view: null }), <Chronicle />));
+    expect(screen.getByTestId('skeleton')).toBeTruthy();
+    expect(screen.queryByLabelText(`System: ${CHRONICLE_TEXT.empty}`)).toBeNull();
   });
 });
 

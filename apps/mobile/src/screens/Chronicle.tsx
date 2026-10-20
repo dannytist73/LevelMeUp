@@ -17,6 +17,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { TabTop } from '../ui/TabTop.tsx';
 import { Calendar } from './chronicle/Calendar.tsx';
 import { StatChart } from './chronicle/StatChart.tsx';
@@ -90,7 +91,10 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
         )}
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
-        {view === null || view.calendar.length === 0 ? (
+        {/* M17 (UX audit O8): loading looks like loading, not like an empty chronicle. */}
+        {view === null ? (
+          <Skeleton><Bone height={48} /><Bone height={280} round={radius.card} /></Skeleton>
+        ) : view.calendar.length === 0 ? (
           <NarrationBox>{C.empty}</NarrationBox>
         ) : (
           <>
