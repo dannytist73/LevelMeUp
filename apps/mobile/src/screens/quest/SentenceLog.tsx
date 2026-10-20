@@ -27,7 +27,7 @@ export function SentenceLog({
   const setText = onChangeText ?? setOwn;
   return (
     <View style={{ gap: 12 }}>
-      <TextField label={label} value={text} onChangeText={setText} maxLength={MAX_SENTENCE} />
+      <TextField label={label} value={text} onChangeText={setText} maxLength={MAX_SENTENCE} multiline />
       <Small>{note}</Small>
       <ClaimButton label={claimLabel} disabled={disabled || !sentenceValid(text)} onPress={() => onClaim(textPayload(text))} />
     </View>

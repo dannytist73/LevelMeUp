@@ -28,6 +28,9 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
     secondary: { bg: 'transparent', fg: on === 'night' ? colors.chalk : colors.ink, border: on === 'night' ? colors.lineStrong : colors.inkMuted },
   }[variant];
   const display = variant !== 'secondary';
+  // M17 (design critique): disabled, every button is a quiet outline at full opacity; faded, the bright ones read as
+  // broken (their label fell to about 1.5:1).
+  const shown = disabled ? { bg: 'transparent', fg: on === 'night' ? colors.ash : colors.inkMuted, border: on === 'night' ? colors.lineStrong : colors.inkMuted } : look;
   return (
     <Tap
       accessibilityRole="button"
@@ -44,11 +47,10 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
           paddingVertical: 8,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: look.bg,
+          backgroundColor: shown.bg,
           borderWidth: space.border,
-          borderColor: look.border,
+          borderColor: shown.border,
           borderRadius: radius.pill,
-          opacity: disabled ? 0.45 : 1,
         },
         style,
       ]}
@@ -57,7 +59,7 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
         maxFontSizeMultiplier={scale.label.maxScale}
         style={{
           alignSelf: 'stretch',
-          color: look.fg,
+          color: shown.fg,
           textAlign: 'center',
           ...(display ? { fontFamily: fonts.display, fontSize: 17, lineHeight: 22 } : { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20 }),
         }}

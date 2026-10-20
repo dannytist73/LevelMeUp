@@ -27,12 +27,14 @@ export function TextField({ label, value, onChangeText, maxLength, multiline = f
         onChangeText={onChangeText}
         maxLength={maxLength}
         multiline={multiline}
+        // M17: a multi-line field is a sentence box: tall enough to see it whole, and Enter closes the keyboard.
+        {...(multiline ? { submitBehavior: 'blurAndSubmit' as const, returnKeyType: 'done' as const, textAlignVertical: 'top' as const } : {})}
         maxFontSizeMultiplier={2}
         selectionColor={colors.accent}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
-          minHeight: 52, paddingHorizontal: 16, paddingVertical: 12, borderWidth: focused ? space.heroBorder : space.border, borderRadius: radius.control,
+          minHeight: multiline ? 104 : 52, paddingHorizontal: 16, paddingVertical: 12, borderWidth: focused ? space.heroBorder : space.border, borderRadius: radius.control,
           borderColor: focused ? (paper ? colors.accentInk : colors.accent) : paper ? colors.inkMuted : colors.lineStrong,
           backgroundColor: paper ? colors.white : colors.panel,
           color: paper ? colors.ink : colors.chalk, fontFamily: fonts.bodyMedium, fontSize: 18,

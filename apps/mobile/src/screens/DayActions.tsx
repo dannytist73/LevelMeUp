@@ -88,7 +88,7 @@ function FoldButton({ label, open, onPress }: { label: string; open: boolean; on
   return (
     <Tap accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ expanded: open }} onPress={onPress} radius={radius.pill}
       style={{
-        flexGrow: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20,
+        flexGrow: 1, flexBasis: 0, minWidth: 140, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20,
         borderRadius: radius.pill, borderWidth: space.border, borderColor: colors.lineStrong,
       }}>
       <Body weight="bold">{label}</Body>
@@ -112,7 +112,7 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
   const later = view.offline ? <Small tone="chalk">{OFFLINE_TEXT.later}</Small> : null;
   const canVanish = abilityUnlocked('vanish', view.profile.classId, view.character.level);
 
-  const pain = onPain === undefined ? null : <Button label={T.pain.open} variant="secondary" onPress={onPain} style={{ flexGrow: 1 }} />;
+  const pain = onPain === undefined ? null : <Button label={T.pain.open} variant="secondary" onPress={onPain} style={{ flexGrow: 1, flexBasis: 0, minWidth: 140 }} />;
   if (confirm !== null) {
     const panel = panelFor(confirm, today, view.lighterPlan, counts);
     return (

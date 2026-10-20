@@ -382,6 +382,18 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
           {quest.completedAt === null && isResting(quest, view.paused) && <NarrationBox>{A.paused.quest}</NarrationBox>}
           {/* M12 (audit 2): the log first, where the thumb is; its button sits in the bar at the bottom. */}
           {panel}
+          {/* Safety stays open (CLAUDE.md: exercise safety is never folded away), with "I felt pain" in reach. M17 (design
+              critique): right after the log and before the folds, as a filled card, so it reads as more than an aside. */}
+          {(template.exercise !== null || template.safety.length > 0) && (
+            <View style={{ gap: 6, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.lineStrong, backgroundColor: colors.panel }}>
+              <Label>{T.safety}</Label>
+              {template.safety.map((line, i) => <Small key={i}>{line}</Small>)}
+              {template.exercise !== null && <Small tone="chalk">{EXERCISE_SAFETY_LINE}</Small>}
+              {template.exercise !== null && (
+                <Button label={A.pain.open} variant="secondary" onPress={() => onPain(quest.id)} style={{ alignSelf: 'flex-start' }} />
+              )}
+            </View>
+          )}
           <View style={{ gap: 10 }}>
             <RowLink label={T.steps} open={showHow} onPress={() => setShowHow((s) => !s)} />
             {showHow && (
@@ -403,17 +415,6 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
               </Appear>
             )}
           </View>
-          {/* Safety stays open (CLAUDE.md: exercise safety is never folded away), with "I felt pain" in reach. */}
-          {(template.exercise !== null || template.safety.length > 0) && (
-            <View style={{ gap: 6, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.divider }}>
-              <Label>{T.safety}</Label>
-              {template.safety.map((line, i) => <Small key={i}>{line}</Small>)}
-              {template.exercise !== null && <Small tone="chalk">{EXERCISE_SAFETY_LINE}</Small>}
-              {template.exercise !== null && (
-                <Button label={A.pain.open} variant="secondary" onPress={() => onPain(quest.id)} style={{ alignSelf: 'flex-start' }} />
-              )}
-            </View>
-          )}
           {today.swapsLeft > 0 && quest.swaps.length > 0 && (
             <Button label={A.swap.open} variant="secondary" onPress={() => onSwap(quest.id)} />
           )}

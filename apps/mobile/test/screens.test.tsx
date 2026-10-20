@@ -628,7 +628,7 @@ describe('Today after a missed day (M7a)', () => {
   it('asks the check-in, shows the streak paused, and opens the check-in screen', async () => {
     const { store, onCheckin } = await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
     expect(screen.getByText(T.title)).toBeTruthy();
-    expect(screen.getByText(T.leadYesterday)).toBeTruthy();
+    expect(screen.queryByText(T.leadYesterday)).toBeNull(); // M17: the details are on the check-in screen
     expect(screen.getByText(`day streak · ${T.streakPaused}`)).toBeTruthy();
     await fireEvent.press(screen.getByText(T.open));
     expect(onCheckin).toHaveBeenCalled();

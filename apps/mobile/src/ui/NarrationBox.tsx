@@ -24,7 +24,8 @@ export function NarrationBox({ children, style }: { children: string; style?: St
       accessible
       accessibilityLabel={`${PLAY_TEXT.speakers.system}: ${children}`}
       style={[
-        { gap: 6, paddingTop: 14, paddingHorizontal: 16, paddingBottom: 14, ...box() },
+        // M17 (design critique): a quiet edge; the accent outline is for the card you act on now.
+        { gap: 6, paddingTop: 14, paddingHorizontal: 16, paddingBottom: 14, ...box(), borderColor: colors.line },
         style,
       ]}
     >
@@ -62,7 +63,7 @@ export function SystemCard({ text, detail, actions = [], count, testID }: {
       </View>
       {actions.length > 0 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {actions.map((a) => <Button key={a.label} label={a.label} variant="secondary" onPress={a.onPress} style={{ flexGrow: 1 }} />)}
+          {actions.map((a) => <Button key={a.label} label={a.label} variant="secondary" onPress={a.onPress} style={{ flexGrow: 1, flexBasis: 0, minWidth: 140 }} />)}
         </View>
       )}
     </View>
