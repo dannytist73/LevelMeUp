@@ -35,7 +35,9 @@ uses, uploads the picture and publishes the article. The PC holds one key that c
     page's text (`page.ts`; PubMed and PMC through NCBI's E-utilities, since their pages answer scripts with a bot
     check that is never worked around). Each fact carries passages quoted from its pages; code fetches every page again
     and keeps a fact only when its passage is there word for word (the API's citations do this for the tick). The
-    passages and their paragraphs are the excerpts for the copying check.
+    passages are the excerpts for the copying check, as the API's cited passages are the tick's (their whole
+    paragraphs were tried first, and refused wording no fact carried). The writer is warned up front about wording its
+    facts share with the passages, and the article and the story get three tries each, told every reason so far.
   - Article and story: the tick's own prompts and schemas (`writeRequest`, `deckParams`), checked locally, each
     written once more with the reasons when refused, as the tick does.
   - Picture: Claude writes the scene from the story; `story-art.py scene` renders three takes with the regular's fixed

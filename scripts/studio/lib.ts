@@ -2,7 +2,8 @@
 // story use the tick's own prompts and schemas (supabase/functions/_shared), so a studio article reads like a tick's;
 // only the research differs: Claude Code reads pages itself, so each fact carries passages quoted from its pages, and
 // code keeps a fact only when its passage is found word for word on the page (the API's citations do this for the
-// tick). The verified passages, with their paragraphs, become the excerpts the copying check uses.
+// tick). The verified passages become the excerpts the copying check uses, as the API's cited passages are the tick's
+// (their whole paragraphs were tried first: the check then refused wording no fact carried, more strictly than the tick).
 import { CAST, CLUSTER_NAMES } from '../../packages/content/src/index.ts';
 import type { ArticleCluster, CastId } from '../../packages/content/src/index.ts';
 import { BRIEF_LIMITS, pageUrl } from '../../supabase/functions/_shared/articles/brief.ts';
@@ -90,7 +91,7 @@ export function researchUrls(r: Research): string[] {
 /**
  * The brief, built by code from the research and the pages as code read them: a fact stays only with a quote found
  * word for word on its page, a page only when a kept fact quotes it, and ids are numbered again from 1. Each verified
- * quote and the page's paragraphs around it become excerpts, so the copying check knows the sources' own wording.
+ * quote becomes an excerpt, so the copying check knows the sources' own wording.
  */
 export function verifyResearch(r: Research, pages: ReadonlyMap<string, PageRead>): { brief: Brief; dropped: string[] } {
   const dropped: string[] = [];
@@ -113,7 +114,7 @@ export function verifyResearch(r: Research, pages: ReadonlyMap<string, PageRead>
       else if (!quoteOnPage(q.text, words.get(source.url)!)) dropped.push(`fact ${i + 1}: a quote isn't on ${source.url}`);
       else {
         backed.push(source.id);
-        excerpts.push(clip(q.text.trim(), EXCERPT_CHARS), ...around(q.text, page.text));
+        excerpts.push(clip(q.text.trim(), EXCERPT_CHARS));
       }
     }
     if (backed.length === 0 || facts.length >= BRIEF_LIMITS.maxFacts) continue;
@@ -156,11 +157,6 @@ export function sharedRuns(brief: Brief, max = 30): string[] {
   return [...new Set(runs)].slice(0, max);
 }
 
-/** The page's paragraphs that share a run of 8 words with a quote: the source's wording around it. */
-function around(quote: string, text: string): string[] {
-  const runs = new Set(shingles(quote, 8));
-  return text.split('\n').filter((line) => shingles(line, 8).some((run) => runs.has(run))).map((line) => clip(line, EXCERPT_CHARS));
-}
 
 export const SCENE_SCHEMA = {
   type: 'object',

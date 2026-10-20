@@ -54,7 +54,7 @@ const pages = new Map<string, PageRead>([
 ]);
 
 describe('the research check (M15)', () => {
-  it('keeps facts whose quotes are on their pages, numbers the pages again and keeps their paragraphs as excerpts', () => {
+  it('keeps facts whose quotes are on their pages, numbers the pages again and keeps the quotes as excerpts', () => {
     const { brief, dropped } = verifyResearch(research([
       { text: 'Sleeping 7–9 hours helped recall in a trial of 120 adults.', quotes: [{ source: 1, text: QUOTE_A }] },
       { text: 'A blocked page can\'t back a fact.', quotes: [{ source: 3, text: QUOTE_B }] },
@@ -65,8 +65,7 @@ describe('the research check (M15)', () => {
       { id: 1, text: 'Sleeping 7–9 hours helped recall in a trial of 120 adults.', sources: [1] },
       { id: 2, text: 'A regular wake time steadies the body clock.', sources: [2] },
     ]);
-    expect(brief.excerpts).toEqual(expect.arrayContaining([QUOTE_A, PAGE_A.split('\n')[1], QUOTE_B, PAGE_B]));
-    expect(brief.excerpts).not.toContain('Intro line.');
+    expect(brief.excerpts).toEqual([QUOTE_A, QUOTE_B]);
     expect(dropped).toEqual(['fact 2: https://c.org/blocked can\'t be read (HTTP 403)', 'fact 3: a quote isn\'t on https://a.org/sleep']);
     expect(parseStudioBrief(brief)).toEqual(brief);
   });
