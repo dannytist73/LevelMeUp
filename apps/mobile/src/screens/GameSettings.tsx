@@ -93,7 +93,7 @@ export function GameSettings({ onDone, onBack }: GameSettingsProps) {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           {MINUTES_OPTIONS.map((minutes) => (
             <View key={minutes} style={{ flexGrow: 1, flexBasis: 64 }}>
-              <OptionCard label={String(minutes)} accessibilityLabel={`${minutes} minutes a day`} selected={picked.minutesPerDay === minutes}
+              <OptionCard center label={String(minutes)} accessibilityLabel={`${minutes} minutes a day`} selected={picked.minutesPerDay === minutes}
                 onPress={() => edit({ minutesPerDay: minutes })} />
             </View>
           ))}

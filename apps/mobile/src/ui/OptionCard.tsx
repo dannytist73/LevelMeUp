@@ -24,9 +24,11 @@ export type OptionCardProps = {
    * readable (your current class) passes false: faded, its words fell to 2.45:1.
    */
   dim?: boolean;
+  /** M17: a short choice in a row of them (minutes a day): its label centred. */
+  center?: boolean;
 };
 
-export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel, aside, dim = disabled }: OptionCardProps) {
+export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel, aside, dim = disabled, center = false }: OptionCardProps) {
   return (
     <Tap
       accessibilityRole={kind}
@@ -45,7 +47,7 @@ export function OptionCard({ label, detail, selected, onPress, kind = 'radio', d
           opacity: dim ? 0.45 : 1,
         }}
       >
-        <Body weight="bold" tone={selected ? 'ink' : 'chalk'}>{label}</Body>
+        <Body weight="bold" tone={selected ? 'ink' : 'chalk'} style={center ? { textAlign: 'center' } : undefined}>{label}</Body>
         {detail !== undefined && <Small tone={selected ? 'inkSoft' : 'ashLight'}>{detail}</Small>}
         {aside !== undefined && <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ marginTop: 6 }}>{aside}</View>}
       </View>
