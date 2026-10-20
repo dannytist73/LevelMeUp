@@ -165,7 +165,7 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
         <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
           <SpeedLines burst />
           <Label tone="accentText">{T.title}</Label>
-          <Title>{profile.name}</Title>
+          <Title accessibilityRole="header">{profile.name}</Title>
         </ScreenHeader>
         <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>{body}</View>
       </ScreenScroll>

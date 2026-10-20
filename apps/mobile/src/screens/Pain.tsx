@@ -75,7 +75,7 @@ export function Pain({ questId, onDone, onBack, now = Date.now }: PainProps) {
 
   return frame(
     <>
-      <Title>{T.title}</Title>
+      <Title accessibilityRole="header">{T.title}</Title>
       {seeProfessional(reports) && <NarrationBox>{fillText(T.persists, { count: reports })}</NarrationBox>}
       <Body>{T.lead}</Body>
       <Body>{fillText(T.paused, { name })}</Body>

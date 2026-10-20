@@ -79,7 +79,7 @@ export function Training({ onDone, onBack }: TrainingProps) {
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
       <TopBar onBack={onBack} />
-      <Title>{T.title}</Title>
+      <Title accessibilityRole="header">{T.title}</Title>
       <Body>{T.line}</Body>
       <View style={{ gap: 12 }}>
         <Label>{T.plan}</Label>

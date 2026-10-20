@@ -58,7 +58,7 @@ export function Book({ onDone, onBack }: BookProps) {
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
       <TopBar onBack={onBack} />
-      <Title>{B.title}</Title>
+      <Title accessibilityRole="header">{B.title}</Title>
       {!open ? (
         <NarrationBox>{B.closed}</NarrationBox>
       ) : (

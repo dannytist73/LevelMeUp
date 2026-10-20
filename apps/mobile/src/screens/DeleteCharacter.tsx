@@ -48,7 +48,7 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
       <TopBar onBack={onBack} disabled={busy} />
-      <Title>{T.title}</Title>
+      <Title accessibilityRole="header">{T.title}</Title>
       <Body>{T.what}</Body>
       <Body>{account.kind === 'saved' ? T.google : T.guest}</Body>
       {subscribed && <Body weight="bold">{PLUS_TEXT.deleteNote}</Body>}
@@ -61,8 +61,10 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
       {sure ? (
         <>
           <NarrationBox>{T.sure}</NarrationBox>
-          <Button label={T.yes} variant="commitment" disabled={busy} onPress={() => void confirm()} />
-          <Button label={T.keep} variant="secondary" disabled={busy} onPress={() => setSure(false)} />
+          {/* M17 (UX audit 2026-10-20, O9): keeping is the bright button; deleting is the quiet outline, never the colour
+              of a reward (red stays the Shadow's). */}
+          <Button label={T.keep} disabled={busy} onPress={() => setSure(false)} />
+          <Button label={T.yes} variant="secondary" disabled={busy} onPress={() => void confirm()} />
         </>
       ) : (
         <Button label={T.start} variant="secondary" onPress={() => setSure(true)} />

@@ -55,7 +55,7 @@ export function Analysis({ onRevealed, onToday, minMs = 2_400 }: { onRevealed: (
     >
       <View style={{ borderWidth: space.heroBorder, borderColor: colors.chalk, padding: 20, gap: 12 }}>
         <SpeedLines />
-        <Title>{T.title}</Title>
+        <Title accessibilityRole="header">{T.title}</Title>
         {T.steps.map((step, i) => (
           <Body key={step} tone={i < shown ? 'chalk' : 'ash'} weight={i < shown ? 'bold' : 'regular'}>{step}</Body>
         ))}

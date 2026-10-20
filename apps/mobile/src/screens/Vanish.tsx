@@ -77,7 +77,7 @@ export function Vanish({ onBack, now = Date.now }: VanishProps) {
     return frame(
       <>
         {back}
-        <Title>{T.title}</Title>
+        <Title accessibilityRole="header">{T.title}</Title>
         <Body>{T.lead}</Body>
         {VANISH_MINUTES.map((n) => (
           <Button

@@ -20,7 +20,7 @@ export function Chip({ label, kind = 'solid', on = 'night' }: { label: string; k
         borderColor: on === 'night' ? colors.line : colors.inkMuted,
       }}
     >
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 17, color: fg }}>
+      <Text maxFontSizeMultiplier={2} style={{ fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 17, color: fg }}>
         {label}
       </Text>
     </View>

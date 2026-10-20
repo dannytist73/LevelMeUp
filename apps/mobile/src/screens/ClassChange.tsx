@@ -71,7 +71,7 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 16 }}>
       <TopBar onBack={onBack} />
-      <Title>{T.title}</Title>
+      <Title accessibilityRole="header">{T.title}</Title>
       <Body>{T.keeps}</Body>
       {lock !== null ? <NarrationBox>{lockLine(lock, view.profile.timeZone)}</NarrationBox> : <Small tone="chalk">{T.once}</Small>}
       <View style={{ gap: 10 }}>

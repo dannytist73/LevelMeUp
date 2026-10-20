@@ -16,7 +16,7 @@ import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Small, Title } from '../ui/Text.tsx';
+import { Body, Heading, Small } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 
 const T = CHECKIN_TEXT;
@@ -86,14 +86,14 @@ export function Checkin({ onDone }: CheckinProps) {
       </View>
       {choice === 'sick_or_injured' && (
         <View style={{ gap: 10 }}>
-          <Title>{T.which}</Title>
+          <Heading accessibilityRole="header">{T.which}</Heading>
           <OptionCard label={T.sick} selected={injured === false} onPress={() => setInjured(false)} />
           <OptionCard label={T.injured} detail={restsExercise ? T.injuredNote : undefined} selected={injured === true} onPress={() => setInjured(true)} />
         </View>
       )}
       {choice === 'just_didnt' && redo !== null && (
         <View style={{ gap: 10 }}>
-          <Title>{T.how}</Title>
+          <Heading accessibilityRole="header">{T.how}</Heading>
           <OptionCard label={T.recovery} selected={!secondWind} onPress={() => setSecondWind(false)} />
           <OptionCard
             label={fillText(T.secondWind, { quest: authoredTemplate(redo.templateId).voice[view.profile.voice].title })}

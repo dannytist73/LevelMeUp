@@ -62,7 +62,7 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
 
   return frame(
     <>
-      <Title>{T.title}</Title>
+      <Title accessibilityRole="header">{T.title}</Title>
       <Body>{fillText(T.lead, { left: today.swapsLeft })}</Body>
       {quest === null ? (
         <View style={{ gap: 10 }}>

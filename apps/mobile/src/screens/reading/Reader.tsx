@@ -29,7 +29,7 @@ export function Reader({ article, label, xp, footer, onOpenSource }: ReaderProps
       <View style={{ gap: 8 }}>
         <Label tone="accentText">{label}</Label>
         <Label>{`${meta} · ${CLUSTER_NAMES[article.cluster]}`}</Label>
-        <Title>{article.title}</Title>
+        <Title accessibilityRole="header">{article.title}</Title>
         <Body weight="medium">{article.summary}</Body>
       </View>
       {article.sections.map((s, i) => (

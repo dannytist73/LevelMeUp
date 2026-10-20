@@ -90,7 +90,7 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
-      <Title>{T.title}</Title>
+      <Title accessibilityRole="header">{T.title}</Title>
       <NarrationBox>{T.lead}</NarrationBox>
       <View style={{ gap: 10 }}>
         <Label>{T.choose}</Label>
