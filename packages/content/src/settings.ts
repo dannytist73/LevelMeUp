@@ -3,7 +3,31 @@
 
 export const SETTINGS_TEXT = {
   /** M17: the groups of Settings. */
-  groups: { plan: 'Your plan', accountability: 'Accountability', feel: 'Look and feel' },
+  groups: { plan: 'Your plan', accountability: 'Accountability', feel: 'Look and feel', account: 'Account', sync: 'Sync', about: 'About' },
+  /**
+   * Premium pass C4: the account box. A Google save brings the character back on a new phone (level, stats, quests,
+   * history); kept lessons and the vow live on the phone only, so it says so instead of "pick up where you left off".
+   */
+  google: {
+    saved: 'Saved with Google.',
+    savedLine:
+      'A new phone can sign in with Google to get your character back: its level, stats, quests and history. Kept ' +
+      'lessons and your vow stay on this phone.',
+    guest: 'Playing as a guest.',
+    guestLine: 'For now, only this phone can reach your character. Save it with Google so a new or lost phone keeps it.',
+    save: 'Save with Google',
+  },
+  /** Premium pass C4: the quiet sync words (spec §1.4: never red, never "error"). */
+  sync: {
+    now: 'Sync now',
+    syncing: 'Syncing…',
+    offline: 'Offline · will sync',
+    retrying: 'Will sync soon',
+    never: 'Not synced yet',
+    last: 'Last synced {time}',
+    waiting: '{n} waiting',
+    refused: "The last sync didn't go through. Sync now tries again.",
+  },
   /** M17: Back with unsaved changes (Your game, Training). */
   leave: { title: 'Leave without saving?', line: "Your changes here aren't saved yet.", stay: 'Keep editing', leave: 'Leave' },
   game: {

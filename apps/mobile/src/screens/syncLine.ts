@@ -1,15 +1,17 @@
-// The quiet sync mark (spec §1.4): never red, never "error". Offline just means "will sync".
+// The quiet sync mark (spec §1.4): never red, never "error". Offline just means "will sync". Premium pass C4: the words
+// are the content package's.
+import { SETTINGS_TEXT, fillText } from '@levelmeup/content';
 import { clockTime } from '../lib/dates.ts';
 import type { Status } from '../state/store.ts';
 
 export function syncMark(status: Status): string | null {
   switch (status) {
     case 'syncing':
-      return 'Syncing…';
+      return SETTINGS_TEXT.sync.syncing;
     case 'offline':
-      return 'Offline · will sync';
+      return SETTINGS_TEXT.sync.offline;
     case 'retrying':
-      return 'Will sync soon';
+      return SETTINGS_TEXT.sync.retrying;
     case 'idle':
       return null;
   }
@@ -26,5 +28,5 @@ export function staleSince(s: { unreachable: boolean; lastSyncedAt: number | nul
 
 /** "Last synced 7:40 AM" while the phone can't reach the server (Character, Chronicle, Settings). */
 export function lastSynced(lastSyncedAt: number | null, timeZone: string): string {
-  return lastSyncedAt === null ? 'Not synced yet' : `Last synced ${clockTime(new Date(lastSyncedAt).toISOString(), timeZone)}`;
+  return lastSyncedAt === null ? SETTINGS_TEXT.sync.never : fillText(SETTINGS_TEXT.sync.last, { time: clockTime(new Date(lastSyncedAt).toISOString(), timeZone) });
 }

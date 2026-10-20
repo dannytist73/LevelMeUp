@@ -3,13 +3,18 @@ import { CHECKIN_TEXT } from '../src/checkin.ts';
 import { FEEDBACK_TEXT } from '../src/feedback.ts';
 import { fillText } from '../src/play.ts';
 import { lintText } from '../src/lint.ts';
+import { NOTICE_OTHER, NOTICE_TEXT } from '../src/notices.ts';
 import { SETTINGS_TEXT } from '../src/settings.ts';
 
 const strings = (value: unknown): string[] =>
   typeof value === 'string' ? [value] : Object.values(value as Record<string, unknown>).flatMap(strings);
 
 describe('what the System says once an action worked (premium pass B)', () => {
-  const all = [...strings(FEEDBACK_TEXT), ...strings(SETTINGS_TEXT.signInLost)];
+  // Premium pass C4: the notices, the account box and the sync words moved here from the app, so the lint covers them.
+  const all = [
+    ...strings(FEEDBACK_TEXT), ...strings(SETTINGS_TEXT.signInLost), ...strings(NOTICE_TEXT), NOTICE_OTHER,
+    ...strings(SETTINGS_TEXT.google), ...strings(SETTINGS_TEXT.sync),
+  ];
 
   it('passes the lint: no robotic phrases, no shaming, no emoji', () => {
     for (const text of all) expect(lintText(text), text).toEqual([]);

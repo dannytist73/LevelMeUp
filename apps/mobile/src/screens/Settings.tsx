@@ -163,21 +163,21 @@ export function Settings({
         </Group>
       )}
 
-      <Group title="Account" note={signInLost ? <SignInLost /> : undefined}>
+      <Group title={SETTINGS_TEXT.groups.account} note={signInLost ? <SignInLost /> : undefined}>
         <GroupBody>
           {!accountKnown ? (
             <Skeleton><Bone height={16} width="50%" /><Bone height={12} width="80%" /></Skeleton>
           ) : account.kind === 'saved' ? (
             <>
-              <Body weight="bold">Saved with Google.</Body>
+              <Body weight="bold">{SETTINGS_TEXT.google.saved}</Body>
               {account.email !== null && <Small>{account.email}</Small>}
-              <Small>A new phone can sign in with Google and pick up where you left off.</Small>
+              <Small>{SETTINGS_TEXT.google.savedLine}</Small>
             </>
           ) : (
             <>
-              <Body weight="bold">Playing as a guest.</Body>
-              <Small>For now, only this phone can reach your character. Save it with Google so a new or lost phone costs you nothing.</Small>
-              <Button label="Save with Google" variant="secondary" disabled={account.kind !== 'guest'} busy={saving} busyLabel={SETTINGS_TEXT.busy.saving} onPress={() => void save()} />
+              <Body weight="bold">{SETTINGS_TEXT.google.guest}</Body>
+              <Small>{SETTINGS_TEXT.google.guestLine}</Small>
+              <Button label={SETTINGS_TEXT.google.save} variant="secondary" disabled={account.kind !== 'guest'} busy={saving} busyLabel={SETTINGS_TEXT.busy.saving} onPress={() => void save()} />
               {note !== null && <View accessibilityLiveRegion="polite"><Small>{note}</Small></View>}
             </>
           )}
@@ -186,22 +186,22 @@ export function Settings({
 
       <View style={{ gap: 10 }}>
         {updateRequired && <UpdateNeeded />}
-        <Group title="Sync">
+        <Group title={SETTINGS_TEXT.groups.sync}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, rowGap: 8, padding: 16 }}>
             <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
               <Body weight="bold">{lastSynced(lastSyncedAt, zone)}</Body>
-              {waiting > 0 && <Meta>{`${waiting} waiting`}</Meta>}
+              {waiting > 0 && <Meta>{fillText(SETTINGS_TEXT.sync.waiting, { n: waiting })}</Meta>}
               {/* Premium pass B5: while it syncs, Sync now says so; the line under the time would say it twice. */}
               {mark !== null && !syncing && <Meta>{mark}</Meta>}
               {/* M12 (audit 23): plain words, never the server's code. */}
-              {error !== null && <Small>The last sync didn't go through. Sync now tries again.</Small>}
+              {error !== null && <Small>{SETTINGS_TEXT.sync.refused}</Small>}
             </View>
-            <Button label="Sync now" variant="secondary" busy={syncing} busyLabel={SETTINGS_TEXT.busy.syncing} onPress={() => void syncNow()} />
+            <Button label={SETTINGS_TEXT.sync.now} variant="secondary" busy={syncing} busyLabel={SETTINGS_TEXT.busy.syncing} onPress={() => void syncNow()} />
           </View>
         </Group>
       </View>
 
-      <Group title="About">
+      <Group title={SETTINGS_TEXT.groups.about}>
         <GroupBody>
           <Small>{ABOUT_TEXT.notMedical}</Small>
           <Meta>{`Version ${version}`}</Meta>

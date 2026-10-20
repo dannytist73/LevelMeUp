@@ -24,6 +24,7 @@ export * from './cast.ts';
 export * from './character.ts';
 export * from './offline.ts';
 export * from './feedback.ts';
+export * from './notices.ts';
 export * from './quests/workout.ts';
 export * from './training/moves.ts';
 export * from './training/programs.ts';
