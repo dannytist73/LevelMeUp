@@ -58,6 +58,9 @@ export const PLAY_TEXT = {
     more: '{name}, set {n}, one more',
     how: 'How to do it',
     hide: 'Hide the steps',
+    /** M17: a finished exercise, folded to one line: its sets as logged. */
+    doneMove: 'Done · {sets}',
+    reopen: 'Change',
     log: 'Log workout',
     change: 'Change equipment or program',
     replanning: 'Your new training setup is on its way. Log this workout once it syncs.',

@@ -491,11 +491,24 @@ describe('a workout (M6c)', () => {
     expect(screen.getByText('Goblet squat')).toBeTruthy();
     expect(screen.getByText('2 sets of 10–15 reps')).toBeTruthy();
     expect(screen.getByText('1 hold of 20–40 seconds')).toBeTruthy();
-    expect(screen.getByText(/go a little heavier next time/)).toBeTruthy();
-    expect(screen.getByText(/hold a few seconds longer/)).toBeTruthy();
+    expect(screen.getByText(/go a little heavier next time/)).toBeTruthy(); // M17: with the open steps
+    expect(screen.queryByText(/hold a few seconds longer/)).toBeNull(); // M17: inside the plank's closed steps
     expect(screen.getByText(/1\. Hold one dumbbell upright/)).toBeTruthy(); // the first exercise's steps start open
     await fireEvent.press(screen.getByRole('button', { name: `${PLAY_TEXT.workout.how}: Forearm plank` })); // named for screen readers (review)
     expect(screen.getByText(/1\. Rest on your forearms/)).toBeTruthy();
+    expect(screen.getByText(/hold a few seconds longer/)).toBeTruthy();
+  });
+
+  it('a finished exercise folds to one line, the next exercise steps open, and a tap opens it again (M17)', async () => {
+    await render(<WorkoutLog moves={moves} disabled={false} onClaim={jest.fn()} />);
+    await fireEvent.press(screen.getAllByRole('checkbox', { name: 'Set 1 done' })[0]!);
+    expect(screen.queryByText(/^Done · /)).toBeNull(); // one set of two: still open
+    await fireEvent.press(screen.getAllByRole('checkbox', { name: 'Set 2 done' })[0]!);
+    expect(screen.getByText('Done · 10 · 10')).toBeTruthy();
+    expect(screen.queryByText(/1\. Hold one dumbbell upright/)).toBeNull();
+    expect(screen.getByText(/1\. Rest on your forearms/)).toBeTruthy(); // the plank's steps opened
+    await fireEvent.press(screen.getByRole('button', { name: `Goblet squat. Done · 10 · 10. ${PLAY_TEXT.workout.reopen}` }));
+    expect(screen.getByRole('button', { name: 'Goblet squat, set 1, one more' })).toBeTruthy();
   });
 
   it('logs every set, starting at the bottom of each range', async () => {

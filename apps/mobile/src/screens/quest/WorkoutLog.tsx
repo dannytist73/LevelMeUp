@@ -2,7 +2,9 @@
 // request (the first one's open), and a counter for each set. It sends every set in order; the server checks the count
 // against the plan. Less than the target still counts (the honor system). M10c: each set starts where it was last time
 // when that lies in today's range (else at the bottom of the range), last time's sets show as a line, and a Done check on
-// each set starts the rest (decisions 7–8).
+// each set starts the rest (decisions 7–8). M17 (UX audit 2026-10-20, N5): an exercise whose sets are all done folds to
+// one line (tap it to change a set), and the next one's steps open; how an exercise gets harder moves into its steps, so
+// each card no longer repeats it.
 import { PLAY_TEXT, authoredMove, fillText, moveTarget, progressLine } from '@levelmeup/content';
 import type { SessionMove } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -13,6 +15,9 @@ import { MAX_REPS, moveUnit, sessionPayload, sessionValid } from '../../quest/pa
 import { WORKOUT_REST_MS } from '../../quest/rest.ts';
 import { colors, radius, space } from '../../theme/tokens.ts';
 import { Button } from '../../ui/Button.tsx';
+import { Appear } from '../../ui/Appear.tsx';
+import { Icon } from '../../ui/icons.tsx';
+import { Tap } from '../../ui/Tap.tsx';
 import { Body, Heading, Label, Small } from '../../ui/Text.tsx';
 import { Step } from './RepLog.tsx';
 import { ClaimButton } from './ClaimBar.tsx';
@@ -33,6 +38,9 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
   const [sets, setSets] = useState(() => startFromLast(moves, last));
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState<number | null>(0);
+  /** Finished exercises opened again to change a set. */
+  const [reopened, setReopened] = useState<Record<number, boolean>>({});
+  const complete = (m: number, marks: Record<string, boolean> = done): boolean => sets[m]!.every((_, s) => marks[`${m}:${s}`] === true);
   /** The exercise whose set started the rest: the bar shows under it, where the player is. */
   const [restMove, setRestMove] = useState(0);
   const rest = useRest(now, WORKOUT_REST_MS);
@@ -41,7 +49,10 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
   const toggle = (m: number, s: number) => {
     const key = `${m}:${s}`;
     const marking = done[key] !== true;
-    setDone((all) => ({ ...all, [key]: marking }));
+    const next = { ...done, [key]: marking };
+    setDone(next);
+    // Its last set done: the exercise folds, and the next one's steps open if this one's were.
+    if (marking && complete(m, next) && open === m) setOpen(m + 1 < moves.length ? m + 1 : null);
     const lastSet = m === moves.length - 1 && s === sets[m]!.length - 1;
     if (marking && !lastSet) {
       setRestMove(m);
@@ -55,17 +66,42 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
         const unit = moveUnit(move);
         const shown = open === m;
         const before = last[moveKey(move.move)];
+        const restHere = restMove === m && <RestBar rest={rest.rest} over={rest.over} now={now} onMore={rest.more} onSkip={rest.skip} />;
+        if (complete(m) && reopened[m] !== true) {
+          const line = fillText(T.doneMove, { sets: setsLine(sets[m]!) });
+          return (
+            <Appear key={move.move} style={{ gap: 8 }}>
+              <Tap accessibilityRole="button" accessibilityLabel={`${words.name}. ${line}. ${T.reopen}`} onPress={() => setReopened((r) => ({ ...r, [m]: true }))}
+                radius={radius.card} style={{
+                  minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 10,
+                  borderRadius: radius.card, borderWidth: space.border, borderColor: colors.lineSoft,
+                }}>
+                <Icon name="check" size={22} color={colors.accentText} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Body weight="bold">{words.name}</Body>
+                  <Small>{line}</Small>
+                </View>
+                <Small tone="accentText" weight="bold">{T.reopen}</Small>
+              </Tap>
+              {restHere}
+            </Appear>
+          );
+        }
         return (
-          <View key={move.move} style={{ gap: 8, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.line }}>
+          <Appear key={move.move} style={{ gap: 8, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.line }}>
             <Label tone="accentText">{fillText(T.exercise, { n: m + 1, total: moves.length })}</Label>
             <Heading>{words.name}</Heading>
             <Body weight="medium">{moveTarget(move)}</Body>
             {before !== undefined && <Small tone="chalk">{fillText(T.lastTime, { sets: setsLine(before) })}</Small>}
             <Small>{words.cue}</Small>
-            <Small>{progressLine(words)}</Small>
             <Button label={shown ? T.hide : T.how} accessibilityLabel={`${shown ? T.hide : T.how}: ${words.name}`} variant="secondary"
               onPress={() => setOpen(shown ? null : m)} style={{ alignSelf: 'flex-start' }} />
-            {shown && words.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
+            {shown && (
+              <Appear style={{ gap: 8 }}>
+                {words.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
+                <Small>{progressLine(words)}</Small>
+              </Appear>
+            )}
             {sets[m]!.map((n, s) => (
               <View key={s} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderRadius: radius.control, backgroundColor: colors.panel }}>
                 <SetDone n={s + 1} done={done[`${m}:${s}`] === true} onPress={() => toggle(m, s)} />
@@ -77,8 +113,8 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
                 </View>
               </View>
             ))}
-            {restMove === m && <RestBar rest={rest.rest} over={rest.over} now={now} onMore={rest.more} onSkip={rest.skip} />}
-          </View>
+            {restHere}
+          </Appear>
         );
       })}
       <Small>{T.rest}</Small>
