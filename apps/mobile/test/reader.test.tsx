@@ -103,7 +103,9 @@ describe('the Story Deck (M11)', () => {
     expect(screen.getByText(SAMPLE_ARTICLE.deck!.tryToday)).toBeTruthy();
     await next();
     expect(screen.getByText(SAMPLE_ARTICLE.question)).toBeTruthy();
-    expect(screen.getByRole('button', { name: D.next }).props.accessibilityState).toMatchObject({ disabled: true });
+    // M17: on Your turn the bottom row is the Claim, not a Next that can't go on.
+    expect(screen.queryByRole('button', { name: D.next })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Claim +10 XP' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: D.previous }));
     expect(screen.getByTestId('deck-card-lesson')).toBeTruthy();
   });

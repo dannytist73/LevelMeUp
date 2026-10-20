@@ -15,6 +15,9 @@ export type Claim = { label: string; disabled: boolean; onPress: () => void; bar
 
 const Report = createContext<((claim: Claim | null) => void) | null>(null);
 
+/** M17: a screen that draws a panel's claim somewhere of its own (the Story Deck's bottom row) provides this. */
+export const ClaimReport = Report;
+
 /** A panel's claim: inline, or in the bar of the screen around it. */
 export function ClaimButton({ label, disabled, onPress, bare = false }: Claim) {
   const report = useContext(Report);

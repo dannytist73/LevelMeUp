@@ -23,6 +23,9 @@ import type { IconName } from '../../ui/icons.tsx';
 import { LinkButton } from '../../ui/LinkButton.tsx';
 import { Tap } from '../../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Small, Title } from '../../ui/Text.tsx';
+import { Button } from '../../ui/Button.tsx';
+import { ClaimReport } from '../quest/ClaimBar.tsx';
+import type { Claim } from '../quest/ClaimBar.tsx';
 import { useReduce } from '../../ui/useMotion.ts';
 import { play } from '../../ui/sound.ts';
 
@@ -103,6 +106,8 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   const [chosen, setChosen] = useState<number | null>(null);
   const [step, setStep] = useState(() => Math.max(0, Math.min(initialStep, cards.length - 1)));
   const [back, setBack] = useState(false);
+  /** M17: Your turn's claim, drawn in the bottom row. */
+  const [claim, setClaim] = useState<Claim | null>(null);
   const dx = useRef(new Animated.Value(0)).current;
   const enter = useRef(new Animated.Value(1)).current;
   const flying = useRef(false); // a card is on its way off; input waits for it
@@ -356,7 +361,10 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   );
 
   // M12 (audit 16): with the phone drawing edge to edge, the keyboard would cover Your turn's Claim; the deck rises above it.
+  // M17 (UX audit N9): on Your turn, the bottom row is the Claim (in reach, right above the keyboard) instead of a Next
+  // that can't go anywhere; the claim is reported up from the card (ClaimReport).
   return (
+    <ClaimReport.Provider value={setClaim}>
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.night }}>
     <View testID="deck" style={{ flex: 1, backgroundColor: colors.night }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: 10 }}>
@@ -399,14 +407,21 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 6, paddingBottom: insets.bottom + 14 }}>
         <RoundButton icon="arrowLeft" label={D.previous} onPress={prev} disabled={at === 0} />
-        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }} accessible={false} importantForAccessibility="no-hide-descendants">
-          {cards.map((_c, i) => (
-            <View key={i} style={{ width: i === at ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i === at ? colors.accent : i < at ? colors.accentInk : colors.segmentNext }} />
-          ))}
-        </View>
-        <RoundButton icon="arrowRight" label={D.next} onPress={next} disabled={at === last} filled />
+        {claim !== null && at === last ? (
+          <Button label={claim.label} variant="commitment" disabled={claim.disabled} onPress={claim.onPress} style={{ flex: 1 }} />
+        ) : (
+          <>
+            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }} accessible={false} importantForAccessibility="no-hide-descendants">
+              {cards.map((_c, i) => (
+                <View key={i} style={{ width: i === at ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i === at ? colors.accent : i < at ? colors.accentInk : colors.segmentNext }} />
+              ))}
+            </View>
+            <RoundButton icon="arrowRight" label={D.next} onPress={next} disabled={at === last} filled />
+          </>
+        )}
       </View>
     </View>
     </KeyboardAvoidingView>
+    </ClaimReport.Provider>
   );
 }
