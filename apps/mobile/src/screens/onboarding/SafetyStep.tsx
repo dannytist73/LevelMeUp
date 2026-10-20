@@ -20,7 +20,7 @@ export function SafetyStep({ onNavigate, onBack }: StepProps) {
   const answer = (index: number, yes: boolean) => editDraft({ safety: draft.safety.map((a, i) => (i === index ? yes : a)) });
   return (
     <QuestionFrame step="safety" line={T.safetyLine} canContinue={complete(draft, 'safety')} onContinue={() => onNavigate(nextPath(draft, 'safety'))}
-      onBack={onBack} left={fillText(ONBOARDING_TEXT.chapters.left, { n: left, total: SAFETY_QUESTIONS })}>
+      onBack={onBack} left={fillText(ONBOARDING_TEXT.chapters.left, { n: SAFETY_QUESTIONS - left, total: SAFETY_QUESTIONS })}>
       <View style={{ gap: 14 }}>
         <Label>{T.safety}</Label>
         <Small>{T.safetyNote}</Small>

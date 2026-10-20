@@ -130,16 +130,16 @@ describe('Body (O04)', () => {
 });
 
 describe('The safety check (O04, its own step since M12)', () => {
-  it('waits for all seven answers, saying how many are left', async () => {
+  it('waits for all seven answers, counting them', async () => {
     const onNavigate = jest.fn();
     await show(<SafetyStep onNavigate={onNavigate} />, { ...READY_DRAFT, safety: NEW_DRAFT.safety });
-    expect(screen.getByText('7 of 7 left')).toBeTruthy();
+    expect(screen.getByText('0 of 7 answered')).toBeTruthy();
     for (const question of SAFETY_CHECK.slice(0, 6)) await fireEvent.press(screen.getByRole('radio', { name: `${question} No` }));
-    expect(screen.getByText('1 of 7 left')).toBeTruthy();
+    expect(screen.getByText('6 of 7 answered')).toBeTruthy();
     expect(continueButton().props.accessibilityState).toMatchObject({ disabled: true });
     await fireEvent.press(screen.getByRole('radio', { name: `${SAFETY_CHECK[6]} Yes` }));
     expect(screen.getByText(ONBOARDING_TEXT.body.gentleTitle)).toBeTruthy();
-    expect(screen.queryByText(/of 7 left/)).toBeNull();
+    expect(screen.queryByText(/of 7 answered/)).toBeNull();
     await fireEvent.press(continueButton());
     expect(onNavigate).toHaveBeenCalledWith(STEP_PATH.rhythm);
   });

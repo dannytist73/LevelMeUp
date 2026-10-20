@@ -35,7 +35,7 @@ export function ChapterHead({ step }: { step: Step }) {
 
 export function QuestionFrame(props: {
   step: Step; line: string; canContinue: boolean; onContinue: () => void; onBack?: () => void;
-  /** Said above Continue while it waits ("5 of 7 left"). */
+  /** Said above Continue while it waits ("2 of 7 answered"). */
   left?: string;
   children: ReactNode;
 }) {

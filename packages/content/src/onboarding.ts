@@ -134,7 +134,8 @@ export const ONBOARDING_TEXT = {
   chapters: {
     label: 'Chapter {n} of 3 · {name}',
     names: { 1: 'You', 2: 'Your body', 3: 'Your day' },
-    left: '{n} of {total} left',
+    // M17 (design critique): counts up, as the goals do ("0 of 2 chosen"); it counted down ("7 of 7 left").
+    left: '{n} of {total} answered',
     continue: 'Continue',
   },
   goals: { line: 'What are you training for?', note: 'Pick up to two. Your quests are built around them.' },

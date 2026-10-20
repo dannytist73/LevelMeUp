@@ -64,7 +64,7 @@ export function stepsFor(draft: Draft): Step[] {
   return ['awakening', 'goals', 'body', 'safety', ...(asksMind(draft) ? (['mind'] as const) : []), 'rhythm'];
 }
 
-/** The safety questions not answered yet ("5 of 7 left"). */
+/** The safety questions not answered yet (the step says "2 of 7 answered"). */
 export const safetyLeft = (draft: Draft): number => draft.safety.filter((a) => a === null).length;
 
 /** Whether a screen's answers are complete (its Continue button). */
