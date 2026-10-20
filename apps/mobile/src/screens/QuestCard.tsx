@@ -173,7 +173,7 @@ export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting 
           {note !== undefined && <Small>{note}</Small>}
           {waiting && <WillSync />}
         </View>
-        {tag !== undefined ? <Chip label={tag} kind="outline" /> : <Label tone="accentText">{`+${xp}`}</Label>}
+        {tag !== undefined ? <Chip label={tag} kind="outline" /> : <Label tone="accentText">{`+${xp} XP`}</Label>}
       </Tap>
     </View>
   );

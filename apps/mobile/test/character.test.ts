@@ -24,7 +24,7 @@ describe('the class path (M6d decision 9)', () => {
   });
 
   it('puts each status in words', () => {
-    expect(statusText({ kind: 'locked', level: 10, left: 4 })).toBe('Level 10 · 4 to go');
+    expect(statusText({ kind: 'locked', level: 10, left: 4 })).toBe('Lv 10 · 4 levels to go');
     expect(statusText({ kind: 'cooldown', days: 1 })).toBe('Ready again tomorrow');
     expect(statusText({ kind: 'cooldown', days: 4 })).toBe('Ready again in 4 days');
     expect(statusText({ kind: 'later' })).toBe('Unlocked · it arrives in a later update');

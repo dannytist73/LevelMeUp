@@ -46,7 +46,7 @@ describe('the completion panels (spec §3.6)', () => {
     expect(screen.getByText('/ 20:00')).toBeTruthy(); // the target beside it
     expect(screen.getByText(/claim it from 16:00/)).toBeTruthy();
     // M17: before its time the one button starts and pauses; Claim comes once the time is reached.
-    expect(screen.queryByRole('button', { name: 'Claim' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark cleared' })).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Start' }));
     expect(onChange).toHaveBeenCalledWith({ segments: [], runningSince: T0 });
 
@@ -54,7 +54,7 @@ describe('the completion panels (spec §3.6)', () => {
     expect(screen.getByLabelText('16:00 of 20:00')).toBeTruthy();
     expect(screen.getByText('Ready to claim.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared' }));
     expect(onClaim).toHaveBeenCalledWith({ segments: [{ start: T0, end: T0 + 16 * MIN }] });
   });
 
@@ -68,7 +68,7 @@ describe('the completion panels (spec §3.6)', () => {
     await view.rerender(bar(startTimer(NEW_TIMER, T0), T0 + MIN));
     expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
     await view.rerender(bar(startTimer(NEW_TIMER, T0), T0 + 16 * MIN));
-    expect(screen.getByRole('button', { name: 'Claim · +10 XP' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Mark cleared · +10 XP' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy(); // quiet, beside the clock
   });
 
@@ -83,7 +83,7 @@ describe('the completion panels (spec §3.6)', () => {
     const endsAt = T0 + 10 * MIN; // started 10 minutes before the day ends
     await render(<TimerPanel timer={startTimer(NEW_TIMER, T0)} now={() => T0 + 30 * MIN} endsAt={endsAt} targetMs={20 * MIN} disabled={false} onChange={jest.fn()} onClaim={jest.fn()} />);
     expect(screen.getByLabelText('10:00 of 20:00')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Claim' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark cleared' })).toBeNull();
   });
 
   it('formats long timers with hours, and never below zero', () => {
@@ -131,9 +131,9 @@ describe('the completion panels (spec §3.6)', () => {
   it('one sentence: waits for a line, then logs it trimmed', async () => {
     const onClaim = jest.fn();
     await render(<SentenceLog disabled={false} onClaim={onClaim} />);
-    expect(disabled('Log it')).toBe(true);
+    expect(disabled('Mark cleared')).toBe(true);
     await fireEvent.changeText(screen.getByLabelText('One sentence'), '  Two pages on focus.  ');
-    await fireEvent.press(screen.getByRole('button', { name: 'Log it' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared' }));
     expect(onClaim).toHaveBeenCalledWith({ text: 'Two pages on focus.' });
   });
 
@@ -370,7 +370,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const { enqueue, store } = await renderQuest(server, core.id, { timer });
     expect(timer).toHaveBeenCalledWith(core.id);
     expect(await screen.findByLabelText('09:00 of 10:00')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: BAR('Claim') }));
+    await fireEvent.press(screen.getByRole('button', { name: BAR('Mark cleared') }));
     expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { segments: stored.segments } }));
     expect(store.getState().saveTimer).toHaveBeenCalledWith(core.id, { segments: stored.segments, runningSince: null });
   });
@@ -384,7 +384,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const saveTimer = jest.fn(async (_id: number, state: TimerState | null) => void (kept = state));
     await renderQuest(server, core.id, { timer, saveTimer });
     await screen.findByLabelText('09:00 of 10:00');
-    await fireEvent.press(screen.getByRole('button', { name: BAR('Claim') }));
+    await fireEvent.press(screen.getByRole('button', { name: BAR('Mark cleared') }));
     await fireEvent.press(screen.getByRole('button', { name: 'Logged by mistake? Undo' }));
     expect(await screen.findByLabelText('09:00 of 10:00')).toBeTruthy();
     expect(screen.getByText('Undone. The XP went back, and your log is as you left it.')).toBeTruthy();

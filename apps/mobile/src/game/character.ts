@@ -31,7 +31,7 @@ export function abilityStatus(id: AbilityId, classId: ClassId, level: number, la
 export function statusText(status: AbilityStatus): string {
   switch (status.kind) {
     case 'locked':
-      return fillText(T.path.locked, { level: status.level, left: status.left });
+      return status.left === 1 ? fillText(T.path.lockedOne, { level: status.level }) : fillText(T.path.locked, { level: status.level, left: status.left });
     case 'later':
       return T.path.later;
     case 'ready':

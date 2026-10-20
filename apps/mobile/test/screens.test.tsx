@@ -86,7 +86,7 @@ describe('Today', () => {
     await renderToday();
     expect(screen.getByText('2 left')).toBeTruthy(); // side quest 2 and the reading
     expect(screen.getByText(authoredTemplate(side2.templateId).voice.system.title)).toBeTruthy();
-    expect(screen.getByText(`+${xpOf(side2)}`)).toBeTruthy();
+    expect(screen.getByText(`+${xpOf(side2)} XP`)).toBeTruthy();
     expect(screen.queryByText(`${STAT_NAMES[side1.stat]} · cleared 9:00 PM`)).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Done today · 1' }));
     expect(screen.getByText(`${STAT_NAMES[side1.stat]} · cleared 9:00 PM`)).toBeTruthy();
@@ -197,7 +197,7 @@ describe('Character (M6d)', () => {
     expect(screen.getByText(view.profile.name)).toBeTruthy();
     expect(screen.getByText('Lv 1 Warrior')).toBeTruthy();
     expect(screen.getByText(/XP total/)).toBeTruthy();
-    expect(screen.getByText('Next: Level 2')).toBeTruthy();
+    expect(screen.getByText(/^\d+ XP to Lv 2$/)).toBeTruthy(); // premium pass C2
   });
 
   it('shows each stat with a bar to its next point, its rank, and how Discipline grows', async () => {
@@ -213,9 +213,9 @@ describe('Character (M6d)', () => {
   it("shows the class path: each ability and when it unlocks", async () => {
     await render(withStore(testStore({ view: project(SERVER, []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     expect(screen.getByText('Second Wind')).toBeTruthy();
-    expect(screen.getByText('Level 5 · 4 to go')).toBeTruthy();
+    expect(screen.getByText('Lv 5 · 4 levels to go')).toBeTruthy();
     expect(screen.getByText('Unbreakable')).toBeTruthy();
-    expect(screen.getByText('Level 10 · 9 to go')).toBeTruthy();
+    expect(screen.getByText('Lv 10 · 9 levels to go')).toBeTruthy();
     expect(screen.queryByText("Scholar's Path")).toBeNull();
   });
 
@@ -282,7 +282,7 @@ describe('Chronicle (M6d)', () => {
     await render(withStore(testStore({ view: { ...view, character: { ...view.character, streak } } }), <Chronicle />));
     expect(screen.getByLabelText('Streak 3')).toBeTruthy();
     expect(screen.getByLabelText('Best 5')).toBeTruthy();
-    expect(screen.getByLabelText('Shields 1 / 2')).toBeTruthy();
+    expect(screen.getByLabelText('Shields 1 of 2')).toBeTruthy();
   });
 
   it('on day 1: today on the calendar, and the first quests waiting', async () => {

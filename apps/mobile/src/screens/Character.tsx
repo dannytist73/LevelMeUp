@@ -103,7 +103,7 @@ export function Character({ onChangeClass, onOpenBook, onSettings, onVow, now = 
           <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} label={`Level ${level} progress`} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <Caption>{fillText(T.totalXp, { total: view.character.totalXp, into: view.character.xpIntoLevel, span: view.character.xpForLevel })}</Caption>
-            <Caption>{fillText(T.next, { level: level + 1 })}</Caption>
+            <Caption>{fillText(T.next, { xp: view.character.xpForLevel - view.character.xpIntoLevel, level: level + 1 })}</Caption>
           </View>
         </View>
       </ScreenHeader>

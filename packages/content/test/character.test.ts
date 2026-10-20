@@ -21,7 +21,7 @@ describe('the words of Character, Chronicle and Scholar\'s Path (M6d)', () => {
 
   it('fill their blanks', () => {
     expect(fillText(CHARACTER_TEXT.stats.toNext, { xp: 10, next: 12 })).toBe('10 XP to 12');
-    expect(fillText(CHARACTER_TEXT.path.locked, { level: 10, left: 4 })).toBe('Level 10 · 4 to go');
+    expect(fillText(CHARACTER_TEXT.path.locked, { level: 10, left: 4 })).toBe('Lv 10 · 4 levels to go');
     expect(fillText(CHRONICLE_TEXT.since, { date: 'Tue 29 Sep' })).toBe('Since day 1 · Tue 29 Sep');
     expect(fillText(BOOK_TEXT.questLine, { title: 'Dune' })).toBe('Reading: Dune');
   });

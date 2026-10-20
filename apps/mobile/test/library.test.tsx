@@ -52,7 +52,7 @@ describe('the Library (M12 decision 1)', () => {
     expect(screen.getAllByText(/^Lesson \d\.$/)).toHaveLength(LIBRARY_LESSONS);
     await fireEvent.press(screen.getByText('Lesson 5.'));
     expect(props.onOpenReading).toHaveBeenCalledWith('article-5', null);
-    await fireEvent.press(screen.getByRole('button', { name: L.seeAll }));
+    await fireEvent.press(screen.getByRole('button', { name: fillText(L.seeAll, { n: 5 }) }));
     expect(props.onOpenCodex).toHaveBeenCalled();
   });
 

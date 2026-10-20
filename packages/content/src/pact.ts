@@ -60,7 +60,7 @@ export const SHADOW_TEXT = {
   noteKept: 'Kept. Only you can see it.',
   takeBack: 'Take back the day · {minutes} min',
   settings: 'Change or turn off the Pact',
-  done: 'Back to today',
+  done: 'Back to Today',
   gone: 'Nothing is waiting here.',
   reopen: "The Shadow's claim",
   mark: 'Shadow mark',

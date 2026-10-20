@@ -57,14 +57,14 @@ describe('the reader (board D3, M8b decision 5)', () => {
     const { enqueue } = await renderReading(WITH_ARTICLE, true);
     expect(screen.getByText(SAMPLE_ARTICLE.title)).toBeTruthy();
     await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), '  Small wins are evidence.  ');
-    await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared · +10 XP' }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: articleId, completedAt: NOW, rating: null, payload: { text: 'Small wins are evidence.' } });
   });
 
   it('after the claim: "Quest cleared" without a rating, and Read again', async () => {
     const { onRead } = await renderReading(WITH_ARTICLE, true);
     await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
-    await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared · +10 XP' }));
     expect(screen.queryByRole('button', { name: PLAY_TEXT.cleared.easy })).toBeNull();
     expect(screen.getByText("Today's reading · Discipline and habits")).toBeTruthy(); // not the slot twice
     await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.readAgain }));
@@ -75,7 +75,7 @@ describe('the reader (board D3, M8b decision 5)', () => {
     const { store } = await renderReading(WITH_ARTICLE, false);
     expect(screen.getByText(READING_TEXT.waiting)).toBeTruthy();
     expect(store.getState().fetchArticle).toHaveBeenCalledWith(SAMPLE_ARTICLE.id);
-    expect(screen.queryByRole('button', { name: 'Claim +10 XP' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark cleared · +10 XP' })).toBeNull();
   });
 });
 
@@ -105,7 +105,7 @@ describe('the Story Deck (M11)', () => {
     expect(screen.getByText(SAMPLE_ARTICLE.question)).toBeTruthy();
     // M17: on Your turn the bottom row is the Claim, not a Next that can't go on.
     expect(screen.queryByRole('button', { name: D.next })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Claim +10 XP' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Mark cleared · +10 XP' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: D.previous }));
     expect(screen.getByTestId('deck-card-lesson')).toBeTruthy();
   });
@@ -123,7 +123,7 @@ describe('the Story Deck (M11)', () => {
     const { enqueue } = await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
     for (let i = 0; i < 5; i++) await next();
     await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
-    await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared · +10 XP' }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'complete', instanceId: articleId, completedAt: NOW, rating: null, payload: { text: 'Small wins are evidence.' } });
   });
 
@@ -157,7 +157,7 @@ describe('the Story Deck (M11)', () => {
     for (const s of SAMPLE_ARTICLE.sections) expect(screen.getByText(s.heading)).toBeTruthy();
     expect(screen.queryByRole('button', { name: D.backToCards })).toBeNull();
     await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Small wins are evidence.');
-    await fireEvent.press(screen.getByRole('button', { name: 'Claim +10 XP' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark cleared · +10 XP' }));
     expect(enqueue).toHaveBeenCalledTimes(1);
   });
 

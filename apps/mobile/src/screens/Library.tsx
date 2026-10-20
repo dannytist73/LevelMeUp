@@ -127,7 +127,7 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12 }}>
             <SectionTitle title={codex.length === 0 ? L.keptNone : fillText(L.kept, { n: codex.length })} />
-            {codex.length > LIBRARY_LESSONS && <LinkButton label={L.seeAll} tone="accentText" onPress={onOpenCodex} />}
+            {codex.length > LIBRARY_LESSONS && <LinkButton label={fillText(L.seeAll, { n: codex.length })} tone="accentText" onPress={onOpenCodex} />}
           </View>
           {codex.length === 0 ? (
             // M17: no "Open today's reading" here: it showed only while today's card, with its own button, sat right above.
@@ -135,7 +135,7 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
           ) : (
             codex.slice(0, LIBRARY_LESSONS).map((entry) => <LessonCard key={entry.articleId} entry={entry} onOpen={() => onOpenReading(entry.articleId, null)} />)
           )}
-          {codex.length > 0 && codex.length <= LIBRARY_LESSONS && <LinkButton label={L.seeAll} tone="accentText" onPress={onOpenCodex} />}
+          {codex.length > 0 && codex.length <= LIBRARY_LESSONS && <LinkButton label={fillText(L.seeAll, { n: codex.length })} tone="accentText" onPress={onOpenCodex} />}
         </View>
 
         <View style={{ gap: 10 }}>

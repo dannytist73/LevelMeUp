@@ -378,7 +378,7 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             ? { style: { opacity: 0 }, accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const }
             : {})}>{cover.title}</Body>
         </View>
-        <Small accessibilityLabel={fillText(D.card, { n: at + 1, total: cards.length })}>{`${at + 1} / ${cards.length}`}</Small>
+        <Small accessibilityLabel={fillText(D.card, { n: at + 1, total: cards.length })}>{`${at + 1} of ${cards.length}`}</Small>
       </View>
 
       <View style={{ flex: 1, marginHorizontal: 16, marginTop: 4, marginBottom: 8 }} {...pan.panHandlers}>

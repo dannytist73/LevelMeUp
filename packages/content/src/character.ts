@@ -8,8 +8,9 @@ export const CHARACTER_TEXT = {
   portrait: '{className} portrait, level {level}',
   /** M9a decision 5: the reveal's and Character's button that swaps the portrait's figure. */
   switchPortrait: 'Switch portrait',
-  totalXp: '{total} XP total · {into} / {span} this level',
-  next: 'Next: Level {level}',
+  /** Premium pass C2: the level's progress as Cleared and Day done say it, the total beside it. */
+  totalXp: '{into} / {span} XP · {total} XP total',
+  next: '{xp} XP to Lv {level}',
   stats: {
     title: 'Stats',
     /** M10c: the rank as a quiet line beside the points (Quest cleared stamps a new one). */
@@ -21,7 +22,8 @@ export const CHARACTER_TEXT = {
   },
   path: {
     title: '{className} path',
-    locked: 'Level {level} · {left} to go',
+    locked: 'Lv {level} · {left} levels to go',
+    lockedOne: 'Lv {level} · 1 level to go',
     ready: 'Ready',
     cooldown: 'Ready again in {days} days',
     cooldownOne: 'Ready again tomorrow',
@@ -63,7 +65,7 @@ export const CHRONICLE_TEXT = {
   streak: 'Streak',
   best: 'Best',
   shields: 'Shields',
-  shieldsOf: '/ {max}',
+  shieldsOf: 'of {max}',
   /** Premium pass C1: how a shield is earned, and when the next one comes. */
   shieldsRule: 'A shield comes with every 7 days of streak, up to {max}, and keeps your streak on a missed day.',
   shieldsNext: 'Next one at a {n}-day streak.',

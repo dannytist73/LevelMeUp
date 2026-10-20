@@ -14,7 +14,7 @@ export const READING_TEXT = {
   question: 'To think about',
   takeawayLabel: 'Your takeaway, one sentence',
   takeawayNote: 'The one idea you want to keep, in your own words.',
-  claim: 'Claim +{xp} XP',
+  claim: 'Mark cleared · +{xp} XP',
   sources: 'Sources',
   sourceLine: '{n}. {title} · {host}',
   sourceHint: 'Opens {host} in your browser',
@@ -29,7 +29,7 @@ export const READING_TEXT = {
     label: 'Past reading · {date}',
     empty: 'Your readings gather here, one a day.',
     /** M17: the latest five show; the rest open in place. */
-    showAll: 'Show all {n}',
+    showAll: 'See all {n}',
     fewer: 'Show fewer',
   },
   // M11: the Story Deck and the Codex.
@@ -94,7 +94,7 @@ export const READING_TEXT = {
     kept: 'Kept lessons · {n}',
     /** M17: with none kept the empty card says so; the heading doesn't add " · 0". */
     keptNone: 'Kept lessons',
-    seeAll: 'See all',
+    seeAll: 'See all {n}',
     noKept: 'No kept lessons yet',
     noKeptLine: "Tap Keep on a reading's lesson card and it lands here.",
     openToday: "Open today's reading",

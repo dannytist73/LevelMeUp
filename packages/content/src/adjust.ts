@@ -153,7 +153,7 @@ export const ADJUST_TEXT = {
 export const ABILITY_LINES: Readonly<Record<AbilityId, string>> = {
   second_wind: 'Once a week, make up a missed core quest the next day for full credit.',
   unbreakable: "Once a month, a plain miss doesn't cost a shield.",
-  insight: "Choose tomorrow's article topic from 3.",
+  insight: "Choose tomorrow's reading topic from 3.",
   scholars_path: 'Set a book; reading quests track it to the end.',
   shadowstep: '2 swaps a day instead of 1.',
   vanish: 'A planned phone-free block, guarded by a timer.',

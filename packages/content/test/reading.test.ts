@@ -19,7 +19,7 @@ describe('the words of reading (M8b)', () => {
   it('fill their blanks', () => {
     expect(fillText(READING_TEXT.cardMeta, { minutes: 6, xp: 10 })).toBe('6 min · Wisdom +10 XP · one takeaway');
     expect(fillText(READING_TEXT.meta, { minutes: 6, xp: 10 })).toBe('6 min · Wisdom +10 XP');
-    expect(fillText(READING_TEXT.claim, { xp: 10 })).toBe('Claim +10 XP');
+    expect(fillText(READING_TEXT.claim, { xp: 10 })).toBe('Mark cleared · +10 XP');
     expect(fillText(READING_TEXT.sourceLine, { n: 1, title: 'Sleep', host: 'nih.gov' })).toBe('1. Sleep · nih.gov');
     expect(fillText(READING_TEXT.insight.chosen, { topic: 'Philosophy' })).toBe("Tomorrow's reading: Philosophy.");
     expect(fillText(READING_TEXT.past.label, { date: 'Fri 9 Oct' })).toBe('Past reading · Fri 9 Oct');

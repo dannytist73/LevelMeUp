@@ -25,8 +25,9 @@ export const PLAY_TEXT = {
   },
   claim: {
     tap: 'Mark cleared',
-    timer: 'Claim',
-    log: 'Log it',
+    /** Premium pass C2: one verb for clearing a quest; set logs still say what they log. */
+    timer: 'Mark cleared',
+    log: 'Mark cleared',
     /** M12: a rep log's button says what it logs. */
     set: 'Log 1 set',
     sets: 'Log {n} sets',
@@ -167,7 +168,7 @@ export const TODAY_TEXT = {
   extra: 'If you want more',
   optional: 'Optional',
   tapHint: 'tap the circle when done',
-  markDone: 'Mark {title} done',
+  markDone: 'Mark {title} cleared',
   markedDone: '{title} cleared',
   undo: 'Undo',
   dayDone: {
