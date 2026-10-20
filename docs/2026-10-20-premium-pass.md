@@ -27,6 +27,72 @@ something fails**. Screens also describe the same thing in different words.
 **Recommendation:** build Part A and Part B now. Both are app-only: no migration and no server deploy. Then build Part
 C. The four server questions at the end need your yes.
 
+## Status (2026-10-21, branch `premium-pass`)
+
+The owner chose "A + B now, then C" and "allow 7 days" for offline days. Everything below is built, tested and
+committed on `premium-pass`. That branch is not merged into `main` yet.
+
+**Built:**
+- **A1 to A7:**
+  - Drafts are saved on the phone.
+  - A sign-in that ends no longer wipes anything.
+  - A refused sync is shown on Today.
+  - Undo gives the log back.
+  - Every screen has its own crash fallback with Go to Today.
+  - Offline days are built one after another, up to 7, and Today says until when they count.
+  - A save that fails says so.
+- **B1 to B7:**
+  - An app-wide note confirms actions that close their own screen, and Today's and the Codex's Undo use it too.
+  - Class change asks for confirmation once more.
+  - Check-in answers are acknowledged.
+  - Buttons show a working state (busy labels).
+  - The re-read deck ends with a Done button.
+  - Plus restore wording is clearer.
+- **C1 to C4:**
+  - Swaps read "1 of 2 left" with when they come back.
+  - The rest limit names the next date a rest is allowed.
+  - Cooling abilities stay in view.
+  - Chronicle explains shields.
+  - Quests use one completion verb and "+N XP" everywhere.
+  - The level line reads the same everywhere.
+  - Pushed screens have titled top bars, and loading uses skeletons.
+  - Destructive choices use quiet buttons.
+  - Stray copy moved into the content package. The account box no longer over-promises.
+
+**Server, deployed with the owner's yes:**
+- **Migration 0020:** the late window grows from 48 hours to 7 days. The studio session gave up its claim on 0020 and
+  up, so new migrations continue from 0021.
+- **lmu-sync v32** carries three changes:
+  - `restOpens`, so the rest limit can name a date.
+  - The `more` signal, so the server closes days with the last request of a long outbox.
+  - A phone-built day older than the window is applied at the time it was built.
+- **Checks:** the database tests passed on live. `lmu-articles-studio` was checked afterwards by the studio session.
+
+**Tests:** rules 476, content 1180, server unit 621, app 1239, plus the typecheck and the function check.
+
+**Reviews:** two independent reviews (data safety, UI and copy) found one critical issue and 6 important ones. All
+are fixed, and each fix has a test. The test for the "pain on a built day" fix was confirmed to fail without the fix.
+
+**Emulator** (development build, Vera look-only, outbox left empty):
+- The app boots on the new code, and every tab draws.
+- Settings: Sync now shows "Syncing…" while it works.
+- The crash test shows the screen's own fallback, and Go to Today works.
+- The note sits above the phone's bar.
+- The offline preview shows "Connect by Thu 29 Oct, 4:00 AM…".
+- The class change asks for confirmation with the date.
+- The new swap counts, level line, shield rule and titled top bars all show.
+
+**Still open:**
+- The phone checks in `docs/device-verification-checklist.md`, section "Premium pass".
+- The live suite wasn't run: it spends on Claude for the reveal.
+- Two known follow-ups:
+  - **Spacing scale and Deck:** a spacing scale, and moving the Deck onto the UI kit.
+  - **Notes on screens behind:** the note doesn't yet follow screen focus. Over a screen that sits on top of a quest,
+    it floats a little high.
+- Server questions 2 to 4 below.
+- **Abuse risk:** a modified app could backfill up to a week of phone-built days, up from 2. Claims are self-reported
+  anyway, and a cap per sync would bound it if that ever matters.
+
 **What sets LevelMeUp apart.** Most habit apps treat failure as an error message. LevelMeUp has a narrator, the
 System, which lets failure become a moment inside the game, the way Chrome's offline page did. A lost connection
 could read: "The signal is faint. Everything you do is written on this phone and reaches the System when it returns.
@@ -103,7 +169,7 @@ every spot where it stops feeling like the same product. Add the rows to the dev
 
 ## Needs a decision or a server change (not started)
 
-1. **Offline for days.** The server refuses work that arrives more than 48 hours after its day closed
+1. **Offline for days. Done (2026-10-21): the owner chose 7 days; 0020 and lmu-sync v32.** The server refused work that arrived more than 48 hours after its day closed
    (`0003_write_functions.sql:136`, `0015:59`), and the phone builds only one offline day. A player at a gym or on a
    trip without signal for 3 days loses credit. **Recommended:** allow 7 days for phone-built days. This needs a
    migration, and the number has to be agreed with the studio session, which owns 0020 and up.

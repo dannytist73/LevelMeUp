@@ -812,3 +812,26 @@ on the emulator it installed over the development build and kept the character; 
 | 31 | A workout: change some reps and tick a set, go Back to Today, open it again: the numbers and ticks are as you left them (until the app is closed). | Unit tests (workout and rep log); not tried on Vera. Find X9: |
 | 32 | A lesson kept long ago (older than the last 30 readings) opens from the Codex after one sync. | Unit test (store); needs a long-running player. Find X9: |
 | 33 | Character: "Change your vow" under the vow opens it to edit; with no vow, "Write a vow". The first screen of a new character: a hint in the name box and "Sign in with Google" as a quiet link. | **Pass** 2026-10-20, emulator (look only). Find X9: |
+
+## Premium pass (branch `premium-pass`, 2026-10-20/21)
+
+Plan and why: `docs/2026-10-20-premium-pass.md`. Server: migration 0020 (the late window is 7 days) and lmu-sync v32
+(`restOpens`, the `more` signal for a long outbox, old phone-built days applied when built), deployed with the owner's
+yes; the database tests passed on live. Rows marked emulator were checked on the
+development build (Vera look-only: nothing claimed, saved or answered; the outbox stayed empty). The Find X9 column is
+the owner's, on the 0.10.0 APK (details below once built).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Start a workout or rep log, tick two sets, change a number, then swipe the app away from recent apps and open it again: the log is as you left it, with "Picked up where you left off." | Unit-tested; not tried on the emulator (Vera). Find X9: |
+| 2 | Type a one-sentence quest's line, go back to Today, open the quest again: the line is there. Same for the Shadow's note (typed, not kept, scene closed and opened again from Today). | Unit-tested. Find X9: |
+| 3 | Clear a timer quest, then "Logged by mistake? Undo": the timer shows the time it had (paused), with "Undone. The XP went back, and your log is as you left it." Same with a rep log: the sets come back as logged. | Unit-tested. Find X9: |
+| 4 | Swap a quest: Today says "Swapped to …" at the bottom, above the tab bar. Save Your game, Training, the Pact, a book: each says it worked and from when. | Unit-tested; the note's place checked on the emulator (above the phone's bar on a pushed screen). Find X9: |
+| 5 | Change class: "Become a …" asks once more with the date the next change opens; Not now changes nothing. | **Pass** 2026-10-21, emulator (shown, Not now pressed; nothing saved). Find X9: |
+| 6 | Answer a check-in: Today says "Noted. …" with what the answer does. Accept or keep the lighter plan: it says which. | Unit-tested. Find X9: |
+| 7 | Settings: Sync now says "Syncing…" while it works (once), then the time moves on. Save with Google says "Saving…". | **Pass** 2026-10-21, emulator (Sync now). Find X9: |
+| 8 | A screen that fails: Developer → Crash test → Throw now shows the screen's own "Something went wrong" with Try again and Go to Today; Go to Today lands on Today with the tabs. (Development builds only.) | **Pass** 2026-10-21, emulator. |
+| 9 | Offline for days: turn on aeroplane mode across a day's end, twice. Each new day is built on the phone; Today says "Connect by …, 4:00 AM so what you clear here counts." Reconnect: the days and their completions arrive (none refused). | The deadline line checked on the emulator (Developer → Offline day preview: "Connect by Thu 29 Oct, 4:00 AM"); the chain unit-tested; a real multi-day offline run is the owner's. Find X9: |
+| 10 | Change today: swaps read "Swap · 1 of 1 left"; with none left the swap stays, off, and the line says when they come back. A Monk's Stillness cooling down stays, off, with the days left. Over the rest limit, Rest day names the day the next one can be. | Swap count **Pass** 2026-10-21, emulator. Find X9: |
+| 11 | Chronicle: "0 of 2" shields and the line on how a shield comes and at which streak the next one does. Character: "15 / 50 XP · 45 XP total" and "35 XP to Lv 3". Quest rows say "+10 XP". | **Pass** 2026-10-21, emulator. Find X9: |
+| 12 | Swap, Pain, Class change, Delete and the Pact carry their name in the top bar; Book, Class change, Your game and Training load with a skeleton (no "preparing your trials"). | Swap **Pass** 2026-10-21, emulator. Find X9: |
