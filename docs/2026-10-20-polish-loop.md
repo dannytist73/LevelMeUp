@@ -99,6 +99,8 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 59 | The Codex drew all its lessons (up to 200) on opening: now a list drawn as it scrolls, with the status band; a dev preview holds 200 | perf | done |
 | 60 | A 360 dp phone (many budget Androids): Today's System card stacked "Answer" and "Later" (and even halves squeezed longer answers onto two lines); answers are now sized to their words and stack only when they don't fit. Library, Character, Chronicle, Settings, the workout log and the deck fit as they are | narrow pass | done |
 | 61 | Settings' note "Only if the core quest isn't done" floated under the plan group: now says it is the evening reminder | narrow pass | done |
+| 62 | Character's stats on a 360 dp phone: the rank sat beside some stats' points and wrapped under others, so the two columns' bars didn't line up; the rank now starts the line under each bar (also shorter at normal width) | narrow pass | done |
+| 63 | Pull down to sync worked on Today only; now on all four tabs through one hook (a failed sync ends the spinner instead of rethrowing) | own pass | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -166,3 +168,4 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 03:20 | 58 | Look, Book, Vanish, Notifications | emulator (look only), 2x font: no truncation; app tests |
 | 03:25 | 59 | Codex list | new test (a full Codex draws fewer than 200 rows); emulator: 200-lesson preview scrolled; scan marker added |
 | 03:30 | 60, 61 | Narrow-phone pass | emulator at 360 dp (density 480, then reset): Today, Library, Character, Chronicle, Settings, workout, deck; app tests 1188/1188 |
+| 03:34 | 62, 63 | Stats rows; pull on every tab | emulator: stats at 360 dp and normal width; a pull on Library showed the spinner and a 0.5 s sync in the log; hook tests; app tests 1190/1190 |
