@@ -245,7 +245,7 @@ describe('Character (M6d)', () => {
   });
 
   it('offline: shows when it last synced', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), status: 'offline', lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30) }),
+    await render(withStore(testStore({ view: project(SERVER, []), status: 'offline', unreachable: true, lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30) }),
       <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     expect(screen.getByText('Last synced 20:30')).toBeTruthy();
   });

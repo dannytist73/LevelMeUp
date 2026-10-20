@@ -177,6 +177,11 @@ export type GameState = {
    * (the "save your character" card) waits instead.
    */
   accountKnown: boolean;
+  /**
+   * M17 (review): the last sync couldn't reach the server (offline or retrying). Unlike `status`, it doesn't change when
+   * a retry starts, so the tabs that show "Last synced" don't redraw on every retry.
+   */
+  unreachable: boolean;
   /** Level-ups and achievements the server confirmed, shown one at a time. */
   celebrations: Celebration[];
   /** Which quest pictures exist online. */
@@ -546,7 +551,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       switch (outcome.kind) {
         case 'synced': {
           const before = confirmedLevel;
-          await refresh({ phase: 'ready', status: 'idle', error: null, updateRequired: false });
+          await refresh({ phase: 'ready', status: 'idle', error: null, updateRequired: false, unreachable: false });
           // Forget only what this run asked for or what arrived: one asked for meanwhile goes with the next run (review).
           for (const id of outcome.asked) wanted.delete(id);
           for (const id of [...wanted]) if (get().articles[id] !== undefined && !deckAsked.has(id)) wanted.delete(id);
@@ -578,11 +583,11 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           await refresh({ phase: 'not_started', status: 'idle', error: null });
           return;
         case 'offline':
-          set({ status: 'offline' });
+          set({ status: 'offline', unreachable: true });
           await buildOffline();
           return;
         case 'retry':
-          set({ status: 'retrying' });
+          set({ status: 'retrying', unreachable: true });
           await buildOffline();
           return;
         case 'sign_in_lost':
@@ -596,6 +601,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       }
     };
 
+    /** M17 (review): boot's read of the account, so what depends on it can wait for it. */
+    let accountReading: Promise<void> = Promise.resolve();
     const scheduler = makeScheduler(run, handle);
 
     return {
@@ -614,6 +621,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       reveal: null,
       account: { kind: 'none' },
       accountKnown: false,
+      unreachable: false,
       celebrations: [],
       art: null,
       vow: null,
@@ -679,7 +687,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
           offers: readOffers(offersText), theme: asTheme(themeText), frame: asFrame(frameText),
         });
-        void accountRead.then((account) => set({ account, accountKnown: true }));
+        // Review: never over an account something newer already set (a sign-in, a save, a fresh start).
+        accountReading = accountRead.then((account) => {
+          if (!get().accountKnown) set({ account, accountKnown: true });
+        });
         await scheduler.request();
         void checkPlus();
       },
@@ -706,6 +717,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       },
 
       startCharacter: async () => {
+        await accountReading; // review: the redo guard below reads the account
         const result = await fenced(async (): Promise<StartResult> => {
           const draft = get().draft;
           // Never an unfinished interview: an unanswered safety question must not travel as a "no" (M5 review).

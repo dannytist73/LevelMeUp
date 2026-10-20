@@ -97,11 +97,11 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
 
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }}>
-      <ScreenHeader style={{ paddingTop: insets.top + 22, gap: 4 }}>
+      <ScreenHeader style={{ paddingTop: insets.top + 12, gap: 4 }}>
         <TabTop onSettings={onSettings}>
           <Title accessibilityRole="header">{L.title}</Title>
-          <Small>{L.line}</Small>
         </TabTop>
+        <Small>{L.line}</Small>
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 26 }}>
         {/* M17 (UX audit O8): loading looks like loading, not like an empty library. */}

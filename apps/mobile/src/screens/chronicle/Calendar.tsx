@@ -62,10 +62,11 @@ function Cell({ date, look, inChronicle }: { date: string; look: Look; inChronic
     .filter((part) => part !== null)
     .join(', ');
   const onPaper = look.mark === 'cleared' || look.mark === 'hard';
-  // M17: a plain day draws nothing, so a month is a handful of drawings, not 31.
+  // M17: a plain day draws nothing, so a month is a handful of drawings, not 31. Every cell still knows its size: one that
+  // becomes today or cleared while the Chronicle stays open draws then (review).
   const drawn = look.mark !== 'none' || look.today;
   return (
-    <View accessible accessibilityLabel={label} onLayout={drawn ? onLayout : undefined} style={{ flex: 1, height: CELL, alignItems: 'center', justifyContent: 'center' }}>
+    <View accessible accessibilityLabel={label} onLayout={onLayout} style={{ flex: 1, height: CELL, alignItems: 'center', justifyContent: 'center' }}>
       {drawn && size !== null && <Drawing look={look} width={size.width} height={size.height} id={`cell-hatch-${date}`} />}
       <Text
         maxFontSizeMultiplier={1.4}

@@ -51,7 +51,7 @@ export function SystemCard({ text, detail, actions = [], count, testID }: {
 }) {
   return (
     <View testID={testID} style={{ gap: 14, padding: 16, ...BOX, borderColor: colors.line }}>
-      <View accessible accessibilityLabel={[`${PLAY_TEXT.speakers.system}: ${text}`, detail].filter((x) => x !== undefined).join(' ')} style={{ gap: 6 }}>
+      <View accessible accessibilityLabel={[`${PLAY_TEXT.speakers.system}: ${text}`, detail, count].filter((x) => x !== undefined).join(' ')} style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <Speaker />
           {count !== undefined && <Caption>{count}</Caption>}

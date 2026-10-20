@@ -14,6 +14,7 @@ import { figureFor, otherFigure } from '../../art/portraits.ts';
 import { STEP_PATH, asksMind } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
 import { colors, space } from '../../theme/tokens.ts';
+import { BottomBarFrame } from '../../ui/BottomBar.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { ScreenHeader } from '../../ui/ScreenHeader.tsx';
 import { MOMENTS } from '../../ui/motion.ts';
@@ -159,24 +160,17 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
   }
 
   const accepting = mode === 'reveal';
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + (accepting ? 120 : 32) }}>
-        <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
-          <SpeedLines burst />
-          <Label tone="accentText">{T.title}</Label>
-          <Title accessibilityRole="header">{profile.name}</Title>
-        </ScreenHeader>
-        <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>{body}</View>
-      </ScreenScroll>
-      {accepting && (
-        <View testID="accept-bar" style={{
-          position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 12, paddingHorizontal: space.gutter, paddingBottom: insets.bottom + 12,
-          backgroundColor: colors.night, borderTopWidth: 1, borderTopColor: colors.divider,
-        }}>
-          <Button label={T.accept} variant="commitment" disabled={busy} onPress={onAccept} />
-        </View>
-      )}
-    </View>
+  const page = (barSpace: number) => (
+    <ScreenScroll contentContainerStyle={{ paddingBottom: accepting ? barSpace + 24 : insets.bottom + 32 }}>
+      <ScreenHeader style={{ paddingTop: insets.top + 22 }}>
+        <SpeedLines burst />
+        <Label tone="accentText">{T.title}</Label>
+        <Title accessibilityRole="header">{profile.name}</Title>
+      </ScreenHeader>
+      <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>{body}</View>
+    </ScreenScroll>
   );
+  return accepting
+    ? <BottomBarFrame testID="accept-bar" bar={<Button label={T.accept} variant="commitment" disabled={busy} onPress={onAccept} />}>{page}</BottomBarFrame>
+    : page(0);
 }

@@ -21,6 +21,7 @@ export type DeleteCharacterProps = { onDeleted: () => void; onBack: () => void }
 export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
   const insets = useSafeAreaInsets();
   const account = useGame((s) => s.account);
+  const accountKnown = useGame((s) => s.accountKnown);
   const deleteCharacter = useGame((s) => s.deleteCharacter);
   // M13: a running Play subscription isn't cancelled by deleting (Google Play's account deletion rule says so).
   const subscribed = useGame((s) => {
@@ -50,7 +51,8 @@ export function DeleteCharacter({ onDeleted, onBack }: DeleteCharacterProps) {
       <TopBar onBack={onBack} disabled={busy} />
       <Title accessibilityRole="header">{T.title}</Title>
       <Body>{T.what}</Body>
-      <Body>{account.kind === 'saved' ? T.google : T.guest}</Body>
+      {/* M17 (review): said once the phone knows who is signed in. */}
+      {accountKnown && <Body>{account.kind === 'saved' ? T.google : T.guest}</Body>}
       {subscribed && <Body weight="bold">{PLUS_TEXT.deleteNote}</Body>}
       <Small>{T.connection}</Small>
       {problem !== null && (

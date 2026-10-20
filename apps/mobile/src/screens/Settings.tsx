@@ -22,6 +22,7 @@ import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { LinkButton } from '../ui/LinkButton.tsx';
 import { Group, GroupBody } from '../ui/Group.tsx';
+import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
@@ -77,6 +78,8 @@ export function Settings({
   const setSounds = useGame((s) => s.setSounds);
   const slotLine = (slot: { on: boolean; minutes: number }) => notifyLine(slot, permission);
   const account = useGame((s) => s.account);
+  // M17 (review): until the phone has read who is signed in, the card waits rather than calling a saved player a guest.
+  const accountKnown = useGame((s) => s.accountKnown);
   const phase = useGame((s) => s.phase);
   const signInLost = useGame((s) => s.signInLost);
   const saveWithGoogle = useGame((s) => s.saveWithGoogle);
@@ -156,7 +159,9 @@ export function Settings({
 
       <Group title="Account" note={signInLost ? <SignInLost /> : undefined}>
         <GroupBody>
-          {account.kind === 'saved' ? (
+          {!accountKnown ? (
+            <Skeleton><Bone height={16} width="50%" /><Bone height={12} width="80%" /></Skeleton>
+          ) : account.kind === 'saved' ? (
             <>
               <Body weight="bold">Saved with Google.</Body>
               {account.email !== null && <Small>{account.email}</Small>}
