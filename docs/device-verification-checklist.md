@@ -768,3 +768,27 @@ agrees to switch to the weekly program.
 | 7 | Today offers the weekly program once (after 3 workouts on the step-by-step plan, once the core quest is cleared): "See the weekly program" opens Training; "Not now" never shows it again. | |
 | 8 | Back to Step by step: the next day's strength work is the step-by-step workout again, at its old rung. | |
 | 9 | An app older than 0.8.0 on a weekly character (the same saved character on another phone): it shows "Update needed" (lmu-sync answers 426 `update_required`, WEEKLY_MIN_APP_VERSION) and keeps what it holds unsent; a step-by-step character on it syncs as before. | |
+
+## M17 — The polish loop (branch `m17-polish`, 2026-10-20)
+
+Loop log and backlog: `docs/2026-10-20-polish-loop.md`. Layout, motion and speed, no new game rules. The server changes
+(faster sync reads; lmu-sync v29) are deployed and the live suite passed. Rows marked emulator were checked on the
+development build (Vera look-only: nothing claimed, saved or answered). The Find X9 column is the owner's, on the 0.9.0
+APK.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Today: the header is one row shorter (date beside "Day N", the level on the XP bar's line); "Up next" leads the card's own line; with a check-in waiting, the whole Up next card and Begin are on the first screen; Begin's label is centred in its bar. | **Pass** 2026-10-20, emulator (dev build 0.9.0). Find X9: |
+| 2 | System notes (check-in, set-up cards, offers) are one card each with their answers inside. | **Pass** 2026-10-20, emulator. Find X9: |
+| 3 | "I felt pain" and "Change today" share one row under Up next; at the largest font they stack. | **Pass** 2026-10-20, emulator (also at 2× text). Find X9: |
+| 4 | The tab bar's pill is round on every tab and grows in; tabs cross-fade; every tab has the Settings gear in the same place. | **Pass** 2026-10-20, emulator. Find X9: |
+| 5 | Checking off a side quest: a click you can feel, the row fades away, the rows below glide up, Undo fades in. | Not tried on the emulator (Vera). Find X9: |
+| 6 | Pull down on Today: an accent spinner, then a sync. | **Pass** 2026-10-20, emulator (a sync logged after the pull). Find X9: |
+| 7 | A timer quest: the bottom button is Start, then Pause, then Claim once the time is reached. | Unit tests only. Find X9: |
+| 8 | Cleared: Next (or Continue) stays at the bottom, the whole result on one screen. | **Pass** 2026-10-20, emulator (motion bench). Find X9: |
+| 9 | A workout: an exercise whose sets are all done folds to one line ("Done · 10 · 10", Change opens it); the next exercise's steps open; the rest bar stays. | **Pass** 2026-10-20, emulator (workout preview). Find X9: |
+| 10 | The reading deck: on Your turn, Claim is in the bottom row and stays above the keyboard while typing. | **Pass** 2026-10-20, emulator (paged to Your turn; nothing typed). Keyboard not tried. Find X9: |
+| 11 | Settings in grouped cards; Sync is one row with Sync now; "N waiting" only while something waits. Your game and Training keep Save at the bottom. | **Pass** 2026-10-20, emulator (also at 2× text). Find X9: |
+| 12 | Character's stats in two columns; Chronicle's day cells rounded; an empty Codex says so; the current class is readable on Choose your class. | **Pass** 2026-10-20, emulator. Find X9: |
+| 13 | The check-in keeps Answer at the bottom; Delete my character makes "Keep my character" the bright button. | **Pass** 2026-10-20, emulator (check-in opened, not answered). Delete not opened. Find X9: |
+| 14 | Opening the app in the morning: no blank screen after the splash (the account is read after the first screen). | Unit tests; not measurable on the emulator. Find X9: |
