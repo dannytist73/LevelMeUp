@@ -145,6 +145,10 @@ describe('Your look', () => {
     expect(store.getState().setTheme).not.toHaveBeenCalled();
     expect(store.getState().setFrame).not.toHaveBeenCalled();
     expect(screen.queryByRole('radio', { name: /Founder/ })).toBeNull();
+    // M17 (review): the Plus pill is hidden from a screen reader, so a locked choice says "Plus" in its name.
+    expect(screen.getByRole('radio', { name: /^System Blue\. .* Plus\.$/ })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Moon ring. Plus' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /^Moonlight\. [^.]*\.$/ })).toBeTruthy();
   });
 
   it('a Plus player picks them; a Founder also has the Founder frame', async () => {

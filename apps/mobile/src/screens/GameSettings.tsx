@@ -17,7 +17,7 @@ import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Label, Small, Title } from '../ui/Text.tsx';
+import { Body, Label, Small } from '../ui/Text.tsx';
 import { TimeStepper } from '../ui/TimeStepper.tsx';
 import { useLeavingView } from './leaving.ts';
 import { TopBar } from '../ui/TopBar.tsx';
@@ -81,8 +81,8 @@ export function GameSettings({ onDone, onBack, onDirty }: GameSettingsProps) {
     <BottomBarFrame bar={<Button label={T.save} variant="commitment" disabled={!changed || busy} onPress={() => void save()} />}>
     {(barSpace) => (
     <ScreenScroll contentContainerStyle={{ paddingBottom: barSpace + 24, paddingHorizontal: space.gutter, gap: 16 }}>
-      <TopBar onBack={onBack} />
-      <Title accessibilityRole="header">{T.title}</Title>
+      {/* M17: the name in the bar, as on the other Settings screens (review). */}
+      <TopBar title={T.title} onBack={onBack} />
       <Body>{T.line}</Body>
       <View style={{ gap: 12 }}>
         <Label>{T.voice}</Label>

@@ -1,5 +1,6 @@
 // A screen's scroll view. Headers run behind the status bar (edge to edge), so a night band fades in behind the status
 // bar as the page scrolls: scrolled text never sits under the clock (device check 10, found on the emulator).
+import { useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { RefreshControl, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
@@ -56,14 +57,18 @@ export function ScreenList<T>({ data, keyOf, renderRow, header, space, contentCo
   contentContainerStyle?: StyleProp<ViewStyle>;
 }) {
   const { onScroll, bandView } = useStatusBand();
+  // Stable across redraws (review): a new separator type each time remounted every drawn row; the space above each row
+  // after the first does the separator's job.
+  const renderItem = useCallback(({ item, index }: { item: T; index: number }) => (
+    <View style={index > 0 ? { marginTop: space } : undefined}>{renderRow(item)}</View>
+  ), [renderRow, space]);
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <Animated.FlatList<T>
         data={data}
         keyExtractor={keyOf}
-        renderItem={({ item }) => <>{renderRow(item)}</>}
+        renderItem={renderItem}
         ListHeaderComponent={<View style={{ gap: space, marginBottom: data.length > 0 ? space : 0 }}>{header}</View>}
-        ItemSeparatorComponent={() => <View style={{ height: space }} />}
         contentContainerStyle={contentContainerStyle}
         onScroll={onScroll}
         scrollEventThrottle={16}

@@ -8,7 +8,7 @@ import { InkTabBar } from '../src/ui/InkTabBar.tsx';
 import { NarrationBox } from '../src/ui/NarrationBox.tsx';
 import { NightCard } from '../src/ui/NightCard.tsx';
 import { OutlinedTitle, fittedSize } from '../src/ui/OutlinedTitle.tsx';
-import { ScreenScroll } from '../src/ui/ScreenScroll.tsx';
+import { ScreenList, ScreenScroll } from '../src/ui/ScreenScroll.tsx';
 import { SectionTitle } from '../src/ui/SectionTitle.tsx';
 import { SlamIn } from '../src/ui/SlamIn.tsx';
 import { Panel } from '../src/ui/Panel.tsx';
@@ -201,6 +201,13 @@ describe('small pieces', () => {
   it('a screen scroll shows its content, with a band behind the status bar that never takes touches', async () => {
     await render(<ScreenScroll><Text>Quest</Text></ScreenScroll>);
     expect(screen.getByText('Quest')).toBeTruthy();
+    expect(screen.getByTestId('status-band').props.pointerEvents).toBe('none');
+  });
+
+  it('a screen list shows its header and rows, with the same band (M17, review)', async () => {
+    await render(<ScreenList data={['a', 'b']} keyOf={(x) => x} space={16} header={<Text>Codex</Text>} renderRow={(x) => <Text>{`Row ${x}`}</Text>} />);
+    expect(screen.getByText('Codex')).toBeTruthy();
+    expect(screen.getByText('Row b')).toBeTruthy();
     expect(screen.getByTestId('status-band').props.pointerEvents).toBe('none');
   });
 });

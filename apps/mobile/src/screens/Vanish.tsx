@@ -16,7 +16,7 @@ import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Display, Title } from '../ui/Text.tsx';
+import { Body, Display } from '../ui/Text.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
 
 const T = ADJUST_TEXT.vanish;
@@ -68,7 +68,6 @@ export function Vanish({ onBack, now = Date.now }: VanishProps) {
       {children}
     </ScreenScroll>
   );
-  const back = <TopBar onBack={onBack} />;
 
   if (view === null || !abilityUnlocked('vanish', view.profile.classId, view.character.level)) {
     // M17: locked, the bar names the screen (an empty bar over one line said nothing of where you were).
@@ -77,8 +76,8 @@ export function Vanish({ onBack, now = Date.now }: VanishProps) {
   if (minutes === null) {
     return frame(
       <>
-        {back}
-        <Title accessibilityRole="header">{T.title}</Title>
+        {/* M17: the name in the bar, as on Scholar's Path (review). */}
+        <TopBar title={T.title} onBack={onBack} />
         <Body>{T.lead}</Body>
         {VANISH_MINUTES.map((n) => (
           <Button

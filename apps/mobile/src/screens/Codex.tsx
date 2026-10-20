@@ -2,7 +2,7 @@
 // came from. On this phone only; a lesson can be taken out here or on its deck's lesson card. M12: opened from the
 // Library; each lesson opens its reading; Take out shows Undo for a few seconds (audit 24).
 import { READING_TEXT, fillText } from '@levelmeup/content';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CodexEntry } from '../reading/codex.ts';
@@ -23,6 +23,14 @@ export function Codex({ onBack, onOpenReading = () => {} }: { onBack: () => void
   const codex = useGame((s) => s.codex);
   const toggleKeep = useGame((s) => s.toggleKeep);
   const [removed, setRemoved] = useState<CodexEntry | null>(null);
+  // M17 (review): one function across redraws, so the snackbar coming and going doesn't redraw every drawn lesson.
+  const renderRow = useCallback((entry: CodexEntry) => (
+    <View style={{ gap: 4 }}>
+      <LessonCard entry={entry} onOpen={() => onOpenReading(entry.articleId)} />
+      <LinkButton label={C.remove} accessibilityLabel={fillText(C.removeLabel, { lesson: entry.lesson })}
+        onPress={() => { setRemoved(entry); void toggleKeep(entry); }} />
+    </View>
+  ), [onOpenReading, toggleKeep]);
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       {/* M17: a list drawn as it scrolls (up to 200 lessons; all of them were drawn on opening). */}
@@ -38,13 +46,7 @@ export function Codex({ onBack, onOpenReading = () => {} }: { onBack: () => void
             ? <StateNote kind="empty" title={READING_TEXT.library.noKept} line={C.empty} />
             : <Small>{`${C.line} ${fillText(C.count, { n: codex.length })}`}</Small>}
         </>}
-        renderRow={(entry) => (
-          <View style={{ gap: 4 }}>
-            <LessonCard entry={entry} onOpen={() => onOpenReading(entry.articleId)} />
-            <LinkButton label={C.remove} accessibilityLabel={fillText(C.removeLabel, { lesson: entry.lesson })}
-              onPress={() => { setRemoved(entry); void toggleKeep(entry); }} />
-          </View>
-        )}
+        renderRow={renderRow}
       />
       {removed !== null && (
         <View style={{ position: 'absolute', left: space.gutter, right: space.gutter, bottom: insets.bottom + 12 }}>
