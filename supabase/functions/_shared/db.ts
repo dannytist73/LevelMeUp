@@ -40,82 +40,91 @@ export function lmuCode(error: unknown): string | null {
   return match ? match[1]! : null;
 }
 
+/** M17: one round trip, as PostgREST does it (`set_config('role', …, true)` is `set local role`). */
 export async function asPlayer(tx: Tx, userId: string): Promise<void> {
-  await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId })}, true)`;
-  await tx`set local role lmu_player`;
+  await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId })}, true), set_config('role', 'lmu_player', true)`;
 }
 
 export async function asService(tx: Tx): Promise<void> {
   await tx`reset role`;
 }
 
-/** Everything the server needs about a player, read as that player. Null before onboarding. */
+/**
+ * Everything the server needs about a player, read as that player. Null before onboarding. M17 (perf audit 2026-10-20):
+ * the reads are independent, so they go out together on the transaction's connection (postgres.js pipelines them)
+ * instead of one round trip after another; the last eight days' quests are found by a subquery for the same reason.
+ */
 export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | null> {
   await asPlayer(tx, userId);
   try {
-    const [profile] = await tx<ProfileRow[]>`select * from levelmeup.profiles where user_id = ${userId}`;
-    const [character] = await tx<CharacterRow[]>`select * from levelmeup.character_state where user_id = ${userId}`;
+    const [
+      [profile], [character], ladders, days, instances, earned, [checkin], queue, answered, [result], clock, entitlements, painRows, workoutRows,
+      program, articles,
+    ] = await Promise.all([
+      tx<ProfileRow[]>`select * from levelmeup.profiles where user_id = ${userId}`,
+      tx<CharacterRow[]>`select * from levelmeup.character_state where user_id = ${userId}`,
+      tx<LadderRow[]>`select ladder_id, state from levelmeup.ladder_states where user_id = ${userId}`,
+      tx<DayRow[]>`select * from levelmeup.quest_days where user_id = ${userId} order by day_number desc limit 8`,
+      tx<InstanceRow[]>`
+        select * from levelmeup.quest_instances where user_id = ${userId} and day_id in (
+          select id from levelmeup.quest_days where user_id = ${userId} order by day_number desc limit 8)`,
+      tx<{ achievement_id: string }[]>`
+        select achievement_id from levelmeup.achievements_earned where user_id = ${userId} order by earned_at, achievement_id`,
+      tx<PendingCheckin[]>`
+        select c.id, c.day_id, c.gap_from, c.gap_to, c.answer, c.recovery_day_id, c.consequence, c.trial_done_at, c.note,
+          d.day_number as missed_day, d.starts_at as missed_starts_at, d.ends_at as missed_ends_at, d.time_zone as missed_time_zone,
+          q.template_id as missed_core, q.ladder_id as missed_ladder,
+          exists (select 1 from levelmeup.quest_instances r
+            where r.day_id = c.recovery_day_id and r.slot = 'recovery' and r.completed_at is not null) as recovered,
+          (select g.ends_at from levelmeup.quest_days g where g.user_id = c.user_id and g.day_number = c.gap_from - 1) as gap_starts_at
+        from levelmeup.checkins c
+        left join levelmeup.quest_days d on d.id = c.day_id
+        left join levelmeup.quest_instances q on q.day_id = c.day_id and q.slot = 'core'
+        where c.user_id = ${userId} and c.resolved_at is null
+        order by c.id limit 1`,
+      tx<QueuedDay[]>`
+        select id, day_number, resolution from levelmeup.quest_days
+        where user_id = ${userId} and status = 'closed' and not streak_applied order by day_number`,
+      tx<AnsweredRow[]>`
+        select id, answer, answered_at, gap_from, gap_to, consequence, recovery_day_id from levelmeup.checkins
+        where user_id = ${userId} and answered_at > now() - make_interval(secs => ${LIGHTER_PLAN_WINDOW_MS / 1000})`,
+      tx<ResultRow[]>`
+        select id, outcome from levelmeup.checkins
+        where user_id = ${userId} and outcome in ('recovered', 'unbreakable', 'shield', 'reset') and resolved_at > now() - interval '2 days'
+        order by resolved_at desc, id desc limit 1`,
+      tx<{ now: Date }[]>`select now() as now`,
+      // M13: LevelMeUp Plus grants (the Founder grant, a Play purchase).
+      tx<EntitlementRow[]>`
+        select source, product, starts_at, ends_at, trial, will_renew, manage_url, checked_at from levelmeup.entitlements where user_id = ${userId}`,
+      tx<{ pain: number }[]>`
+        select count(*)::int as pain from levelmeup.events
+        where user_id = ${userId} and type = 'pain' and applied_at > now() - make_interval(secs => ${PAIN_WINDOW_MS / 1000})`,
+      tx<{ workouts: number }[]>`
+        select count(*)::int as workouts from levelmeup.quest_instances
+        where user_id = ${userId} and completed_at is not null and condition ->> 'kind' = 'session'
+          and payload ->> 'offlineQuest' is null`,
+      // M16 decision 3: the weekly workouts that count (the full version, not rated too hard) since the weekly program was
+      // last switched on; programRun finds the run as of a day's start.
+      tx<{ at: Date }[]>`
+        select q.completed_at as at from levelmeup.quest_instances q
+        join levelmeup.profiles p on p.user_id = q.user_id
+        where q.user_id = ${userId} and q.completed_at is not null and q.ladder_id = 'program' and not q.hard_day
+          and q.rating is distinct from 'too_hard' and q.payload ->> 'offlineQuest' is null
+          and p.program_since is not null and q.completed_at >= p.program_since`,
+      // M8b: the published library, with the last day each article was given to this player ("unread": never).
+      tx<CandidateRow[]>`
+        select a.id, a.cluster, a.title, a.reading_minutes, a.evergreen, a.published_at, g.last_given
+        from levelmeup.articles a
+        left join (select article_id, max(day_number)::int as last_given from levelmeup.quest_days
+          where user_id = ${userId} and article_id is not null group by article_id) g on g.article_id = a.id
+        where a.status = 'published'
+        order by a.published_at, a.id`,
+    ]);
     if (profile === undefined || character === undefined) return null;
-    const ladders = await tx<LadderRow[]>`select ladder_id, state from levelmeup.ladder_states where user_id = ${userId}`;
-    const days = await tx<DayRow[]>`select * from levelmeup.quest_days where user_id = ${userId} order by day_number desc limit 8`;
-    const instances = days.length === 0
-      ? []
-      : await tx<InstanceRow[]>`select * from levelmeup.quest_instances where user_id = ${userId} and day_id in ${tx(days.map((d) => d.id))}`;
-    const earned = await tx<{ achievement_id: string }[]>`
-      select achievement_id from levelmeup.achievements_earned where user_id = ${userId} order by earned_at, achievement_id`;
-    const [checkin] = await tx<PendingCheckin[]>`
-      select c.id, c.day_id, c.gap_from, c.gap_to, c.answer, c.recovery_day_id, c.consequence, c.trial_done_at, c.note,
-        d.day_number as missed_day, d.starts_at as missed_starts_at, d.ends_at as missed_ends_at, d.time_zone as missed_time_zone,
-        q.template_id as missed_core, q.ladder_id as missed_ladder,
-        exists (select 1 from levelmeup.quest_instances r
-          where r.day_id = c.recovery_day_id and r.slot = 'recovery' and r.completed_at is not null) as recovered,
-        (select g.ends_at from levelmeup.quest_days g where g.user_id = c.user_id and g.day_number = c.gap_from - 1) as gap_starts_at
-      from levelmeup.checkins c
-      left join levelmeup.quest_days d on d.id = c.day_id
-      left join levelmeup.quest_instances q on q.day_id = c.day_id and q.slot = 'core'
-      where c.user_id = ${userId} and c.resolved_at is null
-      order by c.id limit 1`;
-    const queue = await tx<QueuedDay[]>`
-      select id, day_number, resolution from levelmeup.quest_days
-      where user_id = ${userId} and status = 'closed' and not streak_applied order by day_number`;
-    const answered = await tx<AnsweredRow[]>`
-      select id, answer, answered_at, gap_from, gap_to, consequence, recovery_day_id from levelmeup.checkins
-      where user_id = ${userId} and answered_at > now() - make_interval(secs => ${LIGHTER_PLAN_WINDOW_MS / 1000})`;
-    const [result] = await tx<ResultRow[]>`
-      select id, outcome from levelmeup.checkins
-      where user_id = ${userId} and outcome in ('recovered', 'unbreakable', 'shield', 'reset') and resolved_at > now() - interval '2 days'
-      order by resolved_at desc, id desc limit 1`;
-    const { now } = one(await tx<{ now: Date }[]>`select now() as now`);
-    // M13: LevelMeUp Plus grants (the Founder grant, a Play purchase).
-    const entitlements = await tx<EntitlementRow[]>`
-      select source, product, starts_at, ends_at, trial, will_renew, manage_url, checked_at from levelmeup.entitlements where user_id = ${userId}`;
-    const { pain } = one(await tx<{ pain: number }[]>`
-      select count(*)::int as pain from levelmeup.events
-      where user_id = ${userId} and type = 'pain' and applied_at > now() - make_interval(secs => ${PAIN_WINDOW_MS / 1000})`);
-    const { workouts } = one(await tx<{ workouts: number }[]>`
-      select count(*)::int as workouts from levelmeup.quest_instances
-      where user_id = ${userId} and completed_at is not null and condition ->> 'kind' = 'session'
-        and payload ->> 'offlineQuest' is null`);
-    // M16 decision 3: the weekly workouts that count (the full version, not rated too hard) since the weekly program was
-    // last switched on; programRun finds the run as of a day's start.
-    const program = await tx<{ at: Date }[]>`
-      select q.completed_at as at from levelmeup.quest_instances q
-      join levelmeup.profiles p on p.user_id = q.user_id
-      where q.user_id = ${userId} and q.completed_at is not null and q.ladder_id = 'program' and not q.hard_day
-        and q.rating is distinct from 'too_hard' and q.payload ->> 'offlineQuest' is null
-        and p.program_since is not null and q.completed_at >= p.program_since`;
-    // M8b: the published library, with the last day each article was given to this player ("unread": never).
-    const articles = await tx<CandidateRow[]>`
-      select a.id, a.cluster, a.title, a.reading_minutes, a.evergreen, a.published_at, g.last_given
-      from levelmeup.articles a
-      left join (select article_id, max(day_number)::int as last_given from levelmeup.quest_days
-        where user_id = ${userId} and article_id is not null group by article_id) g on g.article_id = a.id
-      where a.status = 'published'
-      order by a.published_at, a.id`;
     return {
       profile, character, ladders: [...ladders], days: [...days], instances: [...instances],
       earned: earned.map((r) => r.achievement_id), checkin: checkin ?? null, queue: [...queue], answered: [...answered],
-      result: result ?? null, readAt: now, painReports: pain, workoutsDone: workouts,
+      result: result ?? null, readAt: one(clock).now, painReports: one(painRows).pain, workoutsDone: one(workoutRows).workouts,
       programTimes: program.map((r) => r.at.getTime()), articles: [...articles],
       entitlements: [...entitlements],
     };
@@ -131,31 +140,34 @@ export async function loadSnapshot(tx: Tx, userId: string): Promise<Snapshot | n
 export async function loadHistory(tx: Tx, userId: string, book: string | null, plus = false): Promise<History> {
   await asPlayer(tx, userId);
   try {
-    const days = await tx<CalendarRow[]>`
-      select day_number, starts_at, ends_at, time_zone, status, resolution, protection, hard_day from levelmeup.quest_days
-      where user_id = ${userId} order by day_number desc limit ${CALENDAR_DAYS}`;
-    const [dayOne] = await tx<Pick<DayRow, 'starts_at' | 'ends_at' | 'time_zone'>[]>`
-      select starts_at, ends_at, time_zone from levelmeup.quest_days where user_id = ${userId} and day_number = 1`;
-    const { rungs } = one(await tx<{ rungs: number }[]>`
-      select count(*)::int as rungs from levelmeup.xp_ledger where user_id = ${userId} and source_type = 'rung'`);
-    const reading = book === null
-      ? { sessions: 0, minutes: 0 }
-      : one(await tx<{ sessions: number; minutes: number }[]>`
-          select count(*)::int as sessions, coalesce(sum(q.minutes), 0)::int as minutes
-          from levelmeup.quest_instances q join levelmeup.profiles p on p.user_id = q.user_id
-          where q.user_id = ${userId} and q.book = ${book} and q.completed_at is not null
-            and q.completed_at >= coalesce(p.book_started_at, '-infinity'::timestamptz)`);
-    // M8b: the latest days with a published article, and the takeaway written on each (decision 7).
-    const readings = await tx<ReadingRow[]>`
-      select d.day_number, d.starts_at, d.ends_at, d.time_zone, a.id as article_id, a.title, a.cluster, a.reading_minutes,
-        q.payload ->> 'text' as takeaway
-      from levelmeup.quest_days d
-      join levelmeup.articles a on a.id = d.article_id
-      left join levelmeup.quest_instances q on q.day_id = d.id and q.slot = 'article' and q.completed_at is not null
-      where d.user_id = ${userId}
-      order by d.day_number desc limit ${READINGS_SHOWN}`;
-    const weeks = plus ? await statWeeksOf(tx, userId) : null;
-    return { days: [...days], dayOne: dayOne ?? null, newRungs: rungs, reading, readings: [...readings], statWeeks: weeks };
+    // M17: independent reads, sent together (see loadSnapshot).
+    const [days, [dayOne], rungRows, reading, readings, weeks] = await Promise.all([
+      tx<CalendarRow[]>`
+        select day_number, starts_at, ends_at, time_zone, status, resolution, protection, hard_day from levelmeup.quest_days
+        where user_id = ${userId} order by day_number desc limit ${CALENDAR_DAYS}`,
+      tx<Pick<DayRow, 'starts_at' | 'ends_at' | 'time_zone'>[]>`
+        select starts_at, ends_at, time_zone from levelmeup.quest_days where user_id = ${userId} and day_number = 1`,
+      tx<{ rungs: number }[]>`
+        select count(*)::int as rungs from levelmeup.xp_ledger where user_id = ${userId} and source_type = 'rung'`,
+      book === null
+        ? Promise.resolve({ sessions: 0, minutes: 0 })
+        : tx<{ sessions: number; minutes: number }[]>`
+            select count(*)::int as sessions, coalesce(sum(q.minutes), 0)::int as minutes
+            from levelmeup.quest_instances q join levelmeup.profiles p on p.user_id = q.user_id
+            where q.user_id = ${userId} and q.book = ${book} and q.completed_at is not null
+              and q.completed_at >= coalesce(p.book_started_at, '-infinity'::timestamptz)`.then(one),
+      // M8b: the latest days with a published article, and the takeaway written on each (decision 7).
+      tx<ReadingRow[]>`
+        select d.day_number, d.starts_at, d.ends_at, d.time_zone, a.id as article_id, a.title, a.cluster, a.reading_minutes,
+          q.payload ->> 'text' as takeaway
+        from levelmeup.quest_days d
+        join levelmeup.articles a on a.id = d.article_id
+        left join levelmeup.quest_instances q on q.day_id = d.id and q.slot = 'article' and q.completed_at is not null
+        where d.user_id = ${userId}
+        order by d.day_number desc limit ${READINGS_SHOWN}`,
+      plus ? statWeeksOf(tx, userId) : Promise.resolve(null),
+    ]);
+    return { days: [...days], dayOne: dayOne ?? null, newRungs: one(rungRows).rungs, reading, readings: [...readings], statWeeks: weeks };
   } finally {
     await asService(tx);
   }

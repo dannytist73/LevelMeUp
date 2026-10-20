@@ -283,24 +283,19 @@ async function advance(userId: string, timeZone: string): Promise<void> {
   }
 }
 
-async function awardAchievements(userId: string): Promise<string[]> {
-  return db().begin(async (tx) => {
-    const snapshot = await loadSnapshot(tx, userId);
-    if (snapshot === null) return [];
-    const earned = newAchievements(ACHIEVEMENTS, achievementProgress(snapshot.character, ladderMap(snapshot.ladders)), snapshot.earned);
-    if (earned.length > 0) await tx`select levelmeup.award_achievements(${userId}::uuid, ${earned}::text[])`;
-    return earned;
-  });
-}
+/** The achievements a snapshot has reached and not yet earned. */
+const reached = (snapshot: Snapshot): string[] =>
+  newAchievements(ACHIEVEMENTS, achievementProgress(snapshot.character, ladderMap(snapshot.ladders)), snapshot.earned);
 
 /**
  * M13 (review): a Play row whose period ended since RevenueCat was last asked (a renewal, a trial turned paid, a lapse)
  * or that wasn't checked for a week is asked about before the state is read. Briefly, and never failing the sync.
  */
-async function recheckPlus(userId: string, s: Snapshot): Promise<void> {
+async function recheckPlus(userId: string, s: Snapshot): Promise<boolean> {
   const key = revenueCatKey();
-  if (key === null || !playRecheckDue(s.entitlements, s.readAt)) return;
+  if (key === null || !playRecheckDue(s.entitlements, s.readAt)) return false;
   await refreshPlay(db(), key, userId, 4_000).catch((error) => console.error('lmu-sync: the Plus recheck failed', error));
+  return true;
 }
 
 Deno.serve(async (req) => {
@@ -325,16 +320,27 @@ Deno.serve(async (req) => {
     // last, since each closes the days that have ended (M7a review). The results keep the phone's order.
     const results: Applied[] = new Array(request.events.length);
     for (const i of applyOrder(request.events)) results[i] = await applyEvent(player.userId, request.events[i]!, request.timeZone);
-    await advance(player.userId, request.timeZone);
-    const newAchievementIds = await awardAchievements(player.userId);
-    await recheckPlus(player.userId, started);
-    const { state, articles } = await db().begin(async (tx) => {
-      const snapshot = (await loadSnapshot(tx, player.userId))!;
+    // M17 (perf audit 2026-10-20): a sync with no events whose day hasn't ended (the launch and foreground syncs) reads the
+    // player once, not four times. With events, or a day to close, advance reads afresh as before.
+    const quiet = request.events.length === 0;
+    const due = !quiet || planAdvance({
+      ...started, pending: started.checkin, timeZone: request.timeZone, nowMs: started.readAt.getTime(), library: LIBRARY, contentVersion: CONTENT_VERSION,
+    }) !== null;
+    if (due) await advance(player.userId, request.timeZone);
+    const rechecked = await recheckPlus(player.userId, started);
+    const { state, articles, newAchievementIds } = await db().begin(async (tx) => {
+      let snapshot = due || rechecked ? (await loadSnapshot(tx, player.userId))! : started;
+      // Achievements are awarded here, in the reply's own transaction, and the player read again only when one was.
+      const earned = reached(snapshot);
+      if (earned.length > 0) {
+        await tx`select levelmeup.award_achievements(${player.userId}::uuid, ${earned}::text[])`;
+        snapshot = (await loadSnapshot(tx, player.userId))!;
+      }
       const history = await loadHistory(tx, player.userId, snapshot.profile.book, plusView(snapshot.entitlements, snapshot.readAt).active);
       const state = stateView(snapshot, dayOffers(snapshot, LIBRARY), history);
       // M8b decision 3: today's and the next day's articles and those asked for, unless the phone holds them.
       const ids = bodiesToSend([state.today?.article?.id ?? null, state.nextArticle?.id ?? null, ...request.want], request.have);
-      return { state, articles: await loadBodies(tx, player.userId, ids) };
+      return { state, articles: await loadBodies(tx, player.userId, ids), newAchievementIds: earned };
     });
     return json(200, { results, rejected: request.rejected, newAchievements: newAchievementIds, state, articles });
   } catch (error) {
