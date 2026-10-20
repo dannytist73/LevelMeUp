@@ -3,7 +3,7 @@
 // the story's picture in the local ComfyUI, and hands everything back to be checked again and stored. Each step's result
 // is kept in ~/.levelmeup/studio/jobs/job-<id>/, so a run that stops is finished by the next one.
 //   npm run studio -- setup        make LMU_STUDIO_SECRET (the function's copy, and this PC's in ~/.levelmeup/studio.env)
-//   npm run studio -- token        save the token `claude setup-token` printed (typed in hidden, never printed)
+//   npm run studio -- token        save the token `claude setup-token` printed, from the clipboard (never printed)
 //   npm run studio -- run [--dry]  one day's article (--dry: everything, but the server only checks it)
 //   npm run studio -- status       the last runs
 // Setup changes the live project, so it needs the owner's yes (CLAUDE.md). Claude never writes to the database: it
@@ -337,28 +337,25 @@ function setup(): void {
   console.log(`The studio secret is set: LMU_STUDIO_SECRET on the server and in ${ENV_FILE}. Nothing secret was printed.`);
 }
 
-/** Reads the token `claude setup-token` printed without echoing it, and keeps it in the studio's env file. */
-async function token(): Promise<void> {
-  process.stdout.write('Paste the token from `claude setup-token` and press Enter (it is not shown): ');
-  const stdin = process.stdin;
-  if (stdin.isTTY) stdin.setRawMode(true);
-  let typed = '';
-  await new Promise<void>((resolve) => {
-    stdin.on('data', (chunk: Buffer) => {
-      for (const ch of chunk.toString('utf8')) {
-        if (ch === '\r' || ch === '\n') { resolve(); return; }
-        if (ch === '\u0003') process.exit(1);
-        if (ch === '\u007f' || ch === '\b') typed = typed.slice(0, -1);
-        else typed += ch;
-      }
-    });
-  });
-  if (stdin.isTTY) stdin.setRawMode(false);
-  stdin.pause();
-  const value = typed.trim();
-  if (!/^sk-ant-oat\S{20,}$/.test(value)) throw new Error('\nthat does not look like a token from `claude setup-token` (it starts with sk-ant-oat); nothing was saved');
-  writeEnv({ ...readEnv(ENV_FILE), CLAUDE_CODE_OAUTH_TOKEN: value });
-  console.log(`\nSaved in ${ENV_FILE}.`);
+/**
+ * Takes the token `claude setup-token` printed from the clipboard (a paste into a hidden prompt arrives wrapped in the
+ * terminal's paste markers), keeps it in the studio's env file, empties the clipboard and checks the token with one
+ * tiny call. The token is never printed.
+ */
+function token(): void {
+  const clip = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Get-Clipboard -Raw'], { encoding: 'utf8', windowsHide: true });
+  // A token wrapped over two lines when it was copied is joined again: whitespace is never part of it.
+  const found = /sk-ant-oat[A-Za-z0-9_-]{20,}/.exec((clip.stdout ?? '').replace(/\s+/g, ''));
+  if (found === null) throw new Error('the clipboard holds no token from `claude setup-token` (one starts with sk-ant-oat): copy it, then run this again; nothing was saved');
+  const env = { ...readEnv(ENV_FILE), CLAUDE_CODE_OAUTH_TOKEN: found[0] };
+  writeEnv(env);
+  spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Set-Clipboard -Value $null'], { windowsHide: true });
+  console.log(`Saved in ${ENV_FILE}, and the clipboard is emptied. Checking it with one small call…`);
+  const answer = claude(env, {
+    system: 'Answer in the requested JSON.', prompt: 'Is this working? Answer true.', cwd: HERE, effort: 'low', minutes: 3,
+    schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'], additionalProperties: false },
+  }) as { ok?: unknown };
+  console.log(answer.ok === true ? 'Signed in: Claude Code answered on your plan.' : 'Claude Code answered, but not as expected.');
 }
 
 function status(): void {
@@ -371,7 +368,7 @@ const [command, ...rest] = process.argv.slice(2);
 try {
   switch (command) {
     case 'setup': setup(); break;
-    case 'token': await token(); break;
+    case 'token': token(); break;
     case 'run': await run(rest.includes('--dry')); break;
     case 'status': status(); break;
     default: throw new Error('commands: setup, token, run [--dry], status');
