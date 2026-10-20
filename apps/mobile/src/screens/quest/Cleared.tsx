@@ -5,11 +5,14 @@
 // where it was while the level line counts up. Reopened later (no before), it shows still (the owner, 2026-10-14).
 // M10b: a firm click as the XP stamp lands, one tick for the rank stamps (spec decision 2). M12 (board R3-3; plan decision
 // 6, audit 12, 22): "Next" leads on to the next quest or the reading, with Back to Today beside it; nothing is selected
-// before the player rates (no rating counts as Right on the server).
+// before the player rates (no rating counts as Right on the server). M17 (UX audit 2026-10-20, N3): Next (or Continue)
+// stays in a bar at the bottom, with Back to Today as a link beside it, so the way on is never below the fold; the stamp
+// is a little smaller.
 import { ADJUST_TEXT, PLAY_TEXT, READING_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ClearedNumbers } from '../../quest/cleared.ts';
@@ -116,8 +119,25 @@ export function Cleared({
   const fresh = before !== null;
   /** M10b: the rank stamp that ticks, chosen once, so a sync that changes the stat-ups never moves the tick (review). */
   const [ticking] = useState(() => numbers.statUps[0]?.stat ?? null);
+  const [barHeight, setBarHeight] = useState(BAR_SPACE);
+  const bar = (
+    <View testID="cleared-bar" onLayout={(e) => setBarHeight(Math.ceil(e.nativeEvent.layout.height))} style={{
+      position: 'absolute', left: 0, right: 0, bottom: 0, gap: 4, paddingTop: 12, paddingHorizontal: space.gutter,
+      paddingBottom: insets.bottom + 8, backgroundColor: colors.night, borderTopWidth: 1, borderTopColor: colors.divider,
+    }}>
+      {next !== undefined ? (
+        <>
+          <Button label={next.label} onPress={next.onPress} />
+          <LinkButton label={C.back} onPress={onContinue} style={{ alignSelf: 'center' }} />
+        </>
+      ) : (
+        <Button label={C.continue} onPress={onContinue} />
+      )}
+    </View>
+  );
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, paddingHorizontal: space.gutter, gap: 22 }}>
+    <Framed bar={bar}>
+    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: barHeight + 24, paddingHorizontal: space.gutter, gap: 22 }}>
       {/* The board's outlined title, shrunk to fit, and the stamp below the line rather than over the words: at the
           largest text size the stamp covered the heading and the title broke mid-word (emulator check, M6a). */}
       <View style={{ alignItems: 'center', gap: 10, paddingTop: 18 }}>
@@ -131,7 +151,7 @@ export function Cleared({
         <Small style={{ textAlign: 'center' }}>{line}</Small>
         <InkBurst delay={M.stamp} still={!fresh}>
           <Thud delay={M.stamp} still={!fresh} haptic="stamp" sound="claim" testID="xp-stamp-thud">
-            <XpStamp xp={numbers.xp} size={86} rotate={12} />
+            <XpStamp xp={numbers.xp} size={74} rotate={12} />
           </Thud>
         </InkBurst>
       </View>
@@ -198,19 +218,20 @@ export function Cleared({
         </View>
       )}
 
-      {next !== undefined ? (
-        <View style={{ gap: 10 }}>
-          <Button label={next.label} onPress={next.onPress} />
-          <Button label={C.back} variant="secondary" onPress={onContinue} />
-        </View>
-      ) : (
-        <Button label={C.continue} onPress={onContinue} />
-      )}
       {onReadAgain !== undefined && <Button label={READING_TEXT.readAgain} variant="secondary" onPress={onReadAgain} />}
       {/* M10c: a quiet link, so it never competes with Continue. */}
       {dayOpen && <LinkButton label={C.undo} onPress={onUndo} />}
       {dayOpen && onPain !== null && <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} />}
       {waiting && <Caption>{PLAY_TEXT.quest.willSync}</Caption>}
     </ScreenScroll>
+    </Framed>
   );
+}
+
+/** The bar's height before it is measured. */
+const BAR_SPACE = 120;
+
+/** The scroll with the bar laid over its foot. */
+function Framed({ children, bar }: { children: ReactNode; bar: ReactNode }) {
+  return <View style={{ flex: 1, backgroundColor: colors.night }}>{children}{bar}</View>;
 }
