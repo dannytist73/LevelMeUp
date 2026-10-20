@@ -59,6 +59,7 @@ export default function ShadowPreview() {
       account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
       phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null, shadowSeen: null, draft: { pact: null }, pending: [],
+      error: null, cached: null, // premium pass: what Today reads now (a refused sync, the deadline)
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop, editDraft: () => {},
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop, seeShadow: noop, trialMs: async () => 0, saveTrialMs: noop,
     })) as unknown as StoreApi<GameState>;

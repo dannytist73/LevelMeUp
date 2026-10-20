@@ -6,6 +6,7 @@ import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { Body } from '../../ui/Text.tsx';
 import { TopBar } from '../../ui/TopBar.tsx';
+import { toast } from '../../ui/toast.ts';
 import { space } from '../../theme/tokens.ts';
 
 export default function CrashTest() {
@@ -16,6 +17,7 @@ export default function CrashTest() {
       <TopBar title="Crash test" onBack={() => router.back()} />
       <Body>Crash test: this screen throws on purpose when you tap below. Its own boundary should show, with Go to Today.</Body>
       <Button label="Throw now" onPress={() => setBoom(true)} />
+      <Button label="Show a note" variant="secondary" onPress={() => toast('Crash test: a note above the phone bar.', { label: 'Undo', onPress: () => {} })} />
     </ScreenScroll>
   );
 }

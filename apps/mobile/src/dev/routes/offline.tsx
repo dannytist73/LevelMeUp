@@ -32,12 +32,15 @@ export default function OfflinePreview() {
     const at = Date.parse(endsAt) + 60_000; // a minute after today ends
     const event = offlineDay(cached.state, shown, at, deviceZone());
     if (event === null) return null;
-    const view = project(cached.state, [{ ...event, id: '00000000-0000-4000-8000-0000000000ff' }]);
+    const built = { ...event, id: '00000000-0000-4000-8000-0000000000ff' } as const;
+    const view = project(cached.state, [built]);
     const store = createStore(() => ({
       // M17: what Today reads since M12/M13 (the preview crashed on `account` without it).
       account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
       phase: 'ready', view, art, status: 'offline', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null,
+      // Premium pass A3, A6: Today reads the refused sync, what waits, and the cached state (the day's deadline).
+      error: null, pending: [built], cached: { state: cached.state, syncedAt: 0 },
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,
     })) as unknown as StoreApi<GameState>;

@@ -41,6 +41,7 @@ export default function CheckinPreview() {
       account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
       phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null, shadowSeen: null,
+      error: null, pending: [], cached: null, // premium pass: what Today reads now (a refused sync, what waits, the deadline)
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop,
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,
     })) as unknown as StoreApi<GameState>;
