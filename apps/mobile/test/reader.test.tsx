@@ -90,7 +90,7 @@ describe('the Story Deck (M11)', () => {
   it('opens on the cover, then the story cards, the lesson and Your turn, one card at a time', async () => {
     await renderReading(WITH_ARTICLE, true, SAMPLE_ARTICLE);
     expect(screen.getByTestId('deck-card-cover')).toBeTruthy();
-    expect(screen.getByText('6 cards · about 2 min · +10 XP')).toBeTruthy();
+    expect(screen.getByText('6\u00a0cards · about\u00a02\u00a0min · +10\u00a0XP')).toBeTruthy();
     expect(screen.getByRole('button', { name: D.previous }).props.accessibilityState).toMatchObject({ disabled: true });
     await next();
     expect(screen.getByText(SAMPLE_LEGACY_DECK.story[0]!.text)).toBeTruthy();

@@ -34,8 +34,9 @@ export const READING_TEXT = {
   },
   // M11: the Story Deck and the Codex.
   deck: {
-    cards: '{cards} cards · about {minutes} min',
-    cardsXp: '{cards} cards · about {minutes} min · +{xp} XP',
+    // M17: no-break spaces keep "about 4 min" whole on a narrow row.
+    cards: '{cards}\u00a0cards · about\u00a0{minutes}\u00a0min',
+    cardsXp: '{cards}\u00a0cards · about\u00a0{minutes}\u00a0min · +{xp}\u00a0XP',
     swipe: 'Swipe',
     tapHint: 'Tap or swipe for the next card',
     storyCount: '{n} of {total}',

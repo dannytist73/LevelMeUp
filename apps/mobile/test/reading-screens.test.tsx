@@ -29,7 +29,7 @@ describe("Today's reading (board D1; M12 boards R3-1, R3-5)", () => {
   it('counts the Story Deck\'s cards once the phone holds it', async () => {
     await render(withStore(testStore({ articles: { [SAMPLE_ARTICLE.id]: SAMPLE_ARTICLE } }),
       <ReadingHero quest={article} article={SUMMARY} waiting={false} onOpen={jest.fn()} />));
-    expect(screen.getByText(/^\d+ cards · about \d+ min · \+10 XP$/)).toBeTruthy();
+    expect(screen.getByText(/^\d+\scards · about\s\d+\smin · \+10\sXP$/)).toBeTruthy();
   });
 
   it('as a row: says it waits while the day has no article', async () => {

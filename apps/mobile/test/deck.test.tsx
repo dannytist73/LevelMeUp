@@ -102,7 +102,7 @@ describe('the story lesson on screen (M14)', () => {
     expect(screen.getByText(D.todaysStory)).toBeTruthy();
     expect(screen.getByText('Amara, 19, first-year student')).toBeTruthy();
     expect(screen.getAllByText('Small promises')).toHaveLength(1); // M17: the cover's own; the top bar doesn't repeat it
-    expect(screen.getByText('9 cards · about 3 min · +10 XP')).toBeTruthy();
+    expect(screen.getByText('9\u00a0cards · about\u00a03\u00a0min · +10\u00a0XP')).toBeTruthy();
     await next();
     expect(screen.getByText("Amara's story")).toBeTruthy();
     expect(screen.getByText('1 of 4')).toBeTruthy();
@@ -204,7 +204,7 @@ describe('the deck without animations (Remove animations, M11 decision 8)', () =
       <Deck article={{ ...SAMPLE_ARTICLE, deck: DECK }} label="Today's reading" xp={null} turn={<Text>turn</Text>}
         onClose={onClose} onFullArticle={jest.fn()} kept={false} onKeep={jest.fn()} reduceMotion />,
     );
-    expect(screen.getByText('6 cards · about 2 min')).toBeTruthy(); // a past reading shows no XP
+    expect(screen.getByText('6\u00a0cards · about\u00a02\u00a0min')).toBeTruthy(); // a past reading shows no XP
     await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.deck.close }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
