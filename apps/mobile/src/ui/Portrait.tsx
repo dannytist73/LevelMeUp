@@ -26,6 +26,8 @@ export type PortraitProps = {
   classId: ClassId; level: number; figure: Figure; label: string; marked?: boolean;
   /** M13: a Plus frame (or the Founder's), already checked as the player's to use (plus.ts shownFrame). */
   frame?: FrameName;
+  /** M17: the widest it may be (260 by default); the Reveal's is smaller, so its words come sooner. */
+  maxWidth?: number;
 };
 
 /** The painted picture, inside the frame's ink edge. Keyed by its address, so a new tier or figure, or a figure switched
@@ -39,9 +41,9 @@ function Painting({ uri, w, h }: { uri: string; w: number; h: number }) {
   );
 }
 
-export function Portrait({ classId, level, figure, label, marked = false, frame = 'none' }: PortraitProps) {
+export function Portrait({ classId, level, figure, label, marked = false, frame = 'none', maxWidth = 260 }: PortraitProps) {
   const { width } = useWindowDimensions();
-  const w = Math.min(260, width - 2 * space.gutter - 12);
+  const w = Math.min(maxWidth, width - 2 * space.gutter - 12);
   const h = Math.round(w * 1.04);
   const uri = portraitUrl(classId, figure, level);
   return (

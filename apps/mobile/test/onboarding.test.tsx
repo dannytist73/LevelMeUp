@@ -2,7 +2,7 @@ import {
   CLASS_DAYS, GOAL_CHOICES, GOOGLE_ERRORS, OBSTACLES, ONBOARDING_TEXT, SAFETY_CHECK, SETUP_TEXT, SLIP_SUGGESTIONS, classStats, routineLine,
 } from '@levelmeup/content';
 import { CLASSES } from '@levelmeup/rules';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import { project } from '../src/game/project.ts';
 import { NEW_DRAFT, STEP_PATH } from '../src/onboarding/flow.ts';
@@ -276,10 +276,10 @@ describe('Character reveal (O08)', () => {
     expect(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.accept })).toBeTruthy();
   });
 
-  it('accepting the class moves on', async () => {
+  it('accepting the class moves on, from the bar at the bottom (M17)', async () => {
     const onAccept = jest.fn();
     await show(<Reveal onAccept={onAccept} onFix={() => {}} />, READY_DRAFT, revealed());
-    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.accept }));
+    await fireEvent.press(within(screen.getByTestId('accept-bar')).getByRole('button', { name: ONBOARDING_TEXT.reveal.accept }));
     expect(onAccept).toHaveBeenCalled();
   });
 });
