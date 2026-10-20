@@ -90,6 +90,10 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 49 | Library: five past readings, Show all for the rest | O12 | done |
 | 50 | Character and Chronicle opened with a small grey word; now a title like Today and Library (Character's is the name) | own pass | done |
 | 51 | Minutes a day: numbers sat left in their boxes | own pass | done |
+| 52 | Change today's confirmation had bright buttons under Up next: a System card with quiet answers | old audit 1 | done |
+| 53 | System cards captured their colours at load (wrong under a Plus look) | own catch | done |
+| 54 | Design critique (a designer agent on 15 screenshots): Safety after the log as a filled card; disabled buttons as quiet outlines; a sentence-sized takeaway box; Today's check-in card asks only the question; quiet System narration; even side-by-side buttons; switch rows; option-card markers (radio/checkbox) and lighter edges; "0 of 2 shields"; long reading titles at heading size; quieter portrait switch and ranks; onboarding's sign-in split; Training row summary; and five small ones | critique | done |
+| 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
 
@@ -147,4 +151,9 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 02:35 | QA | Accessibility sweep: every tappable on the tabs and screens has a label; Remove animations on: all works | emulator |
 | 02:40 | 48, 49 | Deck cover title; past readings | app tests |
 | 02:43 | 50, 51 | Tab titles; centred minutes | emulator; app tests 1186/1186 |
-| 02:45 | build | Candidate 0.9.0 preview APK started (WSL) | |
+| 02:45 | build | Candidate 0.9.0 preview APK started (WSL) | BUILD OK 02:56 (from c5d2e67) |
+| 02:49 | 52, 53 | Confirm card; colours read at draw time | emulator (Rest day confirm, then Not now) |
+| 02:54 | 54 (part 1) | Safety, disabled buttons, takeaway box, check-in card, quiet narration, even buttons | emulator: Today, quest, Training, deck; app tests 1186/1186 |
+| 02:58 | 54 (part 2) | Switch rows, check-in screen card, sign-in split, Character, shields, titles, option edges | emulator: Settings, Character, Today, Library, onboarding |
+| 03:00 | 54 (markers) | Radio and checkbox markers | emulator: Training, check-in |
+| 03:02 | 54 (small) | Kept lessons count, workout steps size, Cleared lines, Training row | app tests |
