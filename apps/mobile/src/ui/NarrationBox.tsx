@@ -62,8 +62,11 @@ export function SystemCard({ text, detail, actions = [], count, testID }: {
         {detail !== undefined && <Small tone="ashLight">{detail}</Small>}
       </View>
       {actions.length > 0 && (
+        // M17 (narrow-phone pass): each answer as wide as its words (at least 120 dp), the row's spare width shared out;
+        // they stack only when both don't fit. Even halves squeezed a long answer onto two lines, and on a 360 dp phone
+        // stacked even "Answer" and "Later".
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {actions.map((a) => <Button key={a.label} label={a.label} variant="secondary" onPress={a.onPress} style={{ flexGrow: 1, flexBasis: 0, minWidth: 140 }} />)}
+          {actions.map((a) => <Button key={a.label} label={a.label} variant="secondary" onPress={a.onPress} style={{ flexGrow: 1, minWidth: 120 }} />)}
         </View>
       )}
     </View>
