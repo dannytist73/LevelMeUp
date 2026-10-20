@@ -124,7 +124,7 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
 
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12 }}>
-            <SectionTitle title={fillText(L.kept, { n: codex.length })} />
+            <SectionTitle title={codex.length === 0 ? L.keptNone : fillText(L.kept, { n: codex.length })} />
             {codex.length > LIBRARY_LESSONS && <LinkButton label={L.seeAll} tone="accentText" onPress={onOpenCodex} />}
           </View>
           {codex.length === 0 ? (

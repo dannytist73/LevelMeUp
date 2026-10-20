@@ -107,7 +107,8 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
               onPress={() => setOpen(shown ? null : m)} style={{ alignSelf: 'flex-start' }} />
             {shown && (
               <Appear style={{ gap: 8 }}>
-                {words.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
+                {/* M17 (design critique): the steps at the card's text size, as its cue and note. */}
+                {words.steps.map((step, i) => <Small key={i} tone="chalk">{`${i + 1}. ${step}`}</Small>)}
                 <Small>{progressLine(words)}</Small>
               </Appear>
             )}

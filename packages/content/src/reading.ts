@@ -89,6 +89,8 @@ export const READING_TEXT = {
     openCards: 'Open the cards',
     readAgain: 'Read again',
     kept: 'Kept lessons · {n}',
+    /** M17: with none kept the empty card says so; the heading doesn't add " · 0". */
+    keptNone: 'Kept lessons',
     seeAll: 'See all',
     noKept: 'No kept lessons yet',
     noKeptLine: "Tap Keep on a reading's lesson card and it lands here.",

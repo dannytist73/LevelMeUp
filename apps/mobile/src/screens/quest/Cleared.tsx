@@ -140,7 +140,8 @@ export function Cleared({
     <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: barHeight + 24, paddingHorizontal: space.gutter, gap: 22 }}>
       {/* The board's outlined title, shrunk to fit, and the stamp below the line rather than over the words: at the
           largest text size the stamp covered the heading and the title broke mid-word (emulator check, M6a). */}
-      <View style={{ alignItems: 'center', gap: 10, paddingTop: 18 }}>
+      {/* M17 (design critique): the lines run to the screen's edges, not the gutters'. */}
+      <View style={{ alignItems: 'center', gap: 10, paddingTop: 18, marginHorizontal: -space.gutter, paddingHorizontal: space.gutter }}>
         <SpeedLines burst={fresh} />
         <Label style={{ textAlign: 'center' }}>{heading}</Label>
         <SlamIn still={!fresh} style={{ alignSelf: 'stretch' }}>
