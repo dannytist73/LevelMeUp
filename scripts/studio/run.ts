@@ -3,7 +3,7 @@
 // the story's picture in the local ComfyUI, and hands everything back to be checked again and stored. Each step's result
 // is kept in ~/.levelmeup/studio/jobs/job-<id>/, so a run that stops is finished by the next one.
 //   npm run studio -- setup        make LMU_STUDIO_SECRET (the function's copy, and this PC's in ~/.levelmeup/studio.env)
-//   npm run studio -- token        save the token `claude setup-token` printed, from the clipboard (never printed)
+//   npm run studio -- token [TOKEN] save the token `claude setup-token` printed: typed after it, or from the clipboard
 //   npm run studio -- run [--dry]  one day's article (--dry: everything, but the server only checks it)
 //   npm run studio -- status       the last runs
 // Setup changes the live project, so it needs the owner's yes (CLAUDE.md). Claude never writes to the database: it
@@ -342,10 +342,11 @@ function setup(): void {
  * terminal's paste markers), keeps it in the studio's env file, empties the clipboard and checks the token with one
  * tiny call. The token is never printed.
  */
-function token(): void {
-  const clip = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Get-Clipboard -Raw'], { encoding: 'utf8', windowsHide: true });
-  // A token wrapped over two lines when it was copied is joined again: whitespace is never part of it.
-  const found = /sk-ant-oat[A-Za-z0-9_-]{20,}/.exec((clip.stdout ?? '').replace(/\s+/g, ''));
+function token(given: readonly string[]): void {
+  const clip = given.length > 0 ? null : spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Get-Clipboard -Raw'], { encoding: 'utf8', windowsHide: true });
+  // Or typed after the command. A token wrapped over two lines when it was copied is joined again: whitespace is
+  // never part of it.
+  const found = /sk-ant-oat[A-Za-z0-9_-]{20,}/.exec((clip === null ? given.join('') : clip.stdout ?? '').replace(/\s+/g, ''));
   if (found === null) throw new Error('the clipboard holds no token from `claude setup-token` (one starts with sk-ant-oat): copy it, then run this again; nothing was saved');
   const env = { ...readEnv(ENV_FILE), CLAUDE_CODE_OAUTH_TOKEN: found[0] };
   writeEnv(env);
@@ -368,12 +369,13 @@ const [command, ...rest] = process.argv.slice(2);
 try {
   switch (command) {
     case 'setup': setup(); break;
-    case 'token': token(); break;
+    case 'token': token(rest); break;
     case 'run': await run(rest.includes('--dry')); break;
     case 'status': status(); break;
     default: throw new Error('commands: setup, token, run [--dry], status');
   }
 } catch (error) {
-  log(`studio ${command}: ${(error as Error).message}`);
+  // Only a known command is named: anything else typed there (a token pasted in the wrong place) is never logged.
+  log(`studio ${['setup', 'token', 'run', 'status'].includes(command ?? '') ? command : '(unknown command)'}: ${(error as Error).message}`);
   process.exitCode = 1;
 }
