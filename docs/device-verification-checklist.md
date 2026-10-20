@@ -775,7 +775,7 @@ Loop log and backlog: `docs/2026-10-20-polish-loop.md`. Layout, motion and speed
 (faster sync reads; lmu-sync v29) are deployed and the live suite passed. Rows marked emulator were checked on the
 development build (Vera look-only: nothing claimed, saved or answered). The Find X9 column is the owner's, on the 0.9.0
 APK: built 2026-10-20 05:16 UTC from 8e8e03f on this PC, `apps/mobile/dist/levelmeup-0.9.0-preview.apk` (version code 11);
-it installs over 0.8.0 and keeps the character.
+on the emulator it installed over the development build and kept the character; over 0.8.0 on the phone it should do the same (higher version code, same signing), not yet seen.
 
 | # | Check | Result |
 |---|---|---|
