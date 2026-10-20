@@ -27,7 +27,7 @@ import { ClassPath } from './character/ClassPath.tsx';
 import { ScholarsPath } from './character/ScholarsPath.tsx';
 import { StatsPanel } from './character/StatsPanel.tsx';
 import { classLock, lockLine } from './ClassChange.tsx';
-import { lastSynced } from './syncLine.ts';
+import { lastSynced, staleSince } from './syncLine.ts';
 
 const T = CHARACTER_TEXT;
 
@@ -37,13 +37,12 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const vow = useGame((s) => s.vow);
-  const status = useGame((s) => s.status);
-  const lastSyncedAt = useGame((s) => s.lastSyncedAt);
+  const lastSyncedAt = useGame(staleSince);
   const chosen = useGame((s) => s.portrait);
   const setPortrait = useGame((s) => s.setPortrait);
   // M13: a frame shows only while it is the player's to use (a lapsed Plus shows none).
   const frame = useGame((s) => shownFrame(s.frame, plusOf(s.view)));
-  const stale = status === 'offline' || status === 'retrying';
+  const stale = lastSyncedAt !== undefined;
 
   if (view === null) {
     return (
@@ -58,7 +57,7 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
             <Bone height={24} width="50%" />
             {[0, 1, 2, 3].map((i) => <Bone key={i} height={18} />)}
           </Skeleton>
-          {stale && <Caption>{lastSynced(lastSyncedAt, 'UTC')}</Caption>}
+          {stale && <Caption>{lastSynced(lastSyncedAt ?? null, 'UTC')}</Caption>}
         </View>
       </ScreenScroll>
     );
@@ -119,7 +118,7 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
         <RowLink label={ADJUST_TEXT.classChange.open}
           line={lock === null ? `${ADJUST_TEXT.classChange.label}: ${className}` : `${ADJUST_TEXT.classChange.label}: ${className} · ${lockLine(lock, timeZone)}`}
           onPress={onChangeClass} />
-        {stale && <Caption>{lastSynced(lastSyncedAt, timeZone)}</Caption>}
+        {stale && <Caption>{lastSynced(lastSyncedAt ?? null, timeZone)}</Caption>}
       </View>
     </ScreenScroll>
   );

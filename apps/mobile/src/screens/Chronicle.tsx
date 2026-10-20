@@ -20,7 +20,7 @@ import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { TabTop } from '../ui/TabTop.tsx';
 import { Calendar } from './chronicle/Calendar.tsx';
 import { StatChart } from './chronicle/StatChart.tsx';
-import { lastSynced } from './syncLine.ts';
+import { lastSynced, staleSince } from './syncLine.ts';
 
 const C = CHRONICLE_TEXT;
 
@@ -71,9 +71,8 @@ export type ChronicleProps = { onPlus?: () => void; onSettings?: () => void };
 export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
-  const status = useGame((s) => s.status);
-  const lastSyncedAt = useGame((s) => s.lastSyncedAt);
-  const stale = status === 'offline' || status === 'retrying';
+  const lastSyncedAt = useGame(staleSince);
+  const stale = lastSyncedAt !== undefined;
   const streak = view?.character.streak;
   const shown = view == null ? null : shownStreak(view);
   const today = view?.calendar.find((d) => d.mark === 'open')?.date ?? null;
@@ -106,7 +105,7 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
             <StatChart weeks={view.statWeeks ?? null} onPlus={onPlus} />
           </>
         )}
-        {stale && <Caption>{lastSynced(lastSyncedAt, view?.profile.timeZone ?? 'UTC')}</Caption>}
+        {stale && <Caption>{lastSynced(lastSyncedAt ?? null, view?.profile.timeZone ?? 'UTC')}</Caption>}
       </View>
     </ScreenScroll>
   );

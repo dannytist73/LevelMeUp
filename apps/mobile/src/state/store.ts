@@ -26,7 +26,7 @@ import { carriedTimers, withRef } from '../game/offline.ts';
 import { offlineDay, offlineView } from '../game/offlineDay.ts';
 import { project } from '../game/project.ts';
 import type { Shown } from '../game/project.ts';
-import type { ArticleBody, PhoneEvent, Reveal } from '../game/types.ts';
+import type { ArticleBody, PhoneEvent, Reveal, ServerState } from '../game/types.ts';
 import type { Api } from '../net/api.ts';
 import { makeApplier } from '../notify/apply.ts';
 import { setLiveAllowed, syncLive } from '../notify/live.ts';
@@ -336,11 +336,28 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       if (wait > 0 && wait < MAX_TIMER_MS) dayEnd = setTimeout(() => void scheduler.request(), wait);
     };
 
+    /**
+     * M17 (perf audit 2026-10-20): what the screens were last given. A refresh that finds the same state, the same waiting
+     * events and the same notices keeps them, so a sync that changes nothing redraws nothing (each tap used to redraw every
+     * open screen about three times).
+     */
+    let shown: { state: ServerState; pendingKey: string; pending: PhoneEvent[]; view: Shown } | null = null;
+    let lastNotices: { key: string; notices: Notice[] } | null = null;
+
     /** Reloads what the phone holds (one consistent read) and recomputes what to show. */
     const refresh = async (patch: Partial<GameState> = {}): Promise<void> => {
       const before = get().view;
-      const { cached, pending, notices, articles } = await deps.local.snapshot();
-      const view = cached === null ? null : project(cached.state, pending);
+      const read = await deps.local.snapshot();
+      const { cached, articles } = read;
+      const pendingKey = read.pending.map((e) => e.id).join(',');
+      if (cached !== null && (shown === null || shown.state !== cached.state || shown.pendingKey !== pendingKey)) {
+        shown = { state: cached.state, pendingKey, pending: read.pending, view: project(cached.state, read.pending) };
+      }
+      const view = cached === null ? null : shown!.view;
+      const pending = cached === null ? read.pending : shown!.pending;
+      const noticeKey = read.notices.map((n) => `${n.eventId}:${n.code}`).join(',');
+      if (lastNotices?.key !== noticeKey) lastNotices = { key: noticeKey, notices: read.notices };
+      const notices = lastNotices.notices;
       set({ ...patch, cached, pending, notices, articles, view, lastSyncedAt: cached?.syncedAt ?? null });
       watchDayEnd(view);
       void replan();

@@ -21,7 +21,7 @@ import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Small, Title } from '../ui/Text.tsx';
 import { ClearedRow, questXp } from './QuestCard.tsx';
 import { ReadingHero, ReadingRow } from './reading/ReadingCard.tsx';
-import { lastSynced } from './syncLine.ts';
+import { lastSynced, staleSince } from './syncLine.ts';
 
 const L = READING_TEXT.library;
 /** Kept lessons shown here; See all opens the Codex. */
@@ -71,9 +71,8 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
   const view = useGame((s) => s.view);
   const codex = useGame((s) => s.codex);
   const articles = useGame((s) => s.articles);
-  const status = useGame((s) => s.status);
-  const lastSyncedAt = useGame((s) => s.lastSyncedAt);
-  const stale = status === 'offline' || status === 'retrying';
+  const lastSyncedAt = useGame(staleSince);
+  const stale = lastSyncedAt !== undefined;
   const today = view?.today ?? null;
   const quest = today?.quests.find((q) => q.slot === 'article') ?? null;
   const article = today?.article ?? null;
@@ -131,7 +130,7 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
             ? <Small>{READING_TEXT.past.empty}</Small>
             : past.map((r) => <PastRow key={`${r.dayNumber}-${r.id}`} reading={r} onOpen={() => onOpenReading(r.id, r.dayNumber)} />)}
         </View>
-        {stale && <Caption>{lastSynced(lastSyncedAt, view?.profile.timeZone ?? 'UTC')}</Caption>}
+        {stale && <Caption>{lastSynced(lastSyncedAt ?? null, view?.profile.timeZone ?? 'UTC')}</Caption>}
       </View>
     </ScreenScroll>
   );

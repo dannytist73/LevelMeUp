@@ -174,7 +174,9 @@ export function Today({
 
   const today = view?.today ?? null;
   const usable = today !== null && today.quests.length > 0 && Date.parse(today.endsAt!) > now();
-  const mark = syncMark(status);
+  // M17 (perf audit 2026-10-20): never "Syncing…" here: every tap starts a sync of about a second, and the line came and
+  // went in the header, moving everything below it twice. Offline and retrying still say so; a quest that waits says "will sync".
+  const mark = status === 'syncing' ? null : syncMark(status);
   // M7a: "paused" while a check-in waits, "held today" after "I just didn't".
   const note = view === null ? null : streakNote(view);
   // M7c: what the Shadow holds today (the mark, the seal), from the state; none without a pact.

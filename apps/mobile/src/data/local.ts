@@ -51,9 +51,26 @@ export type Snapshot = { cached: Cached | null; pending: PhoneEvent[]; notices: 
 const OUTBOX_LIMIT = 1000;
 
 export function makeLocal(sql: Sql) {
+  // M17 (perf audit 2026-10-20): what was read last, kept while its text is the same. A sync that changes nothing then
+  // hands the screens the same objects, so they don't draw again, and the articles aren't parsed again on every refresh.
+  let lastState: { text: string; state: ServerState } | null = null;
+  let lastArticles: { key: string; articles: Record<string, ArticleBody> } | null = null;
+  const parseState = (text: string): ServerState => {
+    if (lastState?.text !== text) lastState = { text, state: JSON.parse(text) as ServerState };
+    return lastState.state;
+  };
+  const readArticles = async (from: Pick<Sql, 'all'>): Promise<Record<string, ArticleBody>> => {
+    const stamps = await from.all<{ id: string; saved_at: number }>('select id, saved_at from articles order by id');
+    const key = stamps.map((r) => `${r.id}@${r.saved_at}`).join(',');
+    if (lastArticles?.key !== key) {
+      const kept = await from.all<{ id: string; json: string }>('select id, json from articles order by id');
+      lastArticles = { key, articles: Object.fromEntries(kept.map((r) => [r.id, JSON.parse(r.json) as ArticleBody])) };
+    }
+    return lastArticles.articles;
+  };
   const readCache = async (from: Pick<Sql, 'all'>): Promise<Cached | null> => {
     const [row] = await from.all<{ json: string; updated_at: number }>("select json, updated_at from cache where key = 'state'");
-    return row === undefined ? null : { state: JSON.parse(row.json) as ServerState, syncedAt: row.updated_at };
+    return row === undefined ? null : { state: parseState(row.json), syncedAt: row.updated_at };
   };
   const readPending = async (from: Pick<Sql, 'all'>, limit: number): Promise<PhoneEvent[]> => {
     const rows = await from.all<{ json: string }>('select json from outbox order by seq limit ?', [limit]);
@@ -68,12 +85,11 @@ export function makeLocal(sql: Sql) {
       let result: Snapshot = { cached: null, pending: [], notices: [], articles: {} };
       await sql.transaction(async (tx) => {
         const rows = await tx.all<{ event_id: string; code: string }>('select event_id, code from notices order by created_at, event_id');
-        const kept = await tx.all<{ id: string; json: string }>('select id, json from articles order by id');
         result = {
           cached: await readCache(tx),
           pending: await readPending(tx, OUTBOX_LIMIT),
           notices: rows.map((r) => ({ eventId: r.event_id, code: r.code })),
-          articles: Object.fromEntries(kept.map((r) => [r.id, JSON.parse(r.json) as ArticleBody])),
+          articles: await readArticles(tx),
         };
       });
       return result;

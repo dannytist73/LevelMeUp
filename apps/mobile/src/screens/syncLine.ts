@@ -15,6 +15,15 @@ export function syncMark(status: Status): string | null {
   }
 }
 
+/**
+ * M17 (perf audit 2026-10-20): what a tab needs to know about syncing, as one value that only changes when the phone
+ * loses or finds the server: undefined while it's reachable, else when it last synced (null: never). The tabs used to
+ * read the status and the last sync time, so every sync redrew them behind Today.
+ */
+export function staleSince(s: { status: Status; lastSyncedAt: number | null }): number | null | undefined {
+  return s.status === 'offline' || s.status === 'retrying' ? s.lastSyncedAt : undefined;
+}
+
 /** "Last synced 07:40" while the phone can't reach the server (Character, Chronicle, Settings). */
 export function lastSynced(lastSyncedAt: number | null, timeZone: string): string {
   return lastSyncedAt === null ? 'Not synced yet' : `Last synced ${clockTime(new Date(lastSyncedAt).toISOString(), timeZone)}`;
