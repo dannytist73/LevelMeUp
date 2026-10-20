@@ -97,6 +97,8 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 57 | Third review: disabled edge too strong; Enter closed the Shadow's note (now only one-line fields); recap said "starts today" mid-week; week marks now read as the Chronicle reads them; old recap keys pruned; snackbar edge; check-in gap line back on Today; recap waits while the Shadow's card shows; Settings test fixed | review | done |
 | 58 | Screens not yet polished: Your look's locked frames wear the Plus pill (colours said "Plus" twice); Book and a locked Vanish name themselves in the bar; Notifications' switches as one group, each time with its switch | own pass | done |
 | 59 | The Codex drew all its lessons (up to 200) on opening: now a list drawn as it scrolls, with the status band; a dev preview holds 200 | perf | done |
+| 60 | A 360 dp phone (many budget Androids): Today's System card stacked "Answer" and "Later" (and even halves squeezed longer answers onto two lines); answers are now sized to their words and stack only when they don't fit. Library, Character, Chronicle, Settings, the workout log and the deck fit as they are | narrow pass | done |
+| 61 | Settings' note "Only if the core quest isn't done" floated under the plan group: now says it is the evening reminder | narrow pass | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -163,3 +165,4 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 03:12 | 57 | Third review fixes | app tests 1187/1187, content 1170/1170, typecheck clean |
 | 03:20 | 58 | Look, Book, Vanish, Notifications | emulator (look only), 2x font: no truncation; app tests |
 | 03:25 | 59 | Codex list | new test (a full Codex draws fewer than 200 rows); emulator: 200-lesson preview scrolled; scan marker added |
+| 03:30 | 60, 61 | Narrow-phone pass | emulator at 360 dp (density 480, then reset): Today, Library, Character, Chronicle, Settings, workout, deck; app tests 1188/1188 |
