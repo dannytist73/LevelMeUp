@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { LIBRARY } from '@levelmeup/content';
+import { LIBRARY, SETTINGS_TEXT } from '@levelmeup/content';
 import { stateView } from '../../../supabase/functions/_shared/state.ts';
 import { dayOffers } from '../../../supabase/functions/_shared/today.ts';
 import { dayTwoSnapshot, historyOf } from '../../../supabase/tests/unit/fixtures.ts';
@@ -13,7 +13,7 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, OFFERS_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, OFFERS_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { DRAFTS_KEY, flushDrafts, readDraft, restoredDraft, writeDraft } from '../src/state/drafts.ts';
@@ -177,7 +177,7 @@ describe('the game store', () => {
       expect(ensureSession).toHaveBeenCalledTimes(1); // no endless retry
       expect(api.sync).not.toHaveBeenCalled();
       expect((await local.snapshot()).pending).toHaveLength(1);
-      expect(SIGN_IN_LOST_TEXT).toMatch(/start again/);
+      expect(SETTINGS_TEXT.signInLost.guest).toMatch(/start again/);
     } finally {
       store.getState().stop();
       jest.useRealTimers();
@@ -357,14 +357,46 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
-  it('when the sign-in is really gone: wipes, signs out and the onboarding starts again', async () => {
-    const { store, local, deps } = await setup([{ ok: false, status: 401, code: 'session_ended' }, { ok: false, status: 404, code: 'not_started' }]);
+  it('when the sign-in is really gone: keeps everything, signs nothing out, and leaves the choice to the player (premium pass A2)', async () => {
+    const { store, local, deps } = await setup([{ ok: false, status: 401, code: 'session_ended' }]);
     await local.acknowledge([], [], SERVER, 1);
+    await local.enqueue({ ...completeCore, id: 'e1' }, 2);
     await store.getState().boot();
     await store.getState().syncNow();
-    expect(deps.signOut).toHaveBeenCalled();
-    expect(await local.load()).toBeNull();
-    expect(store.getState()).toMatchObject({ phase: 'not_started', view: null });
+    expect(deps.signOut).not.toHaveBeenCalled();
+    expect(await local.load()).not.toBeNull();
+    expect((await local.snapshot()).pending).toHaveLength(1);
+    expect(store.getState()).toMatchObject({ phase: 'ready', signInLost: true });
+    store.getState().stop();
+  });
+
+  it('signing in with Google again: the copy on the phone goes only once signed in, and the character comes back (premium pass A2)', async () => {
+    const { store, local, deps } = await setup([{ ok: false, status: 401, code: 'session_ended' }, ok(SERVER)], {
+      account: jest.fn(async (): Promise<Account> => ({ kind: 'saved', email: 'player@example.com' })),
+    });
+    await local.acknowledge([], [], SERVER, 1);
+    await local.enqueue({ ...completeCore, id: 'e1' }, 2);
+    await store.getState().boot();
+    expect(store.getState().signInLost).toBe(true);
+    expect(await store.getState().signInAgain()).toEqual({ ok: true, found: true });
+    expect(deps.google.signIn).toHaveBeenCalledTimes(1);
+    expect(deps.signOut).not.toHaveBeenCalled(); // the new sign-in stays
+    expect(store.getState()).toMatchObject({ phase: 'ready', signInLost: false });
+    expect((await local.snapshot()).pending).toEqual([]); // the old copy's unsent actions went with it, as the card says
+    store.getState().stop();
+  });
+
+  it('a Google sign-in again that does not finish changes nothing (premium pass A2)', async () => {
+    const { store, local } = await setup([{ ok: false, status: 401, code: 'session_ended' }], {
+      google: { link: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })), signIn: jest.fn(async (): Promise<GoogleResult> => ({ ok: false, code: 'cancelled' })) },
+    });
+    await local.acknowledge([], [], SERVER, 1);
+    await local.enqueue({ ...completeCore, id: 'e1' }, 2);
+    await store.getState().boot();
+    expect(await store.getState().signInAgain()).toEqual({ ok: false, code: 'cancelled' });
+    expect(await local.load()).not.toBeNull();
+    expect((await local.snapshot()).pending).toHaveLength(1);
+    expect(store.getState().signInLost).toBe(true);
     store.getState().stop();
   });
 

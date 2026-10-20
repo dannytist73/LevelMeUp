@@ -169,6 +169,9 @@ export function Today({
   const dismissNotice = useGame((s) => s.dismissNotice);
   const enqueue = useGame((s) => s.enqueue);
   const signInLost = useGame((s) => s.signInLost);
+  /** Premium pass A3: the System refused the last sync (a refusal that won't pass by itself), and what still waits. */
+  const refused = useGame((s) => s.error !== null);
+  const unsent = useGame((s) => s.pending.length);
   const updateRequired = useGame((s) => s.updateRequired);
   const trainingNoticeSeen = useGame((s) => s.trainingNoticeSeen);
   const dismissTrainingNotice = useGame((s) => s.dismissTrainingNotice);
@@ -197,7 +200,12 @@ export function Today({
   const hold = view === null ? null : shadowHold(view, now());
   const open = (): boolean => today !== null && Date.parse(today.endsAt!) > now();
 
+  const R = TODAY_TEXT.states;
   const strip: Notice[] = [
+    ...(refused
+      ? [{ key: 'refused', text: unsent === 0 ? R.refused : unsent === 1 ? R.refusedOne : fillText(R.refusedSome, { n: unsent }),
+          actions: [{ label: R.retry, onPress: () => void syncNow() }] }]
+      : []),
     ...(view !== null && !trainingNoticeSeen && trainingUnset(view.profile)
       // Players from before M6c never chose a training setup: asked once (M6d decision 13).
       ? [{ key: 'training', text: ADJUST_TEXT.training.notice, actions: [

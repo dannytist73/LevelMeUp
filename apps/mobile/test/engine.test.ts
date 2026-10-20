@@ -172,6 +172,8 @@ describe('one sync run', () => {
     ['the server is busy', { ok: false, status: 503, code: 'busy' }, { kind: 'retry', code: 'busy' }],
     ['Auth is unavailable', { ok: false, status: 503, code: 'auth_unavailable' }, { kind: 'retry', code: 'auth_unavailable' }],
     ['a server error', { ok: false, status: 500, code: 'internal' }, { kind: 'retry', code: 'internal' }],
+    ['too many requests (premium pass A3: it stalled)', { ok: false, status: 429, code: 'rate_limited' }, { kind: 'retry', code: 'rate_limited' }],
+    ['a request that timed out at the gateway (premium pass A3)', { ok: false, status: 408, code: 'http_408' }, { kind: 'retry', code: 'http_408' }],
     ['an app too old for the server (M9b)', { ok: false, status: 426, code: 'update_required' }, { kind: 'update_required' }],
     ['a request the server calls bad (a bug)', { ok: false, status: 400, code: 'bad_body' }, { kind: 'failed', status: 400, code: 'bad_body' }],
   ] as const)('%s: keeps every event', async (_, reply, outcome) => {

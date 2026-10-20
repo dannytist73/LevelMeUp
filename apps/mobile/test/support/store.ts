@@ -76,6 +76,7 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     saveTrialMs: jest.fn(async () => {}),
     saveWithGoogle: jest.fn(async () => ({ ok: true as const })),
     signInWithGoogle: jest.fn(async () => ({ ok: true as const, found: true })),
+    signInAgain: jest.fn(async () => ({ ok: true as const, found: true })),
     deleteCharacter: jest.fn(async () => ({ ok: true as const })),
     startOver: jest.fn(async () => {}),
     dismissNotice: jest.fn(async () => {}),

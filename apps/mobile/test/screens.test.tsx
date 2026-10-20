@@ -145,6 +145,25 @@ describe('Today', () => {
     expect(store.getState().startOver).toHaveBeenCalledTimes(1);
   });
 
+  it('a Google-saved player whose sign-in ended signs in again; the unsent actions are counted (premium pass A2)', async () => {
+    const signInAgain = jest.fn(async () => ({ ok: false as const, code: 'cancelled' as const }));
+    const pending = [{ id: 'e1' }, { id: 'e2' }] as never;
+    const { store } = await renderToday({ signInLost: true, account: { kind: 'saved', email: null }, pending, signInAgain });
+    expect(screen.getByLabelText(/^System: This phone's Google sign-in ended/)).toBeTruthy();
+    expect(screen.getByText("2 actions on this phone haven't reached the System, and can't any more.")).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in with Google again' }));
+    expect(signInAgain).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Not signed in, so nothing changed. Try again when you're ready.")).toBeTruthy();
+    expect(store.getState().startOver).not.toHaveBeenCalled(); // nothing goes unasked
+  });
+
+  it('a sync the System refused is said on Today, with what waits and a retry (premium pass A3)', async () => {
+    const { store } = await renderToday({ error: 'The server refused a sync (400 bad_body).', pending: [{ id: 'e1' }, { id: 'e2' }] as never });
+    expect(screen.getByLabelText("System: 2 actions haven't reached the System yet. They're safe on this phone.")).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(store.getState().syncNow).toHaveBeenCalled();
+  });
+
   it('shows a refused action as a plain notice that can be dismissed', async () => {
     const { store } = await renderToday({ notices: [{ eventId: 'e1', code: 'day_closed' }] });
     expect(screen.getByLabelText('System: That day had already closed, so the change was not saved.')).toBeTruthy();

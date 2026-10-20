@@ -89,7 +89,8 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
       if (call.status === 426) return { kind: 'update_required' };
       if (call.status === 404 && call.code === 'not_started') return { kind: 'not_started' };
       if (call.status === 401 && call.code === 'session_ended' && !(await deps.sessionAlive())) return { kind: 'session_ended' };
-      if (call.status === 401 || call.status >= 500) return { kind: 'retry', code: call.code };
+      // Premium pass A3: too many requests and a timeout pass too; as a refusal they stalled every sync, silently.
+      if (call.status === 401 || call.status === 408 || call.status === 429 || call.status >= 500) return { kind: 'retry', code: call.code };
       return { kind: 'failed', status: call.status, code: call.code };
     }
     if (asked === null) asked = want;

@@ -87,10 +87,6 @@ export type GameDeps = {
 export type Phase = 'loading' | 'ready' | 'not_started';
 export type Status = 'idle' | 'syncing' | 'offline' | 'retrying';
 
-export const SIGN_IN_LOST_TEXT =
-  "This phone lost its guest sign-in, so the System can't reach your character any more. You can start again as a new " +
-  "guest; the progress kept on this phone can't be recovered.";
-
 export const DRAFT_KEY = 'lmu.onboarding-draft';
 export const VOW_KEY = 'lmu.vow';
 export const TIMERS_KEY = 'lmu.timers';
@@ -253,6 +249,11 @@ export type GameState = {
   saveWithGoogle: () => Promise<GoogleResult>;
   /** "Saved a character before?": only on a phone that holds none. */
   signInWithGoogle: () => Promise<RestoreResult>;
+  /**
+   * Premium pass A2: a Google-saved player whose sign-in ended on this phone signs in again; only once that worked does
+   * the phone's copy go (the character comes back from the System). A sign-in that doesn't finish changes nothing.
+   */
+  signInAgain: () => Promise<RestoreResult>;
   /** Deletes the character on the server and forgets this phone's (M7b decision 3; the developer screen's button too). */
   deleteCharacter: () => Promise<{ ok: true } | { ok: false; code: string }>;
   /** Forget this phone's character and sign-in and start as a new guest (after the player confirms). */
@@ -514,14 +515,15 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       if (checked !== null && checked.ok) void scheduler.request();
     };
 
-    const forget = async (): Promise<void> => {
+    /** `keepSignIn`: a sign-in made just now stays (premium pass A2); otherwise the sign-in goes with the rest. */
+    const forget = async (keepSignIn = false): Promise<void> => {
       // M7d decision 9: first, so nothing below can keep the last player's notifications on the phone.
       await deps.notes.cancelAll().catch(() => {});
       applier.forget();
       wanted.clear();
       deckAsked.clear();
       await deps.local.wipe();
-      await deps.signOut();
+      if (!keepSignIn) await deps.signOut();
       await forgetPurchases(); // M13 (review): RevenueCat no longer speaks for the deleted player
       await deps.kv.removeItem(DRAFT_KEY);
       await deps.kv.removeItem(VOW_KEY); // the next player on this phone never sees it (M5 review)
@@ -582,9 +584,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           await refresh({ phase: 'not_started', status: 'idle', error: null });
           return;
         case 'session_ended':
-          // Auth confirmed the sign-in is gone: start over as a new guest.
-          await forget();
-          void scheduler.request();
+          // Auth confirmed the sign-in is gone. Premium pass A2: nothing is wiped unasked (it was, silently, with any unsent
+          // actions); Today says what happened, and the player chooses: Google again, or a new guest.
+          set({ status: 'idle', signInLost: true });
           return;
         case 'fresh':
           await refresh({ phase: 'not_started', status: 'idle', error: null });
@@ -905,6 +907,20 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         const { phase, status, error } = get();
         if (phase === 'ready') return { ok: true, found: true };
         // Only a sync that finished can say there is no character (M5 review).
+        return { ok: true, found: phase === 'not_started' && status === 'idle' && error === null ? false : 'unknown' };
+      },
+
+      signInAgain: async () => {
+        const result = await fenced(async (): Promise<GoogleResult> => {
+          const signed = await deps.google.signIn();
+          if (signed.ok) await forget(true);
+          return signed;
+        });
+        set({ account: await deps.account(), accountKnown: true });
+        if (!result.ok) return result;
+        await scheduler.request();
+        const { phase, status, error } = get();
+        if (phase === 'ready') return { ok: true, found: true };
         return { ok: true, found: phase === 'not_started' && status === 'idle' && error === null ? false : 'unknown' };
       },
 

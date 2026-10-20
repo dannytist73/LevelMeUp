@@ -195,6 +195,10 @@ export const TODAY_TEXT = {
     none: 'No quests today',
     noneLine: 'Nothing is asked of today. The next day brings new quests.',
     retry: 'Try again',
+    /** Premium pass A3: the System refused a sync for a reason that won't pass by itself; said on Today, with a retry. */
+    refused: "The last sync didn't go through. Everything you did is safe on this phone.",
+    refusedOne: "One action hasn't reached the System yet. It's safe on this phone.",
+    refusedSome: "{n} actions haven't reached the System yet. They're safe on this phone.",
   },
 } as const;
 

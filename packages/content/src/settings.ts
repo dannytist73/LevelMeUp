@@ -37,6 +37,25 @@ export const SETTINGS_TEXT = {
     section: 'Your character',
     delete: 'Delete my character',
   },
+  /** M4 re-review; premium pass A2: the sign-in is gone for good. What happened, and the player's choice, never automatic. */
+  signInLost: {
+    guest:
+      "This phone lost its guest sign-in, so the System can't reach your character any more. You can start again as a " +
+      "new guest; the progress kept on this phone can't be recovered.",
+    saved:
+      "This phone's Google sign-in ended, so the System can't reach your character from here. Your character is safe " +
+      'with the System: sign in with Google again to bring it back.',
+    unsentOne: "One action on this phone hasn't reached the System, and can't any more.",
+    unsent: "{n} actions on this phone haven't reached the System, and can't any more.",
+    again: 'Sign in with Google again',
+    againNote: "Once you're signed in, this phone's copy is replaced by the character the System holds.",
+    cancelled: "Not signed in, so nothing changed. Try again when you're ready.",
+    failed: "Google sign-in didn't finish, so nothing changed. Try again.",
+    start: 'Start again as a new guest',
+    sure: "This clears the progress kept on this phone. It can't be undone.",
+    yes: 'Yes, start again',
+    notNow: 'Not now',
+  },
   delete: {
     title: 'Delete your character',
     what:
