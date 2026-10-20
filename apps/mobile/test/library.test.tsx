@@ -29,7 +29,7 @@ describe('the Library (M12 decision 1)', () => {
   it("is a tab of its own: today's reading to read and claim", async () => {
     const props = await renderLibrary(withArticle(false));
     expect(screen.getByRole('header', { name: L.title })).toBeTruthy();
-    expect(screen.getByText(L.today)).toBeTruthy();
+    expect(screen.getByText(new RegExp(`^${READING_TEXT.label} · `))).toBeTruthy(); // M17: the card's own line, no heading above it
     await fireEvent.press(screen.getByText(READING_TEXT.read));
     expect(props.onOpenQuest).toHaveBeenCalledWith(article.id);
   });

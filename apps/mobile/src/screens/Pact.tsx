@@ -16,6 +16,7 @@ import { HoldButton } from '../ui/HoldButton.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { Panel } from '../ui/Panel.tsx';
 import { Body, Label, Small, Title } from '../ui/Text.tsx';
@@ -89,7 +90,9 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
   }
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
+      {/* M17 (UX audit, old finding 10): Back like every other screen, not only "Not now" at the very end. */}
+      <TopBar onBack={onDone} />
       <Title accessibilityRole="header">{T.title}</Title>
       <NarrationBox>{T.lead}</NarrationBox>
       <View style={{ gap: 10 }}>
