@@ -27,12 +27,12 @@ describe('quest targets in words', () => {
     expect(targetText(session)).toBe('Goblet squat, Forearm plank');
     expect(moveTarget(session.moves[0])).toBe('2 sets of 10–15 reps');
     expect(moveTarget({ ...session.moves[1], perSide: true, sets: 1 })).toBe('1 hold of 20–40 seconds per side');
-    expect(questSummary({ condition: session, minutes: 16 })).toBe('Goblet squat, Forearm plank · about 16 min');
+    expect(questSummary({ condition: session, minutes: 16 })).toBe('Goblet squat, Forearm plank · about\u00a016\u00a0min');
   });
 
   it('summarises a quest as it is stored: its condition and minutes', () => {
-    expect(questSummary({ condition: { kind: 'reps', sets: 3, reps: 8, perSide: false }, minutes: 10 })).toBe('3 sets of 8 · about 10 min');
+    expect(questSummary({ condition: { kind: 'reps', sets: 3, reps: 8, perSide: false }, minutes: 10 })).toBe('3 sets of 8 · about\u00a010\u00a0min');
     expect(questSummary({ condition: { kind: 'minutes', minutes: 20 }, minutes: 20 })).toBe('20 minutes');
-    expect(questSummary({ condition: { kind: 'habit' }, minutes: 2 })).toBe('about 2 min');
+    expect(questSummary({ condition: { kind: 'habit' }, minutes: 2 })).toBe('about\u00a02\u00a0min');
   });
 });

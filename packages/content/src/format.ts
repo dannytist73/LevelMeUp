@@ -40,5 +40,7 @@ export function targetText(condition: Condition): string {
 export function questSummary(quest: { condition: Condition; minutes: number }): string {
   if (quest.condition.kind === 'minutes') return targetText(quest.condition);
   const target = targetText(quest.condition);
-  return target === '' ? `about ${quest.minutes} min` : `${target} · about ${quest.minutes} min`;
+  // M17: no-break spaces keep "about 5 min" whole when the line wraps.
+  const about = `about\u00a0${quest.minutes}\u00a0min`;
+  return target === '' ? about : `${target} · ${about}`;
 }
