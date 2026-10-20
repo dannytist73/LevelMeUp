@@ -10,13 +10,26 @@ import { colors } from '../theme/tokens.ts';
 /** M17: pull to refresh, where a screen offers it (Today: pull down to sync). */
 export type Refresh = { refreshing: boolean; onRefresh: () => void };
 
-export function ScreenScroll({ children, contentContainerStyle, refresh }: { children: ReactNode; contentContainerStyle?: StyleProp<ViewStyle>; refresh?: Refresh }) {
+/** The scroll handler, and the band that fades in behind the status bar as the page scrolls. */
+function useStatusBand() {
   const insets = useSafeAreaInsets();
   const scrolled = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
     scrolled.value = event.contentOffset.y;
   });
   const band = useAnimatedStyle(() => ({ opacity: interpolate(scrolled.value, [0, Math.max(insets.top, 1)], [0, 1], 'clamp') }));
+  const bandView = (
+    <Animated.View
+      testID="status-band"
+      pointerEvents="none"
+      style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: colors.night }, band]}
+    />
+  );
+  return { insets, onScroll, bandView };
+}
+
+export function ScreenScroll({ children, contentContainerStyle, refresh }: { children: ReactNode; contentContainerStyle?: StyleProp<ViewStyle>; refresh?: Refresh }) {
+  const { insets, onScroll, bandView } = useStatusBand();
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       {/* M17 (UX audit N8): a tap on a button lands even while the keyboard is up (it used to only close the keyboard). */}
@@ -27,11 +40,36 @@ export function ScreenScroll({ children, contentContainerStyle, refresh }: { chi
         )}>
         {children}
       </Animated.ScrollView>
-      <Animated.View
-        testID="status-band"
-        pointerEvents="none"
-        style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: colors.night }, band]}
+      {bandView}
+    </View>
+  );
+}
+
+/** M17: a screen that is one long list (the Codex holds up to 200 lessons): only the rows near the screen are drawn, so
+ * it opens at once however full it is. `header` scrolls with the rows; `space` is the gap between rows. */
+export function ScreenList<T>({ data, keyOf, renderRow, header, space, contentContainerStyle }: {
+  data: readonly T[];
+  keyOf: (item: T) => string;
+  renderRow: (item: T) => ReactNode;
+  header: ReactNode;
+  space: number;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+}) {
+  const { onScroll, bandView } = useStatusBand();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.night }}>
+      <Animated.FlatList<T>
+        data={data}
+        keyExtractor={keyOf}
+        renderItem={({ item }) => <>{renderRow(item)}</>}
+        ListHeaderComponent={<View style={{ gap: space, marginBottom: data.length > 0 ? space : 0 }}>{header}</View>}
+        ItemSeparatorComponent={() => <View style={{ height: space }} />}
+        contentContainerStyle={contentContainerStyle}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
       />
+      {bandView}
     </View>
   );
 }

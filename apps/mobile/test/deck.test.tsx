@@ -1,5 +1,5 @@
 // M11: the Story Deck's cards and the Codex, apart from the screens that show them. M14: the story lesson.
-import { READING_TEXT } from '@levelmeup/content';
+import { READING_TEXT, fillText } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { SAMPLE_ARTICLE, SAMPLE_LEGACY_DECK, SAMPLE_STORY_ARTICLE, SAMPLE_STORY_DECK } from '../src/dev/sampleArticle.ts';
@@ -230,5 +230,15 @@ describe('the Codex screen (M11 decision 7)', () => {
   it('says how to fill it when empty', async () => {
     await render(withStore(testStore(), <Codex onBack={jest.fn()} />));
     expect(screen.getByText(READING_TEXT.codex.empty)).toBeTruthy();
+  });
+
+  it('draws a full Codex a screenful at a time (M17: all 200 lessons were drawn on opening)', async () => {
+    const full = Array.from({ length: CODEX_MAX }, (_, i) => ({ articleId: `article-${i}`, title: `T${i}`, lesson: `Lesson ${i}.`, keptAt: CODEX_MAX - i }));
+    await render(withStore(testStore({ codex: full }), <Codex onBack={jest.fn()} />));
+    expect(screen.getByText(fillText(READING_TEXT.codex.count, { n: CODEX_MAX }), { exact: false })).toBeTruthy();
+    expect(screen.getByText('Lesson 0.')).toBeTruthy();
+    const drawn = screen.getAllByRole('button', { name: /out of your Codex$/ }).length;
+    expect(drawn).toBeGreaterThan(0);
+    expect(drawn).toBeLessThan(CODEX_MAX);
   });
 });
