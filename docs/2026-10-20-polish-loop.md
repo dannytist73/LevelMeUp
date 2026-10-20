@@ -2,8 +2,23 @@
 
 **In plain words.** The owner asked for a six-hour "Ralph loop" of continuous improvement: a better design, a smoother
 app, what needs building, what needs fixing, and database changes where they help. Screens shouldn't feel cramped; they
-should be laid out so people actually use them. A bolder redesign is allowed (owner, 2026-10-20). The loop started at
-00:45 UTC and runs until about 06:45 UTC.
+should be laid out so people actually use them. A bolder redesign is allowed (owner, 2026-10-20). The loop ran from
+00:45 to about 06:45 UTC.
+
+What came out of it, in short:
+
+- **Today reads in one look.** A shorter header; System notes are one card each; the quest to do now, with its Begin
+  button, fits on the first screen even with a check-in waiting; "I felt pain" and "Change today" share a row; a pull
+  down syncs; checking off a side quest clicks, fills, fades and lets the rows below glide up.
+- **The main button is always in reach.** Timers (Start, Pause, Claim), Cleared (Next), the Reveal (Accept), the check-in
+  (Answer), Your game and Training (Save) and the reading deck's last card (Claim) keep their one button at the bottom.
+- **Less to scroll.** Workouts fold each finished exercise to one line; Settings is grouped cards; Character's stats sit
+  in two columns; the Library shows five past readings.
+- **Smoother and quicker.** Launch no longer waits on the network; a tap no longer redraws every screen three times; tabs
+  cross-fade; the server reads a player in one go (syncs measured at about 0.5 to 0.7 s).
+- **New:** a kind weekly recap on the first open of a week; a level-up names the ability it unlocks.
+- **Checked:** two independent code reviews (everything they found is fixed), the screens at 2× text, with animations
+  off, and for unlabelled buttons; every test suite and the live server tests pass.
 
 **The owner's yes for this loop (2026-10-20):** deploy migrations and functions once every local test passes (then
 `db:test` and the live tests); a development build on this PC now and a 0.9.0 preview APK at the end. Everything else in
