@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { moveTarget, questSummary, targetText } from '../src/format.ts';
+import { READING_TEXT } from '../src/reading.ts';
+import { SETTINGS_TEXT } from '../src/settings.ts';
 
 describe('quest targets in words', () => {
   it.each([
@@ -34,5 +36,15 @@ describe('quest targets in words', () => {
     expect(questSummary({ condition: { kind: 'reps', sets: 3, reps: 8, perSide: false }, minutes: 10 })).toBe('3 sets of 8 · about\u00a010\u00a0min');
     expect(questSummary({ condition: { kind: 'minutes', minutes: 20 }, minutes: 20 })).toBe('20 minutes');
     expect(questSummary({ condition: { kind: 'habit' }, minutes: 2 })).toBe('about\u00a02\u00a0min');
+  });
+});
+
+// M17: short phrases a narrow row must not break (the app's screen tests can't see this: they collapse every space).
+describe('no-break spaces', () => {
+  it('keep "about 4 min", "15 min a day" and "your line saved" whole', () => {
+    expect(READING_TEXT.deck.cards).toContain('about\u00a0{minutes}\u00a0min');
+    expect(READING_TEXT.deck.cardsXp).toContain('about\u00a0{minutes}\u00a0min');
+    expect(SETTINGS_TEXT.game.row).toContain('{minutes}\u00a0min a\u00a0day');
+    expect(READING_TEXT.library.lineSaved).toBe('your\u00a0line\u00a0saved');
   });
 });

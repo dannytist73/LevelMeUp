@@ -1,5 +1,5 @@
 // M11: the Story Deck's cards and the Codex, apart from the screens that show them. M14: the story lesson.
-import { READING_TEXT, fillText } from '@levelmeup/content';
+import { CLUSTER_NAMES, READING_TEXT, fillText } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { SAMPLE_ARTICLE, SAMPLE_LEGACY_DECK, SAMPLE_STORY_ARTICLE, SAMPLE_STORY_DECK } from '../src/dev/sampleArticle.ts';
@@ -102,6 +102,9 @@ describe('the story lesson on screen (M14)', () => {
     expect(screen.getByText(D.todaysStory)).toBeTruthy();
     expect(screen.getByText('Amara, 19, first-year student')).toBeTruthy();
     expect(screen.getAllByText('Small promises')).toHaveLength(1); // M17: the cover's own; the top bar doesn't repeat it
+    // M17 (critique): the cover names the topic alone; the bar already says which reading.
+    expect(screen.getByText(CLUSTER_NAMES[SAMPLE_STORY_ARTICLE.cluster])).toBeTruthy();
+    expect(screen.queryByText(/^Today's reading · /)).toBeNull();
     expect(screen.getByText('9\u00a0cards · about\u00a03\u00a0min · +10\u00a0XP')).toBeTruthy();
     await next();
     expect(screen.getByText("Amara's story")).toBeTruthy();

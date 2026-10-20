@@ -121,7 +121,7 @@ export const ONBOARDING_TEXT = {
     line: 'Before your trials begin, I need to know who you are.',
     ask: 'What should I call you?',
     /** M17: the hint inside the empty name box (the label above stays the question). */
-    askHint: 'Your name or a nickname',
+    askHint: 'Any name works', // short: a hint can't wrap, and at 2x text on a 360 dp phone a longer one was cut off (review)
     go: 'Awaken',
     note: 'No account needed. You can save your character later.',
     restore: 'Saved a character before? Sign in with Google',
