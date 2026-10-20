@@ -3,7 +3,9 @@
 **In plain words.** The owner asked for a six-hour "Ralph loop" of continuous improvement: a better design, a smoother
 app, what needs building, what needs fixing, and database changes where they help. Screens shouldn't feel cramped; they
 should be laid out so people actually use them. A bolder redesign is allowed (owner, 2026-10-20). The loop ran from
-00:45 to about 06:45 UTC.
+00:45 to 05:30 UTC: by then every finding was fixed or written up for the owner, and the 0.9.0 APK was built and
+checked; what's left needs the owner's decision or is bigger than polish, and changing code after the APK would have
+made it stale.
 
 What came out of it, in short:
 
@@ -125,6 +127,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 77 | A workout's or a rep log's sets and ticks reset to last time's numbers after Back to Today: now kept while the app runs (memory only, like the reading's takeaway) | dead-end audit | done |
 | 78 | The vow could never be opened again once Today's card was answered: Character shows "Change your vow" under it, or "Write a vow" when there's none | dead-end audit | done |
 | 79 | Seventh review (two important, fixed test-first): with up to 200 kept-lesson readings on the phone, the 64 ids a sync names could leave out today's, so the server would send it every sync (now newest first); a rep log swapped in place kept the old quest's numbers (now keyed by its target). Minor, fixed: drafts keyed by the day (an offline day reuses ids), saved only once changed, dropped on claim; the vow reopens with the player's own words and "Keep it as it is". Not fixed: un-keeping an old lesson while reading it lets the next sync drop its article mid-read (rare; the screen says it's gone) | review | done |
+| 80 | A last stress sweep at 360 dp with 1.5x text: Pact, Choose your class, Your data, Trial, Scholar's Path, When you slip and Today wrap cleanly, nothing cut off | own pass | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -236,3 +239,5 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 | 04:56 | 76-78 | Kept lessons' readings kept; log drafts; vow from Character | tests first for each (store, quest, clarity); app 1197/1197, content 1171/1171; emulator: Character (look only) |
 | 05:04 | 79 | Seventh review fixes | app 1199/1199, content 1171/1171 |
 | 05:16 | — | 0.9.0 preview APK built from 8e8e03f (`apps/mobile/dist/levelmeup-0.9.0-preview.apk`, version code 11); installed over the dev build (data kept): Day 7, every tab, Settings (Version 0.9.0, account card), Notifications, Your look, Codex, Change your vow; a display-size change keeps Today (release never reloads the code); no crash in the log. Cold start 0.8-2.1 s to first frame, noisy (the emulator was short of memory after a long session): measure on the phone | — |
+| 05:25 | 80 | Stress sweep | emulator at 360 dp and 1.5x text (both reset after) |
+| 05:30 | — | Loop closed: docs, checklist and memory updated; Metro stopped, the build VM shut down | — |
