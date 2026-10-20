@@ -71,7 +71,8 @@ export function Vanish({ onBack, now = Date.now }: VanishProps) {
   const back = <TopBar onBack={onBack} />;
 
   if (view === null || !abilityUnlocked('vanish', view.profile.classId, view.character.level)) {
-    return frame(<>{back}<NarrationBox>{T.locked}</NarrationBox></>);
+    // M17: locked, the bar names the screen (an empty bar over one line said nothing of where you were).
+    return frame(<><TopBar title={T.title} onBack={onBack} /><NarrationBox>{T.locked}</NarrationBox></>);
   }
   if (minutes === null) {
     return frame(
