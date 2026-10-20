@@ -12,13 +12,21 @@ export type TextProps = Omit<RNTextProps, 'numberOfLines' | 'ellipsizeMode'> & {
   weight?: 'regular' | 'medium' | 'bold';
 };
 
+/**
+ * M17: titles and headings break their lines evenly (Android's balanced strategy, as CSS's text-wrap: balance), so a long
+ * title doesn't leave one word alone on its last line. Running text keeps the default.
+ */
+const BALANCED: ReadonlySet<TypeVariant> = new Set(['display', 'title', 'heading']);
+
 function make(variant: TypeVariant, defaultTone: Tone) {
   const spec = scale[variant];
+  const breaks = BALANCED.has(variant) ? ({ textBreakStrategy: 'balanced' } as const) : {};
   function InkText({ tone = defaultTone, weight = 'regular', style, ...rest }: TextProps) {
     const family =
       spec.family === fonts.body && weight !== 'regular' ? (weight === 'medium' ? fonts.bodyMedium : fonts.bodyBold) : spec.family;
     return (
       <RNText
+        {...breaks}
         {...rest}
         maxFontSizeMultiplier={spec.maxScale}
         style={[
