@@ -392,9 +392,8 @@ function DayBody({
 
       {next !== null && (
         <View style={{ gap: 12 }}>
-          <SectionTitle title={TODAY_TEXT.upNext} />
           {next.slot === 'article' && today.article !== null ? (
-            <ReadingHero quest={next} article={today.article} waiting={view.waiting.has(next.id)} onOpen={() => openReading(next)} />
+            <ReadingHero quest={next} article={today.article} waiting={view.waiting.has(next.id)} onOpen={() => openReading(next)} lead={TODAY_TEXT.upNext} />
           ) : (
             <UpNextCard
               quest={next}

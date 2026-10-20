@@ -28,14 +28,19 @@ export function useReadingLength(article: ArticleSummary): string {
 export type ReadingProps = { quest: QuestView; article: ArticleSummary | null; waiting: boolean; onOpen: () => void };
 
 /** Up next: the reading as the thing to do now. */
-export function ReadingHero({ quest, article, waiting, onOpen, label = READING_TEXT.read }: ReadingProps & { article: ArticleSummary; label?: string }) {
+export function ReadingHero({ quest, article, waiting, onOpen, label = READING_TEXT.read, lead }: ReadingProps & {
+  article: ArticleSummary;
+  label?: string;
+  /** M17: Today's "Up next", leading the card's line. */
+  lead?: string;
+}) {
   const xp = questXp(quest);
   const length = useReadingLength(article);
   return (
-    <Tap accessibilityRole="button" accessibilityLabel={`${READING_TEXT.label}, ${CLUSTER_NAMES[article.cluster]}. ${article.title}. ${length}. ${label}, +${xp} XP`}
+    <Tap accessibilityRole="button" accessibilityLabel={`${lead === undefined ? '' : `${lead}. `}${READING_TEXT.label}, ${CLUSTER_NAMES[article.cluster]}. ${article.title}. ${length}. ${label}, +${xp} XP`}
       onPress={onOpen} radius={radius.card}>
       <View testID="up-next" style={{ gap: 8, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18, borderRadius: radius.card, borderWidth: space.heroBorder, borderColor: colors.accent, backgroundColor: colors.panel }}>
-        <Label tone="accentText">{`${READING_TEXT.label} · ${CLUSTER_NAMES[article.cluster]}`}</Label>
+        <Label tone="accentText">{[lead, READING_TEXT.label, CLUSTER_NAMES[article.cluster]].filter((x) => x !== undefined).join(' · ')}</Label>
         <Title>{article.title}</Title>
         <Body tone="ashLight" weight="medium">{`${length} · +${xp} XP`}</Body>
         {waiting && <WillSync />}

@@ -7,12 +7,20 @@ import { colors, radius } from '../theme/tokens.ts';
 import { SpeedLines } from './SpeedLines.tsx';
 import { Heading } from './Text.tsx';
 
-export function QuestArt({ uri, label, fallback, decorative = false, ratio = 16 / 9, rounded = true }: {
+/** The art set's pictures are 16:9 (960×540). */
+const ART_RATIO = 16 / 9;
+
+export function QuestArt({ uri, label, fallback, decorative = false, ratio = ART_RATIO, rounded = true, anchor = 'center' }: {
   uri: string | null; label: string; fallback: string; decorative?: boolean;
   /** Lantern: its own rounded corners; false inside a card that clips it. */
   rounded?: boolean;
   /** Width over height; M10c: Today's core card shows a wider crop, so its Begin bar stays on the first screen. */
   ratio?: number;
+  /**
+   * M17: where a wider crop keeps the picture. 'top' trims only the bottom, so a figure keeps its head (emulator: Today's
+   * 2.6:1 crop from the centre cut the walker's head off).
+   */
+  anchor?: 'center' | 'top';
 }) {
   const [failed, setFailed] = useState<string | null>(null);
   const showPicture = uri !== null && failed !== uri;
@@ -26,7 +34,8 @@ export function QuestArt({ uri, label, fallback, decorative = false, ratio = 16 
       style={{ width: '100%', aspectRatio: ratio, borderRadius: rounded ? radius.control : 0, backgroundColor: colors.halftone, overflow: 'hidden' }}
     >
       {showPicture ? (
-        <Image testID="quest-art" source={{ uri }} onError={() => setFailed(uri)} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+        <Image testID="quest-art" source={{ uri }} onError={() => setFailed(uri)} resizeMode="cover"
+          style={anchor === 'top' && ratio > ART_RATIO ? { width: '100%', aspectRatio: ART_RATIO } : { width: '100%', height: '100%' }} />
       ) : (
         <View testID="quest-art-fallback" style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <SpeedLines opacity={0.16} />

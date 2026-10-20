@@ -86,7 +86,7 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, restin
     <View style={{ gap: 10 }}>
       <Tap
         accessibilityRole="button"
-        accessibilityLabel={`${SLOT_NAMES[quest.slot]}, ${stat}. ${words.title}. ${questSummary(quest)}. ${clears ? fillText(TODAY_TEXT.markDone, { title: words.title }) : TODAY_TEXT.begin}, +${xp} XP`}
+        accessibilityLabel={`${TODAY_TEXT.upNext}. ${SLOT_NAMES[quest.slot]}, ${stat}. ${words.title}. ${questSummary(quest)}. ${clears ? fillText(TODAY_TEXT.markDone, { title: words.title }) : TODAY_TEXT.begin}, +${xp} XP`}
         accessibilityHint={clears ? undefined : PLAY_TEXT.quest.open}
         onPress={onGo}
         radius={radius.card}
@@ -94,9 +94,10 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, restin
         <SlamIn>
           {/* The card you act on now is outlined in the accent; the core quest's picture runs across its top. */}
           <View testID="up-next" style={{ borderRadius: radius.card, borderWidth: space.heroBorder, borderColor: colors.accent, backgroundColor: colors.panel, overflow: 'hidden' }}>
-            {core && <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} rounded={false} />}
+            {core && <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} rounded={false} anchor="top" />}
             <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 18, gap: 8 }}>
-              <Label tone="accentText">{`${SLOT_NAMES[quest.slot]} · ${stat}`}</Label>
+              {/* M17: "Up next" leads the card's own line instead of a heading above it (one row less above Begin). */}
+              <Label tone="accentText">{`${TODAY_TEXT.upNext} · ${SLOT_NAMES[quest.slot]} · ${stat}`}</Label>
               <Title>{words.title}</Title>
               <Body tone="ashLight" weight="medium">{questSummary(quest)}</Body>
               {quest.book !== null && <Small>{fillText(BOOK_TEXT.questLine, { title: quest.book })}</Small>}
