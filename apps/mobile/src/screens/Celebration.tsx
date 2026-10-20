@@ -50,7 +50,7 @@ export function Celebration() {
               label={fillText(CHARACTER_TEXT.portrait, { className: CLASS_NAMES[shown.classId], level: next.level })} />
           </FadeIn>
         )}
-        <SlamIn delay={M.line}><NarrationBox>{fillText(T.level, { level: next.level })}</NarrationBox></SlamIn>
+        <SlamIn delay={M.line} style={{ alignSelf: 'stretch' }}><NarrationBox>{fillText(T.level, { level: next.level })}</NarrationBox></SlamIn>
         {shown !== null && <FadeIn delay={M.line}><Small>{T.portrait}</Small></FadeIn>}
         {unlocked.map((a) => (
           <FadeIn key={a} rise delay={M.line}>

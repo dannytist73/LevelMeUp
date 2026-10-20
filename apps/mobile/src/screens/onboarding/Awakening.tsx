@@ -75,7 +75,12 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
           onNavigate(nextPath(draft, 'awakening'));
         }} />
         <Small>{T.note}</Small>
-        {account.kind !== 'saved' && <Button label={T.restore} variant="secondary" disabled={busy} onPress={() => void restore()} />}
+        {account.kind !== 'saved' && (
+          <View style={{ gap: 6 }}>
+            <Small>{T.restoreLead}</Small>
+            <Button label={T.restoreGo} accessibilityLabel={T.restore} variant="secondary" disabled={busy} onPress={() => void restore()} />
+          </View>
+        )}
         {updateRequired && <UpdateNeeded />}
         {note !== null && !(updateRequired && note === T.restoreOffline) && (
           <View accessibilityLiveRegion="polite"><Small tone="chalk">{note}</Small></View>

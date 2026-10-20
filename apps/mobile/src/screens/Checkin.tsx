@@ -16,10 +16,10 @@ import { Appear } from '../ui/Appear.tsx';
 import { BottomBarFrame } from '../ui/BottomBar.tsx';
 import { Button } from '../ui/Button.tsx';
 import { LinkButton } from '../ui/LinkButton.tsx';
-import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { NarrationBox, SystemCard } from '../ui/NarrationBox.tsx';
 import { OptionCard } from '../ui/OptionCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
-import { Body, Heading, Small } from '../ui/Text.tsx';
+import { Heading, Small } from '../ui/Text.tsx';
 import { useLeavingView } from './leaving.ts';
 
 const T = CHECKIN_TEXT;
@@ -90,8 +90,8 @@ export function Checkin({ onDone }: CheckinProps) {
     <BottomBarFrame bar={bar}>
       {(barSpace) => (
         <ScreenScroll contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: barSpace + 24, paddingHorizontal: space.gutter, gap: 18 }}>
-          <NarrationBox>{T.title}</NarrationBox>
-          <Body tone="chalk">{checkinLead(checkin, view.today?.dayNumber ?? null)}</Body>
+          {/* M17 (design critique): the question and its details in one card, as on Today. */}
+          <SystemCard text={T.title} detail={checkinLead(checkin, view.today?.dayNumber ?? null)} />
           <View style={{ gap: 10 }}>
             {CHECKIN_CHOICES.map((c) => (
               <OptionCard key={c} label={T.answers[c].label} detail={answerLine(c, checkin, view.lighterPlan)} selected={choice === c} onPress={() => pick(c)} />

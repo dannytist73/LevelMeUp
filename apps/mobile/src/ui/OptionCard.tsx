@@ -43,7 +43,8 @@ export function OptionCard({ label, detail, selected, onPress, kind = 'radio', d
         testID={selected ? 'option-selected' : 'option'}
         style={{
           minHeight: 52, paddingVertical: 12, paddingHorizontal: 16, gap: 2, justifyContent: 'center', borderRadius: radius.control,
-          borderWidth: space.heroBorder, borderColor: selected ? colors.accent : colors.lineStrong, backgroundColor: selected ? colors.paper : colors.panel,
+          // M17 (design critique): the 2 dp edge only on the chosen card; eight bold outlines stacked read as a wall.
+          borderWidth: selected ? space.heroBorder : space.border, borderColor: selected ? colors.accent : colors.lineStrong, backgroundColor: selected ? colors.paper : colors.panel,
           opacity: dim ? 0.45 : 1,
         }}
       >

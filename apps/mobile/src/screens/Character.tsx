@@ -81,12 +81,13 @@ export function Character({ onChangeClass, onOpenBook, onSettings, now = Date.no
           <Portrait classId={classId} level={level} figure={figure} marked={mark} frame={frame}
             label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
           <Tap accessibilityRole="button" accessibilityLabel={T.switchPortrait} onPress={() => void setPortrait(otherFigure(figure))}
-            on="accent" radius={26}
+            radius={26}
+            // M17 (design critique): a quiet control; the accent is for the one thing to do, and this only swaps the picture.
             style={{
               position: 'absolute', right: -10, bottom: -10, width: 52, height: 52, borderRadius: 26, alignItems: 'center',
-              justifyContent: 'center', backgroundColor: colors.accent, borderWidth: 3, borderColor: colors.halftone,
+              justifyContent: 'center', backgroundColor: colors.panel, borderWidth: space.border, borderColor: colors.lineStrong,
             }}>
-            <Icon name="switch" size={24} color={colors.onAccent} />
+            <Icon name="switch" size={24} color={colors.chalk} />
           </Tap>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>

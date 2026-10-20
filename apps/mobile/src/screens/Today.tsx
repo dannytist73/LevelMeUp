@@ -332,6 +332,7 @@ export function Today({
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Icon name="shield" size={18} />
                   <Heading>{String(view.character.streak.shields)}</Heading>
+                  <Small tone="chalk">{fillText(TODAY_TEXT.shieldsOf, { max: MAX_SHIELDS })}</Small>
                 </View>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 4 }}>

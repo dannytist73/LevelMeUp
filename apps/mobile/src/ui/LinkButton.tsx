@@ -25,7 +25,9 @@ export function LinkButton({ label, onPress, tone = 'chalk', disabled = false, s
       onPress={onPress}
       on={tone === 'accentInk' ? 'paper' : 'night'}
       radius={radius.small}
-      style={({ pressed }) => [{ minHeight: 48, justifyContent: 'center', alignSelf: 'flex-start', paddingHorizontal: 4, opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }, style]}
+      hitSlop={{ left: 8, right: 8 }}
+      // M17 (design critique): no side padding, so the words line up with the text above; hitSlop keeps the touch area.
+      style={({ pressed }) => [{ minHeight: 48, justifyContent: 'center', alignSelf: 'flex-start', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }, style]}
     >
       <Body tone={tone} weight="bold" style={{ textDecorationLine: 'underline' }}>{label}</Body>
     </Tap>

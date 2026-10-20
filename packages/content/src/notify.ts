@@ -9,7 +9,7 @@ export type NoteWords = { title: string; body: string };
 
 export const NOTIFY_TEXT = {
   section: 'Notifications',
-  open: 'Change notifications',
+  open: 'Notifications',
   briefing: 'Morning briefing',
   evening: 'Evening reminder',
   eveningNote: "Only if the core quest isn't done",

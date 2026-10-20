@@ -134,6 +134,8 @@ export const TODAY_TEXT = {
   streak: 'day streak',
   counts: 'today counts',
   shields: '{n} of {max} shields',
+  /** M17: after the shields' number in Today's header ("0 of 2 shields"), so it doesn't read as a score. */
+  shieldsOf: 'of {max} shields',
   /** M17: the level on the XP bar's line, in Today's header. */
   /** M17: the first open of a new week: how last week went, never what was missed. */
   week: {

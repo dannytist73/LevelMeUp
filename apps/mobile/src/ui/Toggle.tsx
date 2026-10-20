@@ -13,22 +13,25 @@ export type ToggleProps = {
 
 export function Toggle({ label, line, value, disabled = false, onChange, flat = false }: ToggleProps) {
   return (
-    <View style={{ gap: 6, ...(flat ? { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14 } : {}) }}>
-      <Tap
-        accessibilityRole="switch"
-        accessibilityLabel={label}
-        accessibilityState={{ checked: value, disabled }}
-        disabled={disabled}
-        onPress={() => onChange(!value)}
-        radius={radius.small}
-        style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
-      >
-        <Body weight="bold" style={{ flexShrink: 1 }}>{label}</Body>
-        <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-          <Switch value={value} disabled={disabled} trackColor={{ false: colors.lineStrong, true: colors.accent }} thumbColor={colors.chalk} />
-        </View>
-      </Tap>
-      <Small>{line}</Small>
-    </View>
+    // M17 (design critique): the words on the left and the switch centred beside them, the whole row the switch (the line
+    // floated under the row before).
+    <Tap
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityHint={line}
+      accessibilityState={{ checked: value, disabled }}
+      disabled={disabled}
+      onPress={() => onChange(!value)}
+      radius={flat ? 0 : radius.small}
+      style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, ...(flat ? { paddingHorizontal: 16, paddingVertical: 12 } : {}) }}
+    >
+      <View style={{ flex: 1, gap: 4 }}>
+        <Body weight="bold">{label}</Body>
+        <Small>{line}</Small>
+      </View>
+      <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <Switch value={value} disabled={disabled} trackColor={{ false: colors.lineStrong, true: colors.accent }} thumbColor={colors.chalk} />
+      </View>
+    </Tap>
   );
 }

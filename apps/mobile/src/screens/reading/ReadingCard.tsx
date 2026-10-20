@@ -25,6 +25,9 @@ export function useReadingLength(article: ArticleSummary): string {
   return readingLength(article, useGame((s) => s.articles[article.id] ?? null));
 }
 
+/** M17: past this many characters a reading's title takes the heading size. */
+const LONG_TITLE = 28;
+
 export type ReadingProps = { quest: QuestView; article: ArticleSummary | null; waiting: boolean; onOpen: () => void };
 
 /** Up next: the reading as the thing to do now. */
@@ -41,7 +44,8 @@ export function ReadingHero({ quest, article, waiting, onOpen, label = READING_T
       onPress={onOpen} radius={radius.card}>
       <View testID="up-next" style={{ gap: 8, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18, borderRadius: radius.card, borderWidth: space.heroBorder, borderColor: colors.accent, backgroundColor: colors.panel }}>
         <Label tone="accentText">{[lead, READING_TEXT.label, CLUSTER_NAMES[article.cluster]].filter((x) => x !== undefined).join(' · ')}</Label>
-        <Title>{article.title}</Title>
+        {/* M17 (design critique): a long title at heading size; a short one keeps the title's. */}
+        {article.title.length > LONG_TITLE ? <Heading>{article.title}</Heading> : <Title>{article.title}</Title>}
         <Body tone="ashLight" weight="medium">{`${length} · +${xp} XP`}</Body>
         {waiting && <WillSync />}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 54, marginTop: 4, borderRadius: radius.pill, backgroundColor: colors.commit }}>

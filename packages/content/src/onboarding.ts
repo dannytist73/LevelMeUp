@@ -123,6 +123,9 @@ export const ONBOARDING_TEXT = {
     go: 'Awaken',
     note: 'No account needed. You can save your character later.',
     restore: 'Saved a character before? Sign in with Google',
+    /** M17: the same, as a line above its button (the one sentence wrapped inside the button). */
+    restoreLead: 'Saved a character before?',
+    restoreGo: 'Sign in with Google',
     noSave: 'No character is saved on that Google account yet. Make one now and it stays saved.',
     restoreOffline: "Signed in with Google, but there's no connection to look for your character. A saved one appears once you're back online.",
   },
