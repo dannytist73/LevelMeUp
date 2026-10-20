@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { figureFor, otherFigure } from '../../art/portraits.ts';
 import { STEP_PATH, asksMind } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
-import { colors, space } from '../../theme/tokens.ts';
+import { space } from '../../theme/tokens.ts';
 import { BottomBarFrame } from '../../ui/BottomBar.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { ScreenHeader } from '../../ui/ScreenHeader.tsx';
