@@ -27,7 +27,8 @@ export function SentenceLog({
   const setText = onChangeText ?? setOwn;
   return (
     <View style={{ gap: 12 }}>
-      <TextField label={label} value={text} onChangeText={setText} maxLength={MAX_SENTENCE} multiline />
+      {/* M17: a pasted line break becomes a space (one sentence can't hold one, and Claim would stay off silently). */}
+      <TextField label={label} value={text} onChangeText={(v) => setText(v.replace(/[\r\n]+/g, ' '))} maxLength={MAX_SENTENCE} multiline oneLine />
       <Small>{note}</Small>
       <ClaimButton label={claimLabel} disabled={disabled || !sentenceValid(text)} onPress={() => onClaim(textPayload(text))} />
     </View>

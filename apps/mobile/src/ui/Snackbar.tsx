@@ -30,7 +30,7 @@ export function Snackbar({ message, actionLabel, onAction, onHide, ms = SNACKBAR
       testID="snackbar"
       accessibilityLiveRegion="polite"
       style={{
-        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, paddingLeft: 16, paddingRight: 8,
+        flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, paddingLeft: 16, paddingRight: 14,
         paddingVertical: 4, borderRadius: radius.control, backgroundColor: colors.paper,
       }}
     >

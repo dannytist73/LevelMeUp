@@ -139,9 +139,9 @@ export const TODAY_TEXT = {
   /** M17: the level on the XP bar's line, in Today's header. */
   /** M17: the first open of a new week: how last week went, never what was missed. */
   week: {
-    cleared: 'Last week: {n} of {days} days cleared{rest}. A new week starts today.',
-    clearedOne: 'Last week: 1 of {days} days cleared{rest}. A new week starts today.',
-    none: 'A new week starts today. One cleared quest is enough to begin.',
+    cleared: 'Last week: {n} of {days} days cleared{rest}. A new week has begun.',
+    clearedOne: 'Last week: 1 of {days} days cleared{rest}. A new week has begun.',
+    none: 'A new week has begun. One cleared quest is enough to start it.',
     rest: ', {n} rested',
     restOne: ', 1 rested',
   },

@@ -364,7 +364,7 @@ describe('Settings', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
     expect(onBack).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Developer' })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.training.open })); // M6c: Game → Training
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${ADJUST_TEXT.training.open}\\. `) })); // M6c: Game → Training (M17: with its line)
     expect(onTraining).toHaveBeenCalled();
   });
 

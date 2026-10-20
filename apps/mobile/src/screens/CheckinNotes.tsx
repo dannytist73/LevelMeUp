@@ -3,7 +3,7 @@
 // quiet, so Up next keeps the screen's one bright button. M17: each note is one card, its answers inside it.
 import { CHECKIN_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
-import { resultText } from '../game/checkin.ts';
+import { checkinLead, resultText } from '../game/checkin.ts';
 import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { useGame } from '../state/store.ts';
@@ -45,8 +45,9 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
         <SystemCard text={resultText(result.outcome, view.character.streak.best)} actions={[{ label: T.done, onPress: () => void dismissResult(result.id) }]} />
       )}
       {checkin !== null && checkin.answer === null && checkin.id !== later && (
-        // M17 (design critique): the details are the check-in screen's own first line, so Today asks only the question.
-        <SystemCard text={T.title} actions={[
+        // M17 (design critique): the details are the check-in screen's own first line, so Today asks only the question;
+        // after a gap of several days it says so (review).
+        <SystemCard text={T.title} {...(checkin.gap ? { detail: checkinLead(checkin, view.today?.dayNumber ?? null) } : {})} actions={[
           { label: T.open, onPress: onCheckin },
           { label: T.openLater, onPress: () => answerLater(checkin.id) },
         ]} />

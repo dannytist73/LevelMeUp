@@ -11,11 +11,13 @@ export type TextFieldProps = {
   onChangeText: (text: string) => void;
   maxLength?: number;
   multiline?: boolean;
+  /** M17: a multi-line field for one line of thought: Enter closes the keyboard rather than breaking the line. */
+  oneLine?: boolean;
   /** The surface it sits on. */
   on?: 'night' | 'paper';
 };
 
-export function TextField({ label, value, onChangeText, maxLength, multiline = false, on = 'night' }: TextFieldProps) {
+export function TextField({ label, value, onChangeText, maxLength, multiline = false, oneLine = false, on = 'night' }: TextFieldProps) {
   const paper = on === 'paper';
   const [focused, setFocused] = useState(false);
   return (
@@ -27,8 +29,10 @@ export function TextField({ label, value, onChangeText, maxLength, multiline = f
         onChangeText={onChangeText}
         maxLength={maxLength}
         multiline={multiline}
-        // M17: a multi-line field is a sentence box: tall enough to see it whole, and Enter closes the keyboard.
-        {...(multiline ? { submitBehavior: 'blurAndSubmit' as const, returnKeyType: 'done' as const, textAlignVertical: 'top' as const } : {})}
+        // M17: a multi-line field is tall enough to see its text whole; where a line break has no place (`oneLine`: a
+        // sentence, the vow), Enter closes the keyboard instead (review: the Shadow's note keeps its line breaks).
+        {...(multiline ? { textAlignVertical: 'top' as const } : {})}
+        {...(multiline && oneLine ? { submitBehavior: 'blurAndSubmit' as const, returnKeyType: 'done' as const } : {})}
         maxFontSizeMultiplier={2}
         selectionColor={colors.accent}
         onFocus={() => setFocused(true)}

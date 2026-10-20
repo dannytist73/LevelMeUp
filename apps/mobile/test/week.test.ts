@@ -20,7 +20,7 @@ describe('weekRecap', () => {
   ];
 
   it('counts last week\'s cleared and rest days, on any day of the new week', () => {
-    const calendar = [day('2026-10-21', 'open'), day('2026-10-20', 'cleared'), day('2026-10-19', 'none'), ...lastWeek.reverse()];
+    const calendar = [day('2026-10-21', 'open'), day('2026-10-20', 'cleared'), day('2026-10-19', 'none'), ...[...lastWeek].reverse()];
     expect(weekRecap(calendar, [])).toEqual({ key: 'week:2026-10-19', cleared: 3, rested: 1, days: 7 });
   });
 

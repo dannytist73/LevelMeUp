@@ -30,7 +30,8 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
   const display = variant !== 'secondary';
   // M17 (design critique): disabled, every button is a quiet outline at full opacity; faded, the bright ones read as
   // broken (their label fell to about 1.5:1).
-  const shown = disabled ? { bg: 'transparent', fg: on === 'night' ? colors.ash : colors.inkMuted, border: on === 'night' ? colors.lineStrong : colors.inkMuted } : look;
+  // Its edge is the quiet line (review), so a disabled outline doesn't look like an enabled one beside it.
+  const shown = disabled ? { bg: 'transparent', fg: on === 'night' ? colors.ash : colors.inkMuted, border: on === 'night' ? colors.line : colors.trackOnPaper } : look;
   return (
     <Tap
       accessibilityRole="button"

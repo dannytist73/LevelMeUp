@@ -226,7 +226,7 @@ export function Today({
   // M17: the first open of a new week, how last week went (game/week.ts), after anything else waiting. It waits while a
   // check-in asks its question: that matters more, and two cards would push Up next down.
   const checkinLater = useGame((s) => s.checkinLater);
-  const asking = view?.checkin != null && view.checkin.answer === null && view.checkin.id !== checkinLater;
+  const asking = view?.checkin != null && ((view.checkin.answer === null && view.checkin.id !== checkinLater) || view.checkin.answer === 'just_didnt');
   const recap = view === null || !accountKnown || asking ? null : weekRecap(view.calendar, offers);
   if (recap !== null) {
     const W = TODAY_TEXT.week;

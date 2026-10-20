@@ -850,7 +850,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       markOffer: async (offer) => {
         if (get().offers.includes(offer)) return;
-        const offers = [...get().offers, offer];
+        // M17 (review): a week's recap replaces last week's, so the list doesn't grow by one every week.
+        const kept = offer.startsWith('week:') ? get().offers.filter((o) => !o.startsWith('week:')) : get().offers;
+        const offers = [...kept, offer];
         set({ offers });
         await deps.kv.setItem(OFFERS_KEY, JSON.stringify(offers)).catch(() => {});
       },

@@ -25,7 +25,7 @@ export type OptionCardProps = {
    * readable (your current class) passes false: faded, its words fell to 2.45:1.
    */
   dim?: boolean;
-  /** M17: a short choice in a row of them (minutes a day): its label centred. */
+  /** M17: a short choice in a row of them (minutes a day): its label centred, and only its label (no detail, aside or marker). */
   center?: boolean;
 };
 

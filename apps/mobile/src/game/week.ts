@@ -2,6 +2,7 @@
 // dates), one System note says how last week went: the days cleared and rested, out of the days the chronicle has, never
 // what was missed. A new week is a fresh start (the "fresh start" research in docs/2026-10-20-polish-loop.md). Pure.
 import type { Offer } from '../state/store.ts';
+import { marksByDate } from '../lib/calendar.ts';
 import type { DayMark } from '../lib/calendar.ts';
 
 export type WeekRecap = { key: `week:${string}`; cleared: number; rested: number; days: number };
@@ -24,13 +25,8 @@ export function weekRecap(calendar: readonly { date: string; mark: DayMark }[], 
   const key = `week:${monday}` as const;
   if (offers.includes(key)) return null;
   const from = toDate(Date.parse(`${monday}T00:00:00Z`) - 7 * DAY_MS);
-  // One mark per date (a date can hold two quest days after a time-zone move): the strongest, as the calendar shows.
-  const marks = new Map<string, DayMark>();
-  for (const d of calendar) {
-    if (d.date < from || d.date >= monday) continue;
-    const kept = marks.get(d.date);
-    if (kept === undefined || kept === 'none' || kept === 'paused') marks.set(d.date, d.mark);
-  }
+  // One mark per date (a date can hold two quest days after a time-zone move), chosen as the Chronicle chooses it.
+  const marks = marksByDate(calendar.filter((d) => d.date >= from && d.date < monday));
   if (marks.size < 2) return null;
   const values = [...marks.values()];
   return {

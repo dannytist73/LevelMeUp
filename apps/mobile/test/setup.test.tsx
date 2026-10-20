@@ -61,7 +61,7 @@ describe('on Today', () => {
     const store = testStore({ view: project({ ...serverState(['core']), calendar }, []), offers: [] });
     await render(withStore(store, <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
       onTraining={jest.fn()} onCheckin={jest.fn()} now={() => NOW} />));
-    expect(screen.getByLabelText('System: Last week: 1 of 3 days cleared, 1 rested. A new week starts today.')).toBeTruthy();
+    expect(screen.getByLabelText('System: Last week: 1 of 3 days cleared, 1 rested. A new week has begun.')).toBeTruthy();
     await fireEvent.press(within(screen.getByTestId('notice-strip')).getByRole('button', { name: 'Got it' }));
     expect(store.getState().markOffer).toHaveBeenCalledWith('week:2026-10-19');
   });

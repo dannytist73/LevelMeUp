@@ -52,7 +52,7 @@ export function Vow({ onDone, screenReader }: { onDone: () => void; /** Tests on
       <Panel outlined contentStyle={{ paddingHorizontal: 18, paddingBottom: 18, gap: 12 }}>
         <Label tone="accentInk">{T.label}</Label>
         {editing
-          ? <TextField label={T.edit} value={text} onChangeText={setText} maxLength={VOW_MAX} multiline on="paper" />
+          ? <TextField label={T.edit} value={text} onChangeText={setText} maxLength={VOW_MAX} multiline oneLine on="paper" />
           : <Heading tone="ink">{text}</Heading>}
         {!editing && !sworn && <Button label={T.edit} variant="secondary" on="paper" onPress={() => setEditing(true)} />}
       </Panel>
