@@ -29,7 +29,9 @@ describe('the words of adjusting the day (M6b)', () => {
   });
 
   it('fill their placeholders', () => {
-    expect(fillText(ADJUST_TEXT.day.swap, { left: 1 })).toBe('Swap · 1 left');
+    expect(fillText(ADJUST_TEXT.day.swap, { left: 1, total: 2 })).toBe('Swap · 1 of 2 left'); // premium pass C1
+    expect(fillText(ADJUST_TEXT.day.swapsOut, { time: '4:00 AM' })).toBe('No swaps left today. They come back with the next quest day, at 4:00 AM.');
+    expect(fillText(ADJUST_TEXT.rest.limitOpens, { date: 'Thu 22 Oct' })).toContain('The next one can be Thu 22 Oct.');
     expect(fillText(ADJUST_TEXT.pain.persists, { count: 2 })).toContain('2 times');
     expect(fillText(ADJUST_TEXT.classChange.locked, { date: 'Sat 24 Oct' })).toContain('Sat 24 Oct');
     expect(fillText(ADJUST_TEXT.vanish.done, { n: 60 })).toBe('You vanished for 60 minutes.');
