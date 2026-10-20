@@ -39,7 +39,7 @@ const CLAUDE = process.env.LMU_CLAUDE ?? join(process.env.APPDATA ?? '', 'npm', 
 const COMFY = 'http://127.0.0.1:8188';
 const COMFY_DIR = process.env.LMU_COMFY_DIR ?? 'D:\\ai\\ComfyUI';
 /** Free memory ComfyUI needs to start beside everything else (Z-Image Turbo on the 4070 laptop; checked on the first runs). */
-const COMFY_FREE_BYTES = 10 * 1024 ** 3;
+const COMFY_FREE_BYTES = 8 * 1024 ** 3;
 /** How long a run waits for that memory (an emulator or a build may finish) before the story goes out without a picture. */
 const MEMORY_WAIT_MS = 60 * 60 * 1000;
 
