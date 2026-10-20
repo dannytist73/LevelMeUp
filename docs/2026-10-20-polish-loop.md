@@ -53,12 +53,16 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 27 | Launch waits on a token refresh over the network (blank screen after the splash) | perf 1 | done |
 | 28 | Today's header jumps with "Syncing…" on every tap | perf 2 | done |
 | 29 | Each tap redraws every open screen ~3×: reuse the view when nothing changed; tabs watch only "offline" | perf 3, 5 | done |
-| 30 | lmu-sync: ~95 sequential round trips; pipeline the reads, one-statement asPlayer, skip reloads when quiet | perf 4 | done, deployed |
+| 30 | lmu-sync: ~95 sequential round trips; pipeline the reads, one-statement asPlayer, skip reloads when quiet | perf 4 | done, deployed; quiet syncs measured 0.5-0.7 s on the emulator (M9b measured about 1.0 s; not a controlled comparison) |
 | 31 | Action-triggered syncs: a debounce | perf 13 | dropped: the scheduler already folds a request made during a run into one more run; a debounce would delay every tap |
 | 32 | Prefetch the portrait; warm the day's sounds | perf 10, 11 | done |
 | 33 | Partial indexes for the per-sync counts | perf 13 | deferred: migrations must be numbered without gaps and 0020+ belongs to the studio session; cheap today |
 | 34 | Deck card drag on the JS thread (needs gesture-handler: a native module, a new build) | perf 6, N10 | later |
 | 35 | React Compiler: not safe yet (clock reads in render) | perf 8 | later |
+| 36 | Today redraws on every sync start and end | perf 3 | done |
+| 37 | Class change fades the current class to 2.45:1; an empty Codex is one small line | O11, emulator | done |
+| 38 | Body limits (knees, back…) can't be changed after onboarding: a safety gap. Needs the `adjust` SQL function, so a migration | 2026-10-15 audit | proposed: needs a migration number agreed with the studio session |
+| 39 | Dev previews (Shadow, check-in, offline) crashed: their made-up state lacked fields Today reads since M12 | emulator | done |
 
 ## Log
 
