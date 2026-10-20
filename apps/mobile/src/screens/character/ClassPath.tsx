@@ -4,6 +4,8 @@ import { ABILITY_LINES, ABILITY_NAMES, CHARACTER_TEXT, CLASS_NAMES, fillText } f
 import { View } from 'react-native';
 import { abilityStatus, classAbilities, statusText } from '../../game/character.ts';
 import type { Shown } from '../../game/project.ts';
+import { colors } from '../../theme/tokens.ts';
+import { Icon } from '../../ui/icons.tsx';
 import { NightCard } from '../../ui/NightCard.tsx';
 import { SectionTitle } from '../../ui/SectionTitle.tsx';
 import { Heading, Label, Small } from '../../ui/Text.tsx';
@@ -20,7 +22,11 @@ export function ClassPath({ view, dayNumber }: { view: Shown; dayNumber: number 
           <NightCard key={id} quiet={status.kind === 'locked'}>
             <View style={{ gap: 4 }}>
               <Heading>{ABILITY_NAMES[id]}</Heading>
-              <Label tone={status.kind === 'locked' ? 'ash' : 'accentText'}>{statusText(status)}</Label>
+              {/* M17 (design critique): a lock beside a locked ability's level, so it doesn't read as one already owned. */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {status.kind === 'locked' && <Icon name="lock" size={16} color={colors.ash} />}
+                <Label tone={status.kind === 'locked' ? 'ash' : 'accentText'} style={{ flexShrink: 1 }}>{statusText(status)}</Label>
+              </View>
               <Small>{ABILITY_LINES[id]}</Small>
             </View>
           </NightCard>

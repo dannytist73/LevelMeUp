@@ -9,7 +9,7 @@ import { colors, radius } from '../../theme/tokens.ts';
 import { LinkButton } from '../../ui/LinkButton.tsx';
 import { SectionTitle } from '../../ui/SectionTitle.tsx';
 import { MarkStamp } from '../../ui/Stamp.tsx';
-import { Body, Caption, Small } from '../../ui/Text.tsx';
+import { Body, Caption, Label, Small } from '../../ui/Text.tsx';
 import { XpBar } from '../../ui/XpBar.tsx';
 
 const T = CHARACTER_TEXT.achievements;
@@ -58,8 +58,10 @@ export function Achievements({ earned, progress }: { earned: readonly string[]; 
         <LinkButton label={all ? T.fewer : fillText(T.seeAll, { n: known.length })} tone="accentText" onPress={() => setAll((a) => !a)} />
       )}
       {reach.length > 0 && (
-        <View style={{ gap: 10 }}>
-          <Caption>{T.next}</Caption>
+        // M17 (design critique): "Within reach" as a small heading with room above it; as a caption it read as a footnote
+        // to the stamps above.
+        <View style={{ gap: 10, marginTop: 8 }}>
+          <Label>{T.next}</Label>
           {reach.map((r) => (
             <View key={r.achievement.id} accessible accessibilityLabel={`${r.achievement.name}. ${r.achievement.description} ${r.line}`}
               style={{ gap: 6, padding: 14, borderRadius: radius.control, backgroundColor: colors.panel }}>

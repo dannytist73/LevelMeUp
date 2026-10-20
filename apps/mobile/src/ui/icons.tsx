@@ -9,7 +9,9 @@ export type IconName =
   // M11: the Story Deck's close, arrows, keep and share.
   | 'close' | 'arrowLeft' | 'arrowRight' | 'bookmark' | 'share'
   // M12: the Library tab, offline and failed states, the reminder offer.
-  | 'book' | 'cloudOff' | 'alert' | 'bell';
+  | 'book' | 'cloudOff' | 'alert' | 'bell'
+  // M17: an ability still to unlock.
+  | 'lock';
 
 const GEAR =
   'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z';
@@ -61,6 +63,8 @@ function shapes(name: IconName) {
       return [<Circle key="c" cx="12" cy="12" r="10" />, <Path key="p" d="M12 8v4M12 16h.01" />];
     case 'bell':
       return [<Path key="b" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />, <Path key="c" d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />];
+    case 'lock':
+      return [<Rect key="r" x="4" y="11" width="16" height="10" rx="2" />, <Path key="p" d="M8 11V7a4 4 0 0 1 8 0v4" />];
   }
 }
 
