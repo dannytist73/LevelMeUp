@@ -115,7 +115,11 @@ export function Settings({
           })}
           onPress={onGame}
         />
-        <RowLink flat label={ADJUST_TEXT.training.open} onPress={onTraining} />
+        {/* M17 (design critique): what's set now, as the rows around it say. */}
+        <RowLink flat label={ADJUST_TEXT.training.open} onPress={onTraining}
+          line={view === null ? undefined : (view.profile.trainingPlan ?? 'build') === 'weekly'
+            ? `${ADJUST_TEXT.training.plans.weekly.name} · ${ADJUST_TEXT.training.dayChoices[view.profile.programDays === 2 ? 2 : 3].name}`
+            : ADJUST_TEXT.training.plans.build.name} />
         {onNotifications !== undefined && (
           <RowLink
             flat
