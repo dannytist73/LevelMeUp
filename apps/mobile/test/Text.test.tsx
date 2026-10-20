@@ -14,7 +14,7 @@ describe('Lantern text (M11)', () => {
     ['Label', Label, 'MPlusRounded-Bold', 14, 2],
     ['Body', Body, 'MPlusRounded-Regular', 16, 2],
     ['Small', Small, 'MPlusRounded-Regular', 14, 2],
-    ['Meta', Meta, 'MPlusRounded-Regular', 13, 2],
+    ['Meta', Meta, 'MPlusRounded-Regular', 14, 2], // M17: 14, not 13
     ['Caption', Caption, 'MPlusRounded-Regular', 12, 2],
   ] as const)('%s uses its family, size and font-scale cap', async (_, Variant, family, size, cap) => {
     await render(<Variant>words</Variant>);

@@ -108,7 +108,8 @@ export const type: Readonly<Record<TypeVariant, TypeSpec>> = {
   label: { family: fonts.bodyBold, size: 14, lineHeight: 1.35, tracking: 0.01, maxScale: 2, uppercase: false },
   body: { family: fonts.body, size: 16, lineHeight: 1.55, tracking: 0, maxScale: 2, uppercase: false },
   small: { family: fonts.body, size: 14, lineHeight: 1.5, tracking: 0, maxScale: 2, uppercase: false },
-  meta: { family: fonts.body, size: 13, lineHeight: 1.45, tracking: 0, maxScale: 2, uppercase: false },
+  // M17 (UX audit N13): a row's second line at 14, not 13 (it carried the quest's target and the stats' lines).
+  meta: { family: fonts.body, size: 14, lineHeight: 1.45, tracking: 0, maxScale: 2, uppercase: false },
   caption: { family: fonts.body, size: 12, lineHeight: 1.4, tracking: 0, maxScale: 2, uppercase: false },
 };
 

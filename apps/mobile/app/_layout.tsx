@@ -41,7 +41,16 @@ function Themed({ children }: { children: ReactNode }) {
 
 /** Drawn inside Themed, so the screens' background is the new look's. */
 function Screens() {
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }} />;
+  // M17 (UX audit O14): the screens that close with an X rise from the bottom (the Shadow's scene fades in), so they read
+  // as a layer over where you were, not a page further in.
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }}>
+      <Stack.Screen name="plus" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="trial" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="vanish" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="shadow" options={{ animation: 'fade' }} />
+    </Stack>
+  );
 }
 
 /** After the player picks a new look, the redrawn app starts on Today: this takes them back to Your look once. */
