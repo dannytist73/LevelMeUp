@@ -8,7 +8,9 @@ import type { Sql } from '../db.ts';
 import { ARTICLE_MODEL } from '../prompts/articles.ts';
 import type { Brief } from './brief.ts';
 import type { ArticleSection } from './check.ts';
+import type { StoryDeck } from './deck.ts';
 import type { Job, JobStatus, Store } from './pipeline.ts';
+import type { StudioStore } from './studio.ts';
 
 type JobRow = {
   id: string; cluster: ArticleCluster; topic: string; evergreen: boolean; status: JobStatus; attempt: number;
@@ -81,6 +83,26 @@ export function sqlStore(sql: Sql): Store {
     },
     async saveDeck(articleId, deck, error) {
       await sql`select levelmeup.article_set_deck(${articleId}, ${deck === null ? null : j(deck)}::jsonb, ${error})`;
+    },
+  };
+}
+
+/**
+ * M15: the store with the studio's one write: its job goes to 'writing' with its brief, is stored by article_store like
+ * a tick's, and gets its deck, all in one transaction, so the tick never sees the article without its deck (and never
+ * spends a deck call on it).
+ */
+export function studioStore(sql: Sql): StudioStore {
+  return {
+    ...sqlStore(sql),
+    async storeStudio(jobId, article, sources, brief, deck: StoryDeck) {
+      return await sql.begin(async (tx) => {
+        const store = sqlStore(tx as unknown as Sql);
+        if (!(await store.move(jobId, 'studio', 'writing', { brief }))) throw new Error('lmu:conflict');
+        const id = await store.store(jobId, article, sources);
+        await store.saveDeck(id, deck, null);
+        return id;
+      });
     },
   };
 }

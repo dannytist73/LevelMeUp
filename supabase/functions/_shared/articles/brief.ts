@@ -12,7 +12,7 @@ export type Brief = { sources: BriefSource[]; facts: BriefFact[]; excerpts: stri
 export const BRIEF_LIMITS = { minSources: 2, minFacts: 6, maxSources: 20, maxFacts: 40, factChars: 600 } as const;
 
 /** A cited page's address, normalised by the URL parser (so it is plain ASCII), or null when it isn't a web page. */
-function pageUrl(url: unknown): string | null {
+export function pageUrl(url: unknown): string | null {
   if (typeof url !== 'string' || !/^https?:\/\/\S+$/.test(url) || !URL.canParse(url)) return null;
   const href = new URL(url).href;
   return href.length <= 2000 ? href : null;

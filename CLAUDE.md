@@ -33,7 +33,10 @@ adapted the same way as the owner's `ninety-day`, `wedding-site` and `stoic-porc
   `npm run articles -- …` (M8a): the article pipeline's owner commands; `setup`, `tick`, `evergreen`,
   `publish`/`reject` and `cron on|off` change the live project or spend money, so they need the owner's yes. Claude
   calls go through `_shared/claude.ts` and `_shared/articles/batches.ts` only, and every one is reserved against the
-  monthly budget first. `npm run pilot` (M9b): the pilot's totals, read only. `MIN_APP_VERSION`
+  monthly budget first. `npm run studio -- …` (M15, the daily studio on the owner's PC): Claude Code on the owner's plan
+  researches and writes the day's article and story, ComfyUI draws its picture, and `lmu-articles-studio` checks them
+  again and stores them; `setup` and the first runs need the owner's yes, and Claude there only answers JSON (it never
+  writes to the database). `npm run pilot` (M9b): the pilot's totals, read only. `MIN_APP_VERSION`
   (`supabase/functions/_shared/version.ts`) is raised, and the functions deployed, only when a server change would
   break older apps.
 - **The app** is `apps/mobile` (since M4; details in `apps/mobile/README.md`). `npm run app` starts Metro for the

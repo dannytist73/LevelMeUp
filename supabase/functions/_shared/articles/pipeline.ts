@@ -34,7 +34,8 @@ export const BATCH_LOST_MS = 48 * 60 * 60 * 1000;
 /** M11: decks written per cron tick (two calls side by side fit the function's time limit). */
 export const DECKS_PER_TICK = 2;
 
-export type JobStatus = 'queued' | 'researching' | 'researched' | 'writing' | 'retry' | 'done' | 'failed';
+/** M15: 'studio' is a job the owner's PC has taken (the studio); the tick never moves one. */
+export type JobStatus = 'queued' | 'researching' | 'researched' | 'writing' | 'retry' | 'done' | 'failed' | 'studio';
 export type Job = {
   id: number;
   cluster: ArticleCluster;
