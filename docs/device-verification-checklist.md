@@ -808,3 +808,6 @@ APK.
 | 28 | The reading deck: the top bar stays put when you swipe from the cover to the first card. | **Pass** 2026-10-20, emulator (the bar's caption at the same height on both). Find X9: |
 | 29 | Settings → Account always shows (a guest, or saved with Google), never two grey bars that stay. | **Pass** 2026-10-20, emulator (after a restart that had failed one local read). Find X9: |
 | 30 | Character: a locked ability shows a small lock beside "Level 5 · 3 to go"; "Within reach" reads as a heading. A new character's safety check counts up ("0 of 7 answered"). | **Pass** 2026-10-20, emulator (safety: unit test). Find X9: |
+| 31 | A workout: change some reps and tick a set, go Back to Today, open it again: the numbers and ticks are as you left them (until the app is closed). | Unit tests (workout and rep log); not tried on Vera. Find X9: |
+| 32 | A lesson kept long ago (older than the last 30 readings) opens from the Codex after one sync. | Unit test (store); needs a long-running player. Find X9: |
+| 33 | Character: "Change your vow" under the vow opens it to edit; with no vow, "Write a vow". The first screen of a new character: a hint in the name box and "Sign in with Google" as a quiet link. | **Pass** 2026-10-20, emulator (look only). Find X9: |
