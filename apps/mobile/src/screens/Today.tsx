@@ -119,6 +119,10 @@ function setupNotice(
   }
 }
 
+/** A day with quests that hasn't ended: Today shows it, not a state. */
+const dayShown = (view: Shown | null, at: number): boolean =>
+  view?.today != null && view.today.quests.length > 0 && Date.parse(view.today.endsAt!) > at;
+
 /** Not a usable day (audit 11): loading is a skeleton; offline, a failed reach and an ended day each say what they are. */
 function NoDay({ view, status, ended, empty, onRetry }: { view: Shown | null; status: Status; ended: boolean; empty: boolean; onRetry: () => void }) {
   if (status === 'syncing') return <TodaySkeleton />;
@@ -154,7 +158,9 @@ export function Today({
   const streak = view === null ? null : shownStreak(view);
   const streakGrew = useGrowth(streak?.current ?? null, shown);
   const art = useGame((s) => s.art);
-  const status = useGame((s) => s.status);
+  // M17: a sync starting or ending over a usable day changes nothing Today shows, so Today doesn't draw again for it
+  // (every tap starts one). Without a usable day the status shows: loading, offline, retrying.
+  const status = useGame((s): Status => (s.status === 'syncing' && dayShown(s.view, now()) ? 'idle' : s.status));
   const notices = useGame((s) => s.notices);
   const syncNow = useGame((s) => s.syncNow);
   const dismissNotice = useGame((s) => s.dismissNotice);
