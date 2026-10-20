@@ -12,7 +12,7 @@ export const NOTIFY_TEXT = {
   open: 'Notifications',
   briefing: 'Morning briefing',
   evening: 'Evening reminder',
-  eveningNote: "Only if the core quest isn't done",
+  eveningNote: "The evening reminder comes only if the core quest isn't done.",
   timers: 'Timer alerts',
   off: 'Off',
   blocked: "Off in your phone's settings",
