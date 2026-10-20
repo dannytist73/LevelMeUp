@@ -11,6 +11,7 @@ import { ScreenHeader } from '../../ui/ScreenHeader.tsx';
 import { NarrationBox } from '../../ui/NarrationBox.tsx';
 import { ScreenScroll } from '../../ui/ScreenScroll.tsx';
 import { SpeedLines } from '../../ui/SpeedLines.tsx';
+import { LinkButton } from '../../ui/LinkButton.tsx';
 import { TextField } from '../../ui/TextField.tsx';
 import { Heading, Label, Small } from '../../ui/Text.tsx';
 import { UpdateNeeded } from '../UpdateNeeded.tsx';
@@ -76,9 +77,11 @@ export function Awakening({ onNavigate, onRestored }: StepProps & { onRestored: 
         }} />
         <Small>{T.note}</Small>
         {account.kind !== 'saved' && (
-          <View style={{ gap: 6 }}>
+          // M17 (design critique): a quiet text button; most new players don't need it, and an outline as large as Awaken
+          // drew the eye before a name was typed.
+          <View>
             <Small>{T.restoreLead}</Small>
-            <Button label={T.restoreGo} accessibilityLabel={T.restore} variant="secondary" disabled={busy} onPress={() => void restore()} />
+            <LinkButton label={T.restoreGo} accessibilityLabel={T.restore} tone="accentText" disabled={busy} onPress={() => void restore()} />
           </View>
         )}
         {updateRequired && <UpdateNeeded />}
