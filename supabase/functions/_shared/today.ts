@@ -3,7 +3,7 @@
 // what the server will accept.
 import {
   STREAK_SLOTS, abilityReady, abilityUnlocked, applyDawnRitual, applyStillness, findTemplate, isStreakDay, newLadder, painOption, plannedBlock,
-  plannedMoves, programRun, restAllowed, secondWindRedo, swapLimit, swapOptions,
+  nextRestDay, plannedMoves, programRun, restAllowed, secondWindRedo, swapLimit, swapOptions,
 } from '../../../packages/rules/src/index.ts';
 import type { BuiltDay, DayInput, QuestDraft, QuestLibrary, Slot } from '../../../packages/rules/src/index.ts';
 import { toDraft } from './drafts.ts';
@@ -119,10 +119,11 @@ export function dayOffers(s: Snapshot, library: QuestLibrary): DayOffers {
   const rests = restDays(s);
   const restAllowedToday = day.protection === null && !dayCounts(quests) && restAllowed(rests, day.day_number);
   const restTomorrow = s.character.rest_day !== day.day_number + 1 && restAllowed(rests, day.day_number + 1);
+  const restOpens = nextRestDay(rests, day.day_number + 1);
   // A day without quests (protected `no_quests`), or with a template this version doesn't know, offers only rest.
   const whole = QUEST_SLOTS.every((slot) => quests.some((q) => q.slot === slot))
     && quests.every((q) => findTemplate(library, q.template_id) !== undefined);
-  if (!whole) return { ...NO_OFFERS, restAllowed: restAllowedToday, restTomorrow };
+  if (!whole) return { ...NO_OFFERS, restAllowed: restAllowedToday, restTomorrow, restOpens };
   const input = todayInput(s, day);
   const built = todayBuilt(day, quests);
   const swapsLeft = Math.max(0, swapLimit(input.profile.classId, input.profile.level) - day.swaps_used);
@@ -140,6 +141,7 @@ export function dayOffers(s: Snapshot, library: QuestLibrary): DayOffers {
     swapsLeft,
     restAllowed: restAllowedToday,
     restTomorrow,
+    restOpens,
     abilities: abilityOffers(s, library, input, built, quests),
     swaps,
     gentle,

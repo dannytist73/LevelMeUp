@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addRecovery, applyDawnRitual, applyHardDay, applyStillness, applySwap, checkProvisionalDay, painKey, painOption, provisionalDay,
-  restAllowed, secondWindRedo, seeProfessional, swapOptions,
+  nextRestDay, restAllowed, secondWindRedo, seeProfessional, swapOptions,
 } from '../src/adjust.ts';
 import type { ProvisionalQuest } from '../src/adjust.ts';
 import { buildDay, draftQuest } from '../src/day.ts';
@@ -82,6 +82,16 @@ describe('hard day (spec §3.5)', () => {
     const hard = applyHardDay(FIXTURE, DAY_TWO, ['core']);
     expect(quest(hard, 'core')).toEqual(quest(DAY_TWO, 'core'));
     expect(applyHardDay(FIXTURE, hard, [])).toBe(hard);
+  });
+});
+
+describe('the next day a rest is allowed (premium pass C1: the limit says when it opens)', () => {
+  it('is the first day from the one given that the 2-in-7 limit allows', () => {
+    expect(nextRestDay([3, 5], 6)).toBe(10); // day 3 leaves the window that holds day 10
+    expect(nextRestDay([3], 5)).toBe(5);
+    expect(nextRestDay([], 1)).toBe(1);
+    expect(nextRestDay([9, 10], 8)).toBe(16); // two planned ahead: the first day whose every week holds at most one of them
+    expect(nextRestDay([5, 6], 6)).toBe(12); // never a day that already rests
   });
 });
 

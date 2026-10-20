@@ -125,6 +125,13 @@ export function restAllowed(restDays: readonly number[], dayNumber: number): boo
   return true;
 }
 
+/** Premium pass C1: the first quest day from `fromDay` on, not already a rest day, that the 2-in-7 limit allows a rest on. */
+export function nextRestDay(restDays: readonly number[], fromDay: number): number {
+  let day = Math.max(1, fromDay);
+  while (restDays.includes(day) || !restAllowed(restDays, day)) day++;
+  return day;
+}
+
 /** What "I felt pain" pauses (spec §3.3): the quest's ladder, or a standalone exercise quest by its own id. */
 export function painKey(template: QuestTemplate): string {
   if (template.exercise === null) throw new RangeError(`${template.id} is not an exercise quest`);

@@ -29,6 +29,7 @@ export function offlineToday(event: Omit<ProvisionalDayEvent, 'id'>): TodayView 
     swapsLeft: 0,
     restAllowed: false,
     restTomorrow: false,
+    restOpens: null,
     abilities: [],
     article: null,
     quests: event.quests.flatMap((q): QuestView[] => {

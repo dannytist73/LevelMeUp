@@ -86,7 +86,7 @@ describe("Today's adjustments (M6b)", () => {
     const onSwap = jest.fn();
     await render(actions(shown(), enqueue, onSwap));
     await openOptions();
-    await fireEvent.press(screen.getByRole('button', { name: 'Swap · 1 left' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Swap · 1 of 1 left' }));
     expect(onSwap).toHaveBeenCalled();
     await fireEvent.press(screen.getByRole('button', { name: A.day.hardDay }));
     expect(screen.getByText(A.hardDay.explain)).toBeTruthy();
@@ -103,7 +103,7 @@ describe("Today's adjustments (M6b)", () => {
     await render(actions({ ...view, today: { ...view.today!, restAllowed: false, restTomorrow: false } }, enqueue));
     await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
-    expect(screen.getByText(A.rest.limit)).toBeTruthy();
+    expect(screen.getByText(/^You've rested twice in the last 7 days, so today can't be another rest day\. The next one can be \w{3} \d{1,2} \w{3}\./)).toBeTruthy(); // premium pass C1: with the day it opens
     expect(screen.queryByRole('button', { name: A.rest.confirm })).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: A.day.notNow }));
     expect(screen.getByRole('button', { name: A.day.hardDay })).toBeTruthy();
@@ -117,7 +117,7 @@ describe("Today's adjustments (M6b)", () => {
     await render(actions({ ...limited, lighterPlan: { from: 25, to: 15, offered: false } }, enqueue));
     await openOptions();
     await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
-    expect(screen.getByText(A.rest.limit)).toBeTruthy();
+    expect(screen.getByText(/^You've rested twice in the last 7 days, so today can't be another rest day\. The next one can be \w{3} \d{1,2} \w{3}\./)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: fillText(LIGHTER_TEXT.restLimit, { from: 25, to: 15 }) }));
     expect(enqueue).toHaveBeenCalledWith({ type: 'lighter_plan', accept: true });
     await render(actions({ ...limited, lighterPlan: null }, enqueue));
@@ -126,13 +126,30 @@ describe("Today's adjustments (M6b)", () => {
     expect(screen.queryByRole('button', { name: /^Lighten the plan/ })).toBeNull();
   });
 
-  it('hides what the day no longer allows: no swap left, already a hard day, already protected (and tomorrow planned, M7b)', async () => {
+  it('hides what the day no longer allows: already a hard day, already protected (and tomorrow planned, M7b)', async () => {
     const tomorrowPlanned = { character: characterRow({ rest_day: 3 }) };
     await render(actions(shown(adjustState(tomorrowPlanned, { swaps_used: 1, hard_day: true, protection: 'planned_rest' }))));
-    expect(screen.queryByRole('button', { name: TODAY_TEXT.change })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Swap ·/ })).toBeNull();
+    await openOptions();
     expect(screen.queryByRole('button', { name: A.day.hardDay })).toBeNull();
     expect(screen.queryByRole('button', { name: A.day.rest })).toBeNull();
+    // Premium pass C1: a used-up swap stays in view, off, with when it comes back.
+    expect(screen.getByRole('button', { name: 'Swap · 0 of 1 left' }).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText(/^No swaps left today\. They come back with the next quest day, at \d{1,2}:\d{2} [AP]M\.$/)).toBeTruthy();
+  });
+
+  it('over the rest limit without a known next day, says the limit alone (premium pass C1)', async () => {
+    const view = shown();
+    await render(actions({ ...view, today: { ...view.today!, restAllowed: false, restTomorrow: false, restOpens: null } }));
+    await openOptions();
+    await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
+    expect(screen.getByText(A.rest.limit)).toBeTruthy();
+  });
+
+  it('a Monk whose Stillness is cooling down sees it, off, with the days left (premium pass C1)', async () => {
+    const used = adjustState({ profile: profileRow(undefined, { class_id: 'monk' }), character: characterRow({ xp_vitality: 240, ability_last_used: { stillness: 1 } }) });
+    await render(actions(shown(used)));
+    await openOptions();
+    expect(screen.getByRole('button', { name: /^Stillness · ready (in \d days|tomorrow)$/ }).props.accessibilityState.disabled).toBe(true);
   });
 
   it('a Monk at level 5 gets Stillness; a Rogue at level 10 gets Vanish', async () => {

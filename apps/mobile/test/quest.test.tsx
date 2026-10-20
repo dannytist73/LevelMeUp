@@ -477,7 +477,7 @@ describe('adjusting from the quest screen (M6b)', () => {
       <Quest questId={200} now={at} onBack={jest.fn()} onSwap={onSwap} onPain={onPain} />));
     await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
     expect(onPain).toHaveBeenCalledWith(200);
-    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.swap.open }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Swap this quest · \d of \d left$/ }));
     expect(onSwap).toHaveBeenCalledWith(200);
   });
 
@@ -499,7 +499,7 @@ describe('adjusting from the quest screen (M6b)', () => {
     await render(withStore(testStore({ view: project(adjustState({}, { swaps_used: 1 }), []) }),
       <Quest questId={202} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.pain.open })).toBeNull();
-    expect(screen.queryByRole('button', { name: ADJUST_TEXT.swap.open })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Swap this quest · \d of \d left$/ })).toBeNull();
   });
 });
 

@@ -6,7 +6,11 @@ import { LADDER_NAMES } from './names.ts';
 
 export const ADJUST_TEXT = {
   day: {
-    swap: 'Swap · {left} left',
+    swap: 'Swap · {left} of {total} left',
+    /** Premium pass C1: every limit says how many and when it comes back. */
+    swapsOut: 'No swaps left today. They come back with the next quest day, at {time}.',
+    cooling: '{ability} · ready in {days} days',
+    coolingOne: '{ability} · ready tomorrow',
     hardDay: 'Hard day',
     rest: 'Rest day',
     vanish: 'Vanish',
@@ -27,18 +31,22 @@ export const ADJUST_TEXT = {
     limit:
       "You've rested twice in the last 7 days, so today can't be another rest day. If the days feel heavy, fewer minutes " +
       'a day may help.',
+    /** Premium pass C1: the limit, and the day it opens again. */
+    limitOpens:
+      "You've rested twice in the last 7 days, so today can't be another rest day. The next one can be {date}. If the " +
+      'days feel heavy, fewer minutes a day may help.',
     tomorrow: 'Rest tomorrow',
     tomorrowBanner: 'Tomorrow is a rest day: your streak is safe. Its quests stay open as a bonus.',
   },
   swap: {
     title: 'Swap a quest',
-    lead: 'Swaps left today: {left}. A swap stays for the day.',
+    lead: 'Swaps left today: {left} of {total}. A swap stays for the day.',
     which: 'Which quest?',
     current: 'Now',
     options: 'Swap it for',
     choose: 'Swap to this',
     none: 'Nothing can be swapped right now.',
-    open: 'Swap this quest',
+    open: 'Swap this quest · {left} of {total} left',
   },
   pain: {
     open: 'I felt pain',

@@ -462,7 +462,7 @@ it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core
       now={() => DAY_TWO_NOW} />));
   // M10c decision 3: the options open from "Change today"; the pain button stays in sight.
   await fireEvent.press(screen.getByRole('button', { name: 'Change today' }));
-  expect(screen.getByRole('button', { name: 'Swap · 1 left' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Swap · 1 of 1 left' })).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
   expect(onPain).toHaveBeenCalledWith(200);
 });

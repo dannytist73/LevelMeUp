@@ -191,7 +191,8 @@ export function Settings({
             <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 2 }}>
               <Body weight="bold">{lastSynced(lastSyncedAt, zone)}</Body>
               {waiting > 0 && <Meta>{`${waiting} waiting`}</Meta>}
-              {mark !== null && <Meta>{mark}</Meta>}
+              {/* Premium pass B5: while it syncs, Sync now says so; the line under the time would say it twice. */}
+              {mark !== null && !syncing && <Meta>{mark}</Meta>}
               {/* M12 (audit 23): plain words, never the server's code. */}
               {error !== null && <Small>The last sync didn't go through. Sync now tries again.</Small>}
             </View>

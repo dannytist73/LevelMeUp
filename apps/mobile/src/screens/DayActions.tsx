@@ -5,12 +5,14 @@
 // which the server may refuse over the limit (its notice says so). M7b: Rest tomorrow, and its banner. M10c: the options
 // fold into one "Change today" row (decision 3), and a day that already counts is offered only a rest tomorrow (decision 4).
 import { ABILITY_NAMES, ADJUST_TEXT, LIGHTER_TEXT, OFFLINE_TEXT, TODAY_TEXT, fillText, pausedName } from '@levelmeup/content';
-import { abilityUnlocked } from '@levelmeup/rules';
+import { DAY_MS, HOUR_MS, abilityUnlocked, swapLimit } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { abilityStatus } from '../game/character.ts';
 import type { Shown } from '../game/project.ts';
 import { todayCounts } from '../game/today.ts';
 import type { TodayView } from '../game/types.ts';
+import { clockTime, dateLine } from '../lib/dates.ts';
 import type { NewEvent } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Appear } from '../ui/Appear.tsx';
@@ -39,6 +41,20 @@ export function DayBanners({ today, restDay = null }: { today: TodayView; restDa
 }
 
 /** The confirm's words and what it can send; over the rest limit it explains, and offers the lighter plan when there is one. */
+/** Premium pass C1: the date of quest day `n`, from today's (days run boundary to boundary, so midday lands inside). */
+function dayDate(today: TodayView, n: number): string {
+  return dateLine(Date.parse(today.startsAt!) + (n - today.dayNumber) * DAY_MS + 12 * HOUR_MS, today.timeZone);
+}
+
+/** Premium pass C1: the day-shaping abilities this class has unlocked that are cooling down, with the days left. */
+function cooling(view: Shown): { ability: 'stillness' | 'dawn_ritual'; days: number }[] {
+  const day = view.today?.dayNumber ?? null;
+  return (['stillness', 'dawn_ritual'] as const).flatMap((ability) => {
+    const status = abilityStatus(ability, view.profile.classId, view.character.level, view.character.abilityLastUsed[ability] ?? null, day);
+    return status.kind === 'cooldown' ? [{ ability, days: status.days }] : [];
+  });
+}
+
 function panelFor(kind: Confirm, today: TodayView, lighter: Shown['lighterPlan'], counts: boolean): Panel {
   switch (kind) {
     case 'hard_day':
@@ -50,9 +66,10 @@ function panelFor(kind: Confirm, today: TodayView, lighter: Shown['lighterPlan']
       if (today.protection === null && today.restAllowed && !counts) sends.push({ label: T.rest.confirm, event: { type: 'plan_rest', dayId: today.id } });
       if (today.restTomorrow) sends.push({ label: T.rest.tomorrow, event: { type: 'plan_rest', dayId: today.id, tomorrow: true } });
       if (sends.length > 0) return { text: T.rest.explain, sends };
-      // M7a decision 9: over the rest limit, a lighter plan is the other way.
+      // M7a decision 9: over the rest limit, a lighter plan is the other way. Premium pass C1: and the day it opens again.
+      const opens = today.restOpens ?? null;
       return {
-        text: T.rest.limit,
+        text: opens === null ? T.rest.limit : fillText(T.rest.limitOpens, { date: dayDate(today, opens) }),
         sends: lighter === null
           ? []
           : [{ label: fillText(LIGHTER_TEXT.restLimit, { from: lighter.from, to: lighter.to }), event: { type: 'lighter_plan', accept: true } }],
@@ -104,6 +121,10 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
   const counts = todayCounts(view);
   const open = today.quests.filter((q) => q.completedAt === null && (q.slot === 'core' || q.slot === 'side1' || q.slot === 'side2'));
   const canSwap = today.swapsLeft > 0 && open.some((q) => q.swaps.length > 0);
+  // Premium pass C1: what's used up stays in view, quiet, with when it comes back (a limit that just vanished said nothing).
+  const swapTotal = swapLimit(view.profile.classId, view.character.level);
+  const swapsOut = !view.offline && today.swapsLeft === 0 && open.length > 0;
+  const resting = view.offline ? [] : cooling(view);
   // A day this phone built offline gets only what the phone decides alone (M6e decision 8).
   const canHardDay = !view.offline && !today.hardDay && open.length > 0;
   const canRest = !view.offline && ((today.protection === null && !counts) || today.restTomorrow);
@@ -130,18 +151,24 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
       </View>
     );
   }
-  if (!canSwap && !canHardDay && !canRest && today.abilities.length === 0 && !canVanish) {
+  if (!canSwap && !swapsOut && !canHardDay && !canRest && today.abilities.length === 0 && resting.length === 0 && !canVanish) {
     return pain === null ? later : <View style={{ gap: 12 }}>{later}<View style={{ flexDirection: 'row' }}>{pain}</View></View>;
   }
   const buttons = (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-      {canSwap && <Button label={fillText(T.day.swap, { left: today.swapsLeft })} variant="secondary" onPress={onSwap} />}
+      {canSwap && <Button label={fillText(T.day.swap, { left: today.swapsLeft, total: swapTotal })} variant="secondary" onPress={onSwap} />}
+      {swapsOut && <Button label={fillText(T.day.swap, { left: 0, total: swapTotal })} variant="secondary" disabled onPress={onSwap} />}
       {canHardDay && <Button label={T.day.hardDay} variant="secondary" onPress={() => setConfirm('hard_day')} />}
       {canRest && <Button label={onlyTomorrow ? T.rest.tomorrow : T.day.rest} variant="secondary" onPress={() => setConfirm('plan_rest')} />}
       {today.abilities.map((a) => (
         <Button key={a.ability} label={ABILITY_NAMES[a.ability]} variant="secondary" onPress={() => setConfirm(a.ability)} />
       ))}
+      {resting.map(({ ability, days }) => (
+        <Button key={ability} label={fillText(days === 1 ? T.day.coolingOne : T.day.cooling, { ability: ABILITY_NAMES[ability], days })}
+          variant="secondary" disabled onPress={() => {}} />
+      ))}
       {canVanish && <Button label={T.day.vanish} variant="secondary" onPress={onVanish} />}
+      {swapsOut && <Small tone="chalk" style={{ flexBasis: '100%' }}>{fillText(T.day.swapsOut, { time: clockTime(today.endsAt!, today.timeZone) })}</Small>}
     </View>
   );
   const options = (

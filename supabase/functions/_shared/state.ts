@@ -241,6 +241,8 @@ export type DayOffers = {
   restAllowed: boolean;
   /** M7b: tomorrow can still be planned as a rest day (decision 5). */
   restTomorrow: boolean;
+  /** Premium pass C1: the first day from tomorrow on that the 2-in-7 limit allows a rest on, so a refusal says when. */
+  restOpens: number | null;
   /** Day-shaping abilities ready now, each with the quest it puts in the core slot. */
   abilities: { ability: 'stillness' | 'dawn_ritual'; quest: QuestFields }[];
   swaps: Readonly<Record<string, QuestFields[]>>;
@@ -252,7 +254,7 @@ export type DayOffers = {
 };
 
 export const NO_OFFERS: DayOffers = {
-  swapsLeft: 0, restAllowed: false, restTomorrow: false, abilities: [], swaps: {}, gentle: {}, stepDown: [], secondWind: null,
+  swapsLeft: 0, restAllowed: false, restTomorrow: false, restOpens: null, abilities: [], swaps: {}, gentle: {}, stepDown: [], secondWind: null,
 };
 
 export function startPoints(c: CharacterRow): StatMap {
@@ -481,7 +483,8 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
       timeZone: today.time_zone, budget: today.budget, light: today.light, hardDay: today.hard_day, protection: today.protection,
       status: today.status,
       article: articleOf(today.article_id),
-      swapsLeft: offers.swapsLeft, restAllowed: offers.restAllowed, restTomorrow: offers.restTomorrow, abilities: offers.abilities,
+      swapsLeft: offers.swapsLeft, restAllowed: offers.restAllowed, restTomorrow: offers.restTomorrow, restOpens: offers.restOpens,
+      abilities: offers.abilities,
       quests: questsOf(today)
         .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))
         .map((q) => ({

@@ -8,6 +8,7 @@ import {
   ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey,
   authoredTemplate, fillText, programBlockLabel, questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
+import { swapLimit } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, View } from 'react-native';
@@ -442,7 +443,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
             )}
           </View>
           {today.swapsLeft > 0 && quest.swaps.length > 0 && (
-            <Button label={A.swap.open} variant="secondary" onPress={() => onSwap(quest.id)} />
+            <Button label={fillText(A.swap.open, { left: today.swapsLeft, total: swapLimit(view.profile.classId, view.character.level) })}
+              variant="secondary" onPress={() => onSwap(quest.id)} />
           )}
           {quest.condition.kind === 'session' && onTraining !== undefined && (
             <Button label={PLAY_TEXT.workout.change} variant="secondary" onPress={onTraining} />

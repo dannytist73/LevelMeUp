@@ -64,6 +64,9 @@ export const CHRONICLE_TEXT = {
   best: 'Best',
   shields: 'Shields',
   shieldsOf: '/ {max}',
+  /** Premium pass C1: how a shield is earned, and when the next one comes. */
+  shieldsRule: 'A shield comes with every 7 days of streak, up to {max}, and keeps your streak on a missed day.',
+  shieldsNext: 'Next one at a {n}-day streak.',
   previous: 'Previous month',
   next: 'Next month',
   empty: 'Your chronicle begins today.',

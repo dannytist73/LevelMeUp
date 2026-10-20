@@ -1,6 +1,7 @@
 // The swap sheet (spec §3.5, visual design §4.2; M6b decision 3): pick an open quest (from Today) or start from one (its
 // quest screen), then one of the options the server offered for its slot. The count says how many swaps are left today.
 import { ADJUST_TEXT, FEEDBACK_TEXT, STAT_NAMES, authoredTemplate, fillText, questSummary } from '@levelmeup/content';
+import { swapLimit } from '@levelmeup/rules';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -71,7 +72,7 @@ export function Swap({ questId, onDone, onBack, now = Date.now }: SwapProps) {
   return frame(
     <>
       <Title accessibilityRole="header">{T.title}</Title>
-      <Body>{fillText(T.lead, { left: today.swapsLeft })}</Body>
+      <Body>{fillText(T.lead, { left: today.swapsLeft, total: swapLimit(view.profile.classId, view.character.level) })}</Body>
       {quest === null ? (
         <View style={{ gap: 10 }}>
           <Label>{T.which}</Label>

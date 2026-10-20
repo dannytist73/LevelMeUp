@@ -3,7 +3,7 @@
 // it counts (as Today does); growth leads with its line and shows only the stats that grew. M12: the past readings moved
 // to the Library tab (plan decision 1).
 import { CHRONICLE_TEXT, STAT_NAMES, fillText, growthLine } from '@levelmeup/content';
-import { MAX_SHIELDS, STATS } from '@levelmeup/rules';
+import { MAX_SHIELDS, SHIELD_EVERY_STREAK_DAYS, STATS } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shownStreak } from '../game/today.ts';
@@ -91,6 +91,15 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
             <Tile value={shown!.best} label={C.best} />
             <Tile value={streak.shields} label={C.shields} of={fillText(C.shieldsOf, { max: MAX_SHIELDS })} />
           </View>
+        )}
+        {/* Premium pass C1: how a shield is earned, and when the next one comes (the tile said only how many). */}
+        {streak !== undefined && (
+          <Small testID="shields-rule">
+            {[fillText(C.shieldsRule, { max: MAX_SHIELDS }),
+              ...(streak.shields < MAX_SHIELDS
+                ? [fillText(C.shieldsNext, { n: (Math.floor(shown!.current / SHIELD_EVERY_STREAK_DAYS) + 1) * SHIELD_EVERY_STREAK_DAYS })]
+                : [])].join(' ')}
+          </Small>
         )}
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>

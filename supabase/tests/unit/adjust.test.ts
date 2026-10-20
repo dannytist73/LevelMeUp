@@ -66,6 +66,11 @@ describe('what the phone may offer today (today.ts)', () => {
     expect(dayOffers(rested(), LIBRARY).restAllowed).toBe(false);
   });
 
+  it('says the first day from tomorrow a rest is allowed on (premium pass C1)', () => {
+    expect(dayOffers(at(), LIBRARY).restOpens).toBe(3); // today is day 2: tomorrow is free
+    expect(dayOffers(rested(), LIBRARY).restOpens).toBe(8); // days 1 and 2 rested: day 8 is the first whose week holds one
+  });
+
   it('Stillness and Dawn Ritual for a Monk at levels 5 and 10, while the core quest is open', () => {
     expect(dayOffers(at(monk(0)), LIBRARY).abilities).toEqual([]);
     expect(dayOffers(at(monk(240)), LIBRARY).abilities.map((a) => a.ability)).toEqual(['stillness']);
@@ -85,7 +90,7 @@ describe('what the phone may offer today (today.ts)', () => {
   it('nothing on a closed day; only rest on a day without quests', () => {
     expect(dayOffers(at({}, { status: 'closed', resolution: 'streak_day' }), LIBRARY)).toEqual(NO_OFFERS);
     const s = at();
-    expect(dayOffers({ ...s, instances: s.instances.filter((q) => q.day_id !== '2') }, LIBRARY)).toEqual({ ...NO_OFFERS, restAllowed: true, restTomorrow: true });
+    expect(dayOffers({ ...s, instances: s.instances.filter((q) => q.day_id !== '2') }, LIBRARY)).toEqual({ ...NO_OFFERS, restAllowed: true, restTomorrow: true, restOpens: 3 });
   });
 
   it("the live test's day 1 has an open exercise quest and a swap for another quest (supabase/tests/live)", () => {
