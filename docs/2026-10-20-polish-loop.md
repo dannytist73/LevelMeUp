@@ -68,6 +68,28 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 42 | Pull down on Today to sync; a check-off gives a stamp's click; the check circle fills before the row fades | research §1, §5 | done |
 | 43 | lmu-sync waits for Auth before its first read: run them together (nothing used unless Auth confirms) | perf 4d | done, deployed (v29), live 51/51; no clear gain over the noise (0.5-0.7 s either way) |
 | 44 | Long titles leave one word alone on the last line: balanced line breaks for titles and headings | emulator | done |
+| 45 | Weekly recap: the first open of a new week says how last week went (kind; waits for a pending check-in) | research §4 | done |
+| 46 | Second review: pain hidden during a confirm (fixed, tested), fold not announced (fixed), and 5 minor (fixed; topic pills reverted) | review | done |
+| 47 | Level-up names the class ability it unlocks | emulator | done |
+| 48 | Deck cover: the top bar repeated the title | N9 | done |
+| 49 | Library: five past readings, Show all for the rest | O12 | done |
+
+## Waiting on the owner (proposed, not done)
+
+1. **Change body limits after onboarding** (knees, lower back, shoulders, wrists). Today a player who hurts a knee in
+   week 3 can only report pain day by day; the limit that shapes every workout can't be added. It needs the `adjust` SQL
+   function to accept a limits change and replan the day, so a migration. Migrations must be numbered without gaps, and
+   0020+ is the studio session's (M15), so the number has to be agreed first. Recommended next: yes, as M18.
+2. **Story Deck drag on the UI thread.** Dragging a card runs on the JS thread (PanResponder), so it can stutter while a
+   sync lands. The fix is `react-native-gesture-handler` (a new native module: a download and a new build). Recommended:
+   yes, with the next native change.
+3. **React Compiler.** Would cut needless redraws app-wide, but several screens read the clock while drawing (timers, the
+   day's end), which the compiler could freeze. Needs those files marked first and a device pass. Recommended: later.
+4. **The Plus offer right after the Reveal** (before the first quest). It doesn't show yet (Plus isn't on sale). Research
+   says most trials start on install day; the UX audit says it costs first-session momentum. Your call when Plus goes on
+   sale.
+5. **"Discard changes?" on Back** in Your game and Training. Not built: Save is now pinned at the bottom, so unsaved
+   changes are visible; a clean guard needs navigation internals.
 
 ## Log
 
@@ -102,3 +124,8 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 02:17 | 42 | Pull to refresh; check-off haptic | emulator (spinner and a logged sync) |
 | 02:19 | 43 | Auth and first read together | server unit 585/585; deployed v29; live 51/51 |
 | 02:22 | 42, 44 | Check circle fills; balanced title breaks | emulator (Library title) |
+| 02:27 | 45 | Weekly recap | app tests (week.test, Today) ; emulator shows "Last week: 1 of 5 days cleared." |
+| 02:29 | 46 | Second review fixes | app tests 1184/1184 (new pain-confirm and fold tests) |
+| 02:32 | 47 | Ability on level-up | emulator (motion bench: "New ability: Second Wind") |
+| 02:35 | QA | Accessibility sweep: every tappable on the tabs and screens has a label; Remove animations on: all works | emulator |
+| 02:40 | 48, 49 | Deck cover title; past readings | app tests |
