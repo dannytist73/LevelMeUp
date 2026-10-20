@@ -792,8 +792,15 @@ APK.
 | 12 | Character's stats in two columns; Chronicle's day cells rounded; an empty Codex says so; the current class is readable on Choose your class. | **Pass** 2026-10-20, emulator. Find X9: |
 | 13 | The check-in keeps Answer at the bottom; Delete my character makes "Keep my character" the bright button. | **Pass** 2026-10-20, emulator (check-in opened, not answered). Delete not opened. Find X9: |
 | 14 | Opening the app in the morning: no blank screen after the splash (the account is read after the first screen). | Unit tests; not measurable on the emulator. Find X9: |
-| 15 | The first open of a new week (after any check-in is answered): one System note, "Last week: N of M days cleared … A new week starts today."; Got it hides it until next week. | **Pass** 2026-10-20, emulator (Vera's Monday showed "Last week: 1 of 5 days cleared…"; now held while her check-in waits). Not dismissed. Find X9: |
+| 15 | The first open of a new week (after any check-in is answered): one System note, "Last week: N of M days cleared … A new week has begun."; Got it hides it until next week. | **Pass** 2026-10-20, emulator (Vera's Monday showed "Last week: 1 of 5 days cleared…"; now held while her check-in waits). Not dismissed. Find X9: |
 | 16 | Level 5 and level 10: the level-up names the class ability it unlocks, with what it does. | **Pass** 2026-10-20, emulator (motion bench: "New ability: Second Wind"). Find X9: |
 | 17 | Change today → Rest day (or Hard day): "I felt pain" stays visible above the confirmation. | **Pass** 2026-10-20, emulator (opened, then Not now). Find X9: |
 | 18 | Tabs: Character opens with the player's name as its title, Chronicle with "Chronicle", like Today and Library. | **Pass** 2026-10-20, emulator. Find X9: |
 | 19 | With "Remove animations" on (Android accessibility): tabs switch at once, folds open without motion, nothing hangs. | **Pass** 2026-10-20, emulator. Find X9: |
+| 20 | Pull down on Library, Character or Chronicle: the same spinner as Today, then a sync. | **Pass** 2026-10-20, emulator (Library: spinner, a sync logged). Find X9: |
+| 21 | Scroll a tab down, then tap that same tab: it goes back to its top. Tapping another tab still switches. | **Pass** 2026-10-20, emulator (Character). Find X9: |
+| 22 | Settings → Notifications: the switches in one card, each reminder's time under its own switch. | **Pass** 2026-10-20, emulator (look only). Find X9: |
+| 23 | Your look: locked colours and frames wear the same "Plus" pill. Your game, Training, Scholar's Path and Vanish show their name in the top bar. | **Pass** 2026-10-20, emulator. Find X9: |
+| 24 | Character: each stat's rank starts the line under its bar, and the two columns line up (also on a small phone). | **Pass** 2026-10-20, emulator (411 dp and 360 dp). Find X9: |
+| 25 | A new character's "Your day" step: Wake up and Sleep stacked, each time on one line. | **Pass** 2026-10-20, emulator (the step opened directly; nothing chosen). Find X9 (next new character): |
+| 26 | The Codex with many kept lessons opens at once and scrolls without stutter. | Emulator: a 200-lesson developer preview scrolled; smoothness only on the phone. Find X9: |
