@@ -8,8 +8,8 @@ describe('dates on screen', () => {
   });
 
   it('shows a 24-hour clock time in the day\'s zone', () => {
-    expect(clockTime('2026-10-09T23:40:00.000Z', 'Asia/Manila')).toBe('07:40');
-    expect(clockTime('2026-10-10T04:05:00.000Z', 'America/New_York')).toBe('00:05');
+    expect(clockTime('2026-10-09T23:40:00.000Z', 'Asia/Manila')).toBe('7:40 AM');
+    expect(clockTime('2026-10-10T04:05:00.000Z', 'America/New_York')).toBe('12:05 AM');
   });
 });
 

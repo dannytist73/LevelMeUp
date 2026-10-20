@@ -19,7 +19,8 @@ export function dayLabel(date: string): string {
 
 export function clockTime(iso: string, timeZone: string): string {
   const p = localParts(timeZone, Date.parse(iso));
-  return `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+  // M17 (design critique): the 12-hour clock the settings and onboarding use ("7:40 AM"); it was "07:40" here alone.
+  return clockLabel(p.hour * 60 + p.minute);
 }
 
 /** "7:00 AM" for minutes after midnight (the Rhythm board's clock). */

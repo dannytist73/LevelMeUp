@@ -86,9 +86,9 @@ describe('Today', () => {
     expect(screen.getByText('2 left')).toBeTruthy(); // side quest 2 and the reading
     expect(screen.getByText(authoredTemplate(side2.templateId).voice.system.title)).toBeTruthy();
     expect(screen.getByText(`+${xpOf(side2)}`)).toBeTruthy();
-    expect(screen.queryByText(`${STAT_NAMES[side1.stat]} · cleared 21:00`)).toBeNull();
+    expect(screen.queryByText(`${STAT_NAMES[side1.stat]} · cleared 9:00 PM`)).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Done today · 1' }));
-    expect(screen.getByText(`${STAT_NAMES[side1.stat]} · cleared 21:00`)).toBeTruthy();
+    expect(screen.getByText(`${STAT_NAMES[side1.stat]} · cleared 9:00 PM`)).toBeTruthy();
     expect(screen.getByText(`Cleared +${xpOf(side1)}`)).toBeTruthy(); // M10c: a quiet line, not a stamp
   });
 
@@ -247,7 +247,7 @@ describe('Character (M6d)', () => {
   it('offline: shows when it last synced', async () => {
     await render(withStore(testStore({ view: project(SERVER, []), status: 'offline', unreachable: true, lastSyncedAt: Date.UTC(2026, 9, 10, 12, 30) }),
       <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
-    expect(screen.getByText('Last synced 20:30')).toBeTruthy();
+    expect(screen.getByText('Last synced 8:30 PM')).toBeTruthy();
   });
 });
 
@@ -355,7 +355,7 @@ describe('Settings', () => {
     const onTraining = jest.fn();
     await render(withStore(store, <Settings onBack={onBack} onDeveloper={() => {}} onTraining={onTraining} onGame={() => {}} onDelete={() => {}} version="0.1.0" deviceZone="Asia/Manila" />));
     expect(screen.getByText('Playing as a guest.')).toBeTruthy();
-    expect(screen.getByText('Last synced 20:30')).toBeTruthy();
+    expect(screen.getByText('Last synced 8:30 PM')).toBeTruthy();
     expect(screen.getByText('2 waiting')).toBeTruthy();
     expect(screen.getByText(ABOUT_TEXT.notMedical)).toBeTruthy();
     expect(screen.getByText('Version 0.1.0')).toBeTruthy();
