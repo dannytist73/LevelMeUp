@@ -92,7 +92,7 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
   return (
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
       {/* M17 (UX audit, old finding 10): Back like every other screen, not only "Not now" at the very end. */}
-      <TopBar onBack={onDone} />
+      <TopBar onBack={onDone} disabled={busy} />
       <Title accessibilityRole="header">{T.title}</Title>
       <NarrationBox>{T.lead}</NarrationBox>
       <View style={{ gap: 10 }}>

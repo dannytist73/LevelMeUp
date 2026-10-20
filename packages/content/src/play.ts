@@ -61,6 +61,9 @@ export const PLAY_TEXT = {
     /** M17: a finished exercise, folded to one line: its sets as logged. */
     doneMove: 'Done · {sets}',
     reopen: 'Change',
+    /** M17 (review): what a screen reader hears as a finished exercise folds. */
+    doneAnnounce: '{name} done.',
+    doneNext: '{name} done. Next: {next}.',
     log: 'Log workout',
     change: 'Change equipment or program',
     replanning: 'Your new training setup is on its way. Log this workout once it syncs.',
@@ -130,6 +133,14 @@ export const TODAY_TEXT = {
   counts: 'today counts',
   shields: '{n} of {max} shields',
   /** M17: the level on the XP bar's line, in Today's header. */
+  /** M17: the first open of a new week: how last week went, never what was missed. */
+  week: {
+    cleared: 'Last week: {n} of {days} days cleared{rest}. A new week starts today.',
+    clearedOne: 'Last week: 1 of {days} days cleared{rest}. A new week starts today.',
+    none: 'A new week starts today. One cleared quest is enough to begin.',
+    rest: ', {n} rested',
+    restOne: ', 1 rested',
+  },
   levelLine: 'Lv {level} · {xp} / {max} XP',
   begin: 'Begin',
   cleared: 'Cleared +{xp}',

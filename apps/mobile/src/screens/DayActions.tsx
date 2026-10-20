@@ -112,10 +112,13 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
   const later = view.offline ? <Small tone="chalk">{OFFLINE_TEXT.later}</Small> : null;
   const canVanish = abilityUnlocked('vanish', view.profile.classId, view.character.level);
 
+  const pain = onPain === undefined ? null : <Button label={T.pain.open} variant="secondary" onPress={onPain} style={{ flexGrow: 1 }} />;
   if (confirm !== null) {
     const panel = panelFor(confirm, today, view.lighterPlan, counts);
     return (
       <View style={{ gap: 12 }}>
+        {/* Review: pain stays in reach while a change is being confirmed (it had been under the card, always shown). */}
+        {pain !== null && <View style={{ flexDirection: 'row' }}>{pain}</View>}
         <NarrationBox>{panel.text}</NarrationBox>
         {panel.sends.map((send) => (
           <Button
@@ -131,7 +134,6 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
       </View>
     );
   }
-  const pain = onPain === undefined ? null : <Button label={T.pain.open} variant="secondary" onPress={onPain} style={{ flexGrow: 1 }} />;
   if (!canSwap && !canHardDay && !canRest && today.abilities.length === 0 && !canVanish) {
     return pain === null ? later : <View style={{ gap: 12 }}>{later}<View style={{ flexDirection: 'row' }}>{pain}</View></View>;
   }

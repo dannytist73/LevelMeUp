@@ -31,6 +31,22 @@ const actions = (view = shown(), enqueue = jest.fn(async () => {}), onSwap = jes
 const openOptions = () => fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.change }));
 
 describe("Today's adjustments (M6b)", () => {
+  it('M17 (review): "I felt pain" stays in reach while a change is confirmed, and when there is nothing to change', async () => {
+    const onPain = jest.fn();
+    await render(<DayActions view={shown()} enqueue={jest.fn(async () => {})} onSwap={jest.fn()} onVanish={jest.fn()} onPain={onPain} />);
+    expect(screen.getByRole('button', { name: A.pain.open })).toBeTruthy();
+    await openOptions();
+    await fireEvent.press(screen.getByRole('button', { name: A.day.rest }));
+    expect(screen.getByRole('button', { name: A.rest.confirm })).toBeTruthy(); // the confirm panel is open
+    await fireEvent.press(screen.getByRole('button', { name: A.pain.open }));
+    expect(onPain).toHaveBeenCalledTimes(1);
+    await screen.unmount();
+    const offline = { ...shown(), offline: true, today: { ...shown().today!, swapsLeft: 0 } };
+    await render(<DayActions view={offline} enqueue={jest.fn(async () => {})} onSwap={jest.fn()} onVanish={jest.fn()} onPain={onPain} />);
+    expect(screen.queryByRole('button', { name: TODAY_TEXT.change })).toBeNull(); // nothing to change offline
+    expect(screen.getByRole('button', { name: A.pain.open })).toBeTruthy();
+  });
+
   it('rest offers today and tomorrow, each within the limit; tomorrow is sent as such (M7b decision 5)', async () => {
     const enqueue = jest.fn(async () => {});
     await render(actions(shown(), enqueue));

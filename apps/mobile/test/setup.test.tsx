@@ -53,6 +53,19 @@ describe('on Today', () => {
     return { store, props };
   }
 
+  it('the first open of a new week says how last week went, kindly, once (M17)', async () => {
+    const calendar = [
+      { dayNumber: 9, date: '2026-10-19', mark: 'open' }, { dayNumber: 8, date: '2026-10-18', mark: 'cleared' },
+      { dayNumber: 7, date: '2026-10-17', mark: 'rest' }, { dayNumber: 6, date: '2026-10-16', mark: 'none' },
+    ] as ServerState['calendar'];
+    const store = testStore({ view: project({ ...serverState(['core']), calendar }, []), offers: [] });
+    await render(withStore(store, <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
+      onTraining={jest.fn()} onCheckin={jest.fn()} now={() => NOW} />));
+    expect(screen.getByLabelText('System: Last week: 1 of 3 days cleared, 1 rested. A new week starts today.')).toBeTruthy();
+    await fireEvent.press(within(screen.getByTestId('notice-strip')).getByRole('button', { name: 'Got it' }));
+    expect(store.getState().markOffer).toHaveBeenCalledWith('week:2026-10-19');
+  });
+
   it('shows one card in the notice strip; its button marks it and goes there', async () => {
     const { store, props } = await renderToday(['setup', 'setup:save']);
     expect(screen.getByLabelText(`System: ${SETUP_TEXT.voice.line}`)).toBeTruthy();

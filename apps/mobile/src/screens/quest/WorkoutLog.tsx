@@ -8,7 +8,7 @@
 import { PLAY_TEXT, authoredMove, fillText, moveTarget, progressLine } from '@levelmeup/content';
 import type { SessionMove } from '@levelmeup/rules';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { AccessibilityInfo, View } from 'react-native';
 import { moveKey, setsLine, startFromLast } from '../../quest/lastSets.ts';
 import type { LastSets } from '../../quest/lastSets.ts';
 import { MAX_REPS, moveUnit, sessionPayload, sessionValid } from '../../quest/payload.ts';
@@ -51,8 +51,17 @@ export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now
     const marking = done[key] !== true;
     const next = { ...done, [key]: marking };
     setDone(next);
-    // Its last set done: the exercise folds, and the next one's steps open if this one's were.
-    if (marking && complete(m, next) && open === m) setOpen(m + 1 < moves.length ? m + 1 : null);
+    // Its last set done: the exercise folds (again, if it was opened to change a set), the next unfinished one's steps
+    // open if this one's were, and a screen reader hears both, since the checkbox it was on is gone (review).
+    if (marking && complete(m, next)) {
+      const after = moves.findIndex((_, i) => i > m && !complete(i, next));
+      if (open === m) setOpen(after === -1 ? null : after);
+      setReopened((r) => ({ ...r, [m]: false }));
+      const name = authoredMove(moves[m]!.move).name;
+      AccessibilityInfo.announceForAccessibility(after === -1
+        ? fillText(T.doneAnnounce, { name })
+        : fillText(T.doneNext, { name, next: authoredMove(moves[after]!.move).name }));
+    }
     const lastSet = m === moves.length - 1 && s === sets[m]!.length - 1;
     if (marking && !lastSet) {
       setRestMove(m);

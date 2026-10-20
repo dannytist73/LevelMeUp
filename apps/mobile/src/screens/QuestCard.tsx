@@ -13,7 +13,6 @@ import { View } from 'react-native';
 import type { QuestView } from '../game/types.ts';
 import { clockTime } from '../lib/dates.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
-import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { QuestArt } from '../ui/QuestArt.tsx';
@@ -70,13 +69,14 @@ export type UpNextProps = {
   onGo: () => void;
   /** The core quest's picture, or null for the ink fallback (M6a decision 10). */
   artUri: string | null;
-  /** An open exercise core quest: "I felt pain" under the card (board D1). */
-  onPain?: () => void;
   resting?: boolean;
 };
 
-/** Up next (board R3-1): the quest to do now. The whole card is one button; "I felt pain" sits beside it, never inside. */
-export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, resting = false }: UpNextProps) {
+/**
+ * Up next (board R3-1): the quest to do now. The whole card is one button; "I felt pain" is never inside it (M17: it sits
+ * under it, beside Change today, in DayActions).
+ */
+export function UpNextCard({ quest, voice, waiting, onGo, artUri, resting = false }: UpNextProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
   const xp = questXp(quest);
@@ -114,7 +114,6 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, onPain, restin
           </View>
         </SlamIn>
       </Tap>
-      {onPain !== undefined && <Button label={ADJUST_TEXT.pain.open} variant="secondary" onPress={onPain} style={{ alignSelf: 'flex-start' }} />}
     </View>
   );
 }

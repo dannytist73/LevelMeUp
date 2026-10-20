@@ -20,6 +20,7 @@ import { streakNote } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
 import { marked, sealedQuest, shadowHold } from '../game/pact.ts';
 import { programOffered, setupCard } from '../game/setup.ts';
+import { weekRecap } from '../game/week.ts';
 import type { SetupCard } from '../game/setup.ts';
 import type { ShadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
@@ -221,6 +222,14 @@ export function Today({
       { label: T.offerGo, onPress: () => { void markOffer('program'); onTraining(); } },
       { label: ADJUST_TEXT.day.notNow, onPress: () => void markOffer('program') },
     ] });
+  }
+  // M17: the first open of a new week, how last week went (game/week.ts), after anything else waiting.
+  const recap = view === null || !accountKnown ? null : weekRecap(view.calendar, offers);
+  if (recap !== null) {
+    const W = TODAY_TEXT.week;
+    const rest = recap.rested === 0 ? '' : recap.rested === 1 ? W.restOne : fillText(W.rest, { n: recap.rested });
+    const text = recap.cleared === 0 ? W.none : fillText(recap.cleared === 1 ? W.clearedOne : W.cleared, { n: recap.cleared, days: recap.days, rest });
+    strip.push({ key: recap.key, text, actions: [{ label: TODAY_TEXT.gotIt, onPress: () => void markOffer(recap.key) }] });
   }
   if (plusNote !== null && view !== null) {
     const P = PLUS_TEXT;

@@ -3,6 +3,7 @@ import {
 } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent, QuestView, ServerState } from '../src/game/types.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
@@ -509,6 +510,15 @@ describe('a workout (M6c)', () => {
     expect(screen.getByText(/1\. Rest on your forearms/)).toBeTruthy(); // the plank's steps opened
     await fireEvent.press(screen.getByRole('button', { name: `Goblet squat. Done · 10 · 10. ${PLAY_TEXT.workout.reopen}` }));
     expect(screen.getByRole('button', { name: 'Goblet squat, set 1, one more' })).toBeTruthy();
+  });
+
+  it('a screen reader hears an exercise fold and what is next (review)', async () => {
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    await render(<WorkoutLog moves={moves} disabled={false} onClaim={jest.fn()} />);
+    await fireEvent.press(screen.getAllByRole('checkbox', { name: 'Set 1 done' })[0]!);
+    await fireEvent.press(screen.getAllByRole('checkbox', { name: 'Set 2 done' })[0]!);
+    expect(announce).toHaveBeenLastCalledWith('Goblet squat done. Next: Forearm plank.');
+    announce.mockRestore();
   });
 
   it('logs every set, starting at the bottom of each range', async () => {

@@ -107,8 +107,14 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
         {/* M17 (UX audit O8): loading looks like loading, not like an empty library. */}
         {view === null && <Skeleton><Bone height={16} width="40%" /><Bone height={180} round={radius.card} /><Bone height={72} round={radius.card} /></Skeleton>}
         {view !== null && <>
-        {/* M17: the card's own line says "Today's reading", so no heading repeats it above. */}
-        {todays}
+        {/* M17: the unread card's own line says "Today's reading", so only the waiting note and the cleared row (review)
+            keep the heading above them. */}
+        {todays !== null && (quest !== null && open && article !== null && quest.completedAt === null ? todays : (
+          <View style={{ gap: 10 }}>
+            <SectionTitle title={L.today} />
+            {todays}
+          </View>
+        ))}
 
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12 }}>
