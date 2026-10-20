@@ -37,6 +37,7 @@ export async function createAppStore() {
     ensureSession: (allowNewGuest) =>
       ensureSession(supabase, allowNewGuest, () => storageWorks(sessionStore, Crypto.randomUUID(), freshSessionStore())),
     sessionAlive: () => sessionAlive(supabase),
+    ...(__DEV__ ? { syncLog: (line: string) => console.info(line) } : {}),
     signOut: async () => {
       await supabase.auth.signOut({ scope: 'local' });
     },

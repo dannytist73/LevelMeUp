@@ -63,6 +63,8 @@ export type GameDeps = {
   /** A guest sign-in; a new guest only when `allowNewGuest()` says so at that moment: the onboarding's analysis, on an empty phone. */
   ensureSession: (allowNewGuest: () => boolean) => Promise<SessionState>;
   sessionAlive: () => Promise<boolean>;
+  /** M17: each sync round's time, in development builds (the app's store passes Metro's log). */
+  syncLog?: (line: string) => void;
   signOut: () => Promise<void>;
   timeZone: () => string;
   now: () => number;
@@ -478,6 +480,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       };
       return syncOnce({
         local, api: deps.api, timeZone: deps.timeZone, now: deps.now, sessionAlive: deps.sessionAlive, wanted: () => [...wanted],
+        ...(deps.syncLog === undefined ? {} : { log: deps.syncLog }),
       });
     };
 

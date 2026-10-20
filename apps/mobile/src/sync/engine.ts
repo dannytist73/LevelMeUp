@@ -39,6 +39,8 @@ export type SyncDeps = {
   sessionAlive: () => Promise<boolean>;
   /** M8b: past readings a screen asked for (decision 7), sent until a request of the run succeeds. */
   wanted?: () => readonly string[];
+  /** M17: told how long each round took (development builds pass Metro's log). */
+  log?: (line: string) => void;
 };
 
 function utf8Bytes(text: string): number {
@@ -74,8 +76,8 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
     const events = fitBody(await deps.local.pending(limit), timeZone, { have, want });
     const sentAt = Date.now();
     const call = await deps.api.sync({ timeZone, events, have, want });
-    // M17: how long a round takes, in development builds only (Metro's log), to see what the server work costs.
-    if (typeof __DEV__ !== 'undefined' && __DEV__) console.info(`[sync] ${events.length} events, ${Date.now() - sentAt} ms`);
+    // M17: how long a round takes, to see what the server work costs.
+    deps.log?.(`[sync] ${events.length} events, ${Date.now() - sentAt} ms`);
     if (!call.ok) {
       if (call.code === 'network') return { kind: 'offline' };
       if (call.status === 413 && events.length > 1) {
