@@ -235,3 +235,4 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 | 04:41 | 74, 75 | Leftovers sweep; sign-in link | onboarding tests 29/29; emulator (welcome, look only) |
 | 04:56 | 76-78 | Kept lessons' readings kept; log drafts; vow from Character | tests first for each (store, quest, clarity); app 1197/1197, content 1171/1171; emulator: Character (look only) |
 | 05:04 | 79 | Seventh review fixes | app 1199/1199, content 1171/1171 |
+| 05:16 | — | 0.9.0 preview APK built from 8e8e03f (`apps/mobile/dist/levelmeup-0.9.0-preview.apk`, version code 11); installed over the dev build (data kept): Day 7, every tab, Settings (Version 0.9.0, account card), Notifications, Your look, Codex, Change your vow; a display-size change keeps Today (release never reloads the code); no crash in the log. Cold start 0.8-2.1 s to first frame, noisy (the emulator was short of memory after a long session): measure on the phone | — |
