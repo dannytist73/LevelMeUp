@@ -7,7 +7,7 @@ describe('dates on screen', () => {
     expect(dayLabel('2027-01-01')).toBe('Friday, 1 Jan');
   });
 
-  it('shows a 24-hour clock time in the day\'s zone', () => {
+  it('shows a 12-hour clock time in the day\'s zone', () => {
     expect(clockTime('2026-10-09T23:40:00.000Z', 'Asia/Manila')).toBe('7:40 AM');
     expect(clockTime('2026-10-10T04:05:00.000Z', 'America/New_York')).toBe('12:05 AM');
   });

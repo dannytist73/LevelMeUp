@@ -679,7 +679,14 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         setBuzzing(haptics);
         const sounds = soundsText !== 'off';
         setSounding(sounds);
-        set({ notify: readNotify(notifyText), permission, haptics, sounds });
+        // M17 (review): the phone's own records first, before the snapshot that can fail; Today's cards read `offers` once
+        // the account is known, and an answered card must stay answered.
+        set({
+          notify: readNotify(notifyText), permission, haptics, sounds, art: readKeptArt(keptArt), vow: readVow(vowText),
+          trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null, shadowSeen: readSeen(shadow),
+          portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
+          offers: readOffers(offersText), theme: asTheme(themeText), frame: asFrame(frameText),
+        });
         notifyLoaded = true;
         try {
           await refresh();
@@ -691,12 +698,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         const holding = get().cached !== null;
         // A character already exists, so the onboarding is over: its draft (a name, goals, limits) isn't kept (M5 review).
         if (holding && saved !== null) await deps.kv.removeItem(DRAFT_KEY).catch(() => {});
-        set({
-          draft: holding ? NEW_DRAFT : restoreDraft(saved), phase: holding ? 'ready' : 'loading', art: readKeptArt(keptArt),
-          vow: readVow(vowText), trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null,
-          shadowSeen: readSeen(shadow), portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
-          offers: readOffers(offersText), theme: asTheme(themeText), frame: asFrame(frameText),
-        });
+        set({ draft: holding ? NEW_DRAFT : restoreDraft(saved), phase: holding ? 'ready' : 'loading' });
         await scheduler.request();
         void checkPlus();
       },

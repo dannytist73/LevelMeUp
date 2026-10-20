@@ -61,7 +61,7 @@ export function Achievements({ earned, progress }: { earned: readonly string[]; 
         // M17 (design critique): "Within reach" as a small heading with room above it; as a caption it read as a footnote
         // to the stamps above.
         <View style={{ gap: 10, marginTop: 8 }}>
-          <Label>{T.next}</Label>
+          <Label accessibilityRole="header">{T.next}</Label>
           {reach.map((r) => (
             <View key={r.achievement.id} accessible accessibilityLabel={`${r.achievement.name}. ${r.achievement.description} ${r.line}`}
               style={{ gap: 6, padding: 14, borderRadius: radius.control, backgroundColor: colors.panel }}>

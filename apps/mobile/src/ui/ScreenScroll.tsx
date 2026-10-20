@@ -58,7 +58,7 @@ export function ScreenScroll({ children, contentContainerStyle, refresh, tab }: 
 }
 
 /** M17: a screen that is one long list (the Codex holds up to 200 lessons): only the rows near the screen are drawn, so
- * it opens at once however full it is. `header` scrolls with the rows; `space` is the gap between rows. */
+ * it opens at once however full it is. `header` scrolls with the rows (its parts 16 dp apart); `space` is the gap between rows. */
 export function ScreenList<T>({ data, keyOf, renderRow, header, space, contentContainerStyle }: {
   data: readonly T[];
   keyOf: (item: T) => string;
@@ -79,7 +79,7 @@ export function ScreenList<T>({ data, keyOf, renderRow, header, space, contentCo
         data={data}
         keyExtractor={keyOf}
         renderItem={renderItem}
-        ListHeaderComponent={<View style={{ gap: space, marginBottom: data.length > 0 ? space : 0 }}>{header}</View>}
+        ListHeaderComponent={<View style={{ gap: 16, marginBottom: data.length > 0 ? space : 0 }}>{header}</View>}
         contentContainerStyle={contentContainerStyle}
         onScroll={onScroll}
         scrollEventThrottle={16}

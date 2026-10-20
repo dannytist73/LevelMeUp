@@ -49,7 +49,7 @@ export default function Kit() {
           <Body weight="medium">M PLUS Rounded medium: 3 sets of 8 · about 12 min</Body>
           <Body weight="bold">M PLUS Rounded bold: Walk 20 minutes</Body>
           <Small>Small: Unlocked: you cleared incline push-ups 3 times this week.</Small>
-          <Meta>Meta: Vitality · cleared 07:40</Meta>
+          <Meta>Meta: Vitality · cleared 7:40 AM</Meta>
           <Caption>Caption: 62 / 130 XP — “quotes”, ellipsis…, × and →</Caption>
         </View>
 
@@ -87,7 +87,7 @@ export default function Kit() {
           </NightCard>
           <NightCard quiet>
             <Body weight="bold" tone="ashLight">Walk 20 minutes</Body>
-            <Meta>Vitality · cleared 07:40</Meta>
+            <Meta>Vitality · cleared 7:40 AM</Meta>
           </NightCard>
           <View style={{ gap: 6 }}>
             <XpBar value={62} max={130} label="Level 6 progress" />

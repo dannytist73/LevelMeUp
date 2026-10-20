@@ -13,7 +13,7 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, createGameStore,
+  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, SIGN_IN_LOST_TEXT, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, OFFERS_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { NOT_PLUS } from '../src/plus/plus.ts';
@@ -114,7 +114,7 @@ const lastAllowNewGuest = (deps: GameDeps) => ((deps.ensureSession as jest.Mock)
 
 describe('the game store', () => {
   it('learns the account even when the first read of the local records fails (M17: Settings waited forever)', async () => {
-    const { store, local } = await setup([{ ok: false, status: 0, code: 'network' }]);
+    const { store, local, kv } = await setup([{ ok: false, status: 0, code: 'network' }]);
     const real = local.snapshot.bind(local);
     let failed = false;
     local.snapshot = async () => {
@@ -122,9 +122,13 @@ describe('the game store', () => {
       failed = true;
       throw new Error('cannot start a transaction within a transaction');
     };
+    kv.set(OFFERS_KEY, JSON.stringify(['setup', 'week:2026-10-19']));
+    kv.set(VOW_KEY, 'I will rise.');
     await expect(store.getState().boot()).rejects.toThrow('transaction');
     await settle();
     expect(store.getState()).toMatchObject({ accountKnown: true, account: { kind: 'guest' } });
+    // Review: the phone's own records are read before the snapshot, so the cards already answered stay answered.
+    expect(store.getState()).toMatchObject({ offers: ['setup', 'week:2026-10-19'], vow: 'I will rise.' });
   });
 
   it('shows the cached state before the network answers', async () => {

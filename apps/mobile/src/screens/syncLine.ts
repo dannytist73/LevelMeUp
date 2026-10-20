@@ -24,7 +24,7 @@ export function staleSince(s: { unreachable: boolean; lastSyncedAt: number | nul
   return s.unreachable ? s.lastSyncedAt : undefined;
 }
 
-/** "Last synced 07:40" while the phone can't reach the server (Character, Chronicle, Settings). */
+/** "Last synced 7:40 AM" while the phone can't reach the server (Character, Chronicle, Settings). */
 export function lastSynced(lastSyncedAt: number | null, timeZone: string): string {
   return lastSyncedAt === null ? 'Not synced yet' : `Last synced ${clockTime(new Date(lastSyncedAt).toISOString(), timeZone)}`;
 }

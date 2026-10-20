@@ -26,8 +26,15 @@ export function RhythmStep({ onNavigate, onBack }: StepProps) {
   return (
     <QuestionFrame step="rhythm" line={T.line} canContinue={complete(draft, 'rhythm')} onContinue={() => onNavigate(nextPath(draft, 'rhythm'))} onBack={onBack}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-        <TimeStepper label={T.wake} minutes={draft.wake} onChange={(wake) => editDraft({ wake })} />
-        <TimeStepper label={T.sleep} minutes={draft.sleep} onChange={(sleep) => editDraft({ sleep })} />
+        {/* M17: each wide enough for "11:00 PM" on one line between its buttons, so the two stack on a phone; at 150 dp
+            side by side the time broke onto two lines ("7:00 / AM") on a 411 dp phone. (Review: the basis lives on this
+            row's items; on the stepper itself it would be a height in a column.) */}
+        <View style={{ flexGrow: 1, flexBasis: 220 }}>
+          <TimeStepper label={T.wake} minutes={draft.wake} onChange={(wake) => editDraft({ wake })} />
+        </View>
+        <View style={{ flexGrow: 1, flexBasis: 220 }}>
+          <TimeStepper label={T.sleep} minutes={draft.sleep} onChange={(sleep) => editDraft({ sleep })} />
+        </View>
       </View>
       {draft.sleep !== draft.wake && <Small>{boundaryLine(clockLabel(boundaryOf(draft)))}</Small>}
       <View style={{ gap: 12 }}>

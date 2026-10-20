@@ -1,4 +1,4 @@
-// Dates as the boards show them ("Saturday, 10 Oct", "07:40"), in the quest day's own zone. Built on the rules' localParts
+// Dates as the boards show them ("Saturday, 10 Oct", "7:40 AM"), in the quest day's own zone. Built on the rules' localParts
 // with fixed English names, so they never depend on the phone's language or on Hermes's locale data. M12 (audit 20):
 // sentence case everywhere, as Lantern's labels are.
 import { localParts } from '@levelmeup/rules';
