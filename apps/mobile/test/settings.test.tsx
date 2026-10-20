@@ -30,6 +30,14 @@ describe('Your game (M7b decision 2)', () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it('says when it has unsaved changes, so Back can ask first (M17)', async () => {
+    const onDirty = jest.fn();
+    await render(withStore(testStore({ view: project(adjustState(), []) }), <GameSettings onDone={jest.fn()} onBack={jest.fn()} onDirty={onDirty} />));
+    expect(onDirty).toHaveBeenLastCalledWith(false);
+    await fireEvent.press(screen.getByText(VOICE_NAMES.questmaster));
+    expect(onDirty).toHaveBeenLastCalledWith(true);
+  });
+
   it('a day end off the half hour starts at the nearest one, so a save is never refused (review)', async () => {
     const view = project(adjustState({ profile: profileRow(undefined, { boundary_minutes: 255 }) }), []);
     const store = testStore({ view });

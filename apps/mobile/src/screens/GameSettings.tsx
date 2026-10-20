@@ -30,9 +30,13 @@ type Picked = { voice: Voice; boundaryMinutes: number; minutesPerDay: number; di
 const onGrid = (minutes: number): number => (Math.round(minutes / 30) * 30) % (24 * 60);
 const KEYS: readonly (keyof Picked)[] = ['voice', 'boundaryMinutes', 'minutesPerDay', 'difficulty'];
 
-export type GameSettingsProps = { onDone: () => void; onBack: () => void };
+export type GameSettingsProps = {
+  onDone: () => void; onBack: () => void;
+  /** M17: told whether there are unsaved changes, so Back can ask first (lib/leaveGuard.ts). */
+  onDirty?: (changed: boolean) => void;
+};
 
-export function GameSettings({ onDone, onBack }: GameSettingsProps) {
+export function GameSettings({ onDone, onBack, onDirty }: GameSettingsProps) {
   const insets = useSafeAreaInsets();
   const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
@@ -52,6 +56,8 @@ export function GameSettings({ onDone, onBack }: GameSettingsProps) {
   const saved: Picked = { voice: p.voice, boundaryMinutes: onGrid(p.boundaryMinutes), minutesPerDay: p.minutesPerDay, difficulty: p.difficulty };
   const picked: Picked = { ...saved, ...edits };
   const changed = KEYS.some((k) => picked[k] !== saved[k]);
+  // Reported as it draws (it only sets the route's flag), so the loading screen above needs no hook of its own.
+  onDirty?.(changed);
   const player = { ...rulesProfile(p, view.character), minutesPerDay: picked.minutesPerDay };
   const noStrength = p.ownProgram && !p.gentleStart && strengthClosed(LIBRARY, player);
   const noWorkouts = !p.ownProgram && !p.gentleStart && !workoutsFit(LIBRARY, player);

@@ -4,6 +4,8 @@
 export const SETTINGS_TEXT = {
   /** M17: the groups of Settings. */
   groups: { plan: 'Your plan', accountability: 'Accountability', feel: 'Look and feel' },
+  /** M17: Back with unsaved changes (Your game, Training). */
+  leave: { title: 'Leave without saving?', line: "Your changes here aren't saved yet.", stay: 'Keep editing', leave: 'Leave' },
   game: {
     /** M10c: the row in Settings, with what's set now as its line. */
     open: 'Daily plan',

@@ -25,9 +25,13 @@ const G = ONBOARDING_TEXT.gear;
 
 const sameItems = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((x) => b.includes(x));
 
-export type TrainingProps = { onDone: () => void; onBack: () => void };
+export type TrainingProps = {
+  onDone: () => void; onBack: () => void;
+  /** M17: told whether there are unsaved changes, so Back can ask first (lib/leaveGuard.ts). */
+  onDirty?: (changed: boolean) => void;
+};
 
-export function Training({ onDone, onBack }: TrainingProps) {
+export function Training({ onDone, onBack, onDirty }: TrainingProps) {
   const insets = useSafeAreaInsets();
   const [view, leave, stay] = useLeavingView();
   const enqueue = useGame((s) => s.enqueue);
@@ -57,6 +61,8 @@ export function Training({ onDone, onBack }: TrainingProps) {
   // The workouts a week matter only on the weekly program (the choice is hidden otherwise).
   const sentDays = weekly ? pickedDays : currentDays;
   const changed = pickedStyle !== p.programStyle || !sameItems(picked, p.equipment) || pickedPlan !== currentPlan || sentDays !== currentDays;
+  // Reported as it draws (it only sets the route's flag), so the loading screen above needs no hook of its own.
+  onDirty?.(changed);
   const fits = workoutsFit(LIBRARY, {
     classId: p.classId, level: view.character.level, goals: p.goals, minutesPerDay: p.minutesPerDay, difficulty: p.difficulty,
     limitations: p.limitations, gentleStart: p.gentleStart, ownProgram: p.ownProgram, equipment: picked, programStyle: pickedStyle,
