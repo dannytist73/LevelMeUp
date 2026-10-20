@@ -103,6 +103,17 @@ describe('the completion panels (spec §3.6)', () => {
     expect(onClaim).toHaveBeenCalledWith({ sets: [8, 7] });
   });
 
+  it('rep log: what was set survives leaving and coming back while the app runs (M17: it reset to the target)', async () => {
+    const reps = { kind: 'reps', sets: 2, reps: 8, perSide: false } as const;
+    const first = await render(<RepLog condition={reps} disabled={false} onClaim={jest.fn()} draftKey="q-1:reps" />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Set 2, one less' }));
+    await fireEvent.press(screen.getAllByRole('checkbox', { name: 'Set 1 done' })[0]!);
+    await first.unmount();
+    await render(<RepLog condition={reps} disabled={false} onClaim={jest.fn()} draftKey="q-1:reps" />);
+    expect(screen.getByLabelText('7 reps')).toBeTruthy();
+    expect(screen.getAllByRole('checkbox', { name: 'Set 1 done' })[0]!.props.accessibilityState).toMatchObject({ checked: true });
+  });
+
   it('rep log for a hold counts seconds per side', async () => {
     await render(<RepLog condition={{ kind: 'hold', sets: 1, seconds: 30, perSide: true }} disabled={false} onClaim={jest.fn()} />);
     expect(screen.getByLabelText('30 seconds per side')).toBeTruthy();
@@ -498,6 +509,20 @@ describe('a workout (M6c)', () => {
     await fireEvent.press(screen.getByRole('button', { name: `${PLAY_TEXT.workout.how}: Forearm plank` })); // named for screen readers (review)
     expect(screen.getByText(/1\. Rest on your forearms/)).toBeTruthy();
     expect(screen.getByText(/hold a few seconds longer/)).toBeTruthy();
+  });
+
+  it('the sets and ticks survive leaving and coming back while the app runs; another quest starts fresh (M17)', async () => {
+    const first = await render(<WorkoutLog moves={moves} disabled={false} onClaim={jest.fn()} draftKey="q-7:workout" />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Goblet squat, set 1, one more' }));
+    await fireEvent.press(screen.getAllByRole('checkbox', { name: 'Set 1 done' })[0]!);
+    await fireEvent.press(screen.getAllByRole('checkbox', { name: 'Set 2 done' })[0]!);
+    expect(screen.getByText('Done · 11 · 10')).toBeTruthy();
+    await first.unmount();
+    const again = await render(<WorkoutLog moves={moves} disabled={false} onClaim={jest.fn()} draftKey="q-7:workout" />);
+    expect(screen.getByText('Done · 11 · 10')).toBeTruthy();
+    await again.unmount();
+    await render(<WorkoutLog moves={moves} disabled={false} onClaim={jest.fn()} draftKey="q-8:workout" />);
+    expect(screen.queryByText(/^Done · /)).toBeNull();
   });
 
   it('a finished exercise folds to one line, the next exercise steps open, and a tap opens it again (M17)', async () => {

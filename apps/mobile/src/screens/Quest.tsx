@@ -296,12 +296,12 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
           </View>
         )}
         <WorkoutLog key={JSON.stringify(quest.condition)} moves={quest.condition.moves} disabled={busy || replanning}
-          onClaim={(payload) => void claim(payload)} last={lastSets} now={now} />
+          onClaim={(payload) => void claim(payload)} last={lastSets} now={now} draftKey={`${quest.id}:${JSON.stringify(quest.condition)}`} />
       </View>
     );
   } else if (quest.completion === 'reps') {
     panel = <RepLog condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)}
-      last={lastSets[questKey(quest.templateId)] ?? null} now={now} />;
+      last={lastSets[questKey(quest.templateId)] ?? null} now={now} draftKey={`${quest.id}:${JSON.stringify(quest.condition)}`} />;
   } else if (quest.completion === 'text') {
     panel = <SentenceLog disabled={busy} onClaim={(payload) => void claim(payload)} />;
   } else {

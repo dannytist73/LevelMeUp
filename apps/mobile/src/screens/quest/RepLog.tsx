@@ -3,7 +3,7 @@
 // as a line, and a Done check on each set that starts the rest (decisions 7–8).
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import type { Condition } from '@levelmeup/rules';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { setsLine } from '../../quest/lastSets.ts';
 import { MAX_REPS, MAX_SETS, repUnit, repsPayload, repsValid, startingSets } from '../../quest/payload.ts';
@@ -13,6 +13,7 @@ import { Button } from '../../ui/Button.tsx';
 import { Tap } from '../../ui/Tap.tsx';
 import { Caption, Heading, Label, Small } from '../../ui/Text.tsx';
 import { ClaimButton } from './ClaimBar.tsx';
+import { keepLogDraft, logDraft } from './logDrafts.ts';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
 
 const T = PLAY_TEXT.reps;
@@ -32,11 +33,14 @@ export type RepLogProps = {
   /** M10c: the sets of the last time this quest was logged on this phone, or null. */
   last?: readonly number[] | null;
   now?: () => number;
+  /** M17: names this log's draft (the quest and its target), kept while the app runs. */
+  draftKey?: string;
 };
 
-export function RepLog({ condition, disabled, onClaim, last = null, now = Date.now }: RepLogProps) {
-  const [sets, setSets] = useState(() => startingSets(condition));
-  const [done, setDone] = useState<boolean[]>([]);
+export function RepLog({ condition, disabled, onClaim, last = null, now = Date.now, draftKey }: RepLogProps) {
+  const [sets, setSets] = useState(() => logDraft<{ sets: number[]; done: boolean[] }>(draftKey)?.sets ?? startingSets(condition));
+  const [done, setDone] = useState<boolean[]>(() => logDraft<{ sets: number[]; done: boolean[] }>(draftKey)?.done ?? []);
+  useEffect(() => keepLogDraft(draftKey, { sets, done }), [draftKey, sets, done]);
   const rest = useRest(now, REPS_REST_MS);
   const unit = repUnit(condition);
   const change = (index: number, by: number) =>

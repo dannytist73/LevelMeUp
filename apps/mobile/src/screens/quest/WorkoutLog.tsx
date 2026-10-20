@@ -7,7 +7,7 @@
 // each card no longer repeats it.
 import { PLAY_TEXT, authoredMove, fillText, moveTarget, progressLine } from '@levelmeup/content';
 import type { SessionMove } from '@levelmeup/rules';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { moveKey, setsLine, startFromLast } from '../../quest/lastSets.ts';
 import type { LastSets } from '../../quest/lastSets.ts';
@@ -21,6 +21,7 @@ import { Tap } from '../../ui/Tap.tsx';
 import { Body, Heading, Label, Small } from '../../ui/Text.tsx';
 import { Step } from './RepLog.tsx';
 import { ClaimButton } from './ClaimBar.tsx';
+import { keepLogDraft, logDraft } from './logDrafts.ts';
 import { RestBar, SetDone, useRest } from './Rest.tsx';
 
 const T = PLAY_TEXT.workout;
@@ -32,11 +33,14 @@ export type WorkoutLogProps = {
   /** M10c: each exercise's sets from the last workout logged on this phone. */
   last?: LastSets;
   now?: () => number;
+  /** M17: names this log's draft (the quest and its exercises), kept while the app runs. */
+  draftKey?: string;
 };
 
-export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now }: WorkoutLogProps) {
-  const [sets, setSets] = useState(() => startFromLast(moves, last));
-  const [done, setDone] = useState<Record<string, boolean>>({});
+export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now, draftKey }: WorkoutLogProps) {
+  const [sets, setSets] = useState(() => logDraft<{ sets: number[][]; done: Record<string, boolean> }>(draftKey)?.sets ?? startFromLast(moves, last));
+  const [done, setDone] = useState<Record<string, boolean>>(() => logDraft<{ sets: number[][]; done: Record<string, boolean> }>(draftKey)?.done ?? {});
+  useEffect(() => keepLogDraft(draftKey, { sets, done }), [draftKey, sets, done]);
   const [open, setOpen] = useState<number | null>(0);
   /** Finished exercises opened again to change a set. */
   const [reopened, setReopened] = useState<Record<number, boolean>>({});
