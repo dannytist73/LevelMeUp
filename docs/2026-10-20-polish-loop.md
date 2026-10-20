@@ -33,30 +33,30 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 7 | Cleared: Next in a fixed bottom bar; smaller stamp; Back to Today as a link | N3 | done |
 | 8 | The rest timer redraws the whole log 4×/s: tick inside the rest bar, once a second | N4 | done |
 | 9 | Motion: rows, the snackbar, folding sections and Done today animate in and out (reduced motion: none); the XP bar grows by `scaleX`, not width | N7, N15 | done |
-| 10 | Onboarding Reveal: "Begin Day 1" pinned in a bottom bar; details folded; portrait capped | O2 | open, S–M |
-| 11 | Settings: grouped cards with rows and dividers; sync as one row; "N waiting" only when N > 0 | O4, B | open, M |
-| 12 | Edit screens (Game, Training, Class, Book): a Save bar that appears on change, and "Discard changes?" on Back | O5 | open, M |
-| 13 | Character: a hero row (portrait thumbnail, name, class, XP), stats as 2-column tiles | O7 | open, M |
-| 14 | Loading looks like empty on Library, Chronicle and the edit screens: skeletons | O8 | open, S |
-| 15 | Delete character: "Keep my character" is the main button; deletion an outline | O9 | open, S |
+| 10 | Onboarding Reveal: Accept pinned in a bottom bar; Change class and Fix together; portrait capped | O2 | done |
+| 11 | Settings: grouped cards with rows and dividers; sync as one row; "N waiting" only when N > 0 | O4, B | done |
+| 12 | Edit screens: Save in a bar at the bottom (Your game, Training; check-in's Answer too). Not done: Class, Book (their commit flows differ), "Discard changes?" on Back | O5, N14 | partly |
+| 13 | Character: stats in two columns; achievement words beside their stamps. The portrait stays large (it is the reward) | O7 | done |
+| 14 | Loading looks like empty on Library and Chronicle: skeletons | O8 | done |
+| 15 | Delete character: "Keep my character" is the main button; deletion an outline | O9 | done |
 | 16 | Spacing tokens (4/8/12/16/24/32) and one section rhythm | N11, O10 | open, S–M |
-| 17 | Font scale caps at 1.3× on Chip, SectionTitle, NarrationBox, Stamp, HoldButton, TimeStepper, RepLog | O-6 | open, S |
-| 18 | Headings for TalkBack on Character, Chronicle and the screens with a separate Title | O-15 | open, S |
-| 19 | Plus, Shadow, Trial and Vanish open as modals (they close with an X) | O14 | open, S |
-| 20 | Workout screens: one exercise at a time with "2 of 4"; finished ones fold into a summary row | N5 | open, M–L |
-| 21 | Deck: on the last card the bottom row is Claim above the keyboard; no repeated title; card drag on the UI thread | N9, N10 | open, M |
+| 17 | Font scale caps at 1.3×: Chip and SectionTitle now follow to 2× (stamps and steppers keep their caps: fixed shapes) | O-6 | done |
+| 18 | Headings for TalkBack on every tab and screen title; check-in follow-ups at heading size | O-15 | done |
+| 19 | Plus, Trial and Vanish rise from the bottom; the Shadow's scene fades in | O14 | done |
+| 20 | Workouts: a finished exercise folds to one line, the next one's steps open; the "gets harder" line lives in the steps | N5 | done |
+| 21 | Deck: on Your turn the bottom row is Claim, above the keyboard. Drag on the UI thread: item 34 | N9 | done |
 | 22 | Full-article reader: Claim needs two taps with the keyboard open (`keyboardShouldPersistTaps`) | N8 | done |
 | 23 | Tomorrow's topic picker as one row | N12 | open, S |
-| 24 | Small text in rows (13 pt) to 14 pt | N13 | open, S |
-| 25 | "I felt pain" and "Change today" as one row under Up next | N1 | open, S |
+| 24 | Quest rows' second line 14 pt (a global 14 wrapped Up next's safety line, so it's per row) | N13 | done |
+| 25 | "I felt pain" and "Change today" as one row under Up next | N1 | done |
 | 26 | Plus offer right after the Reveal, before the first quest (a product decision: ask the owner) | O1 | ask |
 | 27 | Launch waits on a token refresh over the network (blank screen after the splash) | perf 1 | done |
 | 28 | Today's header jumps with "Syncing…" on every tap | perf 2 | done |
 | 29 | Each tap redraws every open screen ~3×: reuse the view when nothing changed; tabs watch only "offline" | perf 3, 5 | done |
 | 30 | lmu-sync: ~95 sequential round trips; pipeline the reads, one-statement asPlayer, skip reloads when quiet | perf 4 | done, deployed |
-| 31 | Action-triggered syncs: a short trailing debounce, so claim-then-rate is one sync | perf 13 | open, S |
-| 32 | Prefetch today's art and the portrait; prewarm the claim sounds | perf 10, 11 | open, S |
-| 33 | Partial indexes for the per-sync counts (pain events, closed-day queue) | perf 13 | open, S (migration number to agree with the studio session) |
+| 31 | Action-triggered syncs: a debounce | perf 13 | dropped: the scheduler already folds a request made during a run into one more run; a debounce would delay every tap |
+| 32 | Prefetch the portrait; warm the day's sounds | perf 10, 11 | done |
+| 33 | Partial indexes for the per-sync counts | perf 13 | deferred: migrations must be numbered without gaps and 0020+ belongs to the studio session; cheap today |
 | 34 | Deck card drag on the JS thread (needs gesture-handler: a native module, a new build) | perf 6, N10 | later |
 | 35 | React Compiler: not safe yet (clock reads in render) | perf 8 | later |
 
@@ -74,3 +74,13 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 01:17 | 6 | Timer: Start → Pause → Claim in the bar; offer under the clock | app tests 1174/1174 (new bar test) |
 | 01:19 | 7 | Cleared's bar | emulator (motion bench): Continue pinned, all on one screen |
 | 01:23 | 9 | `Appear`/`Glide` on Today's rows, folds, the snackbar | emulator: Change today folds open; app tests 1174/1174 |
+| 01:25 | 10 | Reveal's Accept bar | app tests (new bar test) |
+| 01:28 | 11 | Settings as grouped cards | emulator: three screenshots |
+| 01:30 | 13, 15, 17, 18 | Stats in two columns; Delete's buttons; headings; font caps | emulator; app tests |
+| 01:33 | 12 (part) | `BottomBarFrame`: Save pinned on Your game and Training | emulator: Training |
+| 01:36 | 14 | Skeletons on Library and Chronicle | app tests (new Chronicle test) |
+| 01:40 | 20 | Workout exercises fold when done | emulator (workout preview); app tests (new fold test) |
+| 01:45 | review | Independent review: no Critical; 1 Important (calendar cells marked later never drew), 5 Minor; all fixed | app tests 1176/1176 |
+| 01:48 | 19, 24, 25 | X screens rise from the bottom; rows at 14 pt; pain and Change today in one row | emulator: Today |
+| 01:51 | 21 | Deck's Claim in the bottom row on Your turn | emulator: Vera's deck paged to Your turn (nothing typed or claimed) |
+| 01:54 | 12 (part) | Check-in's Answer pinned; Pact gets Back; Library's repeated heading gone | emulator: check-in (not answered) |
