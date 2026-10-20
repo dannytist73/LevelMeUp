@@ -4,7 +4,7 @@
 // says so and never asks again. The Shadow's reminder has no switch: it belongs to the Pact (decision 4).
 import { NOTIFY_TEXT, fillText } from '@levelmeup/content';
 import { useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clockLabel } from '../lib/dates.ts';
 import { shadowClock } from '../notify/plan.ts';
@@ -12,6 +12,7 @@ import type { NotifySettings } from '../notify/types.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
+import { Group } from '../ui/Group.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Meta, Small } from '../ui/Text.tsx';
@@ -60,7 +61,9 @@ export function Notifications({ onBack, onOpenSettings }: NotificationsProps) {
   };
   const time = (kind: 'briefing' | 'evening', label: string) =>
     isOn(kind) && (
-      <TimeStepper label={label} minutes={notify[kind].minutes} onChange={(minutes) => void setNotify({ ...notify, [kind]: { ...notify[kind], minutes } })} />
+      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+        <TimeStepper label={label} minutes={notify[kind].minutes} onChange={(minutes) => void setNotify({ ...notify, [kind]: { ...notify[kind], minutes } })} />
+      </View>
     );
 
   return (
@@ -83,11 +86,18 @@ export function Notifications({ onBack, onOpenSettings }: NotificationsProps) {
         </NightCard>
       )}
 
-      <Toggle label={T.briefing} line={T.briefingLine} value={isOn('briefing')} disabled={denied} onChange={(on) => change('briefing', on)} />
-      {time('briefing', T.briefingAt)}
-      <Toggle label={T.evening} line={T.eveningLine} value={isOn('evening')} disabled={denied} onChange={(on) => change('evening', on)} />
-      {time('evening', T.eveningAt)}
-      <Toggle label={T.timers} line={T.timersLine} value={isOn('timers')} disabled={denied} onChange={(on) => change('timers', on)} />
+      {/* M17: the switches as one group, as in Settings (they were loose rows on the page); a time stays with its switch. */}
+      <Group>
+        <View>
+          <Toggle flat label={T.briefing} line={T.briefingLine} value={isOn('briefing')} disabled={denied} onChange={(on) => change('briefing', on)} />
+          {time('briefing', T.briefingAt)}
+        </View>
+        <View>
+          <Toggle flat label={T.evening} line={T.eveningLine} value={isOn('evening')} disabled={denied} onChange={(on) => change('evening', on)} />
+          {time('evening', T.eveningAt)}
+        </View>
+        <Toggle flat label={T.timers} line={T.timersLine} value={isOn('timers')} disabled={denied} onChange={(on) => change('timers', on)} />
+      </Group>
 
       {level === 2 && allowed && notify.optedIn && (
         <NightCard>
