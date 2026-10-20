@@ -12,6 +12,7 @@ import type { Shown } from '../game/project.ts';
 import { todayCounts } from '../game/today.ts';
 import type { TodayView } from '../game/types.ts';
 import type { NewEvent } from '../state/store.ts';
+import { Appear } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
@@ -124,7 +125,7 @@ export function DayActions({ view, enqueue, onSwap, onVanish }: DayActionsProps)
   const options = (
     <View style={{ gap: 12 }}>
       <RowLink label={TODAY_TEXT.change} open={!folded} onPress={() => setFolded((f) => !f)} />
-      {!folded && buttons}
+      {!folded && <Appear>{buttons}</Appear>}
     </View>
   );
   return later === null ? options : <View style={{ gap: 12 }}>{later}{options}</View>;

@@ -10,6 +10,7 @@ import { ADJUST_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TE
 import { MAX_SHIELDS, questDayDate } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
+import { LayoutAnimationConfig } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artUrl } from '../art/manifest.ts';
 import { isExercise, isResting } from '../game/adjust.ts';
@@ -29,6 +30,7 @@ import { manageUrl, purchasesSetUp } from '../plus/purchases.ts';
 import { useGame } from '../state/store.ts';
 import type { Status } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
+import { Appear, Glide } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { SystemCard } from '../ui/NarrationBox.tsx';
@@ -314,10 +316,10 @@ export function Today({
         </View>
       </ScreenScroll>
       {snack !== null && (
-        <View style={{ position: 'absolute', left: space.gutter, right: space.gutter, bottom: 12 }}>
+        <Appear style={{ position: 'absolute', left: space.gutter, right: space.gutter, bottom: 12 }}>
           <Snackbar key={snack.id} message={fillText(TODAY_TEXT.markedDone, { title: snack.title })} actionLabel={TODAY_TEXT.undo}
             onAction={() => undo(snack.id)} onHide={() => setSnack(null)} />
-        </View>
+        </Appear>
       )}
     </View>
   );
@@ -363,20 +365,25 @@ function DayBody({
     if (q.completedAt !== null && today.article !== null && onOpenReading !== undefined) onOpenReading(today.article.id);
     else onOpenQuest(q.id);
   };
+  // M17: each row fades in and out, and the rows under it glide (Appear).
   const row = (q: QuestView) => {
     if (q.slot === 'article') {
-      return <ReadingRow key={q.id} quest={q} article={today.article} waiting={view.waiting.has(q.id)} onOpen={() => openReading(q)} />;
+      return <Appear key={q.id}><ReadingRow quest={q} article={today.article} waiting={view.waiting.has(q.id)} onOpen={() => openReading(q)} /></Appear>;
     }
     const isSealed = sealed(q);
     const title = authoredTemplate(q.templateId).voice[voice].title;
     const checkable = quickClearable(q, isSealed);
     return (
-      <QuestRow key={q.id} {...questRowProps(q, voice, { resting: resting(q), sealed: isSealed, ...(checkable ? { onCheck: () => onCheck(q, title) } : {}) })}
-        waiting={view.waiting.has(q.id)} onOpen={isSealed ? onTrial : () => onOpenQuest(q.id)} />
+      <Appear key={q.id}>
+        <QuestRow {...questRowProps(q, voice, { resting: resting(q), sealed: isSealed, ...(checkable ? { onCheck: () => onCheck(q, title) } : {}) })}
+          waiting={view.waiting.has(q.id)} onOpen={isSealed ? onTrial : () => onOpenQuest(q.id)} />
+      </Appear>
     );
   };
 
   return (
+    // M17: rows that arrive with the day don't fade in; those that come and go later do.
+    <LayoutAnimationConfig skipEntering>
     <View style={{ gap: 26 }}>
       {view.offline && <StateNote kind="offline" title={OFFLINE_TEXT.built} />}
       <DayBanners today={today} restDay={view.character.restDay} />
@@ -415,34 +422,39 @@ function DayBody({
       )}
 
       {then.length > 0 && (
-        <View style={{ gap: 10 }}>
+        <Appear style={{ gap: 10 }}>
           <SectionTitle title={TODAY_TEXT.then} count={fillText(TODAY_TEXT.left, { n: then.length })} />
           {anySealed && <TrialPanel onTrial={onTrial} />}
           {then.map(row)}
-        </View>
+        </Appear>
       )}
 
       {view.insight !== null && <InsightPanel insight={view.insight} onChoose={(cluster) => void enqueue({ type: 'insight', cluster })} />}
 
       {extras.length > 0 && (
-        <View style={{ gap: 10 }}>
+        <Appear style={{ gap: 10 }}>
           <SectionTitle title={TODAY_TEXT.extra} count={TODAY_TEXT.optional} />
           {anySealed && <TrialPanel onTrial={onTrial} />}
           {extras.map(row)}
-        </View>
+        </Appear>
       )}
 
       {next === null && <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />}
 
       {cleared.length > 0 && (
-        <View style={{ gap: 10 }}>
+        <Glide style={{ gap: 10 }}>
           <RowLink label={fillText(TODAY_TEXT.doneToday, { n: cleared.length })} open={showDone} onPress={onToggleDone} />
-          {showDone && cleared.map((q) => (q.slot === 'article'
-            ? clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => openReading(q), today.article?.title)
-            : clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => onOpenQuest(q.id))))}
-        </View>
+          {showDone && cleared.map((q) => (
+            <Appear key={q.id}>
+              {q.slot === 'article'
+                ? clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => openReading(q), today.article?.title)
+                : clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => onOpenQuest(q.id))}
+            </Appear>
+          ))}
+        </Glide>
       )}
       <PausedExercises view={view} enqueue={enqueue} />
     </View>
+    </LayoutAnimationConfig>
   );
 }

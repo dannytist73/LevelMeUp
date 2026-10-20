@@ -27,6 +27,7 @@ jest.mock('../src/ui/motion.ts', () => ({
 jest.mock('react-native-reanimated', () => ({
   ...jest.requireActual('react-native-reanimated/mock'),
   useReducedMotion: () => false,
+  LayoutAnimationConfig: ({ children }: { children: unknown }) => children,
   cancelAnimation: jest.fn((shared: { value: unknown }) => {
     const v = shared.value as { wait?: ReturnType<typeof setTimeout> } | null;
     if (typeof v === 'object' && v !== null && v.wait !== undefined) clearTimeout(v.wait);

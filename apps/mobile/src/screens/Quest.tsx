@@ -25,6 +25,7 @@ import { NEW_TIMER } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
 import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
+import { Appear } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
@@ -384,22 +385,22 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
           <View style={{ gap: 10 }}>
             <RowLink label={T.steps} open={showHow} onPress={() => setShowHow((s) => !s)} />
             {showHow && (
-              <View style={{ gap: 10, paddingHorizontal: 4 }}>
+              <Appear style={{ gap: 10, paddingHorizontal: 4 }}>
                 <QuestArt
                   uri={artUrl(art, artKey(template, quest.condition), quest.id)}
                   label={fillText(T.picture, { stat: STAT_NAMES[quest.stat] })}
                   fallback={STAT_NAMES[quest.stat]}
                 />
                 {hasHow && template.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
-              </View>
+              </Appear>
             )}
             <RowLink label={T.why} open={showWhy} onPress={() => setShowWhy((s) => !s)} />
             {showWhy && (
-              <View style={{ gap: 8, paddingHorizontal: 4 }}>
+              <Appear style={{ gap: 8, paddingHorizontal: 4 }}>
                 {/* The voice line quotes the full version's numbers (M2 carried item), so a hard day hides it. */}
                 {!quest.hardDay && <Body>{words.line}</Body>}
                 <Small>{renderWhy(quest.why, view.profile.voice, { classId: view.profile.classId })}</Small>
-              </View>
+              </Appear>
             )}
           </View>
           {/* Safety stays open (CLAUDE.md: exercise safety is never folded away), with "I felt pain" in reach. */}
