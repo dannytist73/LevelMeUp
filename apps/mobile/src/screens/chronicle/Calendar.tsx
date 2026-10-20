@@ -18,35 +18,40 @@ const C = CHRONICLE_TEXT;
 // M12 (audit 20): sentence case, as Lantern's labels are.
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 const CELL = 44;
+/** M17: Lantern's rounded corners on the day cells too (the last square shapes, audit 20). */
+const R = 12;
 
 type Day = ServerState['calendar'][number];
 type Look = { mark: CellMark; today: boolean };
 
 /** The cell's drawing, `w` × `h`: paper for a cleared day (a corner for a hard one), dashed for rest, hatched for paused. */
-function shapes({ mark, today }: Look, w: number, h: number, hatch: string) {
+function shapes({ mark, today }: Look, w: number, h: number, hatch: string, r: number) {
   const parts = [];
-  if (mark === 'cleared' || mark === 'hard') parts.push(<Rect key="fill" x={0} y={0} width={w} height={h} fill={colors.paper} />);
-  if (mark === 'hard') parts.push(<Path key="corner" d={`M${w - 14} 0H${w}V14Z`} fill={colors.ink} />);
+  if (mark === 'cleared' || mark === 'hard') parts.push(<Rect key="fill" x={0} y={0} width={w} height={h} rx={r} fill={colors.paper} />);
+  if (mark === 'hard') parts.push(<Path key="corner" d={`M${w - 16} 0H${w - r}A${r} ${r} 0 0 1 ${w} ${r}V16Z`} fill={colors.ink} />);
   if (mark === 'rest') {
-    parts.push(<Rect key="rest" x={1} y={1} width={w - 2} height={h - 2} fill="none" stroke={colors.ash} strokeWidth={2} strokeDasharray="5 4" />);
+    parts.push(<Rect key="rest" x={1} y={1} width={w - 2} height={h - 2} rx={r - 1} fill="none" stroke={colors.ash} strokeWidth={2} strokeDasharray="5 4" />);
   }
   if (mark === 'paused') {
-    parts.push(<Rect key="hatch" x={0} y={0} width={w} height={h} fill={`url(#${hatch})`} />);
-    parts.push(<Rect key="paused" x={1} y={1} width={w - 2} height={h - 2} fill="none" stroke={colors.ash} strokeWidth={2} />);
+    parts.push(<Rect key="hatch" x={0} y={0} width={w} height={h} rx={r} fill={`url(#${hatch})`} />);
+    parts.push(<Rect key="paused" x={1} y={1} width={w - 2} height={h - 2} rx={r - 1} fill="none" stroke={colors.ash} strokeWidth={2} />);
   }
-  if (today) parts.push(<Rect key="today" x={1.5} y={1.5} width={w - 3} height={h - 3} fill="none" stroke={colors.accent} strokeWidth={3} />);
+  if (today) parts.push(<Rect key="today" x={1.5} y={1.5} width={w - 3} height={h - 3} rx={r - 1.5} fill="none" stroke={colors.accent} strokeWidth={3} />);
   return parts;
 }
 
-function Drawing({ look, width, height, id }: { look: Look; width: number; height: number; id: string }) {
+function Drawing({ look, width, height, id, r = R }: { look: Look; width: number; height: number; id: string; r?: number }) {
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Defs>
-        <Pattern id={id} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <Line x1="0" y1="0" x2="0" y2="7" stroke={colors.chalk} strokeOpacity={0.3} strokeWidth={2} />
-        </Pattern>
-      </Defs>
-      {shapes(look, width, height, id)}
+      {/* M17: only a paused day needs the hatching. */}
+      {look.mark === 'paused' && (
+        <Defs>
+          <Pattern id={id} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <Line x1="0" y1="0" x2="0" y2="7" stroke={colors.chalk} strokeOpacity={0.3} strokeWidth={2} />
+          </Pattern>
+        </Defs>
+      )}
+      {shapes(look, width, height, id, r)}
     </Svg>
   );
 }
@@ -57,9 +62,11 @@ function Cell({ date, look, inChronicle }: { date: string; look: Look; inChronic
     .filter((part) => part !== null)
     .join(', ');
   const onPaper = look.mark === 'cleared' || look.mark === 'hard';
+  // M17: a plain day draws nothing, so a month is a handful of drawings, not 31.
+  const drawn = look.mark !== 'none' || look.today;
   return (
-    <View accessible accessibilityLabel={label} onLayout={onLayout} style={{ flex: 1, height: CELL, alignItems: 'center', justifyContent: 'center' }}>
-      {size !== null && <Drawing look={look} width={size.width} height={size.height} id={`cell-hatch-${date}`} />}
+    <View accessible accessibilityLabel={label} onLayout={drawn ? onLayout : undefined} style={{ flex: 1, height: CELL, alignItems: 'center', justifyContent: 'center' }}>
+      {drawn && size !== null && <Drawing look={look} width={size.width} height={size.height} id={`cell-hatch-${date}`} />}
       <Text
         maxFontSizeMultiplier={1.4}
         style={{ fontFamily: fonts.display, fontSize: 16, lineHeight: 20, color: onPaper ? colors.ink : inChronicle ? colors.chalk : colors.ash }}
@@ -135,7 +142,7 @@ export function Calendar({ days, today, todayLook }: { days: readonly Day[]; tod
         {LEGEND.map(([look, text]) => (
           <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 14, height: 14 }}>
-              <Drawing look={look} width={14} height={14} id={`legend-hatch-${look.mark}`} />
+              <Drawing look={look} width={14} height={14} id={`legend-hatch-${look.mark}`} r={4} />
             </View>
             <Label>{text}</Label>
           </View>
