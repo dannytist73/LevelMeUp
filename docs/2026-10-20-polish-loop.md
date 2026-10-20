@@ -12,13 +12,21 @@ What came out of it, in short:
   down syncs; checking off a side quest clicks, fills, fades and lets the rows below glide up.
 - **The main button is always in reach.** Timers (Start, Pause, Claim), Cleared (Next), the Reveal (Accept), the check-in
   (Answer), Your game and Training (Save) and the reading deck's last card (Claim) keep their one button at the bottom.
-- **Less to scroll.** Workouts fold each finished exercise to one line; Settings is grouped cards; Character's stats sit
-  in two columns; the Library shows five past readings.
+- **Less to scroll.** Workouts fold each finished exercise to one line; Settings is grouped cards (Notifications too);
+  Character's stats sit in two columns; the Library shows five past readings; the Codex draws only what's on screen.
+- **Fits small phones.** A pass at 360 dp (many budget Androids): answers stay side by side, the stats line up, the wake
+  and sleep times stay on one line, short phrases ("about 5 min") never break.
+- **Familiar gestures.** Pull down to sync on every tab; tap the tab you're on to go back to its top.
 - **Smoother and quicker.** Launch no longer waits on the network; a tap no longer redraws every screen three times; tabs
   cross-fade; the server reads a player in one go (syncs measured at about 0.5 to 0.7 s).
 - **New:** a kind weekly recap on the first open of a week; a level-up names the ability it unlocks.
-- **Checked:** two independent code reviews (everything they found is fixed), the screens at 2× text, with animations
-  off, and for unlabelled buttons; every test suite and the live server tests pass.
+- **Consistent.** One 12-hour clock everywhere; every settings and ability screen names itself in the top bar; locked
+  looks wear the same Plus pill; locked abilities show a lock.
+- **Fixed along the way:** Settings' account card could wait forever after a failed local read; the deck's top bar jumped
+  on the first swipe.
+- **Checked:** five independent code reviews and two design critiques (what they found is fixed, or listed below as not
+  taken, with the reason), the screens at 2× text, with animations off, at 360 dp, and for unlabelled buttons; every test
+  suite and the live server tests pass.
 
 **The owner's yes for this loop (2026-10-20):** deploy migrations and functions once every local test passes (then
 `db:test` and the live tests); a development build on this PC now and a 0.9.0 preview APK at the end. Everything else in
