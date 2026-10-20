@@ -28,11 +28,11 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 2 | Tab bar: the active pill is round on Today but square on the other tabs; now a layer that grows in | emulator | done (device check) |
 | 3 | Chronicle: square day cells (the last square shapes) and 31 drawings a month | emulator, O-20 | done |
 | 4 | Today: System notes as one card with answers inside, a quiet edge (N6); shorter header; wider picture so Begin stays above the fold (N1) | emulator, N1, N6 | done (device check) |
-| 5 | One tab header on all four tabs, with the Settings gear on each (Settings opens only from Today) | O3, O6 | open, S |
-| 6 | Timer quests: the bottom bar is Start, then Pause with the time, then Claim (not a disabled Claim); the live-notification offer below the clock | N2 | open, S–M |
-| 7 | Cleared: Next in a fixed bottom bar; smaller stamp; extra controls as links | N3 | open, M |
-| 8 | The rest timer redraws the whole log 4×/s: tick inside the rest bar, once a second | N4 | open, S |
-| 9 | Motion: rows, the snackbar, folding sections and Done today animate in and out (reduced motion: none); the XP bar grows by `scaleX`, not width | N7, N15 | open, M |
+| 5 | One tab header on all four tabs, with the Settings gear on each (Settings opens only from Today) | O3, O6 | done |
+| 6 | Timer quests: the bottom bar is Start, then Pause, then Claim (not a disabled Claim); the live-notification offer below the clock | N2 | done |
+| 7 | Cleared: Next in a fixed bottom bar; smaller stamp; Back to Today as a link | N3 | done |
+| 8 | The rest timer redraws the whole log 4×/s: tick inside the rest bar, once a second | N4 | done |
+| 9 | Motion: rows, the snackbar, folding sections and Done today animate in and out (reduced motion: none); the XP bar grows by `scaleX`, not width | N7, N15 | done |
 | 10 | Onboarding Reveal: "Begin Day 1" pinned in a bottom bar; details folded; portrait capped | O2 | open, S–M |
 | 11 | Settings: grouped cards with rows and dividers; sync as one row; "N waiting" only when N > 0 | O4, B | open, M |
 | 12 | Edit screens (Game, Training, Class, Book): a Save bar that appears on change, and "Discard changes?" on Back | O5 | open, M |
@@ -45,17 +45,32 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 19 | Plus, Shadow, Trial and Vanish open as modals (they close with an X) | O14 | open, S |
 | 20 | Workout screens: one exercise at a time with "2 of 4"; finished ones fold into a summary row | N5 | open, M–L |
 | 21 | Deck: on the last card the bottom row is Claim above the keyboard; no repeated title; card drag on the UI thread | N9, N10 | open, M |
-| 22 | Full-article reader: Claim needs two taps with the keyboard open (`keyboardShouldPersistTaps`) | N8 | open, S |
+| 22 | Full-article reader: Claim needs two taps with the keyboard open (`keyboardShouldPersistTaps`) | N8 | done |
 | 23 | Tomorrow's topic picker as one row | N12 | open, S |
 | 24 | Small text in rows (13 pt) to 14 pt | N13 | open, S |
 | 25 | "I felt pain" and "Change today" as one row under Up next | N1 | open, S |
 | 26 | Plus offer right after the Reveal, before the first quest (a product decision: ask the owner) | O1 | ask |
-| 27 | Performance and database items | perf audit | pending |
+| 27 | Launch waits on a token refresh over the network (blank screen after the splash) | perf 1 | done |
+| 28 | Today's header jumps with "Syncing…" on every tap | perf 2 | done |
+| 29 | Each tap redraws every open screen ~3×: reuse the view when nothing changed; tabs watch only "offline" | perf 3, 5 | done |
+| 30 | lmu-sync: ~95 sequential round trips; pipeline the reads, one-statement asPlayer, skip reloads when quiet | perf 4 | done, deployed |
+| 31 | Action-triggered syncs: a short trailing debounce, so claim-then-rate is one sync | perf 13 | open, S |
+| 32 | Prefetch today's art and the portrait; prewarm the claim sounds | perf 10, 11 | open, S |
+| 33 | Partial indexes for the per-sync counts (pain events, closed-day queue) | perf 13 | open, S (migration number to agree with the studio session) |
+| 34 | Deck card drag on the JS thread (needs gesture-handler: a native module, a new build) | perf 6, N10 | later |
+| 35 | React Compiler: not safe yet (clock reads in render) | perf 8 | later |
 
 ## Log
 
 | Time (UTC) | Item | What changed | Verified |
 |---|---|---|---|
-| 00:58 | 1, 2 | `alignContent: 'center'` on the Begin bar and the Then rows; the tab pill as an always-there layer that grows in | app tests 55/55; device: next build |
-| 01:05 | 3 | Rounded day cells; plain days draw nothing; the paused hatch only where needed | screens tests |
-| 01:20 | 4 | `SystemCard`; Today's header 50 dp shorter; picture 2.6:1 | app tests 1173/1173, typecheck |
+| 00:50 | 1, 2 | `alignContent: 'center'` on the Begin bar and the Then rows; the tab pill as an always-there layer that grows in | app tests 55/55; device: next build |
+| 00:52 | 3 | Rounded day cells; plain days draw nothing; the paused hatch only where needed | screens tests |
+| 01:00 | 4 | `SystemCard`; Today's header 50 dp shorter; picture 2.6:1, cropped from the bottom; "Up next" in the card's line | emulator (dev build): Begin in view with a check-in waiting |
+| 01:03 | 5 | Settings gear on every tab (`TabTop`); tab titles are headings | emulator: gear and round pill on Chronicle |
+| 01:05 | 27–29 | Launch no longer waits on the account; refresh keeps unchanged objects; tabs watch "offline" only; no "Syncing…" in the header | app tests 1173/1173 |
+| 01:12 | 30 | lmu-sync reads pipelined; quiet syncs read once; achievements in the reply's transaction | server unit 585/585; deployed (lmu-sync v28); live 51/51 |
+| 01:15 | 8, 9 (bar), 22 | Rest bar ticks alone; XP bar scales; taps land with the keyboard up | app tests |
+| 01:17 | 6 | Timer: Start → Pause → Claim in the bar; offer under the clock | app tests 1174/1174 (new bar test) |
+| 01:19 | 7 | Cleared's bar | emulator (motion bench): Continue pinned, all on one screen |
+| 01:23 | 9 | `Appear`/`Glide` on Today's rows, folds, the snackbar | emulator: Change today folds open; app tests 1174/1174 |
