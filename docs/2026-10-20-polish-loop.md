@@ -61,7 +61,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 20 | Workouts: a finished exercise folds to one line, the next one's steps open; the "gets harder" line lives in the steps | N5 | done |
 | 21 | Deck: on Your turn the bottom row is Claim, above the keyboard. Drag on the UI thread: item 34 | N9 | done |
 | 22 | Full-article reader: Claim needs two taps with the keyboard open (`keyboardShouldPersistTaps`) | N8 | done |
-| 23 | Tomorrow's topic picker as one row | N12 | open, S |
+| 23 | Tomorrow's topic picker as pills | N12 | tried, then reverted at the second review: pills hid what each topic covers |
 | 24 | Quest rows' second line 14 pt (a global 14 wrapped Up next's safety line, so it's per row) | N13 | done |
 | 25 | "I felt pain" and "Change today" as one row under Up next | N1 | done |
 | 26 | Plus offer right after the Reveal, before the first quest (a product decision: ask the owner) | O1 | ask |
@@ -88,6 +88,8 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 47 | Level-up names the class ability it unlocks | emulator | done |
 | 48 | Deck cover: the top bar repeated the title | N9 | done |
 | 49 | Library: five past readings, Show all for the rest | O12 | done |
+| 50 | Character and Chronicle opened with a small grey word; now a title like Today and Library (Character's is the name) | own pass | done |
+| 51 | Minutes a day: numbers sat left in their boxes | own pass | done |
 
 ## Waiting on the owner (proposed, not done)
 
@@ -144,3 +146,5 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 02:32 | 47 | Ability on level-up | emulator (motion bench: "New ability: Second Wind") |
 | 02:35 | QA | Accessibility sweep: every tappable on the tabs and screens has a label; Remove animations on: all works | emulator |
 | 02:40 | 48, 49 | Deck cover title; past readings | app tests |
+| 02:43 | 50, 51 | Tab titles; centred minutes | emulator; app tests 1186/1186 |
+| 02:45 | build | Candidate 0.9.0 preview APK started (WSL) | |
