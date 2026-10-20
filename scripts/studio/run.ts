@@ -261,7 +261,11 @@ async function picture(env: Env, job: StudioJob, dir: string, d: StoryDeck): Pro
     return null;
   };
   const server = await comfy();
-  if (server === null) return none('ComfyUI could not be had within the hour (busy with other renders, not enough free memory, or it did not start)');
+  if (server === null) {
+    // Not kept as a decision: a later run of the same job (a check-only run, then the real one) tries again.
+    log(`job ${job.id}: no picture: ComfyUI could not be had within the hour (busy with other renders, not enough free memory, or it did not start)`);
+    return null;
+  }
   try {
     const { scene } = await step(dir, 'scene.json', () => claude(env, { system: SCENE_SYSTEM, prompt: scenePrompt(d), schema: SCENE_SCHEMA, cwd: HERE, effort: 'low', minutes: 5 }) as { scene: string });
     const look = python(['look', d.cast]);
@@ -312,7 +316,11 @@ async function run(dry: boolean): Promise<void> {
     log(`job ${job.id}: research: ${brief.facts.length} facts from ${brief.sources.length} pages (${dropped.length} quotes not found)`);
     const article = await step(dir, 'article.json', () => write(env, job, brief));
     const d = await step(dir, 'deck.json', () => deck(env, job, article, brief));
-    const pic = await picture(env, job, dir, parseDeck(d)!);
+    // A picture is a nicety: anything that breaks in making it leaves the story without one, never the day without its article.
+    const pic = await picture(env, job, dir, parseDeck(d)!).catch((error: unknown) => {
+      log(`job ${job.id}: no picture: ${(error as Error).message}`);
+      return null;
+    });
     const sent = await studio(env, {
       action: 'submit', jobId: job.id, brief, article, deck: d, picture: pic === null ? null : readFileSync(pic).toString('base64'), dry,
     });
