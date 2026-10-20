@@ -54,7 +54,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 13 | Character: stats in two columns; achievement words beside their stamps. The portrait stays large (it is the reward) | O7 | done |
 | 14 | Loading looks like empty on Library and Chronicle: skeletons | O8 | done |
 | 15 | Delete character: "Keep my character" is the main button; deletion an outline | O9 | done |
-| 16 | Spacing tokens (4/8/12/16/24/32) and one section rhythm | N11, O10 | open, S–M |
+| 16 | Spacing tokens (4/8/12/16/24/32) and one section rhythm | N11, O10 | not done, on purpose (item 55: the differences are 2 dp; the screens now share BottomBarFrame, Group and TabTop) |
 | 17 | Font scale caps at 1.3×: Chip and SectionTitle now follow to 2× (stamps and steppers keep their caps: fixed shapes) | O-6 | done |
 | 18 | Headings for TalkBack on every tab and screen title; check-in follow-ups at heading size | O-15 | done |
 | 19 | Plus, Trial and Vanish rise from the bottom; the Shadow's scene fades in | O14 | done |
@@ -95,6 +95,8 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 54 | Design critique (a designer agent on 15 screenshots): Safety after the log as a filled card; disabled buttons as quiet outlines; a sentence-sized takeaway box; Today's check-in card asks only the question; quiet System narration; even side-by-side buttons; switch rows; option-card markers (radio/checkbox) and lighter edges; "0 of 2 shields"; long reading titles at heading size; quieter portrait switch and ranks; onboarding's sign-in split; Training row summary; and five small ones | critique | done |
 | 56 | Back with unsaved changes in Your game and Training asks first (Android's dialog); Save leaves without asking | O5 | done |
 | 57 | Third review: disabled edge too strong; Enter closed the Shadow's note (now only one-line fields); recap said "starts today" mid-week; week marks now read as the Chronicle reads them; old recap keys pruned; snackbar edge; check-in gap line back on Today; recap waits while the Shadow's card shows; Settings test fixed | review | done |
+| 58 | Screens not yet polished: Your look's locked frames wear the Plus pill (colours said "Plus" twice); Book and a locked Vanish name themselves in the bar; Notifications' switches as one group, each time with its switch | own pass | done |
+| 59 | The Codex drew all its lessons (up to 200) on opening: now a list drawn as it scrolls, with the status band; a dev preview holds 200 | perf | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -159,3 +161,5 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 03:02 | 54 (small) | Kept lessons count, workout steps size, Cleared lines, Training row | app tests |
 | 03:07 | 56 | Leave guard | emulator: changed a choice, Back asked, Leave left; Vera's Training unchanged |
 | 03:12 | 57 | Third review fixes | app tests 1187/1187, content 1170/1170, typecheck clean |
+| 03:20 | 58 | Look, Book, Vanish, Notifications | emulator (look only), 2x font: no truncation; app tests |
+| 03:25 | 59 | Codex list | new test (a full Codex draws fewer than 200 rows); emulator: 200-lesson preview scrolled; scan marker added |
