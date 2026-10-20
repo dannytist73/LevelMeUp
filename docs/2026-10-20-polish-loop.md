@@ -124,6 +124,7 @@ loop: N1–N15, P1–P3; everything else: O1–O15, A–C), a performance audit,
 | 76 | UX dead-end audit (an agent reading the code for places a player gets stuck). Fixed: a kept lesson older than the last 30 readings never opened ("comes with the next sync", forever: the sync fetched its article and dropped it in the same transaction), now the Codex's articles are kept, test-first | dead-end audit | done |
 | 77 | A workout's or a rep log's sets and ticks reset to last time's numbers after Back to Today: now kept while the app runs (memory only, like the reading's takeaway) | dead-end audit | done |
 | 78 | The vow could never be opened again once Today's card was answered: Character shows "Change your vow" under it, or "Write a vow" when there's none | dead-end audit | done |
+| 79 | Seventh review (two important, fixed test-first): with up to 200 kept-lesson readings on the phone, the 64 ids a sync names could leave out today's, so the server would send it every sync (now newest first); a rep log swapped in place kept the old quest's numbers (now keyed by its target). Minor, fixed: drafts keyed by the day (an offline day reuses ids), saved only once changed, dropped on claim; the vow reopens with the player's own words and "Keep it as it is". Not fixed: un-keeping an old lesson while reading it lets the next sync drop its article mid-read (rare; the screen says it's gone) | review | done |
 | 55 | Critique items not taken: a spacing scale (2 dp differences); marking missed days on the calendar (the Chronicle never shows a miss, M6d); one place for XP; the onboarding chapter counter | critique | not done, on purpose |
 
 ## Waiting on the owner (proposed, not done)
@@ -233,3 +234,4 @@ Smaller ideas the loop found and left for a calmer moment, most useful first:
 | 04:36 | — | Candidate APK built in 9 min (04:32); installed over the dev build on the emulator (data kept): Today day 7, every tab, the deck, Notifications, Your look, tab tap to top all fine; Settings shows Version 0.9.0; cold start 0.76-1.04 s to first frame (release, emulator); no crash in the log. Dev build reinstalled to keep going | — |
 | 04:41 | 74, 75 | Leftovers sweep; sign-in link | onboarding tests 29/29; emulator (welcome, look only) |
 | 04:56 | 76-78 | Kept lessons' readings kept; log drafts; vow from Character | tests first for each (store, quest, clarity); app 1197/1197, content 1171/1171; emulator: Character (look only) |
+| 05:04 | 79 | Seventh review fixes | app 1199/1199, content 1171/1171 |
