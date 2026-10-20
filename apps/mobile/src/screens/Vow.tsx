@@ -25,7 +25,9 @@ export const VOW_MAX = 120;
 export function Vow({ onDone, screenReader }: { onDone: () => void; /** Tests only. */ screenReader?: boolean }) {
   const insets = useSafeAreaInsets();
   const saveVow = useGame((s) => s.saveVow);
-  const [text, setText] = useState<string>(T.default);
+  // M17 (review): opened again from Character, it starts from the player's own vow.
+  const current = useGame((s) => s.vow);
+  const [text, setText] = useState<string>(current ?? T.default);
   const [why, setWhy] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
   const [sworn, setSworn] = useState(false);
@@ -65,7 +67,7 @@ export function Vow({ onDone, screenReader }: { onDone: () => void; /** Tests on
         <>
           <HoldButton label={T.hold} tapLabel={T.tap} confirmLabel={T.confirm} disabled={text.trim() === ''} onDone={() => void swear()} screenReader={screenReader} />
           <Caption>{T.holdNote}</Caption>
-          <Button label={T.skip} variant="secondary" onPress={onDone} />
+          <Button label={current === null ? T.skip : T.keep} variant="secondary" onPress={onDone} />
         </>
       )}
     </ScreenScroll>

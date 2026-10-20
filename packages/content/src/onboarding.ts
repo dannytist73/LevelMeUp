@@ -230,6 +230,8 @@ export const ONBOARDING_TEXT = {
     tap: 'Swear',
     confirm: 'Confirm the vow',
     skip: 'Skip the vow',
+    /** M17: leaving a vow already sworn, opened again from Character. */
+    keep: 'Keep it as it is',
     sworn: 'Sworn',
     next: 'Done',
     /** M12 (monetization research §3, owner's decision 12): an optional "Why now?" that fills the vow's words. */

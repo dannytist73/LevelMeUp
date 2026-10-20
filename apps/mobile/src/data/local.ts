@@ -124,7 +124,9 @@ export function makeLocal(sql: Sql) {
      * next day's, and a past reading asked for) until its deck arrives. M14: until its story lesson arrives, so a
      * deck from before the stories is replaced.
      */
-    articleIds: async () => (await sql.all<{ id: string; json: string }>('select id, json from articles order by id'))
+    // M17 (review): newest first, so with a Codex's old readings kept, today's and the next day's stay within the ids a
+    // sync names (it sends 64): left out, the server would send them again every sync.
+    articleIds: async () => (await sql.all<{ id: string; json: string }>('select id, json from articles order by saved_at desc, id'))
       .filter((r) => {
         try {
           return hasStoryDeck((JSON.parse(r.json) as { deck?: unknown }).deck);

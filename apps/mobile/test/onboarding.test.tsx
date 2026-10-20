@@ -286,6 +286,15 @@ describe('Character reveal (O08)', () => {
 });
 
 describe('The vow (O09; day 3 since M12)', () => {
+  it('opened again with a vow sworn, it shows those words and lets them stand (M17)', async () => {
+    const onDone = jest.fn();
+    await show(<Vow onDone={onDone} screenReader />, READY_DRAFT, { phase: 'ready', vow: 'I will rise.' });
+    expect(screen.getByText('I will rise.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.vow.keep }));
+    expect(onDone).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: ONBOARDING_TEXT.vow.skip })).toBeNull();
+  });
+
   it('"Why now?" fills the words (M12)', async () => {
     await show(<Vow onDone={() => {}} screenReader />, READY_DRAFT, { phase: 'ready' });
     const reason = ONBOARDING_TEXT.vow.reasons[0]!;

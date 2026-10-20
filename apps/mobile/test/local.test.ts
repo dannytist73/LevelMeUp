@@ -173,6 +173,16 @@ describe('the phone database', () => {
     expect(await local.articleIds()).toEqual([]);
   });
 
+  it('keeps a kept lesson’s article and names the newest first, so today’s is always in what a sync sends (M17)', async () => {
+    const { local } = await fresh();
+    const body = (id: string) => ({ ...SAMPLE_STORY_ARTICLE, id });
+    const s = serverState();
+    const named = (id: string): ServerState => ({ ...s, today: { ...s.today!, article: { id, cluster: 'sleep', title: 'One', minutes: 6 } } });
+    await local.acknowledge([], [], named('article-a'), 1, [body('article-a')], ['article-a']);
+    await local.acknowledge([], [], named('article-b'), 2, [body('article-b')], ['article-a']);
+    expect(await local.articleIds()).toEqual(['article-b', 'article-a']); // the lesson's stays; the newest leads
+  });
+
   it('leaves an article held without its Story Deck out of `have`, so it is sent again (M11 decision 6)', async () => {
     const { local } = await fresh();
     const s = serverState();

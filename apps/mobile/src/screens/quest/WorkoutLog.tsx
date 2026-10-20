@@ -7,7 +7,7 @@
 // each card no longer repeats it.
 import { PLAY_TEXT, authoredMove, fillText, moveTarget, progressLine } from '@levelmeup/content';
 import type { SessionMove } from '@levelmeup/rules';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { moveKey, setsLine, startFromLast } from '../../quest/lastSets.ts';
 import type { LastSets } from '../../quest/lastSets.ts';
@@ -40,7 +40,12 @@ export type WorkoutLogProps = {
 export function WorkoutLog({ moves, disabled, onClaim, last = {}, now = Date.now, draftKey }: WorkoutLogProps) {
   const [sets, setSets] = useState(() => logDraft<{ sets: number[][]; done: Record<string, boolean> }>(draftKey)?.sets ?? startFromLast(moves, last));
   const [done, setDone] = useState<Record<string, boolean>>(() => logDraft<{ sets: number[][]; done: Record<string, boolean> }>(draftKey)?.done ?? {});
-  useEffect(() => keepLogDraft(draftKey, { sets, done }), [draftKey, sets, done]);
+  // Saved once the player changes something (review): untouched, the log keeps following last time's numbers.
+  const changed = useRef(false);
+  useEffect(() => {
+    if (changed.current) keepLogDraft(draftKey, { sets, done });
+    changed.current = true;
+  }, [draftKey, sets, done]);
   const [open, setOpen] = useState<number | null>(0);
   /** Finished exercises opened again to change a set. */
   const [reopened, setReopened] = useState<Record<number, boolean>>({});

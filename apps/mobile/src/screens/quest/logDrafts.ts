@@ -11,3 +11,8 @@ export function logDraft<T extends LogDraft>(key: string | undefined): T | undef
 export function keepLogDraft(key: string | undefined, draft: LogDraft): void {
   if (key !== undefined) drafts.set(key, draft);
 }
+
+/** Claimed: the log starts fresh if the claim is undone (review). */
+export function dropLogDraft(key: string): void {
+  drafts.delete(key);
+}

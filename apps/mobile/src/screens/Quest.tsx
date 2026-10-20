@@ -46,6 +46,7 @@ import { WorkoutLog } from './quest/WorkoutLog.tsx';
 import { isKept } from '../reading/codex.ts';
 import { asDeck } from '../reading/deck.ts';
 import { keepDraft, takeawayDraft } from '../reading/drafts.ts';
+import { dropLogDraft } from './quest/logDrafts.ts';
 import { Deck } from './reading/Deck.tsx';
 import { openSource } from './reading/openSource.ts';
 import { readingLength } from './reading/ReadingCard.tsx';
@@ -117,6 +118,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const openTimer = quest !== null && quest.completion === 'timer' && quest.completedAt === null;
   // M8b decision 5: the reading quest is the reader; an article this phone doesn't hold yet is asked for.
   const todaysArticle = quest !== null && quest.slot === 'article' ? (today?.article ?? null) : null;
+  /** M17: names a workout's or a rep log's draft: the day too, since a day built offline reuses its quests' ids (review). */
+  const logKey = quest === null ? '' : `${today?.dayNumber ?? 0}:${quest.id}:${JSON.stringify(quest.condition)}`;
   const reading = todaysArticle === null ? null : (articles[todaysArticle.id] ?? null);
   const missing = todaysArticle !== null && reading === null ? todaysArticle.id : null;
   const deck = reading === null ? null : asDeck(reading.deck);
@@ -223,6 +226,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
       setBefore({ character: view.character, quests: today.quests });
       await enqueue({ type: 'complete', instanceId: quest.id, completedAt: now(), rating: null, payload });
       if (todaysArticle !== null) keepDraft(todaysArticle.id, ''); // M12: claimed, so the draft is done
+      dropLogDraft(logKey); // M17 (review): and the sets being logged
       if (quest.completion === 'timer') await saveTimer(quest.id, null).catch(() => {});
       // M10c decision 7: next time starts from these sets.
       const sets = Array.isArray(payload.sets) ? (payload.sets as number[]) : null;
@@ -296,12 +300,13 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
           </View>
         )}
         <WorkoutLog key={JSON.stringify(quest.condition)} moves={quest.condition.moves} disabled={busy || replanning}
-          onClaim={(payload) => void claim(payload)} last={lastSets} now={now} draftKey={`${quest.id}:${JSON.stringify(quest.condition)}`} />
+          onClaim={(payload) => void claim(payload)} last={lastSets} now={now} draftKey={logKey} />
       </View>
     );
   } else if (quest.completion === 'reps') {
-    panel = <RepLog condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)}
-      last={lastSets[questKey(quest.templateId)] ?? null} now={now} draftKey={`${quest.id}:${JSON.stringify(quest.condition)}`} />;
+    // Review: keyed by its target too, as the workout is, so a quest swapped in place starts from its own numbers.
+    panel = <RepLog key={JSON.stringify(quest.condition)} condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)}
+      last={lastSets[questKey(quest.templateId)] ?? null} now={now} draftKey={logKey} />;
   } else if (quest.completion === 'text') {
     panel = <SentenceLog disabled={busy} onClaim={(payload) => void claim(payload)} />;
   } else {

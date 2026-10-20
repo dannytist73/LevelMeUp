@@ -3,7 +3,7 @@
 // as a line, and a Done check on each set that starts the rest (decisions 7–8).
 import { PLAY_TEXT, fillText } from '@levelmeup/content';
 import type { Condition } from '@levelmeup/rules';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { setsLine } from '../../quest/lastSets.ts';
 import { MAX_REPS, MAX_SETS, repUnit, repsPayload, repsValid, startingSets } from '../../quest/payload.ts';
@@ -40,7 +40,12 @@ export type RepLogProps = {
 export function RepLog({ condition, disabled, onClaim, last = null, now = Date.now, draftKey }: RepLogProps) {
   const [sets, setSets] = useState(() => logDraft<{ sets: number[]; done: boolean[] }>(draftKey)?.sets ?? startingSets(condition));
   const [done, setDone] = useState<boolean[]>(() => logDraft<{ sets: number[]; done: boolean[] }>(draftKey)?.done ?? []);
-  useEffect(() => keepLogDraft(draftKey, { sets, done }), [draftKey, sets, done]);
+  // Saved once the player changes something (review): untouched, the log keeps following last time's numbers.
+  const changed = useRef(false);
+  useEffect(() => {
+    if (changed.current) keepLogDraft(draftKey, { sets, done });
+    changed.current = true;
+  }, [draftKey, sets, done]);
   const rest = useRest(now, REPS_REST_MS);
   const unit = repUnit(condition);
   const change = (index: number, by: number) =>
