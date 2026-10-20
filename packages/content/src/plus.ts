@@ -31,7 +31,7 @@ export const PLUS_TEXT = {
   restore: 'Restore purchases',
   /** Premium pass B5, B7: while Restore asks, and when it couldn't. */
   restoring: 'Checking Google Play…',
-  restoreFailed: "Couldn't reach Google Play to check, so nothing changed. Try again with a connection.",
+  restoreFailed: "Couldn't check with Google Play, so nothing changed. Try again in a moment.",
   terms: 'Terms of use',
   privacy: 'Privacy policy',
   notSetUp: "Plus isn't on sale yet. Everything else works as it is.",

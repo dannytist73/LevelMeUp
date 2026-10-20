@@ -149,7 +149,7 @@ describe("Today's adjustments (M6b)", () => {
     const used = adjustState({ profile: profileRow(undefined, { class_id: 'monk' }), character: characterRow({ xp_vitality: 240, ability_last_used: { stillness: 1 } }) });
     await render(actions(shown(used)));
     await openOptions();
-    expect(screen.getByRole('button', { name: /^Stillness · ready (in \d days|tomorrow)$/ }).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: /^Stillness · ready again (in \d days|tomorrow)$/ }).props.accessibilityState.disabled).toBe(true);
   });
 
   it('a Monk at level 5 gets Stillness; a Rogue at level 10 gets Vanish', async () => {

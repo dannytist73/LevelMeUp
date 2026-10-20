@@ -97,7 +97,9 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
           <Small testID="shields-rule">
             {[fillText(C.shieldsRule, { max: MAX_SHIELDS }),
               ...(streak.shields < MAX_SHIELDS
-                ? [fillText(C.shieldsNext, { n: (Math.floor(shown!.current / SHIELD_EVERY_STREAK_DAYS) + 1) * SHIELD_EVERY_STREAK_DAYS })]
+                // Review: the streak the System has closed, so on the day that reaches 7 the line still names 7 (the shield
+                // comes when that day closes), not the next one.
+                ? [fillText(C.shieldsNext, { n: (Math.floor(streak.current / SHIELD_EVERY_STREAK_DAYS) + 1) * SHIELD_EVERY_STREAK_DAYS })]
                 : [])].join(' ')}
           </Small>
         )}

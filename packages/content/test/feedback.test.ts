@@ -27,7 +27,7 @@ describe('what the System says once an action worked (premium pass B)', () => {
   it('reads as one sentence with each check-in outcome', () => {
     for (const answer of Object.values(CHECKIN_TEXT.answers)) {
       const line = fillText(FEEDBACK_TEXT.answered, { outcome: answer.outcome });
-      expect(line).toMatch(/^Noted\. .+\.$/);
+      expect(line).toMatch(/^Noted: .+\.$/);
       expect(line).not.toMatch(/\.\.$/);
     }
   });

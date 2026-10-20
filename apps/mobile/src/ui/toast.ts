@@ -2,13 +2,16 @@
 // on whichever screen comes next, so the player always learns that it worked. One at a time: a newer note replaces the
 // older. The note itself is drawn by `Toasts` (once, at the root); the tab bar reports its height so a note on a tab sits
 // just above it, where Today's own Undo note sits, and a bar fixed at the bottom of a screen (a quest's Claim, a Save)
-// lifts it above that bar while it shows, so the note never covers the button.
+// lifts it above that bar while it shows, so the note never covers the button. Today's and the Codex's Undo come
+// through here too (review: two notes stacked in one place), and a plain note waits behind one that offers Undo.
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 
 export type ToastAction = { label: string; onPress: () => void };
 export type Toast = { id: number; message: string; action?: ToastAction };
 
 let shown: Toast | null = null;
+/** A plain note that came while one with an action showed: it shows next, so the action isn't taken away. */
+let pending: Toast | null = null;
 let nextId = 1;
 let barHeight = 0;
 const lifts = new Map<number, number>();
@@ -27,15 +30,28 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-export function toast(message: string, action?: ToastAction): void {
-  shown = { id: nextId++, message, ...(action === undefined ? {} : { action }) };
+/** Shows a note; returns its id (to take it back with `dismissToast`). */
+export function toast(message: string, action?: ToastAction): number {
+  const next: Toast = { id: nextId++, message, ...(action === undefined ? {} : { action }) };
+  if (shown?.action !== undefined && action === undefined) {
+    pending = next;
+    return next.id;
+  }
+  shown = next;
+  pending = null;
   changed();
+  return next.id;
 }
 
-/** Its time is up, or its action was taken: only the note still shown goes (a newer one stays). */
+/** Its time is up, or its action was taken: only that note goes (a newer one stays); one waiting shows next. */
 export function dismissToast(id: number): void {
+  if (pending?.id === id) {
+    pending = null;
+    return;
+  }
   if (shown?.id !== id) return;
-  shown = null;
+  shown = pending;
+  pending = null;
   changed();
 }
 

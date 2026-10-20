@@ -388,6 +388,15 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       const event = nextOfflineDay(cached.state, pending, deps.now(), deps.timeZone());
       if (event === null) return;
       await deps.local.enqueue({ ...event, id: deps.newId() }, deps.now());
+      // Premium pass (review): a day built here reuses the last one's quest ids (-1 to -5), so that day's timers go, or the
+      // new day's timer quest would open at the old time, already at its target.
+      const dropBuilt = async (): Promise<void> => {
+        const kept = Object.entries(parseTimers(await deps.kv.getItem(TIMERS_KEY).catch(() => null))).filter(([id]) => Number(id) > 0);
+        await deps.kv.setItem(TIMERS_KEY, JSON.stringify(Object.fromEntries(kept)));
+      };
+      const dropped = timerWrites.then(dropBuilt);
+      timerWrites = dropped.catch(() => {});
+      await dropped.catch(() => {});
       await refresh();
     };
 
@@ -520,6 +529,8 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     const forget = async (keepSignIn = false): Promise<void> => {
       // M7d decision 9: first, so nothing below can keep the last player's notifications on the phone.
       await deps.notes.cancelAll().catch(() => {});
+      // Premium pass (review): the player's own words and numbers go first too, before anything below can throw.
+      await forgetDrafts();
       applier.forget();
       wanted.clear();
       deckAsked.clear();
@@ -539,7 +550,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       await deps.kv.removeItem(CODEX_KEY); // M11: the character's kept lessons go with it
       await deps.kv.removeItem(OFFERS_KEY); // M12: the next character gets its own offers
       await deps.kv.removeItem(FRAME_KEY); // M13: the frame is the character's; the look (theme) is the phone's
-      await forgetDrafts(); // premium pass A1: the player's own words and numbers
       // The Haptics switch stays: it is the phone's, not the character's (M10b plan decision 3).
       confirmedLevel = null;
       set({
@@ -579,6 +589,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           // A new guest is only made on an empty phone, so this is the same sign-in: its character is gone on the
           // server, and anything cached is stale.
           await deps.local.wipe();
+          await forgetDrafts(); // premium pass (review): the gone character's drafts with it
           wanted.clear(); // the old character's readings (re-review)
           deckAsked.clear();
           confirmedLevel = null;
@@ -917,8 +928,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           if (signed.ok) await forget(true);
           return signed;
         });
-        set({ account: await deps.account(), accountKnown: true });
+        // Review: a sign-in that didn't finish changes nothing, the account the card read included.
         if (!result.ok) return result;
+        set({ account: await deps.account(), accountKnown: true });
         await scheduler.request();
         const { phase, status, error } = get();
         if (phase === 'ready') return { ok: true, found: true };

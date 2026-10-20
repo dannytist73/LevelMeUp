@@ -14,6 +14,7 @@ import { checkinState, completeEvent, serverState } from './support/fixtures.ts'
 
 const END = Date.parse(DAY1.endsAt);
 const HOUR = 3_600_000;
+type ProvisionalQuestLike = { slot: string; templateId: string };
 const quests = (event: { quests: readonly { slot: string; templateId: string }[] }) => event.quests.map((q) => [q.slot, q.templateId]);
 
 describe('the day the phone builds offline (M6e decision 2)', () => {
@@ -94,6 +95,32 @@ describe('several days in a row offline (premium pass A6)', () => {
     const plain = chain(s, 2);
     const again = chain(s, 2);
     expect(days(again)).toEqual(days(plain)); // the same state and clock build the same days
+  });
+
+  it('a pain report on a day the phone built keeps resting the exercise in the days built after it (premium pass review)', () => {
+    const s = serverState();
+    const keyOf = (templateId: string) => useKey(templateById(LIBRARY, templateId));
+    /** Days 2, 3 and 4 built in a row; `hurt` reported on day 2 (by slot) before day 3 is built. */
+    const run = (hurt: ProvisionalQuestLike | null) => {
+      const pending: PhoneEvent[] = [];
+      const d2 = nextOfflineDay(s, pending, END + HOUR, 'Asia/Manila')!;
+      pending.push({ ...d2, id: id(0) } as PhoneEvent);
+      if (hurt !== null) {
+        pending.push({ id: id(50), type: 'pain', instanceId: null, ref: { dayNumber: d2.dayNumber, slot: hurt.slot, templateId: hurt.templateId }, choice: 'pause' } as PhoneEvent);
+      }
+      const d3 = nextOfflineDay(s, pending, d2.window.endsAt + HOUR, 'Asia/Manila')!;
+      pending.push({ ...d3, id: id(1) } as PhoneEvent);
+      const d4 = nextOfflineDay(s, pending, d3.window.endsAt + HOUR, 'Asia/Manila')!;
+      return { d2, d3, d4 };
+    };
+    const plain = run(null);
+    const later = [...plain.d3.quests, ...plain.d4.quests];
+    const again = plain.d2.quests.find((q) => findTemplate(LIBRARY, q.templateId)?.exercise != null
+      && later.some((p) => keyOf(p.templateId) === keyOf(q.templateId)));
+    expect(again).toBeDefined(); // the exercise comes back within two days when nothing hurt
+    const key = painKey(templateById(LIBRARY, again!.templateId));
+    const hurt = run(again!);
+    expect([...hurt.d3.quests, ...hurt.d4.quests].some((q) => keyOf(q.templateId) === key)).toBe(false);
   });
 
   it('a check-in answer on its way waits, as for the first day', () => {

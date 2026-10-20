@@ -12,7 +12,8 @@ import { SNACKBAR_MS } from '../src/ui/Snackbar.tsx';
 import { play } from '../src/ui/sound.ts';
 import { serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
-import { peekToast } from '../src/ui/toast.ts';
+import { dismissToast, peekToast } from '../src/ui/toast.ts';
+import { Toasts } from '../src/ui/Toasts.tsx';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // inside day 1 (12:00–20:00 UTC)
 const titleOf = (s: ServerState, slot: string) => authoredTemplate(s.today!.quests.find((q) => q.slot === slot)!.templateId).voice.system.title;
@@ -22,10 +23,15 @@ async function renderToday(server: ServerState, over: Parameters<typeof testStor
   const store = testStore({ view: project(server, []), ...over });
   const onOpenQuest = jest.fn();
   await render(withStore(store,
-    <Today onSettings={jest.fn()} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-      onCheckin={jest.fn()} now={() => NOW} />));
+    <><Today onSettings={jest.fn()} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
+      onCheckin={jest.fn()} now={() => NOW} /><Toasts /></>));
   return { store, onOpenQuest };
 }
+
+afterEach(() => {
+  // Premium pass: the app's note is module state; a note from one test must not show in the next.
+  for (let shown = peekToast(); shown !== null; shown = peekToast()) dismissToast(shown.id);
+});
 
 describe('Today (M10c, M12)', () => {
   it('the open core quest is Up next, one card ending in Begin, the only bright button', async () => {

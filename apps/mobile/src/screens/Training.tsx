@@ -2,7 +2,7 @@
 // `training` event: the server re-plans today's open workout and the next days follow the new setup. M16 (plan
 // 2026-10-20-m16-weekly-program.md, decisions 1 and 8): the plan, step by step or the weekly program, and its workouts a
 // week; a new plan starts with tomorrow's quests.
-import { ADJUST_TEXT, EQUIPMENT_NAMES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, PROGRAM_STYLE_CHOICES } from '@levelmeup/content';
+import { ADJUST_TEXT, EQUIPMENT_NAMES, FEEDBACK_TEXT, LIBRARY, ONBOARDING_TEXT, PROGRAM_STYLE_CHOICES, fillText } from '@levelmeup/content';
 import { EQUIPMENT, PROGRAM_DAYS_OPTIONS, PROGRAM_STYLES, TRAINING_PLANS, workoutsFit } from '@levelmeup/rules';
 import type { Equipment, ProgramStyle, TrainingPlan } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -86,7 +86,8 @@ export function Training({ onDone, onBack, onDirty }: TrainingProps) {
       return;
     }
     onDone();
-    toast(FEEDBACK_TEXT.training); // premium pass B1
+    // Premium pass B1: with the screen's own line on when it applies (review: it said only "Training saved.").
+    toast(fillText(FEEDBACK_TEXT.training, { when: pickedPlan !== currentPlan ? T.planTomorrow : T.today }));
   };
 
   // M17 (UX audit O5): Save stays in a bar at the bottom, in reach under any number of options.

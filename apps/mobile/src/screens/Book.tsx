@@ -91,7 +91,7 @@ export function Book({ onDone, onBack }: BookProps) {
                     {/* Premium pass C3: setting a book aside loses its sessions, so it is the quiet button, as deleting is. */}
                     <Button label={confirm === 'finish' ? B.finishYes : B.setAsideYes} variant={confirm === 'finish' ? 'commitment' : 'secondary'} disabled={busy}
                       onPress={() => void send(null, confirm === 'finish')} />
-                    <Button label={B.notNow} variant="secondary" onPress={() => setConfirm(null)} />
+                    <Button label={B.notNow} variant={confirm === 'finish' ? 'secondary' : 'primary'} onPress={() => setConfirm(null)} />
                   </>
                 )}
               </View>
@@ -107,7 +107,7 @@ export function Book({ onDone, onBack }: BookProps) {
               <Small tone="chalk">{fillText(B.switchConfirm, { title: clean, current })}</Small>
               <Button label={B.switchYes} variant="secondary" disabled={busy || clean.length === 0 || clean === current}
                 onPress={() => void send(clean, false)} />
-              <Button label={B.notNow} variant="secondary" onPress={() => setConfirm(null)} />
+              <Button label={B.notNow} onPress={() => setConfirm(null)} />
             </View>
           )}
         </>

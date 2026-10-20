@@ -68,7 +68,10 @@ export function Pact({ mode, onDone, screenReader }: PactProps) {
     }
     onDone();
     // Premium pass B1: on, at a new level, or off, and from when.
-    toast(level === 0 ? FEEDBACK_TEXT.pactOff : fillText(level > current ? FEEDBACK_TEXT.pactOn : FEEDBACK_TEXT.pactLevel, { level }));
+    toast(level === 0 ? FEEDBACK_TEXT.pactOff
+      : level < current ? fillText(FEEDBACK_TEXT.pactLevel, { level })
+        : current === 0 ? fillText(FEEDBACK_TEXT.pactOn, { level })
+          : fillText(FEEDBACK_TEXT.pactRaised, { level, from: current }));
   };
 
   let action;

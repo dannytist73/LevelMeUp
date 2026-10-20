@@ -16,7 +16,9 @@ const T = SETTINGS_TEXT.signInLost;
 export function SignInLost() {
   const startOver = useGame((s) => s.startOver);
   const signInAgain = useGame((s) => s.signInAgain);
-  const saved = useGame((s) => s.account.kind === 'saved');
+  const kind = useGame((s) => s.account.kind);
+  // Review: a sign-in Auth refused is soon gone from the phone too, and then the account reads as none: offer both ways.
+  const google = kind !== 'guest';
   const unsent = useGame((s) => s.pending.length);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,7 +37,7 @@ export function SignInLost() {
 
   return (
     <View style={{ gap: 16 }}>
-      <NarrationBox>{saved ? T.saved : T.guest}</NarrationBox>
+      <NarrationBox>{kind === 'saved' ? T.saved : kind === 'guest' ? T.guest : T.unknown}</NarrationBox>
       {unsent > 0 && <Small tone="chalk">{unsent === 1 ? T.unsentOne : fillText(T.unsent, { n: unsent })}</Small>}
       {confirming ? (
         <>
@@ -43,7 +45,7 @@ export function SignInLost() {
           <Button label={T.yes} variant="secondary" onPress={() => void startOver()} />
           <Button label={T.notNow} variant="secondary" onPress={() => setConfirming(false)} />
         </>
-      ) : saved ? (
+      ) : google ? (
         <>
           <Button label={T.again} disabled={busy} onPress={() => void again()} />
           <Small>{T.againNote}</Small>

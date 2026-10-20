@@ -83,7 +83,10 @@ export function Checkin({ onDone }: CheckinProps) {
     }
     onDone();
     // Premium pass B3: what the answer does, said at once (the System's result card follows with the next sync).
-    toast(fillText(FEEDBACK_TEXT.answered, { outcome: T.answers[choice].outcome }));
+    // Review: the line the card itself showed (answerLine), and Second Wind's own when it was chosen.
+    toast(answer === 'just_didnt' && secondWind && redo !== null
+      ? fillText(FEEDBACK_TEXT.answeredSecondWind, { quest: authoredTemplate(redo.templateId).voice[view.profile.voice].title })
+      : fillText(FEEDBACK_TEXT.answered, { outcome: answerLine(choice, checkin, view.lighterPlan) }));
   };
 
   // M17 (UX audit N14): Answer stays in a bar at the bottom, with Answer later as a link under it; the follow-up questions

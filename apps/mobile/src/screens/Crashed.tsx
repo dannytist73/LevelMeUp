@@ -36,7 +36,9 @@ export function goToToday(): void {
 
 export function ScreenCrashed({ error, retry }: ErrorBoundaryProps) {
   useLogged(error);
-  const onToday = usePathname() === '/';
+  // Today itself, or onboarding (no Today yet: the tabs send a player without a character to onboarding's start).
+  const path = usePathname();
+  const onToday = path === '/' || path.startsWith('/onboarding');
   return (
     <View style={{ flex: 1, justifyContent: 'center', gap: 16, padding: space.gutter, backgroundColor: colors.night }}>
       <NarrationBox>{CRASH_TEXT.line}</NarrationBox>

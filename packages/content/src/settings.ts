@@ -71,6 +71,10 @@ export const SETTINGS_TEXT = {
     saved:
       "This phone's Google sign-in ended, so the System can't reach your character from here. Your character is safe " +
       'with the System: sign in with Google again to bring it back.',
+    /** Review: once the ended sign-in is gone from the phone, it can't tell a saved player from a guest: both ways. */
+    unknown:
+      "This phone's sign-in ended, so the System can't reach your character from here. Saved it with Google? Sign in " +
+      "again to bring it back. A guest's progress on this phone can't be recovered.",
     unsentOne: "One action on this phone hasn't reached the System, and can't any more.",
     unsent: "{n} actions on this phone haven't reached the System, and can't any more.",
     again: 'Sign in with Google again',

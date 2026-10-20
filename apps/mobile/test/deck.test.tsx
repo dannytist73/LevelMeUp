@@ -10,6 +10,7 @@ import { asDeck, coverTitle, deckCards, deckMinutes, deckPerson } from '../src/r
 import { Codex } from '../src/screens/Codex.tsx';
 import { Deck } from '../src/screens/reading/Deck.tsx';
 import { testStore, withStore } from './support/store.ts';
+import { Toasts } from '../src/ui/Toasts.tsx';
 
 const DECK = SAMPLE_LEGACY_DECK;
 const STORY = SAMPLE_STORY_DECK;
@@ -218,7 +219,7 @@ describe('the Codex screen (M11 decision 7)', () => {
     const two = { articleId: 'article-2', title: 'Two', lesson: 'Lesson two.', keptAt: 2 };
     const store = testStore({ codex: [two, { articleId: 'article-1', title: 'One', lesson: 'Lesson one.', keptAt: 1 }] });
     const onOpenReading = jest.fn();
-    await render(withStore(store, <Codex onBack={jest.fn()} onOpenReading={onOpenReading} />));
+    await render(withStore(store, <><Codex onBack={jest.fn()} onOpenReading={onOpenReading} /><Toasts /></>));
     expect(screen.getByText('Lesson two.')).toBeTruthy();
     expect(screen.getByText('One')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /^Lesson two\. Open the reading "Two"$/ }));

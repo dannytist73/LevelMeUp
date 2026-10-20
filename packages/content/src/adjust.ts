@@ -9,8 +9,8 @@ export const ADJUST_TEXT = {
     swap: 'Swap · {left} of {total} left',
     /** Premium pass C1: every limit says how many and when it comes back. */
     swapsOut: 'No swaps left today. They come back with the next quest day, at {time}.',
-    cooling: '{ability} · ready in {days} days',
-    coolingOne: '{ability} · ready tomorrow',
+    cooling: '{ability} · ready again in {days} days',
+    coolingOne: '{ability} · ready again tomorrow',
     hardDay: 'Hard day',
     rest: 'Rest day',
     vanish: 'Vanish',

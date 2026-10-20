@@ -32,7 +32,7 @@ describe('the check-in screen (board F1)', () => {
     await fireEvent.press(screen.getByText(T.answer));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin', checkinId: 7, answer: 'just_didnt', secondWind: false });
     expect(onDone).toHaveBeenCalled();
-    expect(peekToast()?.message).toBe('Noted. A 5-minute recovery quest today keeps your streak.'); // premium pass B3
+    expect(peekToast()?.message).toBe('Noted: A 5-minute recovery quest today keeps your streak.'); // premium pass B3
   });
 
   it('"sick or injured" asks which before it can be sent', async () => {

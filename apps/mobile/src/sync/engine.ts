@@ -75,9 +75,17 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
     const have = (await deps.local.articleIds()).slice(0, MAX_HAVE);
     // Asked for until a request succeeds: a 413 retry keeps asking (M8b review).
     const want: string[] = asked !== null ? [] : (deps.wanted?.() ?? []).filter((id) => !have.includes(id)).slice(0, MAX_WANT);
-    const events = fitBody(await deps.local.pending(limit), timeZone, { have, want });
+    // Premium pass (review): a long outbox (a week offline) goes in several requests; while more wait, the server is told,
+    // so it closes the days with the last request, not the first, and check-in answers wait for that last one (each
+    // closes the days that have ended; the server applies them last anyway).
+    const waiting = await deps.local.pending(limit + 1);
+    const over = waiting.length > limit;
+    const batch = waiting.slice(0, limit);
+    const ready = over ? batch.filter((e) => e.type !== 'checkin') : batch;
+    const events = fitBody(ready.length > 0 ? ready : batch, timeZone, { have, want, more: true });
+    const more = waiting.length > events.length;
     const sentAt = Date.now();
-    const call = await deps.api.sync({ timeZone, events, have, want });
+    const call = await deps.api.sync({ timeZone, events, have, want, ...(more ? { more: true } : {}) });
     // M17: how long a round takes, to see what the server work costs.
     deps.log?.(`[sync] ${events.length} events, ${Date.now() - sentAt} ms`);
     if (!call.ok) {

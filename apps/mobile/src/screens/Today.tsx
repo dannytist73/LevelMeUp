@@ -44,11 +44,10 @@ import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { ShadowMark } from '../ui/ShadowMark.tsx';
 import { TodaySkeleton } from '../ui/Skeleton.tsx';
-import { Snackbar } from '../ui/Snackbar.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
 import { SettingsButton } from '../ui/TabTop.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
-import { toast } from '../ui/toast.ts';
+import { dismissToast, toast, useToast } from '../ui/toast.ts';
 import { buzz } from '../ui/haptics.ts';
 import { play, warm } from '../ui/sound.ts';
 import { Thud } from '../ui/Thud.tsx';
@@ -183,8 +182,8 @@ export function Today({
   // M17: the offers wait until the phone knows who is signed in, so a saved player never sees "save your character" flash.
   const accountKnown = useGame((s) => s.accountKnown);
   const vow = useGame((s) => s.vow);
-  /** The quest a check circle just cleared, while its Undo shows. */
-  const [snack, setSnack] = useState<{ id: number; title: string } | null>(null);
+  /** Premium pass (review): a note shows at the bottom (the check circle's Undo among them), so the last row clears it. */
+  const noting = useToast() !== null;
   /** Quests a check is on its way for: a quick second tap sends nothing (review). */
   const clearing = useRef(new Set<number>());
   const [showDone, setShowDone] = useState(false);
@@ -263,11 +262,12 @@ export function Today({
     clearing.current.add(q.id);
     play('claim');
     buzz('stamp'); // M17: a check you can feel, as a stamp landing
-    setSnack({ id: q.id, title });
+    // The Undo note is the app's own (review: Today's and the app's notes stacked in one place).
+    const note = toast(fillText(TODAY_TEXT.markedDone, { title }), { label: TODAY_TEXT.undo, onPress: () => undo(q.id) });
     enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} }).catch(() => {
       // Premium pass A7: not saved, so never "cleared": the Undo note goes and the app says so.
       clearing.current.delete(q.id);
-      setSnack((s) => (s?.id === q.id ? null : s));
+      dismissToast(note);
       toast(FEEDBACK_TEXT.saveFailed);
     });
   };
@@ -313,7 +313,7 @@ export function Today({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <ScreenScroll contentContainerStyle={{ paddingBottom: snack === null ? 32 : 96 }} refresh={pull} tab="index">
+      <ScreenScroll contentContainerStyle={{ paddingBottom: noting ? 96 : 32 }} refresh={pull} tab="index">
         {/* M17: a shorter header (about 50 dp less), so Up next's button stays above the fold with a note waiting: the date
             beside "Day N", and the level on the XP bar's line (name and class live on Character). */}
         <ScreenHeader style={{ paddingTop: insets.top + 12, paddingBottom: 16, gap: 12, marginBottom: 16 }}>
@@ -365,12 +365,6 @@ export function Today({
           {body}
         </View>
       </ScreenScroll>
-      {snack !== null && (
-        <Appear style={{ position: 'absolute', left: space.gutter, right: space.gutter, bottom: 12 }}>
-          <Snackbar key={snack.id} message={fillText(TODAY_TEXT.markedDone, { title: snack.title })} actionLabel={TODAY_TEXT.undo}
-            onAction={() => undo(snack.id)} onHide={() => setSnack(null)} />
-        </Appear>
-      )}
     </View>
   );
 }

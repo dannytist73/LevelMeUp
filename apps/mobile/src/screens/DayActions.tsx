@@ -5,14 +5,14 @@
 // which the server may refuse over the limit (its notice says so). M7b: Rest tomorrow, and its banner. M10c: the options
 // fold into one "Change today" row (decision 3), and a day that already counts is offered only a rest tomorrow (decision 4).
 import { ABILITY_NAMES, ADJUST_TEXT, LIGHTER_TEXT, OFFLINE_TEXT, TODAY_TEXT, fillText, pausedName } from '@levelmeup/content';
-import { DAY_MS, HOUR_MS, abilityUnlocked, swapLimit } from '@levelmeup/rules';
+import { DAY_MS, abilityUnlocked, questDayDate, swapLimit } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { abilityStatus } from '../game/character.ts';
 import type { Shown } from '../game/project.ts';
 import { todayCounts } from '../game/today.ts';
 import type { TodayView } from '../game/types.ts';
-import { clockTime, dateLine } from '../lib/dates.ts';
+import { clockTime, dateKeyLabel } from '../lib/dates.ts';
 import type { NewEvent } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Appear } from '../ui/Appear.tsx';
@@ -41,9 +41,10 @@ export function DayBanners({ today, restDay = null }: { today: TodayView; restDa
 }
 
 /** The confirm's words and what it can send; over the rest limit it explains, and offers the lighter plan when there is one. */
-/** Premium pass C1: the date of quest day `n`, from today's (days run boundary to boundary, so midday lands inside). */
+/** Premium pass C1: the date of quest day `n`, named as the app names a quest day (rules: questDayDate), from today's. */
 function dayDate(today: TodayView, n: number): string {
-  return dateLine(Date.parse(today.startsAt!) + (n - today.dayNumber) * DAY_MS + 12 * HOUR_MS, today.timeZone);
+  const shift = (n - today.dayNumber) * DAY_MS;
+  return dateKeyLabel(questDayDate({ startsAt: Date.parse(today.startsAt!) + shift, endsAt: Date.parse(today.endsAt!) + shift, timeZone: today.timeZone }));
 }
 
 /** Premium pass C1: the day-shaping abilities this class has unlocked that are cooling down, with the days left. */
@@ -55,7 +56,7 @@ function cooling(view: Shown): { ability: 'stillness' | 'dawn_ritual'; days: num
   });
 }
 
-function panelFor(kind: Confirm, today: TodayView, lighter: Shown['lighterPlan'], counts: boolean): Panel {
+function panelFor(kind: Confirm, today: TodayView, lighter: Shown['lighterPlan'], counts: boolean, restDay: number | null): Panel {
   switch (kind) {
     case 'hard_day':
       return { text: T.hardDay.explain, sends: [{ label: T.hardDay.confirm, event: { type: 'hard_day', dayId: today.id } }] };
@@ -67,7 +68,8 @@ function panelFor(kind: Confirm, today: TodayView, lighter: Shown['lighterPlan']
       if (today.restTomorrow) sends.push({ label: T.rest.tomorrow, event: { type: 'plan_rest', dayId: today.id, tomorrow: true } });
       if (sends.length > 0) return { text: T.rest.explain, sends };
       // M7a decision 9: over the rest limit, a lighter plan is the other way. Premium pass C1: and the day it opens again.
-      const opens = today.restOpens ?? null;
+      // Review: a rest planned for tomorrow and still on its way isn't in the server's day yet: then no date is named.
+      const opens = today.restOpens === undefined || today.restOpens === restDay ? null : today.restOpens;
       return {
         text: opens === null ? T.rest.limit : fillText(T.rest.limitOpens, { date: dayDate(today, opens) }),
         sends: lighter === null
@@ -135,7 +137,7 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
 
   const pain = onPain === undefined ? null : <Button label={T.pain.open} variant="secondary" onPress={onPain} style={{ flexGrow: 1, minWidth: 120 }} />;
   if (confirm !== null) {
-    const panel = panelFor(confirm, today, view.lighterPlan, counts);
+    const panel = panelFor(confirm, today, view.lighterPlan, counts, view.character.restDay);
     return (
       <View style={{ gap: 12 }}>
         {/* Review: pain stays in reach while a change is being confirmed (it had been under the card, always shown). */}

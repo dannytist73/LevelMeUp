@@ -95,7 +95,7 @@ function questOf(s: Snapshot, instanceId: number, nowMs: number): Found<{ day: D
 }
 
 /**
- * M7b decision 6: the open day with this id, while it runs; or, once it has ended (not yet closed, within 48 hours, as a
+ * M7b decision 6: the open day with this id, while it runs; or, once it has ended (not yet closed, within the late window, as a
  * completion is), when the player tapped inside it (`at`, never later than now). A day that has ended is returned with
  * the tap time, which levelmeup.adjust checks too. While the day runs the tap time isn't read, as in levelmeup.adjust:
  * a phone clock behind the server's must not make a tap early in the day look late (review).

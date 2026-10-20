@@ -80,7 +80,8 @@ export function GameSettings({ onDone, onBack, onDirty }: GameSettingsProps) {
     }
     onDone();
     // Premium pass B1: said on the screen the player lands on, with when it applies.
-    toast(KEYS.some((k) => k !== 'voice' && picked[k] !== saved[k]) ? FEEDBACK_TEXT.game : FEEDBACK_TEXT.voice);
+    const rest = KEYS.some((k) => k !== 'voice' && picked[k] !== saved[k]);
+    toast(!rest ? FEEDBACK_TEXT.voice : picked.voice !== saved.voice ? FEEDBACK_TEXT.gameVoice : FEEDBACK_TEXT.game);
   };
 
   // M17 (UX audit O5): Save stays in a bar at the bottom, in reach under any number of options.

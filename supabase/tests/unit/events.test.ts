@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MAX_EVENTS, adjustPayload, applyOrder, checkCompletionPayload, isAdjust, parseSyncBody, timerTargetMs,
+  MAX_EVENTS, MORE_MIN_EVENTS, adjustPayload, applyOrder, checkCompletionPayload, isAdjust, parseSyncBody, timerTargetMs,
 } from '../../functions/_shared/events.ts';
 import type { AdjustEvent, SyncRequest } from '../../functions/_shared/events.ts';
 import { isProblem } from '../../functions/_shared/http.ts';
@@ -20,7 +20,17 @@ describe('the sync body', () => {
     expect(isProblem(parseSyncBody({ timeZone: 'Mars/Base', events: [] }))).toBe(true);
     expect(isProblem(parseSyncBody({ events: [] }))).toBe(true);
     const ok = parseSyncBody({ timeZone: 'Asia/Manila' });
-    expect(ok).toEqual({ timeZone: 'Asia/Manila', events: [], rejected: [], have: [], want: [] });
+    expect(ok).toEqual({ timeZone: 'Asia/Manila', events: [], rejected: [], have: [], want: [], more: false });
+  });
+
+  it('"more to come" holds only on a full batch without check-in answers (premium pass review: a week offline spans batches)', () => {
+    const undo = (i: number) => ({ id: id(i), type: 'undo', instanceId: 1 });
+    const many = Array.from({ length: MORE_MIN_EVENTS }, (_, i) => undo(i));
+    expect(parseSyncBody({ timeZone: 'UTC', events: many, more: true })).toMatchObject({ more: true });
+    expect(parseSyncBody({ timeZone: 'UTC', events: many.slice(1), more: true })).toMatchObject({ more: false }); // too few to need it
+    expect(parseSyncBody({ timeZone: 'UTC', events: many, more: 'yes' })).toMatchObject({ more: false });
+    const answer = { id: id(99), type: 'checkin', checkinId: 7, answer: 'sick', secondWind: false };
+    expect(parseSyncBody({ timeZone: 'UTC', events: [...many, answer], more: true })).toMatchObject({ more: false }); // an answer closes days
   });
 
   it(`takes at most ${MAX_EVENTS} events`, () => {
@@ -263,7 +273,7 @@ describe('offline-built days (M6e)', () => {
 
   it('reads the day, the zone and each quest, and drops anything else', () => {
     expect(parse([{ ...day, extra: 1, quests: [{ ...quest, extra: 2 }, workout] }]))
-      .toEqual({ timeZone: 'UTC', events: [{ ...day, articleId: null }], rejected: [], have: [], want: [] });
+      .toEqual({ timeZone: 'UTC', events: [{ ...day, articleId: null }], rejected: [], have: [], want: [], more: false });
     // M16: a weekly workout's moves keep their sets.
     const weekly = { ...workout, templateId: 'program-0', moves: [{ move: 'bridge', unit: 'reps', min: 8, max: 12, perSide: false, sets: 3 }] };
     expect(parse([{ ...day, quests: [quest, weekly] }]).events).toEqual([{ ...day, articleId: null, quests: [quest, weekly] }]);

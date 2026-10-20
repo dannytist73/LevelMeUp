@@ -29,7 +29,7 @@ describe('Your game (M7b decision 2)', () => {
       type: 'settings', voice: 'questmaster', boundaryMinutes: (view.profile.boundaryMinutes + 30) % 1440, minutesPerDay: 40, difficulty: 'hard',
     });
     expect(onDone).toHaveBeenCalled();
-    expect(peekToast()?.message).toBe('Saved. It applies from your next quest day.'); // premium pass B1
+    expect(peekToast()?.message).toBe('Saved. The new voice speaks now; the rest starts with your next quest day.'); // premium pass B1
   });
 
   it('while loading, shows its own titled bar and a skeleton, not a System line (premium pass C3)', async () => {

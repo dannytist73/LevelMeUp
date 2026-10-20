@@ -331,9 +331,10 @@ Deno.serve(async (req) => {
     // M17 (perf audit 2026-10-20): a sync with no events whose day hasn't ended (the launch and foreground syncs) reads the
     // player once, not four times. With events, or a day to close, advance reads afresh as before.
     const quiet = request.events.length === 0;
-    const due = !quiet || planAdvance({
+    // Premium pass (review): more events on their way: the days close with the last of them, not before.
+    const due = !request.more && (!quiet || planAdvance({
       ...started, pending: started.checkin, timeZone: request.timeZone, nowMs: started.readAt.getTime(), library: LIBRARY, contentVersion: CONTENT_VERSION,
-    }) !== null;
+    }) !== null);
     if (due) await advance(player.userId, request.timeZone);
     const rechecked = await recheckPlus(player.userId, started);
     const { state, articles, newAchievementIds } = await db().begin(async (tx) => {

@@ -23,11 +23,13 @@ async function setup(replies: Reply[], alive = true) {
   await migrate(sql);
   const local = makeLocal(sql);
   const sent: PhoneEvent[][] = [];
+  const mores: boolean[] = [];
   const deps: SyncDeps = {
     local,
     api: {
-      sync: async ({ events }) => {
+      sync: async ({ events, more }) => {
         sent.push([...events]);
+        mores.push(more === true);
         const reply = replies.length > 1 ? replies.shift()! : replies[0]!;
         return typeof reply === 'function' ? reply(events) : reply;
       },
@@ -36,7 +38,7 @@ async function setup(replies: Reply[], alive = true) {
     now: () => 1000,
     sessionAlive: jest.fn(async () => alive),
   };
-  return { local, sent, deps };
+  return { local, sent, mores, deps };
 }
 
 describe('one sync run', () => {
@@ -117,6 +119,19 @@ describe('one sync run', () => {
     expect(await syncOnce(deps)).toEqual({ kind: 'synced', state: state(0), notices: [], newAchievements: [], asked: [] });
     expect(sent).toEqual([[]]);
     expect(await local.load()).toEqual({ state: state(0), syncedAt: 1000 });
+  });
+
+  it('says "more to come" while events wait, and keeps check-in answers for the last request (premium pass review)', async () => {
+    const { local, sent, mores, deps } = await setup([applyAll]);
+    for (let n = 1; n <= 55; n++) {
+      await local.enqueue(n === 3 ? { id: ev(n).id, type: 'checkin', checkinId: 7, answer: 'sick', secondWind: false } : ev(n), n);
+    }
+    await syncOnce(deps);
+    expect(mores).toEqual([true, false]);
+    expect(sent[0]!.some((e) => e.type === 'checkin')).toBe(false); // an answer closes the days: it waits
+    expect(sent[1]!.some((e) => e.type === 'checkin')).toBe(true);
+    expect(sent.flat()).toHaveLength(55);
+    expect(await local.pending(1000)).toEqual([]);
   });
 
   it('sends a long outbox in batches of 50, oldest first, until it is empty', async () => {

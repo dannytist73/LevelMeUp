@@ -1021,9 +1021,26 @@ describe('a day built offline (M6e)', () => {
     expect(view!.today!.dayNumber).toBe(2);
     expect(pending.map((e) => e.type)).toEqual(['provisional_day']);
     expect(await local.pending(10)).toHaveLength(1);
-    // Another failed sync builds nothing more: one offline day at a time.
+    // Another failed sync builds nothing more while that day runs (premium pass: the next comes once it ends).
     await store.getState().syncNow();
     expect(store.getState().pending).toHaveLength(1);
+  });
+
+  it('builds the next day once the one it built has ended, and its quests start with no timer of the last (premium pass)', async () => {
+    let clock = END + HOUR;
+    const { store } = await setup([ok(SERVER), offline], { now: () => clock });
+    await store.getState().boot();
+    await store.getState().syncNow();
+    const day2 = store.getState().view!.today!;
+    expect(day2.dayNumber).toBe(2);
+    const timed = day2.quests[0]!.id; // a day built here: negative ids, reused by the next one built here
+    await store.getState().saveTimer(timed, { segments: [{ start: clock, end: clock + 60_000 }], runningSince: null });
+    expect(await store.getState().timer(timed)).not.toBeNull();
+    clock = Date.parse(day2.endsAt!) + HOUR;
+    await store.getState().syncNow();
+    expect(store.getState().view!.today!.dayNumber).toBe(3);
+    expect(store.getState().pending.filter((e) => e.type === 'provisional_day')).toHaveLength(2);
+    expect(await store.getState().timer(timed)).toBeNull(); // review: day 2's timer must not open day 3's quest at its target
   });
 
   it('an app too old for the server (M9b) builds no day either, though today has ended (review)', async () => {

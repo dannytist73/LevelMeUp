@@ -69,9 +69,12 @@ type Built = { event: Omit<ProvisionalDayEvent, 'id'>; held: Held };
 /**
  * Closes the ended day `shown.today` as the server will, then builds the next one with the same rules. `baseline`: the
  * server's own day, whose completions the server's counts already hold (none for a day this phone built). `first`: the
- * day closed is the server's, so the changes still on their way, a light day asked for and the named article apply.
+ * day closed is the server's, so a light day asked for and the named article apply. `changes`: the ladder changes made
+ * on that day (review: a pain report on a day the phone built rests the exercise in the next one too).
  */
-function step(shown: Shown, held: Held, baseline: TodayView | null, first: boolean, nowMs: number, timeZone: string): Built | null {
+function step(
+  shown: Shown, held: Held, baseline: TodayView | null, first: boolean, changes: Shown['ladderChanges'], nowMs: number, timeZone: string,
+): Built | null {
   const today = shown.today;
   if (today === null || today.startsAt === null || today.endsAt === null) return null;
   const last = { startsAt: Date.parse(today.startsAt), endsAt: Date.parse(today.endsAt), timeZone: today.timeZone };
@@ -81,7 +84,7 @@ function step(shown: Shown, held: Held, baseline: TodayView | null, first: boole
     // Changes still on their way come first, as the server applies events before it closes a day (review): "I felt
     // pain" rests an exercise, Resume brings it back a rung easier, a step-down lowers its ladder.
     const beforeClose: Record<string, LadderState> = { ...held.ladders };
-    for (const { key, change } of first ? shown.ladderChanges : []) {
+    for (const { key, change } of changes) {
       const state = beforeClose[key] ?? newLadder();
       if (change === 'pain') beforeClose[key] = recordPain(state).state;
       else if (change === 'step_down') beforeClose[key] = stepDown(state).state;
@@ -162,7 +165,7 @@ function serverHeld(server: ServerState): Held | null {
 export function offlineDay(server: ServerState, shown: Shown, nowMs: number, timeZone: string): Omit<ProvisionalDayEvent, 'id'> | null {
   const held = serverHeld(server);
   if (shown.offline || held === null) return null;
-  return step(shown, held, server.today, true, nowMs, timeZone)?.event ?? null;
+  return step(shown, held, server.today, true, shown.ladderChanges, nowMs, timeZone)?.event ?? null;
 }
 
 /**
@@ -178,13 +181,17 @@ export function nextOfflineDay(server: ServerState, pending: readonly PhoneEvent
   if (built.length === 0) return offlineDay(server, project(server, events), nowMs, timeZone);
   if (built.length >= MAX_OFFLINE_DAYS) return null;
   let held = serverHeld(server);
+  let counted = 0; // the ladder changes already applied by an earlier close
   for (let k = 0; k < built.length && held !== null; k++) {
     const made = events[built[k]!] as ProvisionalDayEvent;
-    held = step(project(server, events.slice(0, built[k])), held, k === 0 ? server.today : null, k === 0, made.builtAt, timeZone)?.held ?? null;
+    const before = project(server, events.slice(0, built[k]));
+    // Each built day is closed again as it was then: its own clock and time zone (review: not today's zone).
+    held = step(before, held, k === 0 ? server.today : null, k === 0, before.ladderChanges.slice(counted), made.builtAt, made.timeZone)?.held ?? null;
+    counted = before.ladderChanges.length;
   }
   if (held === null) return null;
   const shown = project(server, events);
-  // The server's state already has a later day: nothing is built here (the next sync shows it).
-  if (!shown.offline) return null;
-  return step(shown, held, null, false, nowMs, timeZone)?.event ?? null;
+  // The server's state already has the day built here (it arrived before its event left the outbox): build after it.
+  if (!shown.offline) return offlineDay(server, shown, nowMs, timeZone);
+  return step(shown, held, null, false, shown.ladderChanges.slice(counted), nowMs, timeZone)?.event ?? null;
 }

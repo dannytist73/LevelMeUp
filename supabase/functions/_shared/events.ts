@@ -138,7 +138,15 @@ export function adjustPayload(event: AdjustEvent): Record<string, unknown> {
   return rest;
 }
 
-export type SyncRequest = { timeZone: string; events: PhoneEvent[]; rejected: Rejected[]; have: string[]; want: string[] };
+/**
+ * `more`: the phone has more events waiting (premium pass, review): a week offline spans several requests, and closing
+ * the days at the end of the first would refuse the rest. Held only on a full-sized batch without check-in answers
+ * (an answer closes the days that have ended), so no request can keep the days open by itself.
+ */
+export type SyncRequest = { timeZone: string; events: PhoneEvent[]; rejected: Rejected[]; have: string[]; want: string[]; more: boolean };
+
+/** The fewest events a request saying "more to come" must carry. */
+export const MORE_MIN_EVENTS = 10;
 
 /** Instance and day ids: positive safe integers. */
 const isId = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) > 0;
@@ -351,7 +359,8 @@ export function parseSyncBody(body: unknown): SyncRequest | Problem {
       rejected.push(parsed);
     }
   }
-  return { timeZone: canonicalTimeZone(body.timeZone), events, rejected, have, want };
+  const more = body.more === true && events.length >= MORE_MIN_EVENTS && !events.some((e) => e.type === 'checkin');
+  return { timeZone: canonicalTimeZone(body.timeZone), events, rejected, have, want, more };
 }
 
 /** What a timer must cover: the condition's time, else the quest's minutes. */

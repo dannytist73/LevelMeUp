@@ -165,6 +165,13 @@ describe('Today', () => {
     expect(store.getState().syncNow).toHaveBeenCalled();
   });
 
+  it('once the ended sign-in is gone from the phone, offers both ways in words true for each (premium pass review)', async () => {
+    await renderToday({ signInLost: true, account: { kind: 'none' } });
+    expect(screen.getByLabelText(/^System: This phone's sign-in ended/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sign in with Google again' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start again as a new guest' })).toBeTruthy();
+  });
+
   it('shows a refused action as a plain notice that can be dismissed', async () => {
     const { store } = await renderToday({ notices: [{ eventId: 'e1', code: 'day_closed' }] });
     expect(screen.getByLabelText('System: That day had already closed, so the change was not saved.')).toBeTruthy();
@@ -711,6 +718,6 @@ describe('Today after a missed day (M7a)', () => {
     const state = { ...checkinState(), checkin: null, lighterPlan: { from: 25, to: 15, offered: true } };
     await renderToday(testStore({ view: project(state, []) }), DAY_TWO_NOW);
     await fireEvent.press(screen.getByText(LIGHTER_TEXT.accept));
-    expect(peekToast()?.message).toBe('Lighter from your next quest day: 15 minutes a day. Change it in Your game.');
+    expect(peekToast()?.message).toBe('Lighter from your next quest day: 15 minutes a day. Change it in Settings, Daily plan.');
   });
 });

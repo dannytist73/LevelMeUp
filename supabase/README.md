@@ -103,7 +103,7 @@ model keys never leave Supabase.
 - Settings (M7b, `0012`: `character_state.rest_day`; `adjust` takes `settings`, `restDay` and a late day's `tappedAt`):
   the `settings` event carries the voice, `boundaryMinutes` (whole half hours), `minutesPerDay` and difficulty, always
   all four; `plan_rest` may carry `tomorrow: true` (the next day is built as planned rest) and, like `pain`, a tap time
-  `at`, so a rest tapped while its day ran still protects it when it syncs after the day ended (within 48 hours, before
+  `at`, so a rest tapped while its day ran still protects it when it syncs after the day ended (within 7 days since 0020, before
   the day is closed; only its protection changes). A late rest is refused as `rest_late`; a pain report applied without
   its day is `ok` with `notice: 'pain_late'`.
 - The Accountability Pact (M7c, `0013`: `checkins.consequence` and `trial_done_at`; `adjust` takes

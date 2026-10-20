@@ -16,9 +16,11 @@ export type SnackbarProps = {
   /** Called when its time is up (or after the action): the owner stops showing it. */
   onHide: () => void;
   ms?: number;
+  /** Already said out loud by its owner (the app note): no live region, so it isn't read twice. */
+  announced?: boolean;
 };
 
-export function Snackbar({ message, actionLabel, onAction, onHide, ms = SNACKBAR_MS }: SnackbarProps) {
+export function Snackbar({ message, actionLabel, onAction, onHide, ms = SNACKBAR_MS, announced = false }: SnackbarProps) {
   const hide = useRef(onHide);
   hide.current = onHide;
   useEffect(() => {
@@ -28,7 +30,7 @@ export function Snackbar({ message, actionLabel, onAction, onHide, ms = SNACKBAR
   return (
     <View
       testID="snackbar"
-      accessibilityLiveRegion="polite"
+      accessibilityLiveRegion={announced ? 'none' : 'polite'}
       style={{
         flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, paddingLeft: 16,
         paddingRight: actionLabel === undefined ? 16 : 14,
