@@ -72,7 +72,10 @@ export async function syncOnce(deps: SyncDeps): Promise<SyncOutcome> {
     // Asked for until a request succeeds: a 413 retry keeps asking (M8b review).
     const want: string[] = asked !== null ? [] : (deps.wanted?.() ?? []).filter((id) => !have.includes(id)).slice(0, MAX_WANT);
     const events = fitBody(await deps.local.pending(limit), timeZone, { have, want });
+    const sentAt = Date.now();
     const call = await deps.api.sync({ timeZone, events, have, want });
+    // M17: how long a round takes, in development builds only (Metro's log), to see what the server work costs.
+    if (typeof __DEV__ !== 'undefined' && __DEV__) console.info(`[sync] ${events.length} events, ${Date.now() - sentAt} ms`);
     if (!call.ok) {
       if (call.code === 'network') return { kind: 'offline' };
       if (call.status === 413 && events.length > 1) {
