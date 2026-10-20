@@ -19,9 +19,14 @@ export type OptionCardProps = {
   accessibilityLabel?: string;
   /** M13: something drawn under the words (a look's colours, a Plus tag), hidden from screen readers. */
   aside?: ReactNode;
+  /**
+   * M17 (UX audit O11): whether a disabled card is drawn faded (the default). A card that can't be picked but must stay
+   * readable (your current class) passes false: faded, its words fell to 2.45:1.
+   */
+  dim?: boolean;
 };
 
-export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel, aside }: OptionCardProps) {
+export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel, aside, dim = disabled }: OptionCardProps) {
   return (
     <Tap
       accessibilityRole={kind}
@@ -37,7 +42,7 @@ export function OptionCard({ label, detail, selected, onPress, kind = 'radio', d
         style={{
           minHeight: 52, paddingVertical: 12, paddingHorizontal: 16, gap: 2, justifyContent: 'center', borderRadius: radius.control,
           borderWidth: space.heroBorder, borderColor: selected ? colors.accent : colors.lineStrong, backgroundColor: selected ? colors.paper : colors.panel,
-          opacity: disabled ? 0.45 : 1,
+          opacity: dim ? 0.45 : 1,
         }}
       >
         <Body weight="bold" tone={selected ? 'ink' : 'chalk'}>{label}</Body>

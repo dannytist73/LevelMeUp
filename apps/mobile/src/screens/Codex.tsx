@@ -11,6 +11,7 @@ import { colors, space } from '../theme/tokens.ts';
 import { LinkButton } from '../ui/LinkButton.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Snackbar } from '../ui/Snackbar.tsx';
+import { StateNote } from '../ui/StateNote.tsx';
 import { Small } from '../ui/Text.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
 import { LessonCard } from './Library.tsx';
@@ -26,7 +27,10 @@ export function Codex({ onBack, onOpenReading = () => {} }: { onBack: () => void
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + (removed === null ? 32 : 96), paddingHorizontal: space.gutter, gap: 16 }}>
         <TopBar title={C.title} onBack={onBack} />
-        <Small>{codex.length === 0 ? C.empty : `${C.line} ${fillText(C.count, { n: codex.length })}`}</Small>
+        {/* M17: an empty Codex says so as the Library does, not as one small line on a blank screen. */}
+        {codex.length === 0
+          ? <StateNote kind="empty" title={READING_TEXT.library.noKept} line={C.empty} />
+          : <Small>{`${C.line} ${fillText(C.count, { n: codex.length })}`}</Small>}
         {codex.map((entry) => (
           <View key={entry.articleId} style={{ gap: 4 }}>
             <LessonCard entry={entry} onOpen={() => onOpenReading(entry.articleId)} />

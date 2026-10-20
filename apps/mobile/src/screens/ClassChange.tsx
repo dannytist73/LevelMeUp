@@ -84,6 +84,8 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
               detail={`${classStats(CLASSES[c])}. ${CLASS_DAYS[c]} ${fillText(T.levels, { five: ABILITY_NAMES[five!], ten: ABILITY_NAMES[ten!] })}`}
               selected={picked === c}
               disabled={lock !== null || c === current}
+              // M17 (UX audit O11): every class stays readable, the current one and while changes are locked too.
+              dim={false}
               onPress={() => setPicked(c)}
             />
           );
