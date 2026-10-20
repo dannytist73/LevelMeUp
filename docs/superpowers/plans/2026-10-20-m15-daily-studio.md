@@ -50,12 +50,23 @@ uses, uploads the picture and publishes the article. The PC holds one key that c
 
 ## Verified
 
-- Unit: 25 new tests (`articles-studio.test.ts`, `studio-local.test.ts`); all 600 server tests, the server typecheck
+- Unit: 27 new tests (`articles-studio.test.ts`, `studio-local.test.ts`); all 602 server tests, the server typecheck
   and `check:functions` (six functions) pass.
 - The page reader on real pages: a Sleep Foundation page (main content only), PubMed through E-utilities, PMC.
+- Live (owner's yes, 2026-10-20): 0018 applied by `db:deploy` (wedding history unchanged), `db:test` 884 checks with
+  nothing left behind, `lmu-articles-studio` deployed (a wrong key gets 401), `LMU_STUDIO_SECRET` set.
+- First job, 122 (movement: adding steps about 1,000 a day at a time):
+  - Research: 13 facts from 9 pages, every quote found on its page (Mayo Clinic Press, Northwestern Medicine, ACC,
+    ScienceDaily, EurekAlert, Science Media Centre, PMC through E-utilities, PubMed through E-utilities).
+  - The article passed on its third draft (each refusal was a copied run; the up-front warning and the passage-only
+    excerpts came from this). The story (Jonah) passed first time.
+  - Dry run checked by the server; the picture waited for memory (the emulator was on), then rendered with 9.8 GB
+    free: three takes, all on-model; Claude's pick was the cleanest.
+  - Published as article-122 with 9 sources, 1,140 words, its deck and `story-v1/article-122.webp` (the public file
+    is byte for byte the PC's, 58 KB); ComfyUI, started by the run, was stopped again.
+- Not checked: the article and its picture on a phone (the emulator was off; 0.7.1 and later show story pictures).
 
 ## Waiting for the owner
 
-- `claude setup-token`, then `npm run studio -- token` (the CLI on this PC is signed out).
-- Yes to: migration 0018 (`npm run db:deploy`, then `npm run db:test`), deploying `lmu-articles-studio`,
-  `npm run studio -- setup` (the secret), a dry run, the first real run, and the scheduled task.
+- The scheduled task (`scripts/studio/schedule.ps1`, daily at 9:00 AM while signed in).
+- About 2026-10-27: turning off the server's own nightly writer, if the studio has run cleanly for a week.
