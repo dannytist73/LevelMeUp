@@ -15,7 +15,7 @@ import type { NewEvent } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Appear } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
-import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { NarrationBox, SystemCard } from '../ui/NarrationBox.tsx';
 import { NightCard } from '../ui/NightCard.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { Tap } from '../ui/Tap.tsx';
@@ -119,18 +119,14 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
       <View style={{ gap: 12 }}>
         {/* Review: pain stays in reach while a change is being confirmed (it had been under the card, always shown). */}
         {pain !== null && <View style={{ flexDirection: 'row' }}>{pain}</View>}
-        <NarrationBox>{panel.text}</NarrationBox>
-        {panel.sends.map((send) => (
-          <Button
-            key={send.label}
-            label={send.label}
-            onPress={() => {
-              setConfirm(null);
-              void enqueue(send.event);
-            }}
-          />
-        ))}
-        <Button label={T.day.notNow} variant="secondary" onPress={() => setConfirm(null)} />
+        {/* M17 (UX audit 2026-10-20, old finding 1): one System card with its answers inside, quiet like the other notes,
+            so Up next keeps Today's one bright button. */}
+        <Appear>
+          <SystemCard text={panel.text} actions={[
+            ...panel.sends.map((send) => ({ label: send.label, onPress: () => { setConfirm(null); void enqueue(send.event); } })),
+            { label: T.day.notNow, onPress: () => setConfirm(null) },
+          ]} />
+        </Appear>
       </View>
     );
   }
