@@ -19,7 +19,9 @@ function Step({ text, label, onPress }: { text: string; label: string; onPress: 
 export function TimeStepper({ label, minutes, onChange }: { label: string; minutes: number; onChange: (minutes: number) => void }) {
   const move = (by: number) => onChange((minutes + by + DAY) % DAY);
   return (
-    <View style={{ flexGrow: 1, flexBasis: 150, gap: 8 }}>
+    // M17: wide enough for "11:00 PM" on one line between the buttons; two in a row (wake and sleep) stack on a phone.
+    // At 150 dp each, the time broke onto two lines ("7:00 / AM") side by side on a 411 dp phone.
+    <View style={{ flexGrow: 1, flexBasis: 220, gap: 8 }}>
       <Label>{label}</Label>
       <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: space.border, borderColor: colors.lineStrong, borderRadius: radius.control, backgroundColor: colors.panel }}>
         <Step text="−" label={`${label} 30 minutes earlier`} onPress={() => move(-30)} />
