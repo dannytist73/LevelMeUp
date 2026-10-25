@@ -7,8 +7,9 @@ the other poses from it, so the Grumble stays on-model; Wan 2.2 (image to video,
 Start ComfyUI first (as scripts/art/story-art.py says), and run with its Python (PIL and numpy):
   D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe scripts/art/grumble-art.py style [--seeds 11 22]
     -> art/grumbles/renders/style-<look>-<seed>.png   (the style test: Snoozle in each look)
-  grumble-art.py poses LOOK SEED                     -> style-<look>-<seed>-<pose>.png (blink, hit, happy, sleep)
-  grumble-art.py clip LOOK SEED [--motion idle]      -> style-<look>-<seed>-clip-<motion>/ (frames) + .webp
+  grumble-art.py paint ID LOOK [--seeds 11 22]      -> art/grumbles/renders/<id>-<look>-<seed>.png (any Grumble)
+  grumble-art.py poses STEM                          -> <stem>-<pose>.png (blink, hit, happy, sleep), STEM a render's name
+  grumble-art.py clip STEM [--motion idle]           -> <stem>-clip-<motion>/ (frames) + <stem>-clip-<motion>.webp
   grumble-art.py key SRC DEST                        -> DEST, the green screen keyed out, trimmed, square, 512 px
   grumble-art.py sheet                               -> art/grumbles/renders/_style.jpg (every style render)
 Existing renders are skipped, so a changed prompt needs new seeds (or the old renders deleted).
@@ -40,10 +41,56 @@ LOOKS = {
 }
 
 # The Grumbles' looks, by id (packages/content/src/grumbles.ts): one fixed description each, so every pose stays on-model.
+# Never green: the green screen is keyed out.
 GRUMBLES = {
     "snoozle": ("a small round sleepy monster shaped like a soft pillow bean, pale lilac-blue fur, droopy half-closed sleepy "
                 "eyes, rosy cheeks, a tiny floppy nightcap with a pom-pom, tiny stubby arms hugging a small round alarm clock, "
                 "two little feet"),
+    "scrollo": ("a small round monster with glowing sky-blue skin, big shiny dazzled eyes, a long curly tail that coils like a "
+                "scrolling ribbon, a swirl-shaped antenna, holding a tiny glowing phone close to its face"),
+    "laterpillar": ("a chubby little caterpillar monster with soft lavender segments dotted with pale pink spots, a sleepy "
+                    "content smile, tiny round glasses pushed up on its head, holding a little hourglass"),
+    "knowitowl": ("a round fluffy owl monster with cream and sky-blue feathers, oversized round glasses, a tiny graduation cap, "
+                  "smug half-lidded eyes, a closed book tucked under one wing"),
+    "fizzbit": ("a small bubbly soda-pop monster made of translucent pink jelly with little bubbles rising inside it, a bendy "
+                "striped straw sticking up like an antenna, sparkly excited eyes"),
+    "pingle": ("a tiny round bell-shaped monster in pale sky blue with a little silver bell on its head and a white speech "
+               "bubble floating above it, wide alert eyes, little vibration lines around it"),
+    "slumpkin": ("a squishy lavender-grey cushion monster slumped and half melted into a tiny soft sofa, droopy heavy eyelids, "
+                 "holding a little TV remote, very comfy"),
+    "skimmy": ("a small flat flying-fish monster with pale aqua scales and long fins, zooming over an open book with speed "
+               "lines, eager wide eyes"),
+    "nightowlet": ("a tiny dark indigo baby owl monster with huge glowing eyes, wrapped in a small blanket, holding a little "
+                   "popcorn bucket, faint screen glow on its face"),
+    "tabbit": ("a white bunny monster with far too many long ears, six of them, each tipped in a different pastel colour like "
+               "browser tabs, frazzled swirly eyes"),
+    "comfortoise": ("a little tortoise monster whose shell is a cozy blanket fort with a pillow on top, wearing fuzzy slippers, "
+                    "a content sleepy smile, cream and lilac colours"),
+    "blurb": ("a round speech-bubble shaped monster, white and puffy with a big open mouth, a tiny folded newspaper hat, "
+              "excited eyes"),
+    "stiffle": ("a stiff little monster made of folded beige paper with boxy limbs and tiny hinge joints, standing very straight "
+                "and rigid, worried eyes, a few creak lines"),
+    "grabbit": ("a pastel pink bunny monster with long stretchy grabby arms, always clutching a glowing phone in both paws, "
+                "eager eyes"),
+    "excusaurus": ("a tiny chubby baby dinosaur monster in pastel purple holding an umbrella, wearing sunglasses and a scarf all "
+                   "at once, a sheepish grin"),
+    "forgetto": ("a fluffy cloud-puff monster in dreamy pale blue with a little hat sliding off its head, a string tied in a bow "
+                 "around one finger, a puzzled look"),
+    "rushkin": ("a tiny round coral pink monster mid-run, out of breath with little sweat drops, wearing tiny sneakers, a "
+                "stopwatch on a string around its neck"),
+    "juggles": ("a cheerful little jester monster in purple and sky blue with four arms juggling a mug, a phone, a book and a "
+                "ball at once, a tiny bell hat"),
+    "shyling": ("a shy little ghost-like blob monster in white and pale pink peeking out from behind a small pillow, rosy "
+                "blushing cheeks, big timid eyes"),
+    "zonkle": ("a round pastel blue-violet monster with spiral swirl eyes and a little propeller beanie, a dazed happy smile"),
+    "liftle": ("a small boxy lift-shaped monster in lilac and silver, sliding doors for a mouth, two round button cheeks with "
+               "little arrows, a tiny bell on top, a lazy grin"),
+    "cloudle": ("a fluffy white cloud monster floating a little above the ground, dreamy half-closed eyes, a tiny crescent moon "
+                "and two little stars drifting around it"),
+    "mehbit": ("a droopy grey-lilac bunny monster that looks like a half-deflated balloon, ears flopped down, mid-sigh with "
+               "half-closed eyes"),
+    "shrugget": ("a little buttery cream nugget-shaped monster with surprisingly big shoulders raised in a huge shrug, palms up, "
+                 "a who-knows face"),
 }
 
 POSES = {
@@ -206,11 +253,26 @@ def style(seeds: list[int], grumble: str = "snoozle") -> None:
             print(f"{dest.name} ({time.time() - t:.0f} s)", flush=True)
 
 
-def poses(look: str, seed: int) -> None:
-    src = RENDERS / f"style-{look}-{seed}.png"
+def paint(grumble: str, look: str, seeds: list[int]) -> None:
+    for seed in seeds:
+        dest = RENDERS / f"{grumble}-{look}-{seed}.png"
+        if dest.exists():
+            continue
+        t = time.time()
+        fetch(run(zimage(f"{LOOKS[look]}. {GRUMBLES[grumble]}. {BACKDROP}", seed, f"lmu/grumble-{dest.stem}"))[0], dest)
+        print(f"{dest.name} ({time.time() - t:.0f} s)", flush=True)
+
+
+def seed_of(stem: str) -> int:
+    return int(stem.rsplit("-", 1)[1])
+
+
+def poses(stem: str) -> None:
+    src = RENDERS / f"{stem}.png"
+    seed = seed_of(stem)
     name = upload(src)
     for pose, instruction in POSES.items():
-        dest = RENDERS / f"style-{look}-{seed}-{pose}.png"
+        dest = RENDERS / f"{stem}-{pose}.png"
         if dest.exists():
             continue
         t = time.time()
@@ -218,9 +280,10 @@ def poses(look: str, seed: int) -> None:
         print(f"{dest.name} ({time.time() - t:.0f} s)", flush=True)
 
 
-def clip(look: str, seed: int, motion: str) -> None:
-    src = RENDERS / f"style-{look}-{seed}.png"
-    frames_dir = RENDERS / f"style-{look}-{seed}-clip-{motion}"
+def clip(stem: str, motion: str) -> None:
+    src = RENDERS / f"{stem}.png"
+    seed = seed_of(stem)
+    frames_dir = RENDERS / f"{stem}-clip-{motion}"
     if not frames_dir.exists():
         t = time.time()
         images = run(wan_i2v(upload(src), MOTIONS[motion], seed, f"lmu/grumble-{frames_dir.name}"))
@@ -270,12 +333,14 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("style")
     s.add_argument("--seeds", type=int, nargs="+", default=[11, 22])
+    s = sub.add_parser("paint")
+    s.add_argument("grumble", choices=GRUMBLES)
+    s.add_argument("look", choices=LOOKS)
+    s.add_argument("--seeds", type=int, nargs="+", default=[11, 22])
     s = sub.add_parser("poses")
-    s.add_argument("look", choices=LOOKS)
-    s.add_argument("seed", type=int)
+    s.add_argument("stem")
     s = sub.add_parser("clip")
-    s.add_argument("look", choices=LOOKS)
-    s.add_argument("seed", type=int)
+    s.add_argument("stem")
     s.add_argument("--motion", choices=MOTIONS, default="idle")
     s = sub.add_parser("key")
     s.add_argument("src", type=Path)
@@ -284,10 +349,12 @@ def main() -> None:
     a = p.parse_args()
     if a.cmd == "style":
         style(a.seeds)
+    elif a.cmd == "paint":
+        paint(a.grumble, a.look, a.seeds)
     elif a.cmd == "poses":
-        poses(a.look, a.seed)
+        poses(a.stem)
     elif a.cmd == "clip":
-        clip(a.look, a.seed, a.motion)
+        clip(a.stem, a.motion)
     elif a.cmd == "key":
         print(key(a.src, a.dest))
     else:
