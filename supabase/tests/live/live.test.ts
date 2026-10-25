@@ -48,6 +48,10 @@ describe('a player from onboarding to a cleared quest', () => {
     expect(state.character.stats.strength.points).toBe(7);
     expect(state.today).toMatchObject({ dayNumber: 1, light: true, status: 'open', budget: 10 });
     expect(state.today.quests.length).toBeGreaterThanOrEqual(3);
+    // Monster Week: battle 1 against Snoozle over days 1-3, ending when day 3 ends; nobody in camp yet.
+    expect(state.battle).toMatchObject({ n: 1, grumble: 'snoozle', weakness: 'vitality', first: 1, last: 3, rematch: 0, power: 0, waiting: false });
+    expect(Date.parse(state.battle.endsAt) - Date.parse(state.today.endsAt)).toBeGreaterThanOrEqual(46 * 3_600_000);
+    expect(state.camp).toEqual({ wins: {}, last: null });
   });
 
   it('onboarding happens once', async () => {
@@ -76,6 +80,8 @@ describe('a player from onboarding to a cleared quest', () => {
     expect(done.body.results).toEqual([{ id: first, ok: true, result: expect.objectContaining({ totalXp: total }) }]);
     expect(done.body.state.character.totalXp).toBe(total);
     expect(done.body.newAchievements).toContain('first-trial');
+    // Monster Week: the clear charges the battle, double on Snoozle's weakness.
+    expect(done.body.state.battle.power).toBe(core.stat === 'vitality' ? 2 : 1);
 
     const repeat = await sync(a, [{ id: first, type: 'complete', instanceId: core.id, completedAt: now(), payload: { sets: [6, 5] } }]);
     expect(repeat.body.results[0]).toEqual(done.body.results[0]);
