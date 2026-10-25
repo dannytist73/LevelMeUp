@@ -7,7 +7,8 @@ import type { StoryDeck } from '../../functions/_shared/articles/deck.ts';
 import { tick } from '../../functions/_shared/articles/pipeline.ts';
 import type { Batches, Job, JobSet, JobStatus, Store, StoredArticle, StoredSource } from '../../functions/_shared/articles/pipeline.ts';
 import {
-  STUDIO_ATTEMPTS, claim, parseStudioBrief, readPicture, readSubmission, recordFailure, studioPicturePath, submit, webpSize,
+  STUDIO_ATTEMPTS, claim, parseStudioBrief, readPicture, readSubmission, recordFailure, repicture, storyPicturePath, studioPicturePath, submit,
+  webpSize,
 } from '../../functions/_shared/articles/studio.ts';
 import type { StudioStore, Submission } from '../../functions/_shared/articles/studio.ts';
 import { BRIEF, articleJson, storyDeckJson } from './articles-fixtures.ts';
@@ -39,6 +40,13 @@ class FakeStudio implements StudioStore, Store {
     this.job(jobId).status = 'done';
     this.stored.push({ jobId, article, sources, brief, deck });
     return `article-${jobId}`;
+  }
+  decks = new Map<string, { picture?: string }>();
+  async setPicture(articleId: string, path: string) {
+    const deck = this.decks.get(articleId);
+    if (deck === undefined) return false;
+    deck.picture = path;
+    return true;
   }
   job(id: number) { return this.jobs.find((j) => j.id === id)!; }
   // The rest of the tick's store, for the check that the tick leaves studio jobs alone.
@@ -208,7 +216,7 @@ describe('a checked article is stored with its story and picture (M15)', () => {
     const store = new FakeStudio();
     await claim(store);
     uploads.length = 0;
-    expect(await submit(store, art, readSubmission(body()) as Submission, true)).toEqual({ checked: 'article-57', picture: 'story-v1/article-57.webp', words: 909 });
+    expect(await submit(store, art, readSubmission(body()) as Submission, true)).toEqual({ checked: 'article-57', picture: 'story-clay/article-57.webp', words: 909 });
     expect(uploads).toEqual([]);
     expect(store.stored).toEqual([]);
     expect(store.job(57).status).toBe('studio');
@@ -218,10 +226,10 @@ describe('a checked article is stored with its story and picture (M15)', () => {
     const store = new FakeStudio();
     await claim(store);
     uploads.length = 0;
-    expect(await submit(store, art, readSubmission(body()) as Submission, false)).toEqual({ stored: 'article-57', picture: 'story-v1/article-57.webp', words: 909 });
+    expect(await submit(store, art, readSubmission(body()) as Submission, false)).toEqual({ stored: 'article-57', picture: 'story-clay/article-57.webp', words: 909 });
     expect(uploads).toEqual([studioPicturePath(57)]);
     const [stored] = store.stored;
-    expect(stored!.deck.picture).toBe('story-v1/article-57.webp');
+    expect(stored!.deck.picture).toBe('story-clay/article-57.webp');
     expect(stored!.article).toMatchObject({ words: 909, readingMinutes: 6 });
     expect(stored!.sources.map((s) => s.idx)).toEqual([1, 2, 3]);
     expect(stored!.brief).toEqual(BRIEF);
@@ -241,5 +249,33 @@ describe('a checked article is stored with its story and picture (M15)', () => {
     await claim(store);
     store.job(57).status = 'done';
     expect(await submit(store, art, readSubmission(body()) as Submission, false)).toEqual({ conflict: 'not_the_studios' });
+  });
+});
+
+describe('a stored story gets its clay picture (Monster Buddy)', () => {
+  const uploads: string[] = [];
+  const art = { async upload(path: string) { uploads.push(path); } };
+  const picture = webpHeader(960, 540);
+
+  it("goes to the clay folder at the article's own path, new studio pictures too", () => {
+    expect(storyPicturePath('article-22')).toBe('story-clay/article-22.webp');
+    expect(studioPicturePath(145)).toBe('story-clay/article-145.webp');
+  });
+
+  it('uploads the picture first, then names it on the deck', async () => {
+    const store = new FakeStudio();
+    store.decks.set('article-22', { picture: 'story-v1/article-22.webp' });
+    uploads.length = 0;
+    expect(await repicture(store, art, 'article-22', picture)).toEqual({ picture: 'story-clay/article-22.webp' });
+    expect(uploads).toEqual(['story-clay/article-22.webp']);
+    expect(store.decks.get('article-22')!.picture).toBe('story-clay/article-22.webp');
+  });
+
+  it("gives an article without a story none, and refuses an id that isn't an article's without uploading", async () => {
+    const store = new FakeStudio();
+    uploads.length = 0;
+    expect(await repicture(store, art, 'article-140', picture)).toEqual({ missing: true });
+    expect(await repicture(store, art, '../tick', picture)).toEqual({ missing: true });
+    expect(uploads).toEqual(['story-clay/article-140.webp']);
   });
 });

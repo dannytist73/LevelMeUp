@@ -5,6 +5,7 @@
 import { castMember } from '@levelmeup/content';
 import type { CastMember } from '@levelmeup/content';
 import type { ArticleDeck, LegacyDeck, StoryDeck } from '../../../../supabase/functions/_shared/articles/deck.ts';
+import { STORY_PICTURE } from '../art/stories.ts';
 
 export type { ArticleDeck, LegacyDeck, StoryDeck };
 
@@ -60,7 +61,8 @@ function asStory(d: Record<string, unknown>): StoryDeck | null {
     check: { question: c.question, options: c.options, answer: c.answer, why: c.why },
     lesson: d.lesson as string, tryToday: d.tryToday as string,
   };
-  // Monster Week: the story's picture (M14) is left out; the owner retired the earlier pictures, so the cover reads alone.
+  // The picture is a nicety: one of any other shape (the retired flat set's too) is dropped, and the story still shows.
+  if (typeof d.picture === 'string' && STORY_PICTURE.test(d.picture)) deck.picture = d.picture;
   return deck;
 }
 

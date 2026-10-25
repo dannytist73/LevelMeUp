@@ -6,11 +6,13 @@
 //   { "action": "fail", "jobId", "error" }                 -> { recorded }
 //   { "action": "submit", "jobId", "brief", "article", "deck", "picture"?, "dry"? }
 //                                                          -> { stored | checked, picture, words }, or 422 { problems }
+//   { "action": "picture", "articleId", "picture" }        -> { picture } (Monster Buddy: a stored story's clay picture),
+//                                                             422 { problems }, or 404 when the article has no story
 import { db, lmuCode } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { tickAllowed } from '../_shared/articles/auth.ts';
 import { studioStore } from '../_shared/articles/store.ts';
-import { STUDIO_MAX_BODY, claim, readSubmission, recordFailure, submit } from '../_shared/articles/studio.ts';
+import { STUDIO_MAX_BODY, claim, readPicture, readSubmission, recordFailure, repicture, submit } from '../_shared/articles/studio.ts';
 import type { Art } from '../_shared/articles/studio.ts';
 import { clip } from '../_shared/articles/text.ts';
 
@@ -49,7 +51,14 @@ Deno.serve(async (req) => {
       const result = await submit(store, art(), read, body.dry === true);
       return 'conflict' in result ? problemResponse(problem(409, 'conflict', 'the job is not waiting in the studio')) : json(200, result);
     }
-    return problemResponse(problem(400, 'bad_request', 'action is claim, fail or submit'));
+    if (body.action === 'picture') {
+      if (typeof body.articleId !== 'string') return problemResponse(problem(400, 'bad_request'));
+      const picture = readPicture(body.picture);
+      if (typeof picture === 'string') return json(422, { error: 'refused', problems: [picture] });
+      const result = await repicture(store, art(), body.articleId, picture);
+      return 'missing' in result ? problemResponse(problem(404, 'not_found', 'no stored story has that id')) : json(200, result);
+    }
+    return problemResponse(problem(400, 'bad_request', 'action is claim, fail, submit or picture'));
   } catch (error) {
     if (lmuCode(error) === 'conflict') return problemResponse(problem(409, 'conflict', 'the job is not waiting in the studio'));
     console.error('lmu-articles-studio failed', error);

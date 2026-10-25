@@ -1,17 +1,25 @@
 """LevelMeUp story pictures (M14): one picture per story lesson, of its regular in the story's turning moment, rendered
-with Z-Image Turbo in the owner's local ComfyUI, in the quest art's style. Each regular has one fixed look (CAST), written
-into every prompt, so the same person comes back from story to story.
+with Z-Image Turbo in the owner's local ComfyUI. Each regular has one fixed look (CAST), written into every prompt, so the
+same person comes back from story to story. Monster Buddy (docs/2026-10-25-monster-buddy.md, decision 7): painted in clay
+like the Grumbles, and when the story is about a habit a Grumble stands for, that Grumble is in the scene: painted as a
+little monster first, then swapped for the real one with Qwen-Image-Edit and its still as the second image, so it looks
+like itself (`grumble`). The set is published to lmu-art/story-clay (the flat story-v1 set was retired 2026-10-25).
 
 Start ComfyUI first (Windows Application Control blocks torchaudio, so use the no-audio starter):
   Start-Process D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe run_noaudio.py -WorkingDirectory D:\\ai\\ComfyUI
 
 usage (with D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe, or any Python 3.11+):
   story-art.py cast [ID ...] [--seeds 11 22]        -> art/story/renders/cast-<id>-<seed>.png (each regular's look)
-  story-art.py render [ARTICLE ...] [--seeds ...]   -> art/story/renders/<article>-<seed>.png (every scene when none given)
-  story-art.py sheet [PATTERN]                      -> art/story/renders/_sheet-<page>.jpg (renders matching PATTERN)
-  story-art.py pick                                 -> art/story/v1/<article>.webp from PICKS (published to lmu-art/story-v1)
+  story-art.py render [ARTICLE ...] [--seeds ...]   -> art/story/clay-renders/<article>-<seed>.png (every scene when none given)
+  story-art.py sheet [PATTERN]                      -> art/story/clay-renders/_sheet-<page>.jpg (renders matching PATTERN)
+  story-art.py grumbles                             -> <article>-<seed>-g.png: each picked render with its real Grumble
+  story-art.py pick                                 -> art/story/clay/<article>.webp from PICKS (to lmu-art/story-clay,
+                                                       with `npm run studio -- pictures`)
   story-art.py final                                -> art/story/_set.jpg (the picked set, for the owner)
-  story-art.py scene OUT WHO SCENE [--seeds ...]    -> OUT/<seed>.png (M15: a new story's scene, for scripts/studio)
+  story-art.py scene OUT WHO SCENE [--seeds ...] [--monster]
+                                                    -> OUT/<seed>.png (M15: a new story's scene, for scripts/studio; with
+                                                       --monster a little monster sits in it, for `grumble`)
+  story-art.py grumble SRC ID DEST                  -> DEST: SRC with its little monster swapped for the Grumble ID
   story-art.py webp SRC DEST                        -> DEST, SRC cropped to 960x540 as the published set
   story-art.py look WHO                             -> prints the regular's fixed look
 Existing renders are skipped, so a changed prompt needs new seeds (or the old renders deleted).
@@ -21,15 +29,19 @@ from pathlib import Path
 
 COMFY = "http://127.0.0.1:8188"
 ROOT = Path(__file__).resolve().parents[2]
-RENDERS = ROOT / "art" / "story" / "renders"
-OUT = ROOT / "art" / "story" / "v1"  # the published folder (lmu-art/story-v1); a changed set gets a new one
+RENDERS = ROOT / "art" / "story" / "clay-renders"
+OUT = ROOT / "art" / "story" / "clay"  # the published folder (lmu-art/story-clay); a changed set gets a new one
+GRUMBLE_STILLS = ROOT / "apps" / "mobile" / "assets" / "grumbles"  # the app's Grumbles: <id>-idle.webp
 W, H = 1344, 768  # cropped to 960x540 on pick, like the quest art
 FONT = "C\\:/Windows/Fonts/arial.ttf"  # ffmpeg's drawtext needs a font file on Windows
 
-# The quest art's style (scripts/art/quest-art.py), so the stories sit beside the quests.
-STYLE = ("korean manhwa illustration, bold black ink lineart, flat cel shading, limited palette of ink black, warm cream "
-         "paper and one vermilion red accent, subtle halftone dots, clean background, no text, no letters, no numbers, "
-         "no logo, no watermark")
+# The Grumbles' clay (scripts/art/grumble-art.py LOOKS["clay"]), as a little diorama, so the stories sit beside Monster Week.
+STYLE = ("a tiny cozy 3D clay diorama, glossy soft vinyl and smooth clay, soft subsurface glow, gentle rim light, miniature toy "
+         "photography; the person is a cute chibi clay figurine with a big head and small body, a real human, no animal ears; "
+         "no text, no letters, no numbers, no logo, no watermark")
+MONSTER = "and beside them a small cute round clay monster"
+GRUMBLE_EDIT = ("Replace the small monster with the cute monster from image 2, exactly as it looks in image 2 (its shape, colours "
+                "and accessories), in the same place at the same small size. Keep everything else in image 1 exactly the same.")
 
 # The regulars (packages/content/src/cast.ts): face, hair and build never change; clothes come with the scene.
 CAST = {
@@ -49,7 +61,18 @@ CAST_LOOK = {  # the clothes each regular wears for their reference picture
     "lena": "wearing a linen apron over a plain shirt",
 }
 
-# One scene per story lesson: the regular in the story's turning moment (the decks stored 2026-10-19).
+# The Grumble in each stored story, when the story is about the habit it stands for (packages/content/src/grumbles.ts).
+STORY_GRUMBLES: dict[str, str | None] = {
+    "article-9": "laterpillar", "article-20": "grabbit", "article-21": "nightowlet", "article-22": "snoozle", "article-23": "forgetto",
+    "article-24": None, "article-25": "knowitowl", "article-27": "mehbit", "article-28": None, "article-29": None,
+    "article-30": "scrollo", "article-31": "skimmy", "article-32": "zonkle", "article-33": None, "article-34": "tabbit",
+    "article-35": "shyling", "article-36": "rushkin", "article-37": "fizzbit", "article-55": "excusaurus", "article-56": "blurb",
+    "article-122": "liftle", "article-140": "snoozle", "article-141": "pingle", "article-142": "comfortoise",
+    "article-143": "juggles", "article-144": "excusaurus",
+}
+
+# One scene per story lesson: the regular in the story's turning moment (the decks stored 2026-10-19; the studio's since,
+# from their jobs' scene.json, and article-144's, which had none, from its deck).
 SCENES = {
     "article-9": ("priya", "sitting at a small desk at night under a warm lamp, laptop closed beside her, writing one short line in a small notebook, a calm small smile, wearing a loose cardigan"),
     "article-20": ("jonah", "sitting on a gym bench between sets of squats, breathing slowly, a phone propped on the squat rack beside a loaded barbell, a water bottle in his hand, wearing a running t-shirt"),
@@ -71,16 +94,17 @@ SCENES = {
     "article-37": ("mika", "in a quiet hospital break room at night choosing a cup of tea beside a coffee machine, wearing navy nurse scrubs"),
     "article-55": ("jonah", "jogging slowly along a canal path at dusk toward a small stone bridge, tired but going, wearing running clothes"),
     "article-56": ("jonah", "sitting on a park bench on a Sunday morning taking a photo of his small running notebook with his phone, running shoes on, a few runners in the park behind him, wearing a running t-shirt"),
+    "article-122": ("jonah", "walking a short loop around a quiet residential block after lunch in soft midday light, holding a phone to his ear while glancing at a plain fitness watch on his wrist, a bus depot visible far behind, wearing a navy bus driver's uniform shirt and comfortable sneakers"),
+    "article-140": ("tomas", "lying back on a living room sofa just after lunch, setting a phone alarm with one hand, a laptop closed on the nearby kitchen table beside a half-finished coffee mug and a baby monitor, soft afternoon light through half-closed blinds, wearing a faded t-shirt and sweatpants"),
+    "article-141": ("priya", "sitting at a studio desk in soft afternoon window light, sliding her phone into a canvas bag hanging off her chair with one hand, a blank sticky note and pen beside the keyboard, the monitor glowing softly, wearing a mustard cardigan"),
+    "article-142": ("priya", "sitting at her desk on a quiet Sunday afternoon in soft window light, laying a sheet of hand-drawn icons beside a printed icon set she admires, a fine-liner pen in her hand, an open notebook and a small kitchen timer nearby, wearing an oversized cardigan"),
+    "article-143": ("tomas", "sitting on a sofa late at night under a warm lamp, jotting faint pencil scribbles on the back of an envelope resting on his knee, a baby monitor and empty bottle on the side table, a leaning hall shelf beyond, wearing a soft grey t-shirt"),
+    "article-144": ("jonah", "sitting at a kitchen table at night with a pen, writing one line at the bottom of a running plan sheet, a bus driver's jacket over the chair, a phone beside the sheet, wearing a navy uniform shirt"),
 }
 FRAME = "medium wide shot, one person, the face clearly visible, quiet everyday moment"
 
 # Filled in after picking from the sheets: article -> seed.
-PICKS: dict[str, int] = {
-    "article-9": 11, "article-20": 22, "article-21": 22, "article-22": 22, "article-23": 22, "article-24": 66,
-    "article-25": 22, "article-27": 22, "article-28": 33, "article-29": 33, "article-30": 11, "article-31": 22,
-    "article-32": 11, "article-33": 22, "article-34": 22, "article-35": 11, "article-36": 11, "article-37": 33,
-    "article-55": 22, "article-56": 11,
-}  # picked 2026-10-20 from the sheets: no lettering in the picture, the regular looks like their reference
+PICKS: dict[str, int] = {}
 
 
 def workflow(prompt: str, seed: int, prefix: str, size: tuple[int, int] = (W, H)) -> dict:
@@ -124,23 +148,47 @@ def queue_and_fetch(wf: dict, dest: Path) -> Path:
         time.sleep(2)
 
 
-def scene_prompt(who: str, scene: str) -> str:
-    return f"{STYLE}. {FRAME}. {CAST[who]}, {scene}"
+def scene_prompt(who: str, scene: str, monster: bool = False) -> str:
+    return f"{STYLE}. {FRAME}. {CAST[who]}, {scene}" + (f", {MONSTER}" if monster else "")
 
 
 def render(article: str, seed: int) -> Path:
     dest = RENDERS / f"{article}-{seed}.png"
     if dest.exists():
         return dest
-    return queue_and_fetch(workflow(scene_prompt(*SCENES[article]), seed, f"lmu/story-{dest.stem}"), dest)
+    who, scene = SCENES[article]
+    return queue_and_fetch(workflow(scene_prompt(who, scene, STORY_GRUMBLES[article] is not None), seed, f"lmu/story-{dest.stem}"), dest)
 
 
-def studio_scene(out: Path, who: str, scene: str, seed: int) -> Path:
+def studio_scene(out: Path, who: str, scene: str, seed: int, monster: bool = False) -> Path:
     """M15: a new story's scene for the daily studio (scripts/studio), outside the committed set."""
     dest = out / f"{seed}.png"
     if dest.exists():
         return dest
-    return queue_and_fetch(workflow(scene_prompt(who, scene), seed, f"lmu/studio-{out.name}-{seed}"), dest)
+    return queue_and_fetch(workflow(scene_prompt(who, scene, monster), seed, f"lmu/studio-{out.name}-{seed}"), dest)
+
+
+def with_grumble(src: Path, grumble: str, dest: Path) -> Path:
+    """SRC with its little monster swapped for the real Grumble: Qwen-Image-Edit with the Grumble's still (on a soft grey,
+    since the edit reads no transparency) as the second image (scripts/art/grumble-art.py's helpers)."""
+    if dest.exists():
+        return dest
+    import importlib.util
+    from PIL import Image
+    spec = importlib.util.spec_from_file_location("grumble_art", Path(__file__).with_name("grumble-art.py"))
+    ga = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ga)
+    still = Image.open(GRUMBLE_STILLS / f"{grumble}-idle.webp").convert("RGBA")
+    ref = Image.new("RGBA", still.size, (232, 232, 238, 255))
+    ref.alpha_composite(still)
+    ref_png = dest.with_name(f"_ref-{grumble}.png")
+    ref.convert("RGB").save(ref_png)
+    wf = ga.qwen_edit(ga.upload(src), GRUMBLE_EDIT, 11, f"lmu/story-{dest.stem}")
+    wf["load2"] = {"class_type": "LoadImage", "inputs": {"image": ga.upload(ref_png)}}
+    wf["pos"]["inputs"]["image2"] = ["load2", 0]
+    wf["neg"]["inputs"]["image2"] = ["load2", 0]
+    ga.fetch(ga.run(wf)[0], dest)
+    return dest
 
 
 def webp(src: Path, dest: Path) -> Path:
@@ -184,11 +232,24 @@ def sheet(pattern: str = "article-*", per_page: int = 9) -> None:
         print(contact(files[start:start + per_page], RENDERS / f"_sheet-{pattern.replace('*', 'x')}-{page}.jpg", (448, 256), 3))
 
 
+def picked(article: str) -> Path:
+    """The picked render, with its Grumble when the story has one."""
+    base = RENDERS / f"{article}-{PICKS[article]}.png"
+    return base if STORY_GRUMBLES[article] is None else base.with_name(f"{base.stem}-g.png")
+
+
+def grumbles() -> None:
+    for article, grumble in STORY_GRUMBLES.items():
+        if grumble is not None and article in PICKS:
+            t = time.time()
+            print(with_grumble(RENDERS / f"{article}-{PICKS[article]}.png", grumble, picked(article)), f"({time.time() - t:.0f} s)", flush=True)
+
+
 def pick() -> None:
     missing_keys = [a for a in SCENES if a not in PICKS]
     if missing_keys:
         sys.exit(f"PICKS lacks: {', '.join(missing_keys)}")
-    sources = {a: RENDERS / f"{a}-{PICKS[a]}.png" for a in SCENES}
+    sources = {a: picked(a) for a in SCENES}
     missing = [p.name for p in sources.values() if not p.exists()]
     if missing:  # check before clearing anything: the committed set must survive a machine without the renders
         sys.exit(f"missing renders: {', '.join(missing)}")
@@ -207,9 +268,10 @@ def final() -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("command", choices=["cast", "render", "sheet", "pick", "final", "scene", "webp", "look"])
+    p.add_argument("command", choices=["cast", "render", "sheet", "grumbles", "pick", "final", "scene", "grumble", "webp", "look"])
     p.add_argument("keys", nargs="*")
     p.add_argument("--seeds", nargs="+", type=int, default=[11, 22, 33])
+    p.add_argument("--monster", action="store_true", help="scene: a little monster sits in it, for `grumble`")
     a = p.parse_args()
     if a.command == "cast":
         for who in a.keys or list(CAST):
@@ -225,6 +287,8 @@ def main() -> None:
                 print(render(article, seed), flush=True)
     elif a.command == "sheet":
         sheet(*(a.keys[:1] or []))
+    elif a.command == "grumbles":
+        grumbles()
     elif a.command == "pick":
         pick()
     elif a.command == "scene":
@@ -232,7 +296,11 @@ def main() -> None:
         if who not in CAST or not out or not scene:
             sys.exit("usage: scene OUT WHO SCENE")
         for seed in a.seeds:
-            print(studio_scene(Path(out), who, scene, seed), flush=True)
+            print(studio_scene(Path(out), who, scene, seed, a.monster), flush=True)
+    elif a.command == "grumble":
+        if len(a.keys) != 3 or not (GRUMBLE_STILLS / f"{a.keys[1]}-idle.webp").exists():
+            sys.exit("usage: grumble SRC ID DEST (ID a painted Grumble)")
+        print(with_grumble(Path(a.keys[0]), a.keys[1], Path(a.keys[2])))
     elif a.command == "webp":
         if len(a.keys) != 2:
             sys.exit("usage: webp SRC DEST")

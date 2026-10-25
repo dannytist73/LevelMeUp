@@ -4,7 +4,7 @@
 // code keeps a fact only when its passage is found word for word on the page (the API's citations do this for the
 // tick). The verified passages become the excerpts the copying check uses, as the API's cited passages are the tick's
 // (their whole paragraphs were tried first: the check then refused wording no fact carried, more strictly than the tick).
-import { CAST, CLUSTER_NAMES } from '../../packages/content/src/index.ts';
+import { CAST, CLUSTER_NAMES, GRUMBLES } from '../../packages/content/src/index.ts';
 import type { ArticleCluster, CastId } from '../../packages/content/src/index.ts';
 import { BRIEF_LIMITS, pageUrl } from '../../supabase/functions/_shared/articles/brief.ts';
 import type { Brief } from '../../supabase/functions/_shared/articles/brief.ts';
@@ -158,10 +158,16 @@ export function sharedRuns(brief: Brief, max = 30): string[] {
 }
 
 
+/** Monster Buddy: the story's Grumble, when the story is about the habit one stands for; 'none' otherwise. */
+export const SCENE_GRUMBLES = [...GRUMBLES.map((g) => g.id), 'none'] as const;
+
 export const SCENE_SCHEMA = {
   type: 'object',
-  properties: { scene: text('One sentence of 25 to 50 words: the place, what they are doing with their hands, the objects that tell the story, the light, and what they wear.') },
-  required: ['scene'],
+  properties: {
+    scene: text('One sentence of 25 to 50 words: the place, what they are doing with their hands, the objects that tell the story, the light, and what they wear.'),
+    grumble: { type: 'string', enum: SCENE_GRUMBLES, description: 'The Grumble whose habit the story is about, or none.' },
+  },
+  required: ['scene', 'grumble'],
   additionalProperties: false,
 } as const;
 
@@ -171,10 +177,12 @@ const SCENE_EXAMPLES = [
   'sitting on a gym bench between sets of squats, breathing slowly, a phone propped on the squat rack beside a loaded barbell, a water bottle in his hand, wearing a running t-shirt',
 ];
 
-export const SCENE_SYSTEM = `You set up the one picture of a LevelMeUp story lesson: the story's regular in its turning moment (the card where they try the idea), drawn later as a manhwa illustration by an image model that already knows their face, hair and build.
+export const SCENE_SYSTEM = `You set up the one picture of a LevelMeUp story lesson: the story's regular in its turning moment (the card where they try the idea), made later as a little clay diorama by an image model that already knows their face, hair and build.
 Write only the scene, in the style of these examples:
 ${SCENE_EXAMPLES.map((e) => `- ${e}`).join('\n')}
-Rules: the regular is the only person in focus (others only far in the background); never describe their face, hair, age or build; nothing with readable text, numbers, logos or screens showing words; nothing unsafe, sad or graphic; everyday objects from the story.`;
+Rules: the regular is the only person in focus (others only far in the background); never describe their face, hair, age or build; nothing with readable text, numbers, logos or screens showing words; nothing unsafe, sad or graphic; everyday objects from the story.
+Then name the story's Grumble: one of the app's little monsters, each standing for a habit that gets in the way. Choose the one whose habit the story is about, or none when no habit fits well. It sits small beside the regular in the picture, so leave a little room for it.
+${GRUMBLES.map((g) => `- ${g.id}: ${g.standsFor}`).join('\n')}`;
 
 export function scenePrompt(deck: StoryDeck): string {
   const who = CAST.find((c) => c.id === deck.cast)!;
@@ -191,9 +199,9 @@ export const PICK_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-export function pickSystem(name: CastId, look: string, scene: string, files: readonly string[]): string {
+export function pickSystem(name: CastId, look: string, scene: string, files: readonly string[], monster = false): string {
   const who = CAST.find((c) => c.id === name)!;
   return `You choose the story picture for a LevelMeUp lesson from ${files.length} renders in the working folder: ${files.map((f, i) => `${i + 1} is ${f}`).join(', ')}. Read every one with the Read tool.
-A usable picture shows exactly one main person, ${who.name}: ${look}. The face is clearly visible and not distorted, the hands and objects are not mangled, there is no text, letter or number anywhere, and it shows this scene: ${scene}.
+A usable picture is a little clay diorama that shows exactly one main person, ${who.name}: ${look}. The face is clearly visible and not distorted, the hands and objects are not mangled, there is no text, letter or number anywhere, and it shows this scene: ${scene}.${monster ? ' One small cute monster sits beside them, whole and clearly separate from the person (it is swapped for the story\'s own monster afterwards).' : ''}
 Answer with the number of the best usable one, or 0 when none is usable.`;
 }

@@ -22,8 +22,16 @@ clay, quest pictures where your buddy does the quest, and the daily studio paint
 5. **Quest pictures:** the buddy doing the quest, one per art key (33) per class, bundled in the app. The little buddy
    first; grown and grand versions later, each falling back to the little one until painted.
 6. **The Shadow:** one clay painting (16:9, bundled), with the eyes' glow back on its painted eyes.
-7. **Lesson pictures:** the studio paints clay scenes; the app shows a deck's picture again only from the clay folder.
-   Done separately, because it changes the 9:00 job.
+7. **Lesson pictures** (owner, 2026-10-26: "Clay people + their Grumble", "Repaint them in clay"): each story's regular as
+   a little clay figure in the turning moment, and when the story is about a habit a Grumble stands for, that Grumble
+   beside them. Painted with a little monster in its place, then swapped for the real Grumble by Qwen-Image-Edit with the
+   Grumble's still as its second image, so it looks like itself (scripts/art/story-art.py `grumble`). The studio's scene
+   step names the Grumble (or none). Pictures live in `lmu-art/story-clay/article-<n>.webp`; the phone shows a deck's
+   picture from that folder only, so a deck still naming a flat `story-v1` picture shows its cover. The 26 stored stories
+   are repainted and sent with `npm run studio -- pictures`: lmu-articles-studio's new `picture` action uploads each at
+   its article's own path, then names it on the deck through `article_set_picture` (migration 0021; the service role
+   could only set a deck that was still empty). New studio stories go to `story-clay` from the next run.
+   Switched on after the 9:00 run of 2026-10-26, so that morning's article couldn't be caught halfway.
 8. **Not now:** growing clips (Wan), arrival and befriending clips, renaming your buddy.
 
 ## Order

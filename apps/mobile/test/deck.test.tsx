@@ -79,8 +79,9 @@ describe('the story lesson (M14)', () => {
     for (const value of bad) expect(asDeck(value)).toBeNull();
   });
 
-  it('leaves out the story\'s picture, whatever its shape, and keeps the story (Monster Week: the M14 pictures are retired)', () => {
-    for (const picture of ['story-v1/article-31.webp', 'https://example.com/x.webp', '../story-v1/article-31.webp', 3]) {
+  it('keeps a clay picture (Monster Buddy) and leaves out any other, the retired flat set\'s too, keeping the story', () => {
+    expect(asDeck({ ...STORY, picture: 'story-clay/article-31.webp' })).toEqual({ ...STORY, picture: 'story-clay/article-31.webp' });
+    for (const picture of ['story-v1/article-31.webp', 'https://example.com/x.webp', '../story-clay/article-31.webp', 'story-clay/article-31.png', 3]) {
       expect(asDeck({ ...STORY, picture })).toEqual(STORY);
     }
   });
@@ -138,12 +139,13 @@ describe('the story lesson on screen (M14)', () => {
     expect(screen.getByText('turn')).toBeTruthy();
   });
 
-  it('shows the cover without a picture, even for a deck that names one (Monster Week: the M14 pictures are retired)', async () => {
+  it('shows the clay picture on the cover, hidden from screen readers (Monster Buddy)', async () => {
     await render(
-      <Deck article={{ ...SAMPLE_STORY_ARTICLE, deck: { ...STORY, picture: 'story-v1/article-0.webp' } }} label="Today's reading" xp={10}
+      <Deck article={{ ...SAMPLE_STORY_ARTICLE, deck: { ...STORY, picture: 'story-clay/article-0.webp' } }} label="Today's reading" xp={10}
         turn={<Text>turn</Text>} onClose={jest.fn()} onFullArticle={jest.fn()} kept={false} onKeep={jest.fn()} reduceMotion />,
     );
-    expect(screen.queryByTestId('deck-picture', { includeHiddenElements: true })).toBeNull();
+    const picture = screen.getByTestId('deck-picture', { includeHiddenElements: true });
+    expect(picture.props.source.uri).toMatch(/\/storage\/v1\/object\/public\/lmu-art\/story-clay\/article-0\.webp$/);
     expect(screen.getByText(D.todaysStory)).toBeTruthy();
   });
 

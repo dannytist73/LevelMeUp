@@ -6,6 +6,8 @@
 //   npm run studio -- token [TOKEN] save the token `claude setup-token` printed: typed after it, or from the clipboard
 //   npm run studio -- run [--dry]  one day's article (--dry: everything, but the server only checks it)
 //   npm run studio -- status       the last runs
+//   npm run studio -- pictures [DIR]  Monster Buddy: the stored stories' clay pictures (art/story/clay, from
+//                                  scripts/art/story-art.py pick) to lmu-art/story-clay, each named on its deck
 // Setup changes the live project, so it needs the owner's yes (CLAUDE.md). Claude never writes to the database: it
 // answers with JSON, and this script sends that JSON to the function, which checks it with the tick's own code.
 import { spawn, spawnSync } from 'node:child_process';
@@ -24,7 +26,7 @@ import { ARTICLE_SCHEMA, writeRequest } from '../../supabase/functions/_shared/p
 import { PROJECT_REF } from '../lib/guard.ts';
 import { supabase } from '../sb.ts';
 import {
-  PICK_SCHEMA, RESEARCH_SCHEMA, SCENE_SCHEMA, SCENE_SYSTEM, STUDIO_RESEARCH_SYSTEM, pickSystem, researchPrompt, researchUrls, scenePrompt, sharedRuns, verifyResearch,
+  PICK_SCHEMA, RESEARCH_SCHEMA, SCENE_GRUMBLES, SCENE_SCHEMA, SCENE_SYSTEM, STUDIO_RESEARCH_SYSTEM, pickSystem, researchPrompt, researchUrls, scenePrompt, sharedRuns, verifyResearch,
 } from './lib.ts';
 import type { PageRead, Research } from './lib.ts';
 import { fetchPage } from './page.ts';
@@ -267,20 +269,24 @@ async function picture(env: Env, job: StudioJob, dir: string, d: StoryDeck): Pro
     return null;
   }
   try {
-    const { scene } = await step(dir, 'scene.json', () => claude(env, { system: SCENE_SYSTEM, prompt: scenePrompt(d), schema: SCENE_SCHEMA, cwd: HERE, effort: 'low', minutes: 5 }) as { scene: string });
+    const { scene, grumble } = await step(dir, 'scene.json', () => claude(env, { system: SCENE_SYSTEM, prompt: scenePrompt(d), schema: SCENE_SCHEMA, cwd: HERE, effort: 'low', minutes: 5 }) as { scene: string; grumble?: string });
+    // Monster Buddy: the story's Grumble sits beside the regular, painted as a little monster, then swapped for the real one.
+    const monster = grumble !== undefined && grumble !== 'none' && (SCENE_GRUMBLES as readonly string[]).includes(grumble) ? grumble : null;
     const look = python(['look', d.cast]);
     const renders = join(dir, 'renders');
     for (const round of [0, 1]) {
       const seeds = [1, 2, 3].map((i) => job.id * 100 + round * 10 + i);
-      python(['scene', renders, d.cast, scene, '--seeds', ...seeds.map(String)]);
+      python(['scene', renders, d.cast, scene, '--seeds', ...seeds.map(String), ...(monster === null ? [] : ['--monster'])]);
       const files = seeds.map((s) => `${s}.png`);
       const { pick, why } = claude(env, {
-        system: pickSystem(d.cast, look, scene, files), prompt: 'Choose the picture.', schema: PICK_SCHEMA, cwd: renders,
+        system: pickSystem(d.cast, look, scene, files, monster !== null), prompt: 'Choose the picture.', schema: PICK_SCHEMA, cwd: renders,
         tools: ['Read'], allow: ['Read'], effort: 'low', minutes: 5,
       }) as { pick: number; why: string };
       log(`job ${job.id}: picture round ${round + 1}: ${pick === 0 ? 'none usable' : files[pick - 1]} (${why})`);
       if (Number.isInteger(pick) && pick >= 1 && pick <= files.length) {
-        python(['webp', join(renders, files[pick - 1]!), out]);
+        const chosen = join(renders, files[pick - 1]!);
+        const final = monster === null ? chosen : python(['grumble', chosen, monster, join(renders, `${seeds[pick - 1]}-${monster}.png`)]);
+        python(['webp', final, out]);
         return out;
       }
     }
@@ -379,6 +385,23 @@ function token(given: readonly string[]): void {
   console.log(answer.ok === true ? 'Signed in: Claude Code answered on your plan.' : 'Claude Code answered, but not as expected.');
 }
 
+/**
+ * Monster Buddy (docs/2026-10-25-monster-buddy.md, decision 7): the stored stories' clay pictures, each sent to the
+ * function's "picture" action, which uploads it at the article's own path and names it on its deck. Needs the owner's
+ * yes (it changes the live project); one picture after another, and any refusal is shown and stops the rest.
+ */
+async function pictures(dir: string): Promise<void> {
+  const env = readEnv(ENV_FILE);
+  const files = readdirSync(dir).filter((f) => /^article-\d+\.webp$/.test(f)).sort();
+  if (files.length === 0) throw new Error(`no article-<n>.webp pictures in ${dir}`);
+  for (const f of files) {
+    const articleId = f.replace(/\.webp$/, '');
+    const sent = await studio(env, { action: 'picture', articleId, picture: readFileSync(join(dir, f)).toString('base64') });
+    if (sent.status !== 200) throw new Error(`${articleId}: ${sent.status} ${JSON.stringify(sent.body)}`);
+    log(`picture: ${articleId} -> ${String(sent.body.picture)}`);
+  }
+}
+
 function status(): void {
   if (existsSync(LOG)) console.log(readFileSync(LOG, 'utf8').trimEnd().split('\n').slice(-30).join('\n'));
   else console.log('No runs yet.');
@@ -392,10 +415,11 @@ try {
     case 'token': token(rest); break;
     case 'run': await run(rest.includes('--dry')); break;
     case 'status': status(); break;
-    default: throw new Error('commands: setup, token, run [--dry], status');
+    case 'pictures': await pictures(rest[0] ?? join(ROOT, 'art', 'story', 'clay')); break;
+    default: throw new Error('commands: setup, token, run [--dry], status, pictures [DIR]');
   }
 } catch (error) {
   // Only a known command is named: anything else typed there (a token pasted in the wrong place) is never logged.
-  log(`studio ${['setup', 'token', 'run', 'status'].includes(command ?? '') ? command : '(unknown command)'}: ${(error as Error).message}`);
+  log(`studio ${['setup', 'token', 'run', 'status', 'pictures'].includes(command ?? '') ? command : '(unknown command)'}: ${(error as Error).message}`);
   process.exitCode = 1;
 }

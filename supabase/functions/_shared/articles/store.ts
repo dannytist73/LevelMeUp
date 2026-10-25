@@ -104,6 +104,9 @@ export function studioStore(sql: Sql): StudioStore {
         return id;
       });
     },
+    async setPicture(articleId, path) {
+      return one(await sql<{ ok: boolean }[]>`select levelmeup.article_set_picture(${articleId}, ${path}) as ok`).ok;
+    },
   };
 }
 

@@ -80,3 +80,25 @@ begin
   return next ok(not has_function_privilege('lmu_player', 'levelmeup.article_claim_deck(text, int)', 'execute'), 'nor take a try');
   return next ok(not has_function_privilege('anon', 'levelmeup.article_decks_due(int)', 'execute'), 'nor can anyone else');
 end $$;
+
+-- Monster Buddy (migration 0021): a stored deck gets its clay picture at the article's own path; nothing else changes.
+create function lmu_test.test_deck_picture() returns setof text language plpgsql as $$
+declare
+  a text := lmu_test.deck_article('Decks pictured', false);
+  b text := lmu_test.deck_article('Decks without a deck', false);
+begin
+  perform levelmeup.article_set_deck(a, lmu_test.deck_json(), null);
+  return next ok(levelmeup.article_set_picture(a, 'story-clay/' || a || '.webp'), 'a stored deck gets its picture');
+  return next is((select array[deck ->> 'picture', deck ->> 'lesson'] from levelmeup.articles where id = a),
+    array['story-clay/' || a || '.webp', 'Sleep in cycles.'], 'the deck names it and keeps its story');
+  return next ok(levelmeup.article_set_picture(a, 'story-clay/' || a || '.webp'), 'setting it again is harmless');
+  return next ok(not levelmeup.article_set_picture(b, 'story-clay/' || b || '.webp'), 'an article without a deck gets none');
+  return next is((select deck from levelmeup.articles where id = b), null::jsonb, 'and stays without one');
+  return next throws_ok(format($q$ select levelmeup.article_set_picture(%L, %L) $q$, a, 'story-clay/article-1.webp'), '22023', null,
+    'only the article''s own path');
+  return next throws_ok(format($q$ select levelmeup.article_set_picture(%L, %L) $q$, a, 'story-v1/' || a || '.webp'), '22023', null,
+    'only in the clay folder');
+  return next ok(has_function_privilege('lmu_service', 'levelmeup.article_set_picture(text, text)', 'execute'), 'the service sets it');
+  return next ok(not has_function_privilege('lmu_player', 'levelmeup.article_set_picture(text, text)', 'execute'), 'players can''t');
+  return next ok(not has_function_privilege('anon', 'levelmeup.article_set_picture(text, text)', 'execute'), 'nor can anyone else');
+end $$;

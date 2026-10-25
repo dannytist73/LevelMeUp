@@ -25,12 +25,16 @@ export const STUDIO_EXCERPTS = { max: 200, chars: 2000 } as const;
 export const STUDIO_PICTURE = { width: 960, height: 540, maxBytes: 300_000 } as const;
 /** A request: the picture as base64 plus the article, brief and deck. */
 export const STUDIO_MAX_BODY = 1_000_000;
-/** Where the picture goes in the public `lmu-art` bucket: the phone accepts `story-v<n>/article-<n>.webp` only. */
-export const studioPicturePath = (jobId: number): string => `story-v1/article-${jobId}.webp`;
+/** Where a story's picture goes in the public `lmu-art` bucket. Monster Buddy (docs/2026-10-25-monster-buddy.md): the clay
+ * set's folder; the phone shows a deck's picture from there only (the flat `story-v1` set was retired 2026-10-25). */
+export const storyPicturePath = (articleId: string): string => `story-clay/${articleId}.webp`;
+export const studioPicturePath = (jobId: number): string => storyPicturePath(`article-${jobId}`);
 
 export interface StudioStore extends Pick<Store, 'begin' | 'end' | 'topicsUsed' | 'queue' | 'openJobs' | 'move'> {
   /** The checked article, its sources, the brief it was written from and its deck, in one transaction; the article's id. */
   storeStudio(jobId: number, article: StoredArticle, sources: readonly StoredSource[], brief: Brief, deck: StoryDeck): Promise<string>;
+  /** Monster Buddy: points a stored story's deck at its picture (migration 0021); false when the article has no deck. */
+  setPicture(articleId: string, path: string): Promise<boolean>;
 }
 
 export interface Art {
@@ -177,4 +181,17 @@ export async function submit(store: StudioStore, art: Art, s: Submission, dry: b
   const deck: StoryDeck = picture === null ? s.deck : { ...s.deck, picture };
   const stored = await store.storeStudio(job.id, { ...s.draft, words, readingMinutes: readingMinutes(words) }, sources, s.brief, deck);
   return { stored, picture, words };
+}
+
+export type PictureResult = { picture: string } | { missing: true };
+
+/**
+ * Monster Buddy: a stored story's new picture (the clay set, repainted on the owner's PC). Uploaded first, at the article's
+ * own path, then named on its deck, so a deck never names a missing picture; an article without a deck gets none.
+ */
+export async function repicture(store: Pick<StudioStore, 'setPicture'>, art: Art, articleId: string, picture: Uint8Array<ArrayBuffer>): Promise<PictureResult> {
+  if (!/^article-\d+$/.test(articleId)) return { missing: true };
+  const path = storyPicturePath(articleId);
+  await art.upload(path, picture);
+  return (await store.setPicture(articleId, path)) ? { picture: path } : { missing: true };
 }
