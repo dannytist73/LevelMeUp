@@ -5,7 +5,7 @@ import type { TextProps as RNTextProps } from 'react-native';
 import { colors, fonts, type as scale } from '../theme/tokens.ts';
 import type { TypeVariant } from '../theme/tokens.ts';
 
-export type Tone = 'chalk' | 'ash' | 'ashLight' | 'ink' | 'inkSoft' | 'inkMuted' | 'accentText' | 'accentInk' | 'onAccent' | 'shadow' | 'white';
+export type Tone = 'chalk' | 'ash' | 'ashLight' | 'ink' | 'inkSoft' | 'inkMuted' | 'accentText' | 'accentInk' | 'onAccent' | 'shadow' | 'white' | 'candy';
 export type TextProps = Omit<RNTextProps, 'numberOfLines' | 'ellipsizeMode'> & {
   tone?: Tone;
   /** Body variants only: M PLUS Rounded 1c Medium or Bold. */

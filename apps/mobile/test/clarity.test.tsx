@@ -47,20 +47,12 @@ describe('Today (M10c, M12)', () => {
     expect(screen.getByText(titleOf(s, 'side2'))).toBeTruthy();
   });
 
-  it('with the core quest cleared, the reading moves up; the streak shows today with "today counts"', async () => {
+  it('with the core quest cleared, the reading moves up (Monster Week: the streak is on Me, test/monster.test.tsx)', async () => {
     const base = serverState(['core'], { streak_current: 5, streak_best: 5 });
     const s = { ...base, today: { ...base.today!, article: { id: 'article-9', cluster: 'sleep' as const, title: 'Wake time', minutes: 6 } } };
     await renderToday(s);
     expect(within(screen.getByTestId('up-next')).getByText('Wake time')).toBeTruthy();
     expect(screen.getByRole('button', { name: fillText(TODAY_TEXT.doneToday, { n: 1 }) })).toBeTruthy();
-    expect(screen.getByText('6')).toBeTruthy();
-    expect(screen.getByText(`${TODAY_TEXT.streak} · ${TODAY_TEXT.counts}`)).toBeTruthy();
-  });
-
-  it('before anything counts: the server\'s streak and no note', async () => {
-    await renderToday(serverState([], { streak_current: 5, streak_best: 5 }));
-    expect(screen.getByText('5')).toBeTruthy();
-    expect(screen.getByText(TODAY_TEXT.streak)).toBeTruthy();
   });
 
   it('a cleared day heads the list with what it earned and when the next day starts', async () => {
@@ -137,7 +129,7 @@ describe('Today (M10c, M12)', () => {
 
   it('never offers it again, nor when refused for good or already on', async () => {
     const all = serverState().today!.quests.map((q) => q.slot);
-    await renderToday(serverState(all), { offers: ['reminder'] });
+    await renderToday(serverState(all), { offers: ['monster:intro', 'reminder'] });
     expect(screen.queryByTestId('reminder-offer')).toBeNull();
     await renderToday(serverState(all), { permission: 'denied' });
     expect(screen.queryByTestId('reminder-offer')).toBeNull();

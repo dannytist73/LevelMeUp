@@ -159,8 +159,11 @@ const TODAY_NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
 const today = (store: ReturnType<typeof testStore>, shown?: boolean) => withStore(store,
   <Today shown={shown} onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
     onTraining={jest.fn()} onCheckin={jest.fn()} now={() => TODAY_NOW} />);
-const streakUp = (view: ReturnType<typeof project>) =>
-  ({ ...view, character: { ...view.character, streak: { ...view.character.streak, current: view.character.streak.current + 1 } } });
+/** Monster Week: the core quest cleared, so the battle's power grows (the streak's tick left Today with the streak). */
+const powerUp = (view: ReturnType<typeof project>) => ({
+  ...view,
+  today: { ...view.today!, quests: view.today!.quests.map((q) => (q.slot === 'core' ? { ...q, completedAt: new Date(TODAY_NOW).toISOString() } : q)) },
+});
 
 describe('the moments buzz on rewards (M10b spec decision 2)', () => {
   it('Quest cleared: the firm click as the XP stamp lands, then one tick for the rank stamps', async () => {
@@ -207,22 +210,22 @@ describe('the moments buzz on rewards (M10b spec decision 2)', () => {
     expect(felt()).toEqual(['stamp']);
   });
 
-  it('Today: a tick when the streak grows, never on opening', async () => {
+  it('Today: a stamp when power lands on the Grumble, never on opening (Monster Week)', async () => {
     const view = project(serverState(), []);
     const store = testStore({ view });
     await render(today(store));
     await wait(1_000);
     expect(felt()).toEqual([]);
-    await act(async () => store.setState({ view: streakUp(view) }));
+    await act(async () => store.setState({ view: powerUp(view) }));
     await wait(THUD_LAND_MS);
-    expect(felt()).toEqual(['tick']);
+    expect(felt()).toEqual(['stamp']);
   });
 
-  it('Today under another tab or screen: a streak that grows there stays quiet, then and on return (review)', async () => {
+  it('Today under another tab or screen: power that grows there stays quiet, then and on return (review)', async () => {
     const view = project(serverState(), []);
     const store = testStore({ view });
     const shown = await render(today(store, false));
-    await act(async () => store.setState({ view: streakUp(view) }));
+    await act(async () => store.setState({ view: powerUp(view) }));
     await wait(2_000);
     await shown.rerender(today(store, true));
     await wait(2_000);

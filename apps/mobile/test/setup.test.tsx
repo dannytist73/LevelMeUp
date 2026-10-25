@@ -44,7 +44,7 @@ describe('the set-up cards (decision 8)', () => {
 
 describe('on Today', () => {
   async function renderToday(offers: Offer[]) {
-    const store = testStore({ view: project(serverState(['core']), []), offers });
+    const store = testStore({ view: project(serverState(['core']), []), offers: ['monster:intro', ...offers] });
     const props = {
       onSettings: jest.fn(), onOpenQuest: jest.fn(), onSwap: jest.fn(), onPain: jest.fn(), onVanish: jest.fn(), onTraining: jest.fn(),
       onCheckin: jest.fn(), onGame: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(),
@@ -58,7 +58,7 @@ describe('on Today', () => {
       { dayNumber: 9, date: '2026-10-19', mark: 'open' }, { dayNumber: 8, date: '2026-10-18', mark: 'cleared' },
       { dayNumber: 7, date: '2026-10-17', mark: 'rest' }, { dayNumber: 6, date: '2026-10-16', mark: 'none' },
     ] as ServerState['calendar'];
-    const store = testStore({ view: project({ ...serverState(['core']), calendar }, []), offers: [] });
+    const store = testStore({ view: project({ ...serverState(['core']), calendar }, []), offers: ['monster:intro'] });
     await render(withStore(store, <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
       onTraining={jest.fn()} onCheckin={jest.fn()} now={() => NOW} />));
     expect(screen.getByLabelText('System: Last week: 1 of 3 days cleared, 1 rested. A new week has begun.')).toBeTruthy();
@@ -71,7 +71,7 @@ describe('on Today', () => {
       { dayNumber: 9, date: '2026-10-19', mark: 'open' }, { dayNumber: 8, date: '2026-10-18', mark: 'cleared' },
       { dayNumber: 7, date: '2026-10-17', mark: 'none' },
     ] as ServerState['calendar'];
-    const store = testStore({ view: project({ ...checkinState(), calendar }, []), offers: [] });
+    const store = testStore({ view: project({ ...checkinState(), calendar }, []), offers: ['monster:intro'] });
     await render(withStore(store, <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
       onTraining={jest.fn()} onCheckin={jest.fn()} now={() => NOW} />));
     expect(screen.queryByText(/^Last week: /)).toBeNull();

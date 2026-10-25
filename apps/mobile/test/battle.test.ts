@@ -48,8 +48,8 @@ describe('the battle on the phone (Monster Week)', () => {
   });
 
   it("a quest's hit: 2 on the weakness, else 1", () => {
-    expect(questHit({ stat: 'vitality' }, 'vitality')).toEqual({ power: 2, weak: true });
-    expect(questHit({ stat: 'focus' }, 'vitality')).toEqual({ power: 1, weak: false });
+    expect(questHit({ stat: 'vitality' }, 'vitality')).toEqual({ n: 2, weak: true });
+    expect(questHit({ stat: 'focus' }, 'vitality')).toEqual({ n: 1, weak: false });
   });
 
   it('shows a decided battle once, and again if a lost one later becomes won', () => {

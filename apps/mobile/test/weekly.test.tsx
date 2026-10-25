@@ -84,7 +84,7 @@ describe('the offer (decision 9)', () => {
   });
 
   it('on Today: "See the weekly program" marks it and opens Training; "Not now" only marks it', async () => {
-    const store = testStore({ view: project(done(serverState(['core']), 3), []), offers: [] });
+    const store = testStore({ view: project(done(serverState(['core']), 3), []), offers: ['monster:intro'] });
     const props = {
       onSettings: jest.fn(), onOpenQuest: jest.fn(), onSwap: jest.fn(), onPain: jest.fn(), onVanish: jest.fn(), onTraining: jest.fn(),
       onCheckin: jest.fn(), onGame: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(),

@@ -17,8 +17,8 @@ export type BattleShown = Battle & {
 };
 
 /** The power a quest gives against the current Grumble, and whether it hits its weakness. */
-export function questHit(q: Pick<QuestView, 'stat'>, weakness: TrainableStat): { power: number; weak: boolean } {
-  return { power: questPower(q.stat, weakness), weak: q.stat === weakness };
+export function questHit(q: Pick<QuestView, 'stat'>, weakness: TrainableStat): { n: number; weak: boolean } {
+  return { n: questPower(q.stat, weakness), weak: q.stat === weakness };
 }
 
 /** The current battle with today's power from the phone; null from a server before Monster Week. */
@@ -47,8 +47,14 @@ export function battleShown(view: Pick<Shown, 'battle' | 'today'>): BattleShown 
   };
 }
 
+/** Whole days, hours and minutes until `endsAt`, never below zero (the battle clock). */
+export function timeLeft(endsAt: number, now: number): { d: number; h: number; m: number } {
+  const minutes = Math.max(0, Math.ceil((endsAt - now) / 60_000));
+  return { d: Math.floor(minutes / 1440), h: Math.floor((minutes % 1440) / 60), m: minutes % 60 };
+}
+
 /** The once-only key of a decided battle's moment: a lost battle that later reaches its need shows its joining then. */
-export const resultKey = (r: Pick<BattleResultView, 'n' | 'won'>): string => `battle:${r.n}:${r.won ? 'won' : 'lost'}`;
+export const resultKey = (r: Pick<BattleResultView, 'n' | 'won'>): `battle:${string}` => `battle:${r.n}:${r.won ? 'won' : 'lost'}`;
 
 /** The decided battle Today should show once (its key not yet in the offers), or null. */
 export function resultToShow(view: Pick<Shown, 'camp'>, offers: readonly string[]): BattleResultView | null {

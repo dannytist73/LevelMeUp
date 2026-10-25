@@ -58,6 +58,7 @@ export const WEAKNESS_TEXT: Readonly<Record<TrainableStat, string>> = {
 export const MONSTER_TEXT = {
   tabs: { today: 'Today', camp: 'Camp', lessons: 'Lessons', me: 'Me' },
   arena: {
+    level: 'Level {level}',
     weakTo: 'Weak to {stat}',
     power: 'Power {power} / {need}',
     powerLabel: 'Power {power} of {need}',

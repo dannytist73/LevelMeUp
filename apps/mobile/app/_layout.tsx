@@ -51,6 +51,7 @@ function Screens() {
       <Stack.Screen name="trial" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="vanish" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="shadow" options={{ animation: 'fade' }} />
+      <Stack.Screen name="battle" options={{ animation: 'fade' }} />
     </Stack>
   );
 }

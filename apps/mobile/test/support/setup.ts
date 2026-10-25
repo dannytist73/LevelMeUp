@@ -24,6 +24,18 @@ jest.mock('react-native-purchases', () => ({
   PACKAGE_TYPE: { ANNUAL: 'ANNUAL', MONTHLY: 'MONTHLY', LIFETIME: 'LIFETIME', WEEKLY: 'WEEKLY' },
   PURCHASES_ERROR_CODE: { PAYMENT_PENDING_ERROR: '20', PRODUCT_ALREADY_PURCHASED_ERROR: '6' },
 }));
+// Monster Week: React Native Skia draws on the GPU; here its canvas is a plain view (with its testID) and its shapes draw
+// nothing. Only src/ui/fx/Fx.tsx imports it; the device checks show the effects.
+jest.mock('@shopify/react-native-skia', () => {
+  const { createElement } = require('react');
+  const { View } = require('react-native');
+  const nothing = () => null;
+  return {
+    Canvas: ({ testID }: { testID?: string }) => createElement(View, { testID }),
+    Group: nothing, Circle: nothing, Path: nothing, BlurMask: nothing,
+    Skia: { Path: { MakeFromSVGString: () => ({}) } },
+  };
+});
 // M10c: the home-screen widget library is native; its primitives draw as plain views and text here.
 jest.mock('react-native-android-widget', () => {
   const { createElement } = require('react');

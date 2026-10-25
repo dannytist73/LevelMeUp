@@ -1,5 +1,6 @@
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useRef } from 'react';
+import { resultKey, resultToShow } from '../../src/game/battle.ts';
 import { shadowDue } from '../../src/game/pact.ts';
 import { Today } from '../../src/screens/Today.tsx';
 import { useGame } from '../../src/state/store.ts';
@@ -10,16 +11,25 @@ export default function TodayRoute() {
   // decided when Today comes into focus, at that moment's time, and never pushed twice for one check-in (review).
   const view = useGame((s) => s.view);
   const seen = useGame((s) => s.shadowSeen);
+  const offers = useGame((s) => s.offers);
   const pushed = useRef<number | null>(null);
+  // Monster Week: a decided battle opens its moment once, while Today is in front, after the Shadow's scene if one is due.
+  const battlePushed = useRef<string | null>(null);
   // M10b review: the streak's flare and tick play only while Today is in front.
   const shown = useIsFocused();
   useFocusEffect(
     useCallback(() => {
       const due = view === null ? null : shadowDue(view, seen, Date.now());
-      if (due === null || due === pushed.current) return;
-      pushed.current = due;
-      router.push('/shadow');
-    }, [view, seen]),
+      if (due !== null && due !== pushed.current) {
+        pushed.current = due;
+        router.push('/shadow');
+        return;
+      }
+      const result = view === null ? null : resultToShow(view, offers);
+      if (result === null || resultKey(result) === battlePushed.current) return;
+      battlePushed.current = resultKey(result);
+      router.push('/battle');
+    }, [view, seen, offers]),
   );
   return (
     <Today

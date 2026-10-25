@@ -2,12 +2,15 @@
 // point, the class path, Scholar's Path for a Mage at level 10, the achievements, the vow, and the class change (M6b).
 // M10c: Switch portrait is a round button on the portrait's corner; the class change is a row. M12: the Codex moved to the
 // Library tab (plan decision 1).
-import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, SHADOW_TEXT, fillText, latestTitle } from '@levelmeup/content';
+import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, MONSTER_TEXT, SHADOW_TEXT, TODAY_TEXT, fillText, latestTitle } from '@levelmeup/content';
+import { MAX_SHIELDS } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { figureFor, otherFigure } from '../art/portraits.ts';
 import { scholarsPathOpen } from '../game/character.ts';
 import { marked, shadowHold } from '../game/pact.ts';
+import { streakNote } from '../game/checkin.ts';
+import { shownStreak } from '../game/today.ts';
 import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { ScreenHeader } from '../ui/ScreenHeader.tsx';
@@ -33,9 +36,23 @@ import { lastSynced, staleSince } from './syncLine.ts';
 
 const T = CHARACTER_TEXT;
 
-export type CharacterProps = { onChangeClass: () => void; onOpenBook: () => void; onSettings?: () => void; onVow?: () => void; now?: () => number };
+/**
+ * Monster Week: the streak as Today's header said it (M10c, M7a): its number, today counting or the check-in's note, and
+ * the shields.
+ */
+export function streakLine(view: Parameters<typeof shownStreak>[0] & Parameters<typeof streakNote>[0]): string {
+  const streak = shownStreak(view);
+  const note = streakNote(view);
+  return [`${streak.current} ${TODAY_TEXT.streak}`, ...(note !== null ? [note] : streak.counts ? [TODAY_TEXT.counts] : []),
+    fillText(TODAY_TEXT.shields, { n: view.character.streak.shields, max: MAX_SHIELDS })].join(' · ');
+}
 
-export function Character({ onChangeClass, onOpenBook, onSettings, onVow, now = Date.now }: CharacterProps) {
+/** Monster Week: Me, with `onChronicle` (the streak and the calendar, which left the tabs). */
+export type CharacterProps = {
+  onChangeClass: () => void; onOpenBook: () => void; onSettings?: () => void; onVow?: () => void; onChronicle?: () => void; now?: () => number;
+};
+
+export function Character({ onChangeClass, onOpenBook, onSettings, onVow, onChronicle, now = Date.now }: CharacterProps) {
   const insets = useSafeAreaInsets();
   const pull = usePullToSync();
   const view = useGame((s) => s.view);
@@ -100,7 +117,7 @@ export function Character({ onChangeClass, onOpenBook, onSettings, onVow, now = 
           {title !== null && <Body tone="accentText" weight="bold">{`“${title}”`}</Body>}
         </View>
         <View style={{ gap: 6 }}>
-          <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} label={`Level ${level} progress`} />
+          <XpBar value={view.character.xpIntoLevel} max={view.character.xpForLevel} level={level} label={`Level ${level} progress`} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <Caption>{fillText(T.totalXp, { total: view.character.totalXp, into: view.character.xpIntoLevel, span: view.character.xpForLevel })}</Caption>
             <Caption>{fillText(T.next, { xp: view.character.xpForLevel - view.character.xpIntoLevel, level: level + 1 })}</Caption>
@@ -108,6 +125,12 @@ export function Character({ onChangeClass, onOpenBook, onSettings, onVow, now = 
         </View>
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
+        {/* Monster Week: the streak left Today's header; the Chronicle, its home, opens from here. */}
+        {onChronicle !== undefined && (
+          <RowLink label={MONSTER_TEXT.me.chronicle}
+            line={streakLine(view)}
+            onPress={onChronicle} />
+        )}
         <StatsPanel character={view.character} />
         <ClassPath view={view} dayNumber={view.today?.dayNumber ?? null} />
         {scholarsPathOpen(classId, level) && <ScholarsPath view={view} onOpenBook={onOpenBook} />}

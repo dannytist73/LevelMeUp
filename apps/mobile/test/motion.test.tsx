@@ -4,7 +4,8 @@
 // and its accessibility, not frames; screens check that the motion is there, and that a piece starts again is seen in
 // the calls that start it.
 import { ACHIEVEMENTS, ONBOARDING_TEXT, PLAY_TEXT } from '@levelmeup/content';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { questPower } from '@levelmeup/rules';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { AppState, StyleSheet, Text } from 'react-native';
 import { project } from '../src/game/project.ts';
 import type { ClearedNumbers } from '../src/quest/cleared.ts';
@@ -13,6 +14,7 @@ import { Reveal } from '../src/screens/onboarding/Reveal.tsx';
 import { Vow } from '../src/screens/Vow.tsx';
 import { Cleared } from '../src/screens/quest/Cleared.tsx';
 import { ShadowScene } from '../src/screens/ShadowScene.tsx';
+import { Character } from '../src/screens/Character.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { colors } from '../src/theme/tokens.ts';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
@@ -387,27 +389,29 @@ describe('the reveal, the Shadow and the vow move (M10a decision 4)', () => {
   });
 });
 
-describe('Today moves only when something changes (M10a decision 7)', () => {
+describe('Today and Me move only when something changes (M10a decision 7; Monster Week moved the XP bar to Me)', () => {
   const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
   const today = (store: ReturnType<typeof testStore>) => render(withStore(store,
     <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
       onCheckin={jest.fn()} now={() => NOW} />));
 
-  it("the streak is still on opening and thuds once it grows (drops never count: useGrowth's test)", async () => {
+  it('the arena is still on opening; power that grows floats its gain up', async () => {
     const view = project(serverState(), []);
     const store = testStore({ view });
     await today(store);
-    const thud = () => flat(screen.getByTestId('streak-thud').props.style).transform;
-    expect(thud()).toBeUndefined();
-    const streak = (current: number) => ({ ...view, character: { ...view.character, streak: { ...view.character.streak, current } } });
-    await act(async () => store.setState({ view: streak(view.character.streak.current + 1) }));
-    expect(thud()).toBeDefined();
+    expect(screen.getByTestId('arena')).toBeTruthy();
+    expect(screen.queryByTestId('power-gain', { includeHiddenElements: true })).toBeNull();
+    const core = view.today!.quests.find((q) => q.slot === 'core')!;
+    const cleared = { ...view, today: { ...view.today!, quests: view.today!.quests.map((q) => (q.id === core.id ? { ...q, completedAt: new Date(NOW).toISOString() } : q)) } };
+    await act(async () => store.setState({ view: cleared }));
+    const gain = screen.getByTestId('power-gain', { includeHiddenElements: true });
+    expect(within(gain).getByText(`+${questPower(core.stat, 'vitality')}`, { includeHiddenElements: true })).toBeTruthy();
   });
 
-  it('the XP bar is a moving one, and says a synced value at once', async () => {
+  it('the XP bar on Me is a moving one, and says a synced value at once', async () => {
     const view = project(serverState(), []);
     const store = testStore({ view });
-    await today(store);
+    await render(withStore(store, <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} now={() => NOW} />));
     expect(screen.getByTestId('xp-flash')).toBeTruthy();
     const more = { ...view, character: { ...view.character, xpIntoLevel: view.character.xpIntoLevel + 5 } };
     await act(async () => store.setState({ view: more }));

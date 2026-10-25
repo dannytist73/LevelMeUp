@@ -16,6 +16,8 @@ import { colors, radius, space } from '../theme/tokens.ts';
 import { Chip } from '../ui/Chip.tsx';
 import { Icon } from '../ui/icons.tsx';
 import { QuestArt } from '../ui/QuestArt.tsx';
+import { PowerChip, powerWords } from '../ui/PowerChip.tsx';
+import type { Power } from '../ui/PowerChip.tsx';
 import { SlamIn } from '../ui/SlamIn.tsx';
 import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Meta, Small, Title } from '../ui/Text.tsx';
@@ -70,13 +72,15 @@ export type UpNextProps = {
   /** The core quest's picture, or null for the ink fallback (M6a decision 10). */
   artUri: string | null;
   resting?: boolean;
+  /** Monster Week: the power it gives the battle. */
+  power?: Power;
 };
 
 /**
  * Up next (board R3-1): the quest to do now. The whole card is one button; "I felt pain" is never inside it (M17: it sits
  * under it, beside Change today, in DayActions).
  */
-export function UpNextCard({ quest, voice, waiting, onGo, artUri, resting = false }: UpNextProps) {
+export function UpNextCard({ quest, voice, waiting, onGo, artUri, resting = false, power }: UpNextProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
   const xp = questXp(quest);
@@ -87,7 +91,7 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, resting = fals
     <View style={{ gap: 10 }}>
       <Tap
         accessibilityRole="button"
-        accessibilityLabel={`${TODAY_TEXT.upNext}. ${SLOT_NAMES[quest.slot]}, ${stat}. ${words.title}. ${questSummary(quest)}. ${clears ? fillText(TODAY_TEXT.markDone, { title: words.title }) : TODAY_TEXT.begin}, +${xp} XP`}
+        accessibilityLabel={`${TODAY_TEXT.upNext}. ${SLOT_NAMES[quest.slot]}, ${stat}. ${words.title}. ${questSummary(quest)}. ${clears ? fillText(TODAY_TEXT.markDone, { title: words.title }) : TODAY_TEXT.begin}, +${xp} XP${power === undefined ? '' : `, ${powerWords(power)}`}`}
         accessibilityHint={clears ? undefined : PLAY_TEXT.quest.open}
         onPress={onGo}
         radius={radius.card}
@@ -107,6 +111,7 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, resting = fals
                 <Small>{programBlockLabel(quest.condition.block)}</Small>
               )}
               <Tags quest={quest} resting={resting} />
+              {power !== undefined && <View style={{ alignSelf: 'flex-start' }}><PowerChip power={power} /></View>}
               {template.exercise !== null && <Meta>{EXERCISE_SAFETY_LINE}</Meta>}
               {waiting && <WillSync />}
               <GoBar label={clears ? PLAY_TEXT.claim.tap : TODAY_TEXT.begin} xp={xp} />
@@ -152,16 +157,18 @@ export type QuestRowProps = {
   waiting?: boolean;
   /** What a screen reader hears for the row, when the title and line don't say it all. */
   accessibilityLabel?: string;
+  /** Monster Week: the power it gives the battle. */
+  power?: Power;
 };
 
 /** An open quest that isn't Up next (board R3-1's "Then"): quiet, one line of detail, its XP at the end. */
-export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting = false, accessibilityLabel }: QuestRowProps) {
+export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting = false, accessibilityLabel, power }: QuestRowProps) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: radius.control, borderWidth: space.border, borderColor: colors.divider, backgroundColor: colors.panel }}>
       {onCheck !== undefined && <CheckCircle title={title} onPress={onCheck} />}
       <Tap
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? `${title}. ${line}. ${tag ?? `+${xp} XP`}`}
+        accessibilityLabel={accessibilityLabel ?? `${title}. ${line}. ${tag ?? `+${xp} XP`}${power === undefined || tag !== undefined ? '' : `, ${powerWords(power)}`}`}
         accessibilityHint={PLAY_TEXT.quest.open}
         onPress={onOpen}
         radius={radius.control}
@@ -173,14 +180,19 @@ export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting 
           {note !== undefined && <Small>{note}</Small>}
           {waiting && <WillSync />}
         </View>
-        {tag !== undefined ? <Chip label={tag} kind="outline" /> : <Label tone="accentText">{`+${xp} XP`}</Label>}
+        {tag !== undefined ? <Chip label={tag} kind="outline" /> : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {power !== undefined && <PowerChip power={power} />}
+            <Label tone="accentText">{`+${xp} XP`}</Label>
+          </View>
+        )}
       </Tap>
     </View>
   );
 }
 
 /** A Then row for a quest: its words, its stat and target, a check circle when a tap clears it. */
-export function questRowProps(quest: QuestView, voice: Voice, extra: { resting: boolean; sealed: boolean; onCheck?: () => void }): Omit<QuestRowProps, 'onOpen'> {
+export function questRowProps(quest: QuestView, voice: Voice, extra: { resting: boolean; sealed: boolean; onCheck?: () => void; power?: Power }): Omit<QuestRowProps, 'onOpen'> {
   const title = authoredTemplate(quest.templateId).voice[voice].title;
   const stat = STAT_NAMES[quest.stat];
   const parts = [stat, extra.onCheck !== undefined ? TODAY_TEXT.tapHint : questSummary(quest)];
@@ -192,6 +204,7 @@ export function questRowProps(quest: QuestView, voice: Voice, extra: { resting: 
     xp: questXp(quest),
     ...(quest.book === null ? {} : { note: fillText(BOOK_TEXT.questLine, { title: quest.book }) }),
     ...(extra.onCheck === undefined ? {} : { onCheck: extra.onCheck }),
+    ...(extra.power === undefined ? {} : { power: extra.power }),
     ...(extra.sealed ? { tag: SHADOW_TEXT.trial.sealed, accessibilityLabel: `${title}. ${SHADOW_TEXT.trial.sealed}. ${SHADOW_TEXT.trial.sealedHint}` } : {}),
   };
 }

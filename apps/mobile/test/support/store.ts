@@ -42,7 +42,8 @@ export function testStore(over: Partial<GameState> = {}): StoreApi<GameState> {
     sounds: true,
     lastSets: {},
     codex: [],
-    offers: [],
+    // Monster Week: its one-time intro card is taken as seen, so each test sees the card it is about (test/monster.test.tsx shows it).
+    offers: ['monster:intro'],
     theme: 'monsterNight',
     frame: 'none',
     themeReturn: false,

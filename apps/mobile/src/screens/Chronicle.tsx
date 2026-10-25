@@ -19,6 +19,7 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
 import { Bone, Skeleton } from '../ui/Skeleton.tsx';
 import { TabTop } from '../ui/TabTop.tsx';
+import { TopBar } from '../ui/TopBar.tsx';
 import { Calendar } from './chronicle/Calendar.tsx';
 import { StatChart } from './chronicle/StatChart.tsx';
 import { usePullToSync } from './pull.ts';
@@ -68,9 +69,10 @@ function Growth({ growth }: { growth: ServerState['growth'] }) {
 }
 
 /** M13: the all-time chart's way to the Plus offer. */
-export type ChronicleProps = { onPlus?: () => void; onSettings?: () => void };
+/** Monster Week: opened from Me with `onBack` (a back bar instead of the tab's title and gear). */
+export type ChronicleProps = { onPlus?: () => void; onSettings?: () => void; onBack?: () => void };
 
-export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
+export function Chronicle({ onPlus = () => {}, onSettings, onBack }: ChronicleProps) {
   const insets = useSafeAreaInsets();
   const pull = usePullToSync();
   const view = useGame((s) => s.view);
@@ -81,10 +83,12 @@ export function Chronicle({ onPlus = () => {}, onSettings }: ChronicleProps) {
   const today = view?.calendar.find((d) => d.mark === 'open')?.date ?? null;
 
   return (
-    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull} tab="chronicle">
-      <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
+    <ScreenScroll contentContainerStyle={{ paddingBottom: 32 }} refresh={pull} {...(onBack === undefined ? { tab: 'chronicle' as const } : {})}>
+      <ScreenHeader style={{ paddingTop: onBack === undefined ? insets.top + 12 : 0 }}>
         {/* M17: a title like the other tabs' (it was a small label). */}
-        <TabTop onSettings={onSettings}><Title accessibilityRole="header">{C.label}</Title></TabTop>
+        {onBack === undefined
+          ? <TabTop onSettings={onSettings}><Title accessibilityRole="header">{C.label}</Title></TabTop>
+          : <TopBar title={C.label} onBack={onBack} />}
         {streak !== undefined && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
             <Tile value={shown!.current} label={C.streak} />

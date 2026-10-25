@@ -34,7 +34,7 @@ describe("Today opens the Shadow's scene by itself, once (M7c decision 5)", () =
   });
 });
 
-describe("Today's focus reaches the streak's tick (M10b review)", () => {
+describe("Today's focus reaches the arena's stamp (M10b review; Monster Week: power, not the streak)", () => {
   beforeEach(() => {
     (buzz as jest.Mock).mockClear();
     jest.useFakeTimers({ now: Date.UTC(2026, 9, 10, 13) }); // day 1 runs 12:00–20:00 UTC
@@ -44,16 +44,42 @@ describe("Today's focus reaches the streak's tick (M10b review)", () => {
     (useIsFocused as jest.Mock).mockReturnValue(true);
   });
 
-  it.each([[true, ['tick']], [false, []]])('in focus %s, a streak that grows buzzes %j', async (focused, felt) => {
+  it.each([[true, ['stamp']], [false, []]])('in focus %s, power that grows buzzes %j', async (focused, felt) => {
     (useIsFocused as jest.Mock).mockReturnValue(focused);
     const view = project(serverState(), []);
     const store = testStore({ view });
     await render(withStore(store, <TodayRoute />));
-    const grown = { ...view, character: { ...view.character, streak: { ...view.character.streak, current: view.character.streak.current + 1 } } };
+    const grown = {
+      ...view,
+      today: { ...view.today!, quests: view.today!.quests.map((q) => (q.slot === 'core' ? { ...q, completedAt: new Date(Date.UTC(2026, 9, 10, 13)).toISOString() } : q)) },
+    };
     await act(async () => store.setState({ view: grown }));
     await act(async () => {
       jest.advanceTimersByTime(2_000);
     });
     expect((buzz as jest.Mock).mock.calls.map((c) => c[0])).toEqual(felt);
+  });
+});
+
+describe('Today opens a decided battle by itself, once (Monster Week)', () => {
+  beforeEach(() => (router.push as jest.Mock).mockClear());
+  afterEach(() => jest.restoreAllMocks());
+
+  const decided = () => {
+    const s = serverState(['core']);
+    return { ...s, camp: { wins: { snoozle: 1 }, last: { n: 1, grumble: 'snoozle', won: true, power: 9, need: 8, rematch: 0, byStat: { vitality: 9 } } } };
+  };
+
+  it('for a battle this phone has not shown', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.UTC(2026, 9, 10, 13));
+    await render(withStore(testStore({ view: project(decided(), []) }), <TodayRoute />));
+    expect(router.push).toHaveBeenCalledWith('/battle');
+    expect(router.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('never for one already shown', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.UTC(2026, 9, 10, 13));
+    await render(withStore(testStore({ view: project(decided(), []), offers: ['monster:intro', 'battle:1:won'] }), <TodayRoute />));
+    expect(router.push).not.toHaveBeenCalled();
   });
 });

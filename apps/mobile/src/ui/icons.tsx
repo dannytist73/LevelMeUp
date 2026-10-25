@@ -11,13 +11,19 @@ export type IconName =
   // M12: the Library tab, offline and failed states, the reminder offer.
   | 'book' | 'cloudOff' | 'alert' | 'bell'
   // M17: an ability still to unlock.
-  | 'lock';
+  | 'lock'
+  // Monster Week: power, and the Camp tab.
+  | 'bolt' | 'camp';
 
 const GEAR =
   'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z';
 
 function shapes(name: IconName) {
   switch (name) {
+    case 'bolt':
+      return [<Path key="p" d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" />];
+    case 'camp':
+      return [<Path key="t" d="M3 20 12 4l9 16" />, <Path key="d" d="M9.5 20 12 15.5 14.5 20" />, <Path key="g" d="M2 20h20" />];
     case 'settings':
       return [<Circle key="c" cx="12" cy="12" r="3" />, <Path key="p" d={GEAR} />];
     case 'flame':

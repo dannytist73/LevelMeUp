@@ -60,15 +60,14 @@ describe('Today', () => {
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
   });
 
-  it('shows the day, the level, the XP bar, the streak and shields', async () => {
+  it('shows the day, the level and the battle; the streak and the XP bar live on Me (Monster Week)', async () => {
     await renderToday();
     expect(screen.getByText('Saturday, 10 Oct')).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Day 1' })).toBeTruthy();
-    expect(screen.getByText(/^Lv \d+ · \d+ \/ \d+ XP$/)).toBeTruthy(); // M17: the level on the bar's line; name and class on Character
-    expect(screen.getByRole('progressbar', { name: /Level \d+ progress/ })).toBeTruthy();
-    expect(screen.getByText('day streak')).toBeTruthy();
-    // M10c: shields as the icon and the number; the label still says it in full.
-    expect(screen.getByLabelText('0 of 2 shields')).toBeTruthy();
+    expect(screen.getByText(/^Level \d+$/)).toBeTruthy();
+    expect(screen.getByTestId('arena')).toBeTruthy();
+    expect(screen.queryByText('day streak')).toBeNull();
+    expect(screen.queryByRole('progressbar', { name: /Level \d+ progress/ })).toBeNull();
   });
 
   it('shows the core quest as Up next in the player\'s voice, with its target, safety line and XP; its why is on its screen', async () => {
@@ -664,7 +663,6 @@ describe('Today after a missed day (M7a)', () => {
     const { store, onCheckin } = await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
     expect(screen.getByText(T.title)).toBeTruthy();
     expect(screen.queryByText(T.leadYesterday)).toBeNull(); // M17: the details are on the check-in screen
-    expect(screen.getByText(`day streak · ${T.streakPaused}`)).toBeTruthy();
     await fireEvent.press(screen.getByText(T.open));
     expect(onCheckin).toHaveBeenCalled();
     await fireEvent.press(screen.getByText(T.openLater));
@@ -681,7 +679,6 @@ describe('Today after a missed day (M7a)', () => {
     await renderToday(testStore({ view: project(checkinState(), [answer]) }), DAY_TWO_NOW);
     expect(screen.getByText(T.held)).toBeTruthy();
     expect(screen.getByText(T.waiting)).toBeTruthy();
-    expect(screen.getByText(`day streak · ${T.streakHeld}`)).toBeTruthy();
   });
 
   it('once the recovery quest is cleared, says the day is taken back (emulator finding, M7b)', async () => {
