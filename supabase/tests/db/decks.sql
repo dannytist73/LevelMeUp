@@ -102,3 +102,33 @@ begin
   return next ok(not has_function_privilege('lmu_player', 'levelmeup.article_set_picture(text, text)', 'execute'), 'players can''t');
   return next ok(not has_function_privilege('anon', 'levelmeup.article_set_picture(text, text)', 'execute'), 'nor can anyone else');
 end $$;
+
+create function lmu_test.test_deck_scenes() returns setof text language plpgsql as $$
+declare
+  a text := lmu_test.deck_article('Decks with scenes', false);
+  old text := lmu_test.deck_article('Decks from before the stories', false);
+  b text := lmu_test.deck_article('Decks without a story', false);
+  two jsonb;
+begin
+  perform levelmeup.article_set_deck(a, '{"v": 2, "story": ["One.", "Two."], "lesson": "Sleep in cycles.", "tryToday": "Wake at one time."}', null);
+  perform levelmeup.article_set_deck(old, lmu_test.deck_json(), null);
+  two := jsonb_build_array('story-clay/' || a || '-1.webp', null);
+  return next ok(levelmeup.article_set_scenes(a, two, 'snoozle'), 'a stored story gets its cards'' pictures and its Grumble');
+  return next is((select array[deck -> 'scenes', deck -> 'grumble', deck -> 'story'] from levelmeup.articles where id = a),
+    array[two, '"snoozle"'::jsonb, '["One.", "Two."]'::jsonb], 'the deck names them and keeps its story');
+  return next ok(levelmeup.article_set_scenes(a, two, null), 'setting them again without a Grumble is harmless');
+  return next ok((select not deck ? 'grumble' from levelmeup.articles where id = a), 'and takes the Grumble away');
+  return next ok(not levelmeup.article_set_scenes(a, jsonb_build_array(null), null), 'a story of another number of cards gets none');
+  return next ok(not levelmeup.article_set_scenes(old, jsonb_build_array(null), null), 'nor does a deck from before the stories');
+  return next ok(not levelmeup.article_set_scenes(b, two, null), 'nor an article without a deck');
+  return next is((select deck from levelmeup.articles where id = b), null::jsonb, 'which stays without one');
+  return next throws_ok(format($q$ select levelmeup.article_set_scenes(%L, %L, null) $q$, a, jsonb_build_array(null, 'story-clay/' || a || '-1.webp')), '22023', null,
+    'only each card''s own path');
+  return next throws_ok(format($q$ select levelmeup.article_set_scenes(%L, %L, null) $q$, a, jsonb_build_array('story-clay/article-1-1.webp', null)), '22023', null,
+    'only the article''s own');
+  return next throws_ok(format($q$ select levelmeup.article_set_scenes(%L, %L, null) $q$, a, '{"1": null}'), '22023', null, 'only an array');
+  return next throws_ok(format($q$ select levelmeup.article_set_scenes(%L, %L, %L) $q$, a, two, 'Snoozle!'), '22023', null, 'only a Grumble''s id');
+  return next ok(has_function_privilege('lmu_service', 'levelmeup.article_set_scenes(text, jsonb, text)', 'execute'), 'the service sets them');
+  return next ok(not has_function_privilege('lmu_player', 'levelmeup.article_set_scenes(text, jsonb, text)', 'execute'), 'players can''t');
+  return next ok(not has_function_privilege('anon', 'levelmeup.article_set_scenes(text, jsonb, text)', 'execute'), 'nor can anyone else');
+end $$;

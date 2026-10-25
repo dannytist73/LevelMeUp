@@ -8,6 +8,8 @@ export const ART_ROOT = `${SUPABASE_URL}/storage/v1/object/public/lmu-art`;
 
 /** Only a clay picture of the published shape: anything else is left out, never fetched. */
 export const STORY_PICTURE = /^story-clay\/article-\d+\.webp$/;
+/** A story card's own picture (owner, 2026-10-26: a picture on every story card), cards from 1. */
+export const STORY_SCENE = /^story-clay\/article-\d+-\d+\.webp$/;
 
 export function storyPictureUrl(path: string): string {
   return `${ART_ROOT}/${path}`;

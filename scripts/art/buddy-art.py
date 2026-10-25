@@ -1,13 +1,13 @@
 """Monster Buddy's buddies (docs/2026-10-25-monster-buddy.md), painted like the Grumbles in the owner's local ComfyUI, with
 scripts/art/grumble-art.py's helpers and clay look. One buddy per class, in three sizes (little, grown, grand), each as
-five stills the app brings to life: idle, blink, happy, throw and sleep. And the buddy doing each kind of quest.
+six stills the app brings to life: idle, blink, happy, throw, sleep and think. And the buddy doing each kind of quest.
 
 Start ComfyUI first (scripts/art/story-art.py says how), and run with its Python:
   D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe scripts/art/buddy-art.py paint [CLASS ...]  -> art/buddies/renders/<class>-1-green.png
   buddy-art.py grow [CLASS ...]     -> <class>-2-green.png from -1, -3 from -2 (Qwen-Image-Edit, so it stays itself)
   buddy-art.py black [CLASS ...]    -> <class>-<size>.png: each size on black, without the green screen's light (a white
                                        seal's chin keys out with it otherwise; grumble-art.py BLACK)
-  buddy-art.py poses [CLASS ...]    -> <class>-<size>-<pose>.png (blink, happy, throw, sleep) for each size, on black
+  buddy-art.py poses [CLASS ...]    -> <class>-<size>-<pose>.png (blink, happy, throw, sleep, think) for each size, on black
   buddy-art.py quests [CLASS ...]   -> <class>-1-q-<key>.png, the little buddy doing each kind of quest
   buddy-art.py pick                 -> apps/mobile/assets/buddies/*.webp and apps/mobile/src/art/buddies.ts (the manifest)
 Existing renders are skipped, so a changed instruction needs the old render deleted.
@@ -25,7 +25,7 @@ ASSETS = ROOT / "apps" / "mobile" / "assets" / "buddies"
 MANIFEST = ROOT / "apps" / "mobile" / "src" / "art" / "buddies.ts"
 CLASSES = ["warrior", "mage", "rogue", "monk"]
 SIZES = [1, 2, 3]
-STILLS = ["idle", "blink", "happy", "throw", "sleep"]
+STILLS = ["idle", "blink", "happy", "throw", "sleep", "think"]
 KEEP = "The same character, the same colours and accessories, the same plain background."
 
 # Each buddy's one description and seed (the owner saw these on the canvas), what it gains as it grows, and its shot.
@@ -58,6 +58,8 @@ POSES = {
     "happy": "Make it beam with joy: eyes closed in happy arcs, a big open smile, both little arms raised in cheer. " + KEEP,
     "throw": "Make it throw {ball} forward with one paw, leaning into the throw, an excited open-mouth grin. " + KEEP,
     "sleep": "Make it fast asleep, curled up cozily with its eyes closed and a peaceful smile. " + KEEP,
+    # A picture on every story card (owner, 2026-10-26): it thinks over the lesson's quick check.
+    "think": "Make it think: one little paw raised to its chin, its head tilted a little, eyes looking up, a small curious smile. " + KEEP,
 }
 
 # What the buddy does for each kind of quest (packages/content/src/art.ts ART_KEYS).
@@ -153,7 +155,7 @@ def still(c: str, s: int, pose: str) -> Path:
 
 def pick() -> None:
     """Keys every still to 384 px WebP in the app's assets and the quest pictures one by one, then writes the manifest the
-    app reads. A size's idle, blink, happy and sleep share one box, so a pose change doesn't move it; the throw is framed
+    app reads. A size's idle, blink, happy, sleep and think share one box, so a pose change doesn't move it; the throw is framed
     with its ball too (it shows only in the battle replay, where the shots leave from the ball). Checks everything is
     painted before writing anything, and keys into a fresh folder that replaces the old one only when all of it is done."""
     missing = [p.name for c in CLASSES for s in SIZES for pose in STILLS if not (p := still(c, s, pose)).exists()]

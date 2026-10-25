@@ -189,6 +189,25 @@ export function scenePrompt(deck: StoryDeck): string {
   return JSON.stringify({ regular: `${who.name}, ${who.line}`, title: deck.title, story: deck.story });
 }
 
+/** A picture on every story card (owner, 2026-10-26): one scene per card, and which card the cover already shows. */
+export const CARDS_SCHEMA = {
+  type: 'object',
+  properties: {
+    cards: { type: 'array', items: text('One sentence of 20 to 45 words, like the cover\'s scene.'), description: 'One scene per story card, in order.' },
+    cover: { type: 'integer', description: 'The number (from 1) of the card the cover\'s scene already shows.' },
+  },
+  required: ['cards', 'cover'],
+  additionalProperties: false,
+} as const;
+
+export const CARDS_SYSTEM = `You set up the pictures of a LevelMeUp story lesson's cards: one per story card, each the moment that card tells, made later as a little clay diorama by an image model that already knows the regular's face, hair and build. The cover's scene is already painted; write one scene per card in its style, and say which card the cover already shows (that card keeps the cover's picture).
+Rules: the regular is the only person in focus (others only far in the background); never describe their face, hair, age or build; they wear the cover's clothes unless the card plainly puts them somewhere else (then name the clothes); nothing with readable text, numbers, logos or screens showing words; nothing unsafe, sad or graphic; everyday objects from the story. When the story has a Grumble, it sits small beside the regular in every picture, so leave a little room for it.`;
+
+export function cardsPrompt(deck: StoryDeck, scene: string): string {
+  const who = CAST.find((c) => c.id === deck.cast)!;
+  return JSON.stringify({ regular: `${who.name}, ${who.line}`, title: deck.title, cover: scene, story: deck.story });
+}
+
 export const PICK_SCHEMA = {
   type: 'object',
   properties: {

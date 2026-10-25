@@ -3,7 +3,7 @@
 // the cache and the outbox combined (game/project.ts).
 import { articleKeep } from '../game/reading.ts';
 import type { ArticleBody, PhoneEvent, ServerState } from '../game/types.ts';
-import { hasStoryDeck } from '../reading/deck.ts';
+import { hasCurrentDeck } from '../reading/deck.ts';
 import type { Notice } from '../sync/engine.ts';
 import type { Sql } from './sql.ts';
 
@@ -129,7 +129,7 @@ export function makeLocal(sql: Sql) {
     articleIds: async () => (await sql.all<{ id: string; json: string }>('select id, json from articles order by saved_at desc, id'))
       .filter((r) => {
         try {
-          return hasStoryDeck((JSON.parse(r.json) as { deck?: unknown }).deck);
+          return hasCurrentDeck((JSON.parse(r.json) as { deck?: unknown }).deck);
         } catch {
           return false;
         }

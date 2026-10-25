@@ -1,7 +1,10 @@
 /** @jest-environment node */
 import { makeLocal, migrate } from '../src/data/local.ts';
 import { serialized } from '../src/data/sql.ts';
-import { SAMPLE_ARTICLE, SAMPLE_STORY_ARTICLE } from '../src/dev/sampleArticle.ts';
+import { SAMPLE_ARTICLE, SAMPLE_STORY_ARTICLE, SAMPLE_STORY_DECK } from '../src/dev/sampleArticle.ts';
+
+/** A story as the server now makes it: its cards' pictures named, even when none was painted (2026-10-26). */
+const STORY_ARTICLE = { ...SAMPLE_STORY_ARTICLE, deck: { ...SAMPLE_STORY_DECK, scenes: SAMPLE_STORY_DECK.story.map(() => null) } };
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import { serverState } from './support/fixtures.ts';
 import { nodeSql, rawNodeSql } from './support/nodeSql.ts';
@@ -160,7 +163,7 @@ describe('the phone database', () => {
 
   it('keeps the articles a sync brings and drops those no longer needed (M8b)', async () => {
     const { local } = await fresh();
-    const body = (id: string) => ({ ...SAMPLE_STORY_ARTICLE, id });
+    const body = (id: string) => ({ ...STORY_ARTICLE, id });
     const s = serverState();
     const keepOne: ServerState = { ...s, today: { ...s.today!, article: { id: 'article-1', cluster: 'sleep', title: 'One', minutes: 6 } } };
     await local.acknowledge([], [], keepOne, 1, [body('article-1'), body('article-2')]);
@@ -175,7 +178,7 @@ describe('the phone database', () => {
 
   it('keeps a kept lesson’s article and names the newest first, so today’s is always in what a sync sends (M17)', async () => {
     const { local } = await fresh();
-    const body = (id: string) => ({ ...SAMPLE_STORY_ARTICLE, id });
+    const body = (id: string) => ({ ...STORY_ARTICLE, id });
     const s = serverState();
     const named = (id: string): ServerState => ({ ...s, today: { ...s.today!, article: { id, cluster: 'sleep', title: 'One', minutes: 6 } } });
     await local.acknowledge([], [], named('article-a'), 1, [body('article-a')], ['article-a']);
@@ -191,7 +194,7 @@ describe('the phone database', () => {
     await local.acknowledge([], [], both, 1, [{ ...SAMPLE_ARTICLE, id: 'article-1', deck: null }, { ...old, id: 'article-2' } as typeof SAMPLE_ARTICLE]);
     expect(Object.keys((await local.snapshot()).articles).sort()).toEqual(['article-1', 'article-2']); // still shown, as the full article
     expect(await local.articleIds()).toEqual([]);
-    await local.acknowledge([], [], both, 2, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-1' }]);
+    await local.acknowledge([], [], both, 2, [{ ...STORY_ARTICLE, id: 'article-1' }]);
     expect(await local.articleIds()).toEqual(['article-1']);
     await local.acknowledge([], [], both, 3, [{ ...SAMPLE_ARTICLE, id: 'article-1', deck: { story: 'cards' } as never }]);
     expect(await local.articleIds()).toEqual([]); // a deck this phone can't read is sent again too (M11 review)
@@ -204,8 +207,20 @@ describe('the phone database', () => {
     await local.acknowledge([], [], today, 1, [{ ...SAMPLE_ARTICLE, id: 'article-1' }]);
     expect((await local.snapshot()).articles['article-1']!.deck).toEqual(SAMPLE_ARTICLE.deck); // still shown with its old cards
     expect(await local.articleIds()).toEqual([]);
-    await local.acknowledge([], [], today, 2, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-1' }]);
-    expect((await local.snapshot()).articles['article-1']!.deck).toEqual(SAMPLE_STORY_ARTICLE.deck);
+    await local.acknowledge([], [], today, 2, [{ ...STORY_ARTICLE, id: 'article-1' }]);
+    expect((await local.snapshot()).articles['article-1']!.deck).toEqual(STORY_ARTICLE.deck);
+    expect(await local.articleIds()).toEqual(['article-1']);
+  });
+
+  it('asks again for a story held without its cards’ pictures, until the story comes with them (2026-10-26)', async () => {
+    const { local } = await fresh();
+    const s = serverState();
+    const today: ServerState = { ...s, today: { ...s.today!, article: { id: 'article-1', cluster: 'sleep', title: 'One', minutes: 6 } } };
+    await local.acknowledge([], [], today, 1, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-1' }]);
+    expect(await local.articleIds()).toEqual([]);
+    const painted = { ...SAMPLE_STORY_DECK, scenes: SAMPLE_STORY_DECK.story.map((_, i) => `story-clay/article-1-${i + 1}.webp`) };
+    await local.acknowledge([], [], today, 2, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-1', deck: painted }]);
+    expect((await local.snapshot()).articles['article-1']!.deck).toEqual(painted);
     expect(await local.articleIds()).toEqual(['article-1']);
   });
 

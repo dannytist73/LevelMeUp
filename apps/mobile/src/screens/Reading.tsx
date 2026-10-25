@@ -8,7 +8,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dateKeyLabel } from '../lib/dates.ts';
 import { isKept } from '../reading/codex.ts';
-import { asDeck } from '../reading/deck.ts';
+import { asDeck, hasCurrentDeck } from '../reading/deck.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -40,10 +40,12 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
   const known = reading !== null || todayNumber !== null || codex.some((e) => e.articleId === articleId);
   const deck = article === null ? null : asDeck(article.deck);
   const hasDeck = deck !== null;
+  // Held without its story lesson as the server now makes it (its cards' pictures, 2026-10-26): asked for once more.
+  const current = article !== null && hasCurrentDeck(article.deck);
 
   useEffect(() => {
-    if (known && !hasDeck) fetchArticle(articleId);
-  }, [hasDeck, known, articleId, fetchArticle]);
+    if (known && !current) fetchArticle(articleId);
+  }, [current, known, articleId, fetchArticle]);
 
   const isToday = day !== null && day === todayNumber;
   const label = isToday || reading === null ? R.label : fillText(R.past.label, { date: dateKeyLabel(reading.date) });
@@ -68,6 +70,7 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
         onClose={onBack}
         onFullArticle={() => setFullArticle(true)}
         initialStep={deckStep}
+        buddy={view === null ? undefined : { classId: view.profile.classId, level: view.character.level }}
         onStep={setDeckStep}
         kept={isKept(codex, article.id)}
         onKeep={() => void toggleKeep({ articleId: article.id, title: article.title, lesson: deck.lesson, keptAt: now() })}

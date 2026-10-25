@@ -107,6 +107,9 @@ export function studioStore(sql: Sql): StudioStore {
     async setPicture(articleId, path) {
       return one(await sql<{ ok: boolean }[]>`select levelmeup.article_set_picture(${articleId}, ${path}) as ok`).ok;
     },
+    async setScenes(articleId, scenes, grumble) {
+      return one(await sql<{ ok: boolean }[]>`select levelmeup.article_set_scenes(${articleId}, ${sql.json(scenes as postgres.JSONValue)}::jsonb, ${grumble}) as ok`).ok;
+    },
   };
 }
 

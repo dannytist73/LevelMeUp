@@ -8,11 +8,15 @@
 //                                                          -> { stored | checked, picture, words }, or 422 { problems }
 //   { "action": "picture", "articleId", "picture" }        -> { picture } (Monster Buddy: a stored story's clay picture),
 //                                                             422 { problems }, or 404 when the article has no story
+//   { "action": "scenes", "articleId", "scenes", "grumble" } -> { scenes, grumble } (a stored story's card pictures, one
+//                                                             or null per card, and its Grumble or null), 422 { problems },
+//                                                             or 404 when the article has no story of that many cards
+//   "submit" takes "scenes"? and "grumble"? the same way, for a new story
 import { db, lmuCode } from '../_shared/db.ts';
 import { isObject, isProblem, json, problem, problemResponse, readJson } from '../_shared/http.ts';
 import { tickAllowed } from '../_shared/articles/auth.ts';
 import { studioStore } from '../_shared/articles/store.ts';
-import { STUDIO_MAX_BODY, claim, readPicture, readSubmission, recordFailure, repicture, submit } from '../_shared/articles/studio.ts';
+import { STUDIO_MAX_BODY, claim, readGrumble, readPicture, readScenes, readSubmission, recordFailure, repicture, rescene, submit } from '../_shared/articles/studio.ts';
 import type { Art } from '../_shared/articles/studio.ts';
 import { clip } from '../_shared/articles/text.ts';
 
@@ -58,7 +62,16 @@ Deno.serve(async (req) => {
       const result = await repicture(store, art(), body.articleId, picture);
       return 'missing' in result ? problemResponse(problem(404, 'not_found', 'no stored story has that id')) : json(200, result);
     }
-    return problemResponse(problem(400, 'bad_request', 'action is claim, fail, submit or picture'));
+    if (body.action === 'scenes') {
+      if (typeof body.articleId !== 'string' || !Array.isArray(body.scenes)) return problemResponse(problem(400, 'bad_request'));
+      const scenes = readScenes(body.scenes, body.scenes.length);
+      const grumble = readGrumble(body.grumble);
+      const problems = [...(typeof scenes === 'string' ? [scenes] : []), ...('problem' in grumble ? [grumble.problem] : [])];
+      if (typeof scenes === 'string' || 'problem' in grumble) return json(422, { error: 'refused', problems });
+      const result = await rescene(store, art(), body.articleId, scenes, grumble.grumble);
+      return 'missing' in result ? problemResponse(problem(404, 'not_found', 'no stored story has that id and that many cards')) : json(200, result);
+    }
+    return problemResponse(problem(400, 'bad_request', 'action is claim, fail, submit, picture or scenes'));
   } catch (error) {
     if (lmuCode(error) === 'conflict') return problemResponse(problem(409, 'conflict', 'the job is not waiting in the studio'));
     console.error('lmu-articles-studio failed', error);

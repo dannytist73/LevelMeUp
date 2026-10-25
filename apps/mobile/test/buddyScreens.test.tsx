@@ -28,10 +28,10 @@ function decided(won: boolean): ServerState {
 }
 
 describe('the buddies’ paintings', () => {
-  it('every class’s buddy in three sizes, each with all five stills', () => {
+  it('every class’s buddy in three sizes, each with all six stills', () => {
     for (const c of CLASS_IDS) {
       expect(BUDDY_ART[c]).toHaveLength(3);
-      for (const size of BUDDY_ART[c]!) expect(Object.keys(size).sort()).toEqual(['blink', 'happy', 'idle', 'sleep', 'throw']);
+      for (const size of BUDDY_ART[c]!) expect(Object.keys(size).sort()).toEqual(['blink', 'happy', 'idle', 'sleep', 'think', 'throw']);
     }
   });
 

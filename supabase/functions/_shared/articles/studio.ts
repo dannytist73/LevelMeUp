@@ -3,7 +3,7 @@
 // sends is untrusted input: the server parses it and runs the pipeline's own checks again (the brief's limits, the
 // article's checks, the deck's checks) and checks the picture's bytes, then stores the article through the tick's own
 // functions. The PC holds only LMU_STUDIO_SECRET, which can do nothing else. Pure apart from its two ports.
-import { CLUSTER_NAMES } from '../../../../packages/content/src/index.ts';
+import { CLUSTER_NAMES, GRUMBLES } from '../../../../packages/content/src/index.ts';
 import type { ArticleCluster } from '../../../../packages/content/src/index.ts';
 import { isObject } from '../http.ts';
 import { BRIEF_LIMITS, checkBrief, pageUrl } from './brief.ts';
@@ -23,18 +23,22 @@ export const STUDIO_ATTEMPTS = 2;
 export const STUDIO_EXCERPTS = { max: 200, chars: 2000 } as const;
 /** The story's picture: a 960x540 webp, as the M14 set (scripts/art/story-art.py), small enough for a phone. */
 export const STUDIO_PICTURE = { width: 960, height: 540, maxBytes: 300_000 } as const;
-/** A request: the picture as base64 plus the article, brief and deck. */
-export const STUDIO_MAX_BODY = 1_000_000;
+/** A request: the picture and the story cards' pictures as base64, plus the article, brief and deck. */
+export const STUDIO_MAX_BODY = 4_000_000;
 /** Where a story's picture goes in the public `lmu-art` bucket. Monster Buddy (docs/2026-10-25-monster-buddy.md): the clay
  * set's folder; the phone shows a deck's picture from there only (the flat `story-v1` set was retired 2026-10-25). */
 export const storyPicturePath = (articleId: string): string => `story-clay/${articleId}.webp`;
 export const studioPicturePath = (jobId: number): string => storyPicturePath(`article-${jobId}`);
+/** A story card's own picture (owner, 2026-10-26: a picture on every story card), cards from 1. */
+export const storyScenePath = (articleId: string, card: number): string => `story-clay/${articleId}-${card}.webp`;
 
 export interface StudioStore extends Pick<Store, 'begin' | 'end' | 'topicsUsed' | 'queue' | 'openJobs' | 'move'> {
   /** The checked article, its sources, the brief it was written from and its deck, in one transaction; the article's id. */
   storeStudio(jobId: number, article: StoredArticle, sources: readonly StoredSource[], brief: Brief, deck: StoryDeck): Promise<string>;
   /** Monster Buddy: points a stored story's deck at its picture (migration 0021); false when the article has no deck. */
   setPicture(articleId: string, path: string): Promise<boolean>;
+  /** Names a stored story's card pictures and its Grumble on its deck (migration 0022); false when it has no story of that many cards. */
+  setScenes(articleId: string, scenes: readonly (string | null)[], grumble: string | null): Promise<boolean>;
 }
 
 export interface Art {
@@ -79,7 +83,13 @@ export async function recordFailure(store: StudioStore, jobId: number, error: st
   return store.move(jobId, 'studio', 'studio', { error: clip(error, 1000) });
 }
 
-export type Submission = { jobId: number; brief: Brief; draft: ArticleDraft; deck: StoryDeck; picture: Uint8Array<ArrayBuffer> | null };
+export type Scenes = (Uint8Array<ArrayBuffer> | null)[];
+export type Submission = {
+  jobId: number; brief: Brief; draft: ArticleDraft; deck: StoryDeck; picture: Uint8Array<ArrayBuffer> | null;
+  /** One picture or null per story card, or null when the story has none (owner, 2026-10-26). */
+  scenes: Scenes | null;
+  grumble: string | null;
+};
 
 const ints = (v: unknown): v is number[] => Array.isArray(v) && v.every((n) => Number.isInteger(n));
 
@@ -141,10 +151,29 @@ export function readPicture(v: unknown): Uint8Array<ArrayBuffer> | string {
   return bytes;
 }
 
+/** The story cards' pictures, one per card (null for a card without one), each like the picture; or why they can't be. */
+export function readScenes(v: unknown, cards: number): Scenes | string {
+  if (!Array.isArray(v) || v.length !== cards || cards === 0) return `the scenes must be ${cards}, one per story card`;
+  const scenes: Scenes = [];
+  for (const [i, s] of v.entries()) {
+    const picture = s === null ? null : readPicture(s);
+    if (typeof picture === 'string') return `story card ${i + 1}: ${picture}`;
+    scenes.push(picture);
+  }
+  return scenes;
+}
+
+/** The story's Grumble: one of the app's, or null for none; or why it can't be. */
+export function readGrumble(v: unknown): { grumble: string | null } | { problem: string } {
+  if (v === undefined || v === null) return { grumble: null };
+  return typeof v === 'string' && GRUMBLES.some((g) => g.id === v) ? { grumble: v } : { problem: 'the grumble is not one of the app\'s' };
+}
+
 /**
  * The PC's article as the tick would store it, or every reason it can't be: the brief must pass the tick's research
  * check, the article the tick's article checks against that brief, the deck the deck checks, and the picture (optional:
- * a story can go out without one) must be the published size. The picture path is the server's, never the PC's.
+ * a story can go out without one) must be the published size. The story cards' pictures and the Grumble are niceties
+ * of a nicety: any that aren't right are left out, never the day's article. The paths are the server's, never the PC's.
  */
 export function readSubmission(body: Record<string, unknown>): Submission | string[] {
   if (!Number.isInteger(body.jobId)) return ['the job id is missing'];
@@ -160,27 +189,44 @@ export function readSubmission(body: Record<string, unknown>): Submission | stri
   const picture = body.picture === undefined || body.picture === null ? null : readPicture(body.picture);
   if (typeof picture === 'string') problems.push(picture);
   if (problems.length > 0 || draft === null || deck === null || typeof picture === 'string') return [...new Set(problems)];
-  return { jobId: body.jobId as number, brief, draft, deck, picture };
+  const scenes = body.scenes === undefined || body.scenes === null ? null : readScenes(body.scenes, deck.story.length);
+  const grumble = readGrumble(body.grumble);
+  return {
+    jobId: body.jobId as number, brief, draft, deck, picture,
+    scenes: typeof scenes === 'string' ? null : scenes, grumble: 'problem' in grumble ? null : grumble.grumble,
+  };
 }
 
 export type SubmitResult =
-  | { stored: string; picture: string | null; words: number }
-  | { checked: string; picture: string | null; words: number }
+  | { stored: string; picture: string | null; scenes: (string | null)[] | null; words: number }
+  | { checked: string; picture: string | null; scenes: (string | null)[] | null; words: number }
   | { conflict: 'not_the_studios' };
 
-/** Stores a checked submission (with `dry`, checks only): the picture first, so a deck never names a missing one. */
+/** Where each card's picture goes, null for a card without one; null when the story has none at all. */
+const scenePaths = (articleId: string, scenes: Scenes | null): (string | null)[] | null =>
+  scenes === null || scenes.every((s) => s === null) ? null : scenes.map((s, i) => (s === null ? null : storyScenePath(articleId, i + 1)));
+
+async function uploadScenes(art: Art, paths: readonly (string | null)[], scenes: Scenes): Promise<void> {
+  for (const [i, path] of paths.entries()) if (path !== null) await art.upload(path, scenes[i]!);
+}
+
+/** Stores a checked submission (with `dry`, checks only): the pictures first, so a deck never names a missing one. */
 export async function submit(store: StudioStore, art: Art, s: Submission, dry: boolean): Promise<SubmitResult> {
   const job = (await store.openJobs()).find((j) => j.id === s.jobId && j.status === 'studio');
   if (job === undefined) return { conflict: 'not_the_studios' };
   const words = articleWords(s.draft);
   const picture = s.picture === null ? null : studioPicturePath(job.id);
-  if (dry) return { checked: `article-${job.id}`, picture, words };
+  const scenes = scenePaths(`article-${job.id}`, s.scenes);
+  if (dry) return { checked: `article-${job.id}`, picture, scenes, words };
   if (picture !== null) await art.upload(picture, s.picture!);
+  if (scenes !== null) await uploadScenes(art, scenes, s.scenes!);
   const cited = new Set(s.draft.sections.flatMap((x) => x.sourceIds));
   const sources = s.brief.sources.filter((x) => cited.has(x.id)).map((x) => ({ idx: x.id, url: x.url, title: x.title }));
-  const deck: StoryDeck = picture === null ? s.deck : { ...s.deck, picture };
+  const deck: StoryDeck = {
+    ...s.deck, ...(picture === null ? {} : { picture }), ...(scenes === null ? {} : { scenes }), ...(s.grumble === null ? {} : { grumble: s.grumble }),
+  };
   const stored = await store.storeStudio(job.id, { ...s.draft, words, readingMinutes: readingMinutes(words) }, sources, s.brief, deck);
-  return { stored, picture, words };
+  return { stored, picture, scenes, words };
 }
 
 export type PictureResult = { picture: string } | { missing: true };
@@ -194,4 +240,20 @@ export async function repicture(store: Pick<StudioStore, 'setPicture'>, art: Art
   const path = storyPicturePath(articleId);
   await art.upload(path, picture);
   return (await store.setPicture(articleId, path)) ? { picture: path } : { missing: true };
+}
+
+export type ScenesResult = { scenes: (string | null)[]; grumble: string | null } | { missing: true };
+
+/**
+ * A stored story's card pictures and its Grumble (owner, 2026-10-26: a picture on every story card), painted on the
+ * owner's PC. The deck first stops naming its cards' pictures, which also checks it is a story of that many cards (one
+ * that isn't, or an article without one, gets nothing, not even an upload); then each is uploaded at its card's own path
+ * and named again with the Grumble. So a deck never names a missing picture, nor one being replaced.
+ */
+export async function rescene(store: Pick<StudioStore, 'setScenes'>, art: Art, articleId: string, scenes: Scenes, grumble: string | null): Promise<ScenesResult> {
+  if (!/^article-\d+$/.test(articleId)) return { missing: true };
+  if (!(await store.setScenes(articleId, scenes.map(() => null), grumble))) return { missing: true };
+  const paths = scenes.map((s, i) => (s === null ? null : storyScenePath(articleId, i + 1)));
+  await uploadScenes(art, paths, scenes);
+  return (await store.setScenes(articleId, paths, grumble)) ? { scenes: paths, grumble } : { missing: true };
 }

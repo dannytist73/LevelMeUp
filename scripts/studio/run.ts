@@ -6,13 +6,15 @@
 //   npm run studio -- token [TOKEN] save the token `claude setup-token` printed: typed after it, or from the clipboard
 //   npm run studio -- run [--dry]  one day's article (--dry: everything, but the server only checks it)
 //   npm run studio -- status       the last runs
+//   npm run studio -- scenes [DIR]    the stored stories' card pictures and Grumbles (art/story/clay, from
+//                                  scripts/art/story-art.py beatpick) to lmu-art/story-clay, each named on its deck
 //   npm run studio -- pictures [DIR]  Monster Buddy: the stored stories' clay pictures (art/story/clay, from
 //                                  scripts/art/story-art.py pick) to lmu-art/story-clay, each named on its deck
 // Setup changes the live project, so it needs the owner's yes (CLAUDE.md). Claude never writes to the database: it
 // answers with JSON, and this script sends that JSON to the function, which checks it with the tick's own code.
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { freemem, homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +28,7 @@ import { ARTICLE_SCHEMA, writeRequest } from '../../supabase/functions/_shared/p
 import { PROJECT_REF } from '../lib/guard.ts';
 import { supabase } from '../sb.ts';
 import {
-  PICK_SCHEMA, RESEARCH_SCHEMA, SCENE_GRUMBLES, SCENE_SCHEMA, SCENE_SYSTEM, STUDIO_RESEARCH_SYSTEM, pickSystem, researchPrompt, researchUrls, scenePrompt, sharedRuns, verifyResearch,
+  CARDS_SCHEMA, CARDS_SYSTEM, PICK_SCHEMA, RESEARCH_SCHEMA, SCENE_GRUMBLES, SCENE_SCHEMA, SCENE_SYSTEM, cardsPrompt, STUDIO_RESEARCH_SYSTEM, pickSystem, researchPrompt, researchUrls, scenePrompt, sharedRuns, verifyResearch,
 } from './lib.ts';
 import type { PageRead, Research } from './lib.ts';
 import { fetchPage } from './page.ts';
@@ -287,6 +289,9 @@ async function picture(env: Env, job: StudioJob, dir: string, d: StoryDeck): Pro
         const chosen = join(renders, files[pick - 1]!);
         const final = monster === null ? chosen : python(['grumble', chosen, monster, join(renders, `${seeds[pick - 1]}-${monster}.png`)]);
         python(['webp', final, out]);
+        await cards(env, job, dir, d, look, scene, monster, out).catch((error: unknown) => {
+          log(`job ${job.id}: no card pictures: ${(error as Error).message}`);
+        });
         return out;
       }
     }
@@ -298,6 +303,49 @@ async function picture(env: Env, job: StudioJob, dir: string, d: StoryDeck): Pro
       else log('ComfyUI is left running: someone else is rendering with it');
     }
   }
+}
+
+/** A story card's picture in the job's folder (cards from 1). */
+const cardPicture = (dir: string, card: number) => join(dir, `card-${card}.webp`);
+
+/**
+ * A picture on every story card (owner, 2026-10-26: "Story pictures + living buddy"): each card's moment, in the cover's
+ * clothes and with its Grumble, two takes and Claude's pick, then the published size; the card the cover shows gets the
+ * cover. All the takes first, then the picks, then the Grumble swaps, so ComfyUI loads each model once. A card without a
+ * usable take gets none.
+ */
+async function cards(env: Env, job: StudioJob, dir: string, d: StoryDeck, look: string, scene: string, monster: string | null, cover: string): Promise<void> {
+  const plan = await step(dir, 'cards.json', () => claude(env, { system: CARDS_SYSTEM, prompt: cardsPrompt(d, scene), schema: CARDS_SCHEMA, cwd: HERE, effort: 'low', minutes: 5 }) as { cards: string[]; cover: number });
+  if (plan.cards.length !== d.story.length) throw new Error(`${plan.cards.length} card scenes for ${d.story.length} cards`);
+  const seeds = (card: number) => [0, 1].map((i) => job.id * 100 + 20 + card * 2 + i);
+  const folder = (card: number) => join(dir, 'renders', `card-${card}`);
+  const todo = plan.cards.map((_, i) => i + 1).filter((card) => card !== plan.cover && !existsSync(cardPicture(dir, card)));
+  for (const card of todo) {
+    python(['scene', folder(card), d.cast, plan.cards[card - 1]!, '--seeds', ...seeds(card).map(String), ...(monster === null ? [] : ['--monster'])]);
+  }
+  const picked = todo.map((card) => {
+    const files = seeds(card).map((s) => `${s}.png`);
+    const { pick, why } = claude(env, {
+      system: pickSystem(d.cast, look, plan.cards[card - 1]!, files, monster !== null), prompt: 'Choose the picture.', schema: PICK_SCHEMA, cwd: folder(card),
+      tools: ['Read'], allow: ['Read'], effort: 'low', minutes: 5,
+    }) as { pick: number; why: string };
+    log(`job ${job.id}: card ${card}: ${pick === 0 ? 'none usable' : files[pick - 1]} (${why})`);
+    return { card, file: Number.isInteger(pick) && pick >= 1 && pick <= files.length ? join(folder(card), files[pick - 1]!) : null };
+  });
+  for (const { card, file } of picked) {
+    if (file === null) continue;
+    const final = monster === null ? file : python(['grumble', file, monster, file.replace(/\.png$/, `-${monster}.png`)]);
+    python(['webp', final, cardPicture(dir, card)]);
+  }
+  if (Number.isInteger(plan.cover) && plan.cover >= 1 && plan.cover <= d.story.length) copyFileSync(cover, cardPicture(dir, plan.cover));
+}
+
+/** The story's Grumble from its scene step, or null (no picture was made, or the story has none). */
+function sceneGrumble(dir: string): string | null {
+  const file = join(dir, 'scene.json');
+  if (!existsSync(file)) return null;
+  const { grumble } = JSON.parse(readFileSync(file, 'utf8')) as { grumble?: string };
+  return grumble !== undefined && grumble !== 'none' && (SCENE_GRUMBLES as readonly string[]).includes(grumble) ? grumble : null;
 }
 
 async function run(dry: boolean): Promise<void> {
@@ -327,14 +375,18 @@ async function run(dry: boolean): Promise<void> {
       log(`job ${job.id}: no picture: ${(error as Error).message}`);
       return null;
     });
+    const story = parseDeck(d)!.story;
+    const scenes = pic === null ? null : story.map((_, i) => (existsSync(cardPicture(dir, i + 1)) ? readFileSync(cardPicture(dir, i + 1)).toString('base64') : null));
     const sent = await studio(env, {
-      action: 'submit', jobId: job.id, brief, article, deck: d, picture: pic === null ? null : readFileSync(pic).toString('base64'), dry,
+      action: 'submit', jobId: job.id, brief, article, deck: d, picture: pic === null ? null : readFileSync(pic).toString('base64'),
+      scenes, grumble: sceneGrumble(dir), dry,
     });
     writeFileSync(join(dir, dry ? 'checked.json' : 'stored.json'), JSON.stringify(sent, null, 2));
     if (sent.status === 422) throw new Refused(`the server refused it: ${JSON.stringify(sent.body.problems).slice(0, 600)}`);
     if (sent.status !== 200) throw new Error(`submit: ${sent.status} ${JSON.stringify(sent.body)}`);
     const title = (article as { title: string }).title;
-    log(`job ${job.id}: ${dry ? 'checked' : 'published'} ${String(sent.body.stored ?? sent.body.checked)}: ${title} (${String(sent.body.words)} words, ${pic === null ? 'no picture' : 'with its picture'})`);
+    const carded = (scenes ?? []).filter((x) => x !== null).length;
+    log(`job ${job.id}: ${dry ? 'checked' : 'published'} ${String(sent.body.stored ?? sent.body.checked)}: ${title} (${String(sent.body.words)} words, ${pic === null ? 'no picture' : `with its picture and ${carded} of ${story.length} card pictures`})`);
     if (!dry) notify(`Published: ${title}${pic === null ? ' (no picture)' : ''}`);
   } catch (error) {
     const message = (error as Error).message;
@@ -402,6 +454,25 @@ async function pictures(dir: string): Promise<void> {
   }
 }
 
+/**
+ * A picture on every story card (owner, 2026-10-26): the stored stories' card pictures (art/story/clay/<article>-<card>.webp
+ * and scenes.json, from scripts/art/story-art.py beatpick), each story's sent to the function's "scenes" action with its
+ * Grumble, which uploads them at their cards' paths and names them on the deck. Needs the owner's yes (it changes the
+ * live project); one story after another, and any refusal is shown and stops the rest.
+ */
+async function scenes(dir: string): Promise<void> {
+  const env = readEnv(ENV_FILE);
+  const manifest = JSON.parse(readFileSync(join(dir, 'scenes.json'), 'utf8')) as Record<string, { cards: number; grumble: string | null }>;
+  for (const [articleId, { cards: count, grumble }] of Object.entries(manifest)) {
+    const pictures = Array.from({ length: count }, (_, i) => join(dir, `${articleId}-${i + 1}.webp`));
+    const sent = await studio(env, {
+      action: 'scenes', articleId, grumble, scenes: pictures.map((f) => (existsSync(f) ? readFileSync(f).toString('base64') : null)),
+    });
+    if (sent.status !== 200) throw new Error(`${articleId}: ${sent.status} ${JSON.stringify(sent.body)}`);
+    log(`scenes: ${articleId} -> ${(sent.body.scenes as (string | null)[]).filter((x) => x !== null).length} of ${count} cards, ${String(sent.body.grumble)}`);
+  }
+}
+
 function status(): void {
   if (existsSync(LOG)) console.log(readFileSync(LOG, 'utf8').trimEnd().split('\n').slice(-30).join('\n'));
   else console.log('No runs yet.');
@@ -416,10 +487,11 @@ try {
     case 'run': await run(rest.includes('--dry')); break;
     case 'status': status(); break;
     case 'pictures': await pictures(rest[0] ?? join(ROOT, 'art', 'story', 'clay')); break;
-    default: throw new Error('commands: setup, token, run [--dry], status, pictures [DIR]');
+    case 'scenes': await scenes(rest[0] ?? join(ROOT, 'art', 'story', 'clay')); break;
+    default: throw new Error('commands: setup, token, run [--dry], status, pictures [DIR], scenes [DIR]');
   }
 } catch (error) {
   // Only a known command is named: anything else typed there (a token pasted in the wrong place) is never logged.
-  log(`studio ${['setup', 'token', 'run', 'status', 'pictures'].includes(command ?? '') ? command : '(unknown command)'}: ${(error as Error).message}`);
+  log(`studio ${['setup', 'token', 'run', 'status', 'pictures', 'scenes'].includes(command ?? '') ? command : '(unknown command)'}: ${(error as Error).message}`);
   process.exitCode = 1;
 }

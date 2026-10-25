@@ -2,6 +2,8 @@
 import { CLUSTER_NAMES, READING_TEXT, fillText } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
+import { BUDDY_ART } from '../src/art/buddies.ts';
+import { GRUMBLE_ART } from '../src/art/grumbles.ts';
 import { SAMPLE_ARTICLE, SAMPLE_LEGACY_DECK, SAMPLE_STORY_ARTICLE, SAMPLE_STORY_DECK } from '../src/dev/sampleArticle.ts';
 import { CAST_COLORS, CAST_INK } from '../src/reading/castColors.ts';
 import { contrast } from '../src/theme/contrast.ts';
@@ -149,6 +151,15 @@ describe('the story lesson on screen (M14)', () => {
     expect(screen.getByText(D.todaysStory)).toBeTruthy();
   });
 
+  it("keeps the cards' pictures and the story's Grumble, and drops them when they are off (owner, 2026-10-26)", () => {
+    const scenes = ['story-clay/article-0-1.webp', null, 'story-clay/article-0-3.webp', 'story-clay/article-0-4.webp'];
+    expect(asDeck({ ...STORY, scenes, grumble: 'snoozle' })).toEqual({ ...STORY, scenes, grumble: 'snoozle' });
+    for (const off of [scenes.slice(1), [...scenes, null], ['story-clay/article-0.webp', null, null, null], ['../x-1.webp', null, null, null], [1, null, null, null], 'x']) {
+      expect(asDeck({ ...STORY, scenes: off })).toEqual(STORY);
+    }
+    expect(asDeck({ ...STORY, grumble: 'gremlin' })).toEqual(STORY);
+  });
+
   it('says Right for the right answer, and can be skipped', async () => {
     await renderStory();
     for (let i = 0; i < 6; i++) await next();
@@ -157,6 +168,75 @@ describe('the story lesson on screen (M14)', () => {
     await renderStory();
     for (let i = 0; i < 7; i++) await next();
     expect(screen.getByTestId('deck-card-lesson')).toBeTruthy(); // swiped on without an answer
+  });
+});
+
+describe('a picture on every story card, then the Grumble and your buddy (owner, 2026-10-26)', () => {
+  const hidden = { includeHiddenElements: true } as const;
+  const SCENES = ['story-clay/article-0-1.webp', null, 'story-clay/article-0-3.webp', 'story-clay/article-0-4.webp'];
+  const FULL = { ...STORY, scenes: SCENES, grumble: 'snoozle' };
+  const renderStory = (deck: typeof STORY = FULL, buddy: { classId: 'warrior'; level: number } | null = { classId: 'warrior', level: 6 }) => render(
+    <Deck article={{ ...SAMPLE_STORY_ARTICLE, deck }} label="Today's reading" xp={10} turn={<Text>turn</Text>}
+      onClose={jest.fn()} onFullArticle={jest.fn()} kept={false} onKeep={jest.fn()} reduceMotion {...(buddy === null ? {} : { buddy })} />,
+  );
+  const next = () => fireEvent.press(screen.getByRole('button', { name: D.next }));
+  const buddyStill = () => screen.getByTestId('buddy-still', hidden).props.source;
+  const grown = BUDDY_ART.warrior![1];
+
+  it("shows each story card's own picture, hidden from screen readers; a card without one reads as text", async () => {
+    await renderStory();
+    await next();
+    expect(screen.getByTestId('deck-scene-0', hidden).props.source.uri).toMatch(/\/lmu-art\/story-clay\/article-0-1\.webp$/);
+    expect(screen.queryByTestId('deck-scene-0')).toBeNull(); // hidden from screen readers
+    await next();
+    expect(screen.queryByTestId('deck-scene-1', hidden)).toBeNull();
+    expect(screen.getByText(STORY.story[1]!)).toBeTruthy();
+    await next();
+    expect(screen.getByTestId('deck-scene-2', hidden).props.source.uri).toMatch(/article-0-3\.webp$/);
+  });
+
+  it("drops a card's picture that fails to load, and keeps its story", async () => {
+    await renderStory();
+    await next();
+    await fireEvent(screen.getByTestId('deck-scene-0', hidden), 'error');
+    expect(screen.queryByTestId('deck-scene-0', hidden)).toBeNull();
+    expect(screen.getByText(STORY.story[0]!)).toBeTruthy();
+  });
+
+  it("shows the story's Grumble on why it works, already small and happy without motion", async () => {
+    await renderStory();
+    for (let i = 0; i < 5; i++) await next();
+    expect(screen.getByTestId('deck-card-why')).toBeTruthy();
+    expect(screen.getByTestId('grumble-snoozle', hidden)).toBeTruthy();
+    expect(screen.getByTestId('grumble-still', hidden).props.source).toBe(GRUMBLE_ART.snoozle!.happy);
+    expect(screen.getByText('Amara is made up. The research is real, and the full article lists its sources.')).toBeTruthy();
+  });
+
+  it('has your buddy think over the check and cheer when you are right; happy on the lesson', async () => {
+    await renderStory();
+    for (let i = 0; i < 6; i++) await next();
+    expect(screen.getByTestId('buddy-warrior', hidden)).toBeTruthy();
+    expect(buddyStill()).toBe(grown.think);
+    await fireEvent.press(screen.getByTestId('deck-check-0'));
+    expect(buddyStill()).toBe(grown.happy);
+    await next();
+    expect(screen.getByTestId('deck-card-lesson')).toBeTruthy();
+    expect(buddyStill()).toBe(grown.happy);
+  });
+
+  it('leaves your buddy calm, never sad, after a miss', async () => {
+    await renderStory();
+    for (let i = 0; i < 6; i++) await next();
+    await fireEvent.press(screen.getByTestId('deck-check-2'));
+    expect(buddyStill()).toBe(grown.idle);
+  });
+
+  it('shows no Grumble for a story without one, and no buddy before the game has loaded', async () => {
+    await renderStory(STORY, null);
+    for (let i = 0; i < 5; i++) await next();
+    expect(screen.queryByTestId('deck-grumble', hidden)).toBeNull();
+    await next();
+    expect(screen.queryByTestId('deck-buddy', hidden)).toBeNull();
   });
 });
 

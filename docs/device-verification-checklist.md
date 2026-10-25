@@ -890,3 +890,6 @@ owner's, on `apps/mobile/dist/levelmeup-0.12.0-preview.apk`.
 | 8 | The Shadow's scene: the clay Shadow, its eyes glowing and pulsing, embers rising; with Remove animations, still. | Find X9: |
 | 9 | A Plus frame and the Shadow's mark still draw over the portrait. | Find X9: |
 | 10 | Change class (Me → Change class): each class names its buddy; after the change, Me shows the new class's buddy. | Find X9: |
+| 11 | A story lesson (Today's reading, or a past one from Me): each story card shows its own clay picture of that moment above the text, the same person as the cover, with the story's Grumble beside them; the card the cover shows repeats the cover; turning cards never waits on a picture. | Find X9: |
+| 12 | Why it works: the story's Grumble at the bottom right shrinks a little and cheers up; a story without a Grumble shows none. With Remove animations, it is already small and happy. | Find X9: |
+| 13 | The quick check: your buddy thinks it over (paw on its chin); a right answer makes it jump and cheer; a miss leaves it calm. The lesson card: your buddy happy. TalkBack reads none of the pictures. | Find X9: |

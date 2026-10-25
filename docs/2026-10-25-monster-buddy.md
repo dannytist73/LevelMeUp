@@ -33,6 +33,17 @@ clay, quest pictures where your buddy does the quest, and the daily studio paint
    could only set a deck that was still empty). New studio stories go to `story-clay` from the next run.
    Switched on after the 9:00 run of 2026-10-26, so that morning's article couldn't be caught halfway.
 8. **Not now:** growing clips (Wan), arrival and befriending clips, renaming your buddy.
+9. **A picture on every story card** (owner, 2026-10-26: "Story pictures + living buddy", "Paint all 26 straight away"):
+   each story card gets its own clay picture of that card's moment, `story-clay/article-<n>-<card>.webp` (cards from 1),
+   rendered like the cover in its clothes and with its Grumble, and swapped for the real Grumble the same way
+   (scripts/art/story-art.py `beats`, `beatgrumbles`, `beatpick`). The card the cover already shows reuses the cover. A
+   card without a usable picture reads as text, as before. The deck names them in `scenes` (one or null per card) and
+   the story's Grumble in `grumble` (migration 0022, `article_set_scenes`; `npm run studio -- scenes` sends the stored
+   set through lmu-articles-studio's `scenes` action). The daily studio paints a new story's cards after its cover
+   (two takes each, Claude's pick), and sends them with the story. After the story, the cards are no longer painted:
+   the story's Grumble shrinks and cheers up on why it works, your buddy thinks over the quick check (a sixth still,
+   `think`) and cheers when you're right (a miss leaves it calm), and it is happy on the lesson. Older apps ignore the
+   new fields.
 
 ## Order
 

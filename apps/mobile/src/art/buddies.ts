@@ -1,33 +1,33 @@
 // Monster Buddy (docs/2026-10-25-monster-buddy.md): the buddies' paintings, made on the owner's PC like the Grumbles'
-// (scripts/art/buddy-art.py) and shipped in the app. Each class's buddy in three sizes, each size as five stills the app
+// (scripts/art/buddy-art.py) and shipped in the app. Each class's buddy in three sizes, each size as six stills the app
 // brings to life (src/ui/BuddyArt.tsx), and the little buddy doing each kind of quest.
 import type { ClassId } from '@levelmeup/rules';
 import type { ImageSourcePropType } from 'react-native';
 
-export type BuddyPose = 'idle' | 'happy' | 'throw' | 'sleep';
+export type BuddyPose = 'idle' | 'happy' | 'throw' | 'sleep' | 'think';
 export type BuddyStills = Record<BuddyPose | 'blink', ImageSourcePropType>;
 
 /** Filled by the art pipeline (scripts/art/buddy-art.py pick): each class's buddy, little, grown and grand. */
 export const BUDDY_ART: Readonly<Partial<Record<ClassId, readonly [BuddyStills, BuddyStills, BuddyStills]>>> = {
   warrior: [
-    { idle: require('../../assets/buddies/warrior-1-idle.webp'), blink: require('../../assets/buddies/warrior-1-blink.webp'), happy: require('../../assets/buddies/warrior-1-happy.webp'), throw: require('../../assets/buddies/warrior-1-throw.webp'), sleep: require('../../assets/buddies/warrior-1-sleep.webp') },
-    { idle: require('../../assets/buddies/warrior-2-idle.webp'), blink: require('../../assets/buddies/warrior-2-blink.webp'), happy: require('../../assets/buddies/warrior-2-happy.webp'), throw: require('../../assets/buddies/warrior-2-throw.webp'), sleep: require('../../assets/buddies/warrior-2-sleep.webp') },
-    { idle: require('../../assets/buddies/warrior-3-idle.webp'), blink: require('../../assets/buddies/warrior-3-blink.webp'), happy: require('../../assets/buddies/warrior-3-happy.webp'), throw: require('../../assets/buddies/warrior-3-throw.webp'), sleep: require('../../assets/buddies/warrior-3-sleep.webp') },
+    { idle: require('../../assets/buddies/warrior-1-idle.webp'), blink: require('../../assets/buddies/warrior-1-blink.webp'), happy: require('../../assets/buddies/warrior-1-happy.webp'), throw: require('../../assets/buddies/warrior-1-throw.webp'), sleep: require('../../assets/buddies/warrior-1-sleep.webp'), think: require('../../assets/buddies/warrior-1-think.webp') },
+    { idle: require('../../assets/buddies/warrior-2-idle.webp'), blink: require('../../assets/buddies/warrior-2-blink.webp'), happy: require('../../assets/buddies/warrior-2-happy.webp'), throw: require('../../assets/buddies/warrior-2-throw.webp'), sleep: require('../../assets/buddies/warrior-2-sleep.webp'), think: require('../../assets/buddies/warrior-2-think.webp') },
+    { idle: require('../../assets/buddies/warrior-3-idle.webp'), blink: require('../../assets/buddies/warrior-3-blink.webp'), happy: require('../../assets/buddies/warrior-3-happy.webp'), throw: require('../../assets/buddies/warrior-3-throw.webp'), sleep: require('../../assets/buddies/warrior-3-sleep.webp'), think: require('../../assets/buddies/warrior-3-think.webp') },
   ],
   mage: [
-    { idle: require('../../assets/buddies/mage-1-idle.webp'), blink: require('../../assets/buddies/mage-1-blink.webp'), happy: require('../../assets/buddies/mage-1-happy.webp'), throw: require('../../assets/buddies/mage-1-throw.webp'), sleep: require('../../assets/buddies/mage-1-sleep.webp') },
-    { idle: require('../../assets/buddies/mage-2-idle.webp'), blink: require('../../assets/buddies/mage-2-blink.webp'), happy: require('../../assets/buddies/mage-2-happy.webp'), throw: require('../../assets/buddies/mage-2-throw.webp'), sleep: require('../../assets/buddies/mage-2-sleep.webp') },
-    { idle: require('../../assets/buddies/mage-3-idle.webp'), blink: require('../../assets/buddies/mage-3-blink.webp'), happy: require('../../assets/buddies/mage-3-happy.webp'), throw: require('../../assets/buddies/mage-3-throw.webp'), sleep: require('../../assets/buddies/mage-3-sleep.webp') },
+    { idle: require('../../assets/buddies/mage-1-idle.webp'), blink: require('../../assets/buddies/mage-1-blink.webp'), happy: require('../../assets/buddies/mage-1-happy.webp'), throw: require('../../assets/buddies/mage-1-throw.webp'), sleep: require('../../assets/buddies/mage-1-sleep.webp'), think: require('../../assets/buddies/mage-1-think.webp') },
+    { idle: require('../../assets/buddies/mage-2-idle.webp'), blink: require('../../assets/buddies/mage-2-blink.webp'), happy: require('../../assets/buddies/mage-2-happy.webp'), throw: require('../../assets/buddies/mage-2-throw.webp'), sleep: require('../../assets/buddies/mage-2-sleep.webp'), think: require('../../assets/buddies/mage-2-think.webp') },
+    { idle: require('../../assets/buddies/mage-3-idle.webp'), blink: require('../../assets/buddies/mage-3-blink.webp'), happy: require('../../assets/buddies/mage-3-happy.webp'), throw: require('../../assets/buddies/mage-3-throw.webp'), sleep: require('../../assets/buddies/mage-3-sleep.webp'), think: require('../../assets/buddies/mage-3-think.webp') },
   ],
   rogue: [
-    { idle: require('../../assets/buddies/rogue-1-idle.webp'), blink: require('../../assets/buddies/rogue-1-blink.webp'), happy: require('../../assets/buddies/rogue-1-happy.webp'), throw: require('../../assets/buddies/rogue-1-throw.webp'), sleep: require('../../assets/buddies/rogue-1-sleep.webp') },
-    { idle: require('../../assets/buddies/rogue-2-idle.webp'), blink: require('../../assets/buddies/rogue-2-blink.webp'), happy: require('../../assets/buddies/rogue-2-happy.webp'), throw: require('../../assets/buddies/rogue-2-throw.webp'), sleep: require('../../assets/buddies/rogue-2-sleep.webp') },
-    { idle: require('../../assets/buddies/rogue-3-idle.webp'), blink: require('../../assets/buddies/rogue-3-blink.webp'), happy: require('../../assets/buddies/rogue-3-happy.webp'), throw: require('../../assets/buddies/rogue-3-throw.webp'), sleep: require('../../assets/buddies/rogue-3-sleep.webp') },
+    { idle: require('../../assets/buddies/rogue-1-idle.webp'), blink: require('../../assets/buddies/rogue-1-blink.webp'), happy: require('../../assets/buddies/rogue-1-happy.webp'), throw: require('../../assets/buddies/rogue-1-throw.webp'), sleep: require('../../assets/buddies/rogue-1-sleep.webp'), think: require('../../assets/buddies/rogue-1-think.webp') },
+    { idle: require('../../assets/buddies/rogue-2-idle.webp'), blink: require('../../assets/buddies/rogue-2-blink.webp'), happy: require('../../assets/buddies/rogue-2-happy.webp'), throw: require('../../assets/buddies/rogue-2-throw.webp'), sleep: require('../../assets/buddies/rogue-2-sleep.webp'), think: require('../../assets/buddies/rogue-2-think.webp') },
+    { idle: require('../../assets/buddies/rogue-3-idle.webp'), blink: require('../../assets/buddies/rogue-3-blink.webp'), happy: require('../../assets/buddies/rogue-3-happy.webp'), throw: require('../../assets/buddies/rogue-3-throw.webp'), sleep: require('../../assets/buddies/rogue-3-sleep.webp'), think: require('../../assets/buddies/rogue-3-think.webp') },
   ],
   monk: [
-    { idle: require('../../assets/buddies/monk-1-idle.webp'), blink: require('../../assets/buddies/monk-1-blink.webp'), happy: require('../../assets/buddies/monk-1-happy.webp'), throw: require('../../assets/buddies/monk-1-throw.webp'), sleep: require('../../assets/buddies/monk-1-sleep.webp') },
-    { idle: require('../../assets/buddies/monk-2-idle.webp'), blink: require('../../assets/buddies/monk-2-blink.webp'), happy: require('../../assets/buddies/monk-2-happy.webp'), throw: require('../../assets/buddies/monk-2-throw.webp'), sleep: require('../../assets/buddies/monk-2-sleep.webp') },
-    { idle: require('../../assets/buddies/monk-3-idle.webp'), blink: require('../../assets/buddies/monk-3-blink.webp'), happy: require('../../assets/buddies/monk-3-happy.webp'), throw: require('../../assets/buddies/monk-3-throw.webp'), sleep: require('../../assets/buddies/monk-3-sleep.webp') },
+    { idle: require('../../assets/buddies/monk-1-idle.webp'), blink: require('../../assets/buddies/monk-1-blink.webp'), happy: require('../../assets/buddies/monk-1-happy.webp'), throw: require('../../assets/buddies/monk-1-throw.webp'), sleep: require('../../assets/buddies/monk-1-sleep.webp'), think: require('../../assets/buddies/monk-1-think.webp') },
+    { idle: require('../../assets/buddies/monk-2-idle.webp'), blink: require('../../assets/buddies/monk-2-blink.webp'), happy: require('../../assets/buddies/monk-2-happy.webp'), throw: require('../../assets/buddies/monk-2-throw.webp'), sleep: require('../../assets/buddies/monk-2-sleep.webp'), think: require('../../assets/buddies/monk-2-think.webp') },
+    { idle: require('../../assets/buddies/monk-3-idle.webp'), blink: require('../../assets/buddies/monk-3-blink.webp'), happy: require('../../assets/buddies/monk-3-happy.webp'), throw: require('../../assets/buddies/monk-3-throw.webp'), sleep: require('../../assets/buddies/monk-3-sleep.webp'), think: require('../../assets/buddies/monk-3-think.webp') },
   ],
 };
 

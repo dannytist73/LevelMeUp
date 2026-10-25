@@ -348,6 +348,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
           onClose={onBack}
           onFullArticle={() => setFullArticle(true)}
           initialStep={deckStep}
+          buddy={{ classId: view.profile.classId, level: view.character.level }}
           onStep={setDeckStep}
           kept={isKept(codex, reading.id)}
           onKeep={() => void toggleKeep({ articleId: reading.id, title: reading.title, lesson: deck.lesson, keptAt: now() })}

@@ -33,6 +33,13 @@ export type StoryDeck = {
    * studio's articles (M15); never by the writer.
    */
   picture?: string;
+  /**
+   * A picture on every story card (owner, 2026-10-26): one per card of `story`, `story-clay/article-9-1.webp` (cards from 1),
+   * null for a card without one. Made and added like the picture, never by the writer.
+   */
+  scenes?: (string | null)[];
+  /** The Grumble the story is about (packages/content's GRUMBLES), shown on the cards after the story; added like the picture. */
+  grumble?: string;
 };
 export type ArticleDeck = LegacyDeck | StoryDeck;
 

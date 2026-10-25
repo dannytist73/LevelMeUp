@@ -7,8 +7,8 @@ import type { StoryDeck } from '../../functions/_shared/articles/deck.ts';
 import { tick } from '../../functions/_shared/articles/pipeline.ts';
 import type { Batches, Job, JobSet, JobStatus, Store, StoredArticle, StoredSource } from '../../functions/_shared/articles/pipeline.ts';
 import {
-  STUDIO_ATTEMPTS, claim, parseStudioBrief, readPicture, readSubmission, recordFailure, repicture, storyPicturePath, studioPicturePath, submit,
-  webpSize,
+  STUDIO_ATTEMPTS, claim, parseStudioBrief, readGrumble, readPicture, readScenes, readSubmission, recordFailure, repicture, rescene, storyPicturePath,
+  storyScenePath, studioPicturePath, submit, webpSize,
 } from '../../functions/_shared/articles/studio.ts';
 import type { StudioStore, Submission } from '../../functions/_shared/articles/studio.ts';
 import { BRIEF, articleJson, storyDeckJson } from './articles-fixtures.ts';
@@ -41,11 +41,17 @@ class FakeStudio implements StudioStore, Store {
     this.stored.push({ jobId, article, sources, brief, deck });
     return `article-${jobId}`;
   }
-  decks = new Map<string, { picture?: string }>();
+  decks = new Map<string, { picture?: string; cards?: number; scenes?: readonly (string | null)[]; grumble?: string | null }>();
   async setPicture(articleId: string, path: string) {
     const deck = this.decks.get(articleId);
     if (deck === undefined) return false;
     deck.picture = path;
+    return true;
+  }
+  async setScenes(articleId: string, scenes: readonly (string | null)[], grumble: string | null) {
+    const deck = this.decks.get(articleId);
+    if (deck === undefined || deck.cards !== scenes.length) return false;
+    Object.assign(deck, { scenes, grumble });
     return true;
   }
   job(id: number) { return this.jobs.find((j) => j.id === id)!; }
@@ -70,6 +76,8 @@ function webpHeader(width: number, height: number): Uint8Array<ArrayBuffer> {
   return b;
 }
 const base64 = (b: Uint8Array) => Buffer.from(b).toString('base64');
+/** The fixture story's cards. */
+const CARDS = storyDeckJson().story as unknown[];
 
 function body(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return { action: 'submit', jobId: 57, brief: BRIEF, article: articleJson(), deck: storyDeckJson(), picture: base64(webpHeader(960, 540)), ...overrides };
@@ -216,7 +224,7 @@ describe('a checked article is stored with its story and picture (M15)', () => {
     const store = new FakeStudio();
     await claim(store);
     uploads.length = 0;
-    expect(await submit(store, art, readSubmission(body()) as Submission, true)).toEqual({ checked: 'article-57', picture: 'story-clay/article-57.webp', words: 909 });
+    expect(await submit(store, art, readSubmission(body()) as Submission, true)).toEqual({ checked: 'article-57', picture: 'story-clay/article-57.webp', scenes: null, words: 909 });
     expect(uploads).toEqual([]);
     expect(store.stored).toEqual([]);
     expect(store.job(57).status).toBe('studio');
@@ -226,13 +234,36 @@ describe('a checked article is stored with its story and picture (M15)', () => {
     const store = new FakeStudio();
     await claim(store);
     uploads.length = 0;
-    expect(await submit(store, art, readSubmission(body()) as Submission, false)).toEqual({ stored: 'article-57', picture: 'story-clay/article-57.webp', words: 909 });
+    expect(await submit(store, art, readSubmission(body()) as Submission, false)).toEqual({ stored: 'article-57', picture: 'story-clay/article-57.webp', scenes: null, words: 909 });
     expect(uploads).toEqual([studioPicturePath(57)]);
     const [stored] = store.stored;
     expect(stored!.deck.picture).toBe('story-clay/article-57.webp');
     expect(stored!.article).toMatchObject({ words: 909, readingMinutes: 6 });
     expect(stored!.sources.map((s) => s.idx)).toEqual([1, 2, 3]);
     expect(stored!.brief).toEqual(BRIEF);
+    expect(stored!.deck.scenes).toBeUndefined();
+    expect(stored!.deck.grumble).toBeUndefined();
+  });
+
+  it("uploads each story card's picture at its own path, and the deck names them and the story's Grumble", async () => {
+    const store = new FakeStudio();
+    await claim(store);
+    uploads.length = 0;
+    const scenes = CARDS.map((_, i) => (i === 1 ? null : base64(webpHeader(960, 540))));
+    const paths = CARDS.map((_, i) => (i === 1 ? null : storyScenePath('article-57', i + 1)));
+    expect(await submit(store, art, readSubmission(body({ scenes, grumble: 'snoozle' })) as Submission, false))
+      .toEqual({ stored: 'article-57', picture: 'story-clay/article-57.webp', scenes: paths, words: 909 });
+    expect(uploads).toEqual([studioPicturePath(57), ...paths.filter((p) => p !== null)]);
+    expect(store.stored[0]!.deck).toMatchObject({ picture: 'story-clay/article-57.webp', scenes: paths, grumble: 'snoozle' });
+  });
+
+  it('names no scenes when no card got a picture', async () => {
+    const store = new FakeStudio();
+    await claim(store);
+    uploads.length = 0;
+    await submit(store, art, readSubmission(body({ scenes: CARDS.map(() => null) })) as Submission, false);
+    expect(uploads).toEqual([studioPicturePath(57)]);
+    expect(store.stored[0]!.deck.scenes).toBeUndefined();
   });
 
   it('stores a story without a picture as it is', async () => {
@@ -249,6 +280,72 @@ describe('a checked article is stored with its story and picture (M15)', () => {
     await claim(store);
     store.job(57).status = 'done';
     expect(await submit(store, art, readSubmission(body()) as Submission, false)).toEqual({ conflict: 'not_the_studios' });
+  });
+});
+
+describe("the story cards' pictures and the story's Grumble (a picture on every story card)", () => {
+  const picture = base64(webpHeader(960, 540));
+
+  it('takes one picture or null per story card, each like the picture', () => {
+    expect(readScenes([picture, null], 2)).toEqual([webpHeader(960, 540), null]);
+    expect(readScenes([picture], 2)).toBe('the scenes must be 2, one per story card');
+    expect(readScenes([], 0)).toBe('the scenes must be 0, one per story card');
+    expect(readScenes('nope', 2)).toBe('the scenes must be 2, one per story card');
+    expect(readScenes([picture, base64(webpHeader(1344, 768))], 2)).toBe('story card 2: the picture is 1344x768; it must be 960x540');
+  });
+
+  it("takes one of the app's Grumbles, or none", () => {
+    expect(readGrumble(undefined)).toEqual({ grumble: null });
+    expect(readGrumble(null)).toEqual({ grumble: null });
+    expect(readGrumble('snoozle')).toEqual({ grumble: 'snoozle' });
+    expect(readGrumble('Snoozle!')).toEqual({ problem: "the grumble is not one of the app's" });
+    expect(readGrumble(3)).toEqual({ problem: "the grumble is not one of the app's" });
+  });
+
+  it("lets a new story go out without its cards' pictures or Grumble when they aren't right, never without the article", () => {
+    const wrongCount = readSubmission(body({ scenes: [picture], grumble: 'gremlin' })) as Submission;
+    expect(wrongCount).toMatchObject({ jobId: 57, scenes: null, grumble: null });
+    const badCard = readSubmission(body({ scenes: CARDS.map((_, i) => (i === 0 ? base64(webpHeader(1344, 768)) : picture)) })) as Submission;
+    expect(badCard.scenes).toBeNull();
+    expect(badCard.picture).toEqual(webpHeader(960, 540));
+  });
+
+  it("goes to the clay folder at each card's own path", () => {
+    expect(storyScenePath('article-22', 3)).toBe('story-clay/article-22-3.webp');
+  });
+
+  it("uploads a stored story's card pictures first, then names them and its Grumble on the deck", async () => {
+    const store = new FakeStudio();
+    const uploads: string[] = [];
+    const art = { async upload(path: string) { uploads.push(path); } };
+    store.decks.set('article-22', { picture: 'story-clay/article-22.webp', cards: 3 });
+    const scenes = [webpHeader(960, 540), null, webpHeader(960, 540)];
+    const paths = ['story-clay/article-22-1.webp', null, 'story-clay/article-22-3.webp'];
+    expect(await rescene(store, art, 'article-22', scenes, 'snoozle')).toEqual({ scenes: paths, grumble: 'snoozle' });
+    expect(uploads).toEqual(['story-clay/article-22-1.webp', 'story-clay/article-22-3.webp']);
+    expect(store.decks.get('article-22')).toMatchObject({ scenes: paths, grumble: 'snoozle' });
+  });
+
+  it("gives a story of another number of cards none, and refuses an id that isn't an article's, uploading nothing", async () => {
+    const store = new FakeStudio();
+    const uploads: string[] = [];
+    const art = { async upload(path: string) { uploads.push(path); } };
+    const painted = ['story-clay/article-22-1.webp', null, null, null, null];
+    store.decks.set('article-22', { cards: 5, scenes: painted });
+    expect(await rescene(store, art, 'article-22', [webpHeader(960, 540), webpHeader(960, 540)], null)).toEqual({ missing: true });
+    expect(await rescene(store, art, '../tick', [webpHeader(960, 540)], null)).toEqual({ missing: true });
+    expect(uploads).toEqual([]); // the card pictures already out there are never replaced by a mismatched set
+    expect(store.decks.get('article-22')!.scenes).toEqual(painted);
+  });
+
+  it('stops naming the cards\' pictures while they are replaced', async () => {
+    const store = new FakeStudio();
+    store.decks.set('article-22', { cards: 2, scenes: ['story-clay/article-22-1.webp', null] });
+    const named: (readonly (string | null)[] | undefined)[] = [];
+    const art = { async upload() { named.push(store.decks.get('article-22')!.scenes); } };
+    await rescene(store, art, 'article-22', [webpHeader(960, 540), webpHeader(960, 540)], 'snoozle');
+    expect(named).toEqual([[null, null], [null, null]]);
+    expect(store.decks.get('article-22')!.scenes).toEqual(['story-clay/article-22-1.webp', 'story-clay/article-22-2.webp']);
   });
 });
 

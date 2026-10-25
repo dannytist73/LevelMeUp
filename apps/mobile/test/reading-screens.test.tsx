@@ -142,7 +142,8 @@ describe('past readings (board D5, decision 7)', () => {
     await fireEvent.press(screen.getByRole('button', { name: READING_TEXT.deck.done })); // premium pass B6: a way out at the end
     expect(onBack).toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /Claim/ })).toBeNull();
-    expect(store.getState().fetchArticle).not.toHaveBeenCalled();
+    // Held with cards from before the stories: asked for once more, for its story lesson and its cards' pictures.
+    expect(store.getState().fetchArticle).toHaveBeenCalledWith('article-9');
   });
 
   it('a past reading not on the phone is asked for', async () => {

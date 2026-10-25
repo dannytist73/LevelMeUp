@@ -2,10 +2,10 @@
 // 2026-10-19-m14-story-lessons.md) a deck is a story lesson: the cover, the story about one of the regulars, why it
 // works, the quick check, the lesson with one thing to try today, then Your turn. A deck stored before M14 keeps its
 // own cards: the cover, the story cards (the last one carries the System's note), the lesson, then Your turn.
-import { castMember } from '@levelmeup/content';
+import { GRUMBLES, castMember } from '@levelmeup/content';
 import type { CastMember } from '@levelmeup/content';
 import type { ArticleDeck, LegacyDeck, StoryDeck } from '../../../../supabase/functions/_shared/articles/deck.ts';
-import { STORY_PICTURE } from '../art/stories.ts';
+import { STORY_PICTURE, STORY_SCENE } from '../art/stories.ts';
 
 export type { ArticleDeck, LegacyDeck, StoryDeck };
 
@@ -38,13 +38,15 @@ export function asDeck(value: unknown): ArticleDeck | null {
 }
 
 /**
- * Whether a held article already has its story lesson. M14: since every deck on the server is now a story, a body held
- * with an older deck (or none) is asked for again, so a phone that read the article before the stories were written
- * gets them (found on the emulator: the old cards stayed, because a body with any deck counted as held).
+ * Whether a held article already has its story lesson as the server now makes it. M14: since every deck on the server is
+ * now a story, a body held with an older deck (or none) is asked for again, so a phone that read the article before the
+ * stories were written gets them (found on the emulator: the old cards stayed, because a body with any deck counted as
+ * held). A picture on every story card (2026-10-26): so is a story held without its cards' pictures, so one painted after
+ * this phone saved it gets them; one the studio couldn't paint is sent again only while it is today's or the next day's.
  */
-export function hasStoryDeck(value: unknown): boolean {
+export function hasCurrentDeck(value: unknown): boolean {
   const deck = asDeck(value);
-  return deck !== null && isStory(deck);
+  return deck !== null && isStory(deck) && deck.scenes !== undefined;
 }
 
 function asStory(d: Record<string, unknown>): StoryDeck | null {
@@ -63,6 +65,12 @@ function asStory(d: Record<string, unknown>): StoryDeck | null {
   };
   // The picture is a nicety: one of any other shape (the retired flat set's too) is dropped, and the story still shows.
   if (typeof d.picture === 'string' && STORY_PICTURE.test(d.picture)) deck.picture = d.picture;
+  // So are the cards' pictures (owner, 2026-10-26): one or null per story card, or none at all, and the story's Grumble.
+  const scenes = d.scenes;
+  if (Array.isArray(scenes) && scenes.length === story.length && scenes.every((s) => s === null || (typeof s === 'string' && STORY_SCENE.test(s)))) {
+    deck.scenes = scenes as (string | null)[];
+  }
+  if (typeof d.grumble === 'string' && GRUMBLES.some((g) => g.id === d.grumble)) deck.grumble = d.grumble;
   return deck;
 }
 

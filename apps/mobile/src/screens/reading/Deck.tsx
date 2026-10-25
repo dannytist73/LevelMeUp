@@ -9,7 +9,7 @@
 import { CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import type { CastMember } from '@levelmeup/content';
 import type { ReactNode } from 'react';
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, KeyboardAvoidingView, PanResponder, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ArticleBody } from '../../game/types.ts';
@@ -27,6 +27,8 @@ import { Button } from '../../ui/Button.tsx';
 import { ClaimReport } from '../quest/ClaimBar.tsx';
 import type { Claim } from '../quest/ClaimBar.tsx';
 import { useReduce } from '../../ui/useMotion.ts';
+import { CardBuddy, CardGrumble } from './DeckFriends.tsx';
+import type { Buddy } from './DeckFriends.tsx';
 import { play } from '../../ui/sound.ts';
 
 const D = READING_TEXT.deck;
@@ -50,6 +52,8 @@ export type DeckProps = {
   onStep?: (step: number) => void;
   /** Overrides the phone's setting (tests). */
   reduceMotion?: boolean;
+  /** The reader's buddy, on the quick check and the lesson (owner, 2026-10-26); none before the game has loaded. */
+  buddy?: Buddy;
 };
 
 /**
@@ -88,7 +92,7 @@ function RoundButton({ icon, label, onPress, disabled = false, filled = false }:
   );
 }
 
-export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, onKeep, initialStep = 0, onStep, reduceMotion }: DeckProps) {
+export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, onKeep, initialStep = 0, onStep, reduceMotion, buddy }: DeckProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const still = useReduce(reduceMotion);
@@ -102,6 +106,18 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   /** The story's clay picture (Monster Buddy), until it fails to load: the cover then reads as before. */
   const [pictureFailed, setPictureFailed] = useState(false);
   const picture = story?.picture !== undefined && !pictureFailed ? storyPictureUrl(story.picture) : null;
+  /** Each story card's own picture (owner, 2026-10-26), until it fails to load: the card then reads as text alone. */
+  const [failedScenes, setFailedScenes] = useState<readonly number[]>([]);
+  const sceneOf = (i: number): string | null => {
+    const path = story?.scenes?.[i] ?? null;
+    return path === null || failedScenes.includes(i) ? null : storyPictureUrl(path);
+  };
+  // Fetched as the deck opens, so each card's picture is there when the card turns.
+  useEffect(() => {
+    for (const path of [story?.picture, ...(story?.scenes ?? [])]) {
+      if (typeof path === 'string') Promise.resolve(Image.prefetch(storyPictureUrl(path))).catch(() => {});
+    }
+  }, [story]);
   /** The quick check's pick: kept while the deck is open, sent nowhere (M14 decision 3). */
   const [chosen, setChosen] = useState<number | null>(null);
   const [step, setStep] = useState(() => Math.max(0, Math.min(initialStep, cards.length - 1)));
@@ -230,6 +246,13 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
               ) : <Label tone="accentInk" style={{ flexShrink: 1 }}>{c.kicker}</Label>}
               <Caption tone="inkMuted">{fillText(D.storyCount, { n: c.i + 1, total: stories })}</Caption>
             </View>
+            {sceneOf(c.i) !== null && (
+              <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.control, overflow: 'hidden', backgroundColor: colors.paper }}
+                accessible={false} importantForAccessibility="no-hide-descendants">
+                <Image testID={`deck-scene-${c.i}`} source={{ uri: sceneOf(c.i)! }} onError={() => setFailedScenes((f) => [...f, c.i])} resizeMode="cover"
+                  style={{ width: '100%', height: '100%' }} />
+              </View>
+            )}
             <Text selectable maxFontSizeMultiplier={1.5} style={{ fontFamily: fonts.bodyMedium, fontSize: 21, lineHeight: 32, color: colors.ink }}>{c.text}</Text>
             <View style={{ flex: 1, minHeight: 16 }} />
             {c.note !== null && (
@@ -249,7 +272,12 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             <Heading tone="ink" style={{ fontSize: 24, lineHeight: 31 }}>{story?.why.head}</Heading>
             <Text selectable maxFontSizeMultiplier={1.5} style={{ fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 28, color: colors.ink }}>{story?.why.text}</Text>
             <View style={{ flex: 1, minHeight: 16 }} />
-            {person !== null && <Caption tone="inkMuted">{fillText(D.madeUp, { name: person.name })}</Caption>}
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                {person !== null && <Caption tone="inkMuted">{fillText(D.madeUp, { name: person.name })}</Caption>}
+              </View>
+              {story?.grumble !== undefined && <CardGrumble id={story.grumble} size={96} still={still} />}
+            </View>
           </View>
         ) };
       case 'check': {
@@ -298,7 +326,11 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
                 <Body tone="ashLight">{q.why}</Body>
               </View>
             )}
-            <View style={{ flex: 1, minHeight: 16 }} />
+            <View style={{ flex: 1, minHeight: 16, alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+              {buddy !== undefined && (
+                <CardBuddy buddy={buddy} pose={!answered ? 'think' : chosen === q.answer ? 'happy' : 'idle'} hop={answered && chosen === q.answer} size={84} still={still} />
+              )}
+            </View>
             {!answered && <Caption>{D.checkSkip}</Caption>}
           </View>
         ) };
@@ -312,7 +344,9 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
               <Label tone="accentInk">{D.tryToday}</Label>
               <Body tone="ink" weight="medium">{deck.tryToday}</Body>
             </View>
-            <View style={{ flex: 1, minHeight: 16 }} />
+            <View style={{ flex: 1, minHeight: 16, alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+              {buddy !== undefined && <CardBuddy buddy={buddy} pose="happy" size={84} still={still} />}
+            </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
               <Tap
                 accessibilityRole="button"

@@ -39,7 +39,7 @@ import type { ThemeName } from '../theme/palettes.ts';
 import type { Draft } from '../onboarding/flow.ts';
 import { readLastSets } from '../quest/lastSets.ts';
 import { readCodex, toggled } from '../reading/codex.ts';
-import { hasStoryDeck } from '../reading/deck.ts';
+import { hasCurrentDeck } from '../reading/deck.ts';
 import type { CodexEntry } from '../reading/codex.ts';
 import type { LastSets } from '../quest/lastSets.ts';
 import { parseTimers } from '../quest/timer.ts';
@@ -912,8 +912,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
 
       fetchArticle: (id) => {
         const held = get().articles[id];
-        // M14: a reading held with a deck from before the stories is asked for once more, like one held without a deck.
-        if (wanted.has(id) || (held !== undefined && (hasStoryDeck(held.deck) || deckAsked.has(id)))) return;
+        // M14: a reading held with a deck from before the stories is asked for once more, like one held without a deck; so is
+        // a story held without its cards' pictures (2026-10-26).
+        if (wanted.has(id) || (held !== undefined && (hasCurrentDeck(held.deck) || deckAsked.has(id)))) return;
         if (held !== undefined) deckAsked.add(id);
         wanted.add(id);
         void scheduler.request();
