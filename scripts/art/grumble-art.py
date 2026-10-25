@@ -12,6 +12,8 @@ Start ComfyUI first (as scripts/art/story-art.py says), and run with its Python 
   grumble-art.py clip STEM [--motion idle]           -> <stem>-clip-<motion>/ (frames) + <stem>-clip-<motion>.webp
   grumble-art.py key SRC DEST                        -> DEST, the green screen keyed out, trimmed, square, 512 px
   grumble-art.py sheet                               -> art/grumbles/renders/_style.jpg (every style render)
+  grumble-art.py pick                                -> apps/mobile/assets/grumbles/<id>-<pose>.webp from PICKS, and
+                                                        apps/mobile/src/art/grumbles.ts (the app's manifest)
 Existing renders are skipped, so a changed prompt needs new seeds (or the old renders deleted).
 """
 import argparse, json, random, subprocess, sys, time, urllib.parse, urllib.request
@@ -328,6 +330,35 @@ def sheet() -> None:
     print(out)
 
 
+# Filled in after the owner picks: Grumble id -> the render stem whose stills ship (e.g. "snoozle-clay-22").
+PICKS: dict[str, str] = {}
+STILLS = ["idle", "blink", "hit", "happy", "sleep"]
+ASSETS = ROOT / "apps" / "mobile" / "assets" / "grumbles"
+MANIFEST = ROOT / "apps" / "mobile" / "src" / "art" / "grumbles.ts"
+
+
+def pick() -> None:
+    """Keys the picked stills to 384 px WebP in the app's assets and writes the manifest the app reads."""
+    missing = [f"{stem}-{p}.png" if p != "idle" else f"{stem}.png" for stem in PICKS.values() for p in STILLS
+               if not (RENDERS / (f"{stem}.png" if p == "idle" else f"{stem}-{p}.png")).exists()]
+    if missing:  # check everything before writing anything
+        sys.exit(f"missing renders: {', '.join(missing)}")
+    ASSETS.mkdir(parents=True, exist_ok=True)
+    for old in ASSETS.glob("*.webp"):
+        old.unlink()
+    lines = []
+    for gid, stem in PICKS.items():
+        for p in STILLS:
+            key(RENDERS / (f"{stem}.png" if p == "idle" else f"{stem}-{p}.png"), ASSETS / f"{gid}-{p}.webp", 384)
+        poses = ", ".join(f"{p}: require('../../assets/grumbles/{gid}-{p}.webp')" for p in STILLS)
+        lines.append(f"  {gid}: {{ {poses} }},")
+    head = MANIFEST.read_text(encoding="utf-8").split("/** Filled by the art pipeline")[0]
+    MANIFEST.write_text(head + "/** Filled by the art pipeline (scripts/art/grumble-art.py pick), one entry per painted Grumble. */\n"
+                        "export const GRUMBLE_ART: Readonly<Record<string, GrumbleStills>> = {\n" + "\n".join(lines) + "\n};\n", encoding="utf-8")
+    total = sum(f.stat().st_size for f in ASSETS.glob("*.webp"))
+    print(f"{len(PICKS)} Grumbles, {len(PICKS) * len(STILLS)} stills, {total // 1024} KB in {ASSETS}")
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -346,6 +377,7 @@ def main() -> None:
     s.add_argument("src", type=Path)
     s.add_argument("dest", type=Path)
     sub.add_parser("sheet")
+    sub.add_parser("pick")
     a = p.parse_args()
     if a.cmd == "style":
         style(a.seeds)
@@ -357,6 +389,8 @@ def main() -> None:
         clip(a.stem, a.motion)
     elif a.cmd == "key":
         print(key(a.src, a.dest))
+    elif a.cmd == "pick":
+        pick()
     else:
         sheet()
 
