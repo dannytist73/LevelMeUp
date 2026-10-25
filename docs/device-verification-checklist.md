@@ -872,15 +872,21 @@ portraits, the old Shadow painting, quest and lesson pictures); the 24 Grumbles 
 buddy (Warrior Pummel, Mage Starkit, Rogue Whisk, Monk Mochi) that grows at levels 5 and 10; the Shadow is painted again in
 clay. Use a NEW test character for every row that clears or levels (never Vera).
 
+Emulator, 2026-10-26 00:26 Manila: the 0.12.0 preview APK (version code 14, built on this PC from 8291f97; 173 MB, sha256
+c6a1ff3e3f59953b…, 26/26 arm64 libraries 16 KB aligned) installed over 0.11.0, Vera kept, opened in 1.7 s with no crash.
+Vera was only looked at (tabs switched, Today scrolled). The level-up, a decided battle, the Shadow's scene and the class
+change aren't reachable that way; app tests cover them (portraits, buddyScreens, livingShadow). The Find X9 column is the
+owner's, on `apps/mobile/dist/levelmeup-0.12.0-preview.apk`.
+
 | # | Check | Result |
 |---|---|---|
-| 1 | Every Grumble is a painted clay monster (arena, battle, camp, Grumble book), breathing and blinking; the book's unmet ones are dark silhouettes; no green fringe or holes on the pale ones (Cloudle, Blurb, Tabbit). | Find X9: |
+| 1 | Every Grumble is a painted clay monster (arena, battle, camp, Grumble book), breathing and blinking; the book's unmet ones are dark silhouettes; no green fringe or holes on the pale ones (Cloudle, Blurb, Tabbit). **Pass** 2026-10-26, emulator (Snoozle painted in the arena and at camp; the book's unmet ones are dark silhouettes of their paintings). Find X9: |
 | 2 | Sign-up's reveal: the class's buddy in the portrait frame, "Pummel hatched!" and its line; Change class lists each class's buddy. | Find X9: |
-| 3 | Me: the buddy alive in the frame, "Pummel · little" beside the level; TalkBack reads "Pummel, your Warrior buddy, little, level 1". | Find X9: |
+| 3 | Me: the buddy alive in the frame, "Pummel · little" beside the level; TalkBack reads "Pummel, your Warrior buddy, little, level 1". **Pass** 2026-10-26, emulator (Vera, a Warrior: Pummel in the frame, "Lv 2 Warrior" and "Pummel · little"). Find X9: |
 | 4 | A level-up to 5 (and 10): "Pummel grew!" with the buddy cheering at its new size, then the ability; other levels show no growing. | Find X9: |
 | 5 | A decided battle: the buddy in the lower left throws the shots from its paw into the Grumble; a win, it cheers; a loss, it stands as it was. | Find X9: |
-| 6 | Camp: the buddy beside the fire, "Pummel keeps the fire." | Find X9: |
-| 7 | Today's Up next (core quest): the buddy doing that quest across the card's top, Begin still on the first screen; the quest screen's How shows it too. | Find X9: |
+| 6 | Camp: the buddy beside the fire, "Pummel keeps the fire." **Pass** 2026-10-26, emulator (Pummel beside the fire, "Pummel keeps the fire."). Find X9: |
+| 7 | Today's Up next (core quest): the buddy doing that quest across the card's top, Begin still on the first screen; the quest screen's How shows it too. **Pass** 2026-10-26, emulator (Sit-to-stands: Pummel with a little chair across the card's top, Begin on the first screen; it stands on the chair rather than rising from it). Find X9: |
 | 8 | The Shadow's scene: the clay Shadow, its eyes glowing and pulsing, embers rising; with Remove animations, still. | Find X9: |
 | 9 | A Plus frame and the Shadow's mark still draw over the portrait. | Find X9: |
 | 10 | Change class (Me → Change class): each class names its buddy; after the change, Me shows the new class's buddy. | Find X9: |
