@@ -1305,11 +1305,11 @@ describe('LevelMeUp Plus in the store (M13)', () => {
     store.getState().stop();
   });
 
-  it('without Plus, a picked Plus look is kept for later but the app stays in Moonlight (review)', async () => {
+  it('without Plus, a picked Plus look is kept for later but the app stays in the free look (review)', async () => {
     const { store } = await setup([ok(SERVER)]);
     await store.getState().boot();
     await store.getState().setTheme('systemBlue');
-    expect(store.getState()).toMatchObject({ theme: 'systemBlue', look: 'moonlight', themeReturn: false, lookReady: true });
+    expect(store.getState()).toMatchObject({ theme: 'systemBlue', look: 'monsterNight', themeReturn: false, lookReady: true });
     store.getState().stop();
   });
 

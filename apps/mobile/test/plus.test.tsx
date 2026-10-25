@@ -51,8 +51,9 @@ describe('Plus as the screens read it (plus.ts)', () => {
     expect(statusLine({ ...plusOn(), active: false }, zone)).toBe('Plus ended Fri 20 Nov');
   });
 
-  it('a lapsed Plus shows Moonlight and no frame, whatever was picked; the Founder frame is the Founders\' own', () => {
-    expect(shownTheme('mintNight', NOT_PLUS)).toBe('moonlight');
+  it('a lapsed Plus shows Monster Night and no frame, whatever was picked; the Founder frame is the Founders\' own', () => {
+    expect(shownTheme('mintNight', NOT_PLUS)).toBe('monsterNight');
+    expect(shownTheme('moonlight', NOT_PLUS)).toBe('monsterNight');
     expect(shownTheme('mintNight', plusOn())).toBe('mintNight');
     expect(shownFrame('moon', NOT_PLUS)).toBe('none');
     expect(frameAllowed('founder', plusOn())).toBe(false);
@@ -148,7 +149,9 @@ describe('Your look', () => {
     // M17 (review): the Plus pill is hidden from a screen reader, so a locked choice says "Plus" in its name.
     expect(screen.getByRole('radio', { name: /^System Blue\. .* Plus\.$/ })).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'Moon ring. Plus' })).toBeTruthy();
-    expect(screen.getByRole('radio', { name: /^Moonlight\. [^.]*\.$/ })).toBeTruthy();
+    // Monster Week: Monster Night is the free look; Moonlight is a Plus look now.
+    expect(screen.getByRole('radio', { name: /^Monster Night\. [^.]*\.$/ })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /^Moonlight\. .* Plus\.$/ })).toBeTruthy();
   });
 
   it('a Plus player picks them; a Founder also has the Founder frame', async () => {
@@ -253,19 +256,19 @@ describe('the all-time stat chart', () => {
 });
 
 describe('the Plus looks', () => {
-  afterEach(() => applyTheme('moonlight'));
+  afterEach(() => applyTheme('monsterNight'));
 
   it('applying a look swaps every colour at once, ripples included', () => {
     applyTheme('systemBlue');
     expect(appliedTheme()).toBe('systemBlue');
     expect(colors.night).toBe(PALETTES.systemBlue.night);
     expect(RIPPLE.night).toBe(PALETTES.systemBlue.rippleNight);
-    applyTheme('moonlight');
-    expect(colors.accent).toBe('#A9B4FF');
+    applyTheme('monsterNight');
+    expect(colors.accent).toBe('#B6F04A');
   });
 
-  it('every look has every colour Moonlight has', () => {
-    for (const t of THEMES) expect(Object.keys(PALETTES[t]).sort()).toEqual(Object.keys(PALETTES.moonlight).sort());
+  it('every look has every colour Monster Night has', () => {
+    for (const t of THEMES) expect(Object.keys(PALETTES[t]).sort()).toEqual(Object.keys(PALETTES.monsterNight).sort());
   });
 
   it('a frame draws over the portrait', async () => {

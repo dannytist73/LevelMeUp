@@ -2,7 +2,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { AccessibilityInfo, StyleSheet, Text } from 'react-native';
 import { colors, space } from '../src/theme/tokens.ts';
-import { Button } from '../src/ui/Button.tsx';
+import { Button, LIP } from '../src/ui/Button.tsx';
 import { InkTabBar } from '../src/ui/InkTabBar.tsx';
 import { OptionCard } from '../src/ui/OptionCard.tsx';
 import { Skeleton, TodaySkeleton } from '../src/ui/Skeleton.tsx';
@@ -33,9 +33,15 @@ describe('every tap answers (audit 4)', () => {
     expect(flat(screen.getByRole('button', { name: 'Row' }).props.style)).toMatchObject({ borderRadius: 16, overflow: 'hidden' });
   });
 
-  it('buttons are Taps: a pill that clips its ripple', async () => {
+  it('buttons are Taps: a rounded game button that clips its ripple, standing on its lip (Monster Week)', async () => {
     await render(<Button label="Begin" onPress={() => {}} />);
-    expect(flat(screen.getByRole('button', { name: 'Begin' }).props.style)).toMatchObject({ borderRadius: 999, overflow: 'hidden' });
+    expect(flat(screen.getByRole('button', { name: 'Begin' }).props.style)).toMatchObject({ borderRadius: 16, overflow: 'hidden' });
+    expect(flat(screen.getByTestId('button-lip').props.style)).toMatchObject({ backgroundColor: colors.accentLip, top: LIP });
+  });
+
+  it('a disabled button lies flat: no lip', async () => {
+    await render(<Button label="Begin" disabled onPress={() => {}} />);
+    expect(screen.queryByTestId('button-lip')).toBeNull();
   });
 });
 
@@ -75,7 +81,7 @@ describe('the tab you are on is obvious (audit 5)', () => {
     await render(<InkTabBar tabs={tabs} active="library" onSelect={() => {}} />);
     expect(screen.getAllByRole('tab')).toHaveLength(4);
     expect(flat(screen.getByTestId('tab-pill').props.style).backgroundColor).toBe(colors.accent);
-    expect(flat(screen.getByText('Library').props.style)).toMatchObject({ color: colors.accentText, fontFamily: 'MPlusRounded-ExtraBold' });
+    expect(flat(screen.getByText('Library').props.style)).toMatchObject({ color: colors.accentText, fontFamily: 'LilitaOne' });
     expect(flat(screen.getByText('Today').props.style)).toMatchObject({ color: colors.ash, fontFamily: 'MPlusRounded-Bold' });
   });
 });

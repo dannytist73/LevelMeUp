@@ -3,12 +3,11 @@ import { PALETTES } from '../src/theme/palettes.ts';
 import { colors } from '../src/theme/tokens.ts';
 import type { ColorName } from '../src/theme/tokens.ts';
 
-describe('the Lantern colours (M11, Moonlight)', () => {
+describe('the Monster Night colours (Monster Week, the free look)', () => {
   it('match the plan', () => {
     expect(colors).toMatchObject({
-      night: '#171A2B', panel: '#222640', halftone: '#1E2236', line: '#383F63', divider: '#2A2F4A', paper: '#EEF0FA',
-      ink: '#1B1E31', chalk: '#F1F0F7', ash: '#A4AAC8', ashLight: '#C9CDE2', accent: '#A9B4FF', commit: '#A9B4FF',
-      onAccent: '#161A2B', accentText: '#BAC3FF', accentInk: '#4F5BB8', shadow: '#FF6B7A', void: '#07080F', lineStrong: '#6A73A0',
+      night: '#191B33', panel: '#24274A', accent: '#B6F04A', commit: '#B6F04A', candy: '#FF7AD9', glow: '#4FD8FF',
+      shadow: '#FF6B7A', void: '#07080F',
     });
   });
 
@@ -37,6 +36,7 @@ describe('the Lantern colours (M11, Moonlight)', () => {
     ['night', 'chalk'], ['night', 'ash'], ['night', 'ashLight'], ['night', 'accentText'], ['night', 'shadow'],
     ['panel', 'chalk'], ['panel', 'ash'], ['panel', 'ashLight'], ['panel', 'accentText'], ['panel', 'shadow'],
     ['halftone', 'chalk'], ['halftone', 'ash'], ['void', 'shadow'], ['accentInk', 'white'],
+    ['night', 'candy'], ['panel', 'candy'],
   ];
 
   // M12 (audit 13): what you can press or type in has an edge of 3:1 on the surfaces it sits on.
@@ -63,7 +63,7 @@ describe('the Lantern colours (M11, Moonlight)', () => {
 
 // M13: the Plus looks meet every rule Moonlight meets: the same text pairings, edges and bar fills, and no red but the
 // Shadow's.
-describe.each(['systemBlue', 'mintNight'] as const)('the %s look (M13)', (name) => {
+describe.each(['moonlight', 'systemBlue', 'mintNight'] as const)('the %s look (M13; Moonlight since Monster Week)', (name) => {
   const p = PALETTES[name];
   const TEXT: [ColorName, ColorName][] = [
     ['paper', 'ink'], ['paper', 'accentInk'], ['paper', 'inkSoft'], ['paper', 'inkMuted'], ['commit', 'onAccent'], ['accent', 'onAccent'],
@@ -71,6 +71,7 @@ describe.each(['systemBlue', 'mintNight'] as const)('the %s look (M13)', (name) 
     ['night', 'chalk'], ['night', 'ash'], ['night', 'ashLight'], ['night', 'accentText'], ['night', 'shadow'],
     ['panel', 'chalk'], ['panel', 'ash'], ['panel', 'ashLight'], ['panel', 'accentText'], ['panel', 'shadow'],
     ['halftone', 'chalk'], ['halftone', 'ash'], ['void', 'shadow'], ['accentInk', 'white'],
+    ['night', 'candy'], ['panel', 'candy'],
   ];
   const GRAPHICS: [ColorName, ColorName][] = [
     ['night', 'lineStrong'], ['panel', 'lineStrong'], ['halftone', 'lineStrong'],

@@ -8,9 +8,9 @@ const styleOf = (text: string) => StyleSheet.flatten(screen.getByText(text).prop
 describe('Lantern text (M11)', () => {
   it.each([
     // M12 (audit 6): body, labels and small text to 2×, titles to 1.5×.
-    ['Display', Display, 'MPlusRounded-ExtraBold', 54, 1.3],
-    ['Title', Title, 'MPlusRounded-ExtraBold', 30, 1.5],
-    ['Heading', Heading, 'MPlusRounded-ExtraBold', 21, 1.5],
+    ['Display', Display, 'LilitaOne', 54, 1.3],
+    ['Title', Title, 'LilitaOne', 30, 1.5],
+    ['Heading', Heading, 'LilitaOne', 21, 1.5],
     ['Label', Label, 'MPlusRounded-Bold', 14, 2],
     ['Body', Body, 'MPlusRounded-Regular', 16, 2],
     ['Small', Small, 'MPlusRounded-Regular', 14, 2],
@@ -36,6 +36,6 @@ describe('Lantern text (M11)', () => {
 
   it('ignores a weight on display text', async () => {
     await render(<Heading weight="bold">Title</Heading>);
-    expect(styleOf('Title').fontFamily).toBe('MPlusRounded-ExtraBold');
+    expect(styleOf('Title').fontFamily).toBe('LilitaOne');
   });
 });

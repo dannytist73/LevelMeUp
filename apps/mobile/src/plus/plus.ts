@@ -5,6 +5,7 @@ import type { PlusView } from '../../../../supabase/functions/_shared/plus.ts';
 import type { Shown } from '../game/project.ts';
 import { dateLine } from '../lib/dates.ts';
 import type { Offer } from '../state/store.ts';
+import { FREE_THEME } from '../theme/palettes.ts';
 import type { ThemeName } from '../theme/palettes.ts';
 
 export type { PlusView };
@@ -25,8 +26,8 @@ export function frameAllowed(frame: FrameName, plus: PlusView): boolean {
   return plus.active;
 }
 
-/** What the player picked, while it is theirs to use; Moonlight and no frame otherwise (a lapsed Plus keeps nothing locked). */
-export const shownTheme = (theme: ThemeName, plus: PlusView): ThemeName => (plus.active ? theme : 'moonlight');
+/** What the player picked, while it is theirs to use; Monster Night and no frame otherwise (a lapsed Plus keeps nothing locked). */
+export const shownTheme = (theme: ThemeName, plus: PlusView): ThemeName => (plus.active ? theme : FREE_THEME);
 export const shownFrame = (frame: FrameName, plus: PlusView): FrameName => (frameAllowed(frame, plus) ? frame : 'none');
 
 const PLAN_NAME = { plus_monthly: 'monthly', plus_yearly: 'yearly', plus_lifetime: 'lifetime' } as const;

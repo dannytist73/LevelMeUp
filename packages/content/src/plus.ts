@@ -69,9 +69,10 @@ export const PLUS_TEXT = {
     plus: 'Plus',
     inUse: 'In use',
     founderOnly: 'For the beta testers',
-    lockedLine: 'Plus looks are kept for Plus. Moonlight and no frame are always free.',
+    lockedLine: 'Plus looks are kept for Plus. Monster Night and no frame are always free.',
   },
   themes: {
+    monsterNight: { name: 'Monster Night', line: 'Night sky, lime and candy.' },
     moonlight: { name: 'Moonlight', line: 'Navy and soft periwinkle.' },
     systemBlue: { name: 'System Blue', line: 'Deep blue and sky.' },
     mintNight: { name: 'Mint Night', line: 'Dark teal and mint.' },

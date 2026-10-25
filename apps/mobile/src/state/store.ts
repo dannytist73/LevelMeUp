@@ -38,7 +38,7 @@ import { buy, forgetPurchases, purchasesSetUp, restore, shop, storeSaysPlus } fr
 import type { Plan, Shop } from '../plus/purchases.ts';
 import { asFrame, plusOf, shownTheme } from '../plus/plus.ts';
 import type { FrameName } from '../plus/plus.ts';
-import { asTheme } from '../theme/palettes.ts';
+import { FREE_THEME, asTheme } from '../theme/palettes.ts';
 import type { ThemeName } from '../theme/palettes.ts';
 import type { Draft } from '../onboarding/flow.ts';
 import { readLastSets } from '../quest/lastSets.ts';
@@ -659,10 +659,10 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       lastSets: {},
       codex: [],
       offers: [],
-      theme: 'moonlight',
+      theme: FREE_THEME,
       frame: 'none',
       themeReturn: false,
-      look: 'moonlight',
+      look: FREE_THEME,
       lookReady: false,
 
       boot: async () => {

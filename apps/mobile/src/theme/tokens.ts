@@ -1,9 +1,49 @@
-// Lantern design tokens (M11, plan docs/superpowers/plans/2026-10-18-m11-lantern-story-deck.md): a navy night, soft
-// rounded cards and one calm accent, "Moonlight" (navy + periwinkle), chosen from the proposals canvas on 2026-10-18.
-// Dark only. Every colour on a screen comes from here, so another palette (System Blue, Mint Night) is a change to
-// this table alone. Red belongs to the Shadow and nothing else. Replaces the Ink Panel tokens (visual spec §1).
-// M13: Moonlight is the free look; `colors` holds the look in use (theme/palettes.ts applyTheme swaps it), so screens
-// read it while they draw, never into a constant at load.
+// Design tokens. Monster Week (docs/2026-10-25-monster-week.md, the owner's pick from the cute-redesign canvas on
+// 2026-10-25): "Monster Night", a night palette with a lime accent and candy for the battles, Lilita One for titles, is
+// the free look. Before it, Lantern (M11): a navy night, soft rounded cards and one calm accent, "Moonlight" (navy +
+// periwinkle), now a Plus look beside System Blue and Mint Night. Dark only. Every colour on a screen comes from here, so
+// another palette is a change to these tables alone. Red belongs to the Shadow and nothing else.
+// M13: `colors` holds the look in use (theme/palettes.ts applyTheme swaps it), so screens read it while they draw, never
+// into a constant at load.
+
+export const MONSTER_NIGHT = {
+  night: '#191B33',
+  panel: '#24274A',
+  halftone: '#1F2140',
+  line: '#3A3E6B',
+  lineStrong: '#777CB4',
+  divider: '#2C2F55',
+  paper: '#F2F3FF',
+  ink: '#1A1C33',
+  chalk: '#F5F5FF',
+  ash: '#A9ADD2',
+  ashLight: '#CDD0EA',
+  accent: '#B6F04A',
+  commit: '#B6F04A',
+  onAccent: '#18220A',
+  accentText: '#C6F570',
+  accentInk: '#3D6A0A',
+  shadow: '#FF6B7A',
+  shadowDeep: '#D9475C',
+  void: '#07080F',
+  white: '#FFFFFF',
+  inkSoft: '#3A3D5E',
+  inkMuted: '#585C7E',
+  lineSoft: '#30345C',
+  tabBar: '#12142A',
+  segmentNext: '#30345A',
+  trackOnPaper: '#DADCF2',
+  rippleNight: '#B6F04A33',
+  ripplePaper: '#1A1C331F',
+  rippleAccent: '#18220A2E',
+  /** Monster Week: the battles' colour (a quest on the Grumble's weakness, power shots). Text on the night too. */
+  candy: '#FF7AD9',
+  /** Monster Week: power's glow. */
+  glow: '#4FD8FF',
+  /** The chunky buttons' lip: the darker band under a bright button, and under a quiet one. */
+  accentLip: '#7FAE24',
+  lip: '#0E1024',
+} as const;
 
 export const MOONLIGHT = {
   /** App background. */
@@ -64,20 +104,24 @@ export const MOONLIGHT = {
   rippleNight: '#A9B4FF33',
   ripplePaper: '#1B1E311F',
   rippleAccent: '#161A2B2E',
+  candy: '#F58BE0',
+  glow: '#7FD6FF',
+  accentLip: '#6F79C8',
+  lip: '#0D0F1C',
 } as const;
 
-export type ColorName = keyof typeof MOONLIGHT;
+export type ColorName = keyof typeof MONSTER_NIGHT;
 export type Palette = Readonly<Record<ColorName, string>>;
 
-/** The look in use: Moonlight until applyTheme says otherwise. */
-export const colors: Record<ColorName, string> = { ...MOONLIGHT };
+/** The look in use: Monster Night until applyTheme says otherwise. */
+export const colors: Record<ColorName, string> = { ...MONSTER_NIGHT };
 
 /**
- * Font families as loaded by `useFonts` in app/_layout.tsx (the Latin subsets in assets/fonts). Lantern (M11): M PLUS
- * Rounded 1c, ExtraBold for display, titles and headings, Regular, Medium and Bold for the body.
+ * Font families as loaded by `useFonts` in app/_layout.tsx (the Latin subsets in assets/fonts). Monster Week: Lilita One
+ * for display, titles and headings; Lantern's (M11) M PLUS Rounded 1c Regular, Medium and Bold for the body.
  */
 export const fonts = {
-  display: 'MPlusRounded-ExtraBold',
+  display: 'LilitaOne',
   body: 'MPlusRounded-Regular',
   bodyMedium: 'MPlusRounded-Medium',
   bodyBold: 'MPlusRounded-Bold',

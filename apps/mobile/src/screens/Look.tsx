@@ -1,12 +1,12 @@
-// M13: Your look (Settings → LevelMeUp Plus): the colours and the portrait frame. Moonlight and no frame are free; the
-// others are Plus (the Founder frame is the beta testers' own, never sold). A locked choice opens the offer instead of
+// M13: Your look (Settings → LevelMeUp Plus): the colours and the portrait frame. Monster Night (Moonlight before Monster
+// Week) and no frame are free; the others are Plus (the Founder frame is the beta testers' own, never sold). A locked choice opens the offer instead of
 // changing anything. A new colour redraws the whole app (app/_layout.tsx), which then comes back here.
 import { PLUS_TEXT } from '@levelmeup/content';
 import { View } from 'react-native';
 import { FRAMES, frameAllowed, plusOf } from '../plus/plus.ts';
 import type { FrameName } from '../plus/plus.ts';
 import { useGame } from '../state/store.ts';
-import { PALETTES, THEMES, isPlusTheme } from '../theme/palettes.ts';
+import { FREE_THEME, PALETTES, THEMES, isPlusTheme } from '../theme/palettes.ts';
 import type { ThemeName } from '../theme/palettes.ts';
 import { space } from '../theme/tokens.ts';
 import { Chip } from '../ui/Chip.tsx';
@@ -37,7 +37,7 @@ export function Look({ onBack, onPlus }: LookProps) {
   const frame = useGame((s) => s.frame);
   const setTheme = useGame((s) => s.setTheme);
   const setFrame = useGame((s) => s.setFrame);
-  const shownTheme: ThemeName = plus.active ? theme : 'moonlight';
+  const shownTheme: ThemeName = plus.active ? theme : FREE_THEME;
   const founder = plus.active && plus.source === 'beta_founder';
 
   const pickTheme = (name: ThemeName) => {

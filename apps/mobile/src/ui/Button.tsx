@@ -4,10 +4,15 @@
 // The label fills the button's width: a label box only as wide as its words lost its last word on Android when the text
 // view was reused from another screen ("Add a set" showed "Add a", 2026-10-15). M12: a ripple on every press (audit 4)
 // and a secondary outline you can see (audit 13).
-import { Text } from 'react-native';
+// Monster Week: chunky game buttons. Each sits on a darker lip (accentLip under the bright ones, lip under a quiet
+// outline) and drops onto it while pressed, so a press feels like pushing a real button; disabled, it lies flat.
+import { Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { colors, fonts, radius, space, type as scale } from '../theme/tokens.ts';
 import { Tap } from './Tap.tsx';
+
+/** Monster Week: how far a button stands on its lip, and drops while pressed. */
+export const LIP = 4;
 
 export type ButtonProps = {
   label: string;
@@ -40,7 +45,13 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
   // broken (their label fell to about 1.5:1).
   // Its edge is the quiet line (review), so a disabled outline doesn't look like an enabled one beside it.
   const shown = disabled ? { bg: 'transparent', fg: on === 'night' ? colors.ash : colors.inkMuted, border: on === 'night' ? colors.line : colors.trackOnPaper } : look;
+  const lip = disabled ? null : display ? (on === 'night' || variant === 'commitment' ? colors.accentLip : colors.inkSoft) : colors.lip;
   return (
+    <View style={[{ paddingBottom: lip === null ? 0 : LIP }, style]}>
+      {lip !== null && (
+        <View testID="button-lip" pointerEvents="none"
+          style={{ position: 'absolute', left: 0, right: 0, top: LIP, bottom: 0, borderRadius: radius.control, backgroundColor: lip }} />
+      )}
     <Tap
       accessibilityRole="button"
       accessibilityLabel={busy && busyLabel !== undefined ? busyLabel : (accessibilityLabel ?? label)}
@@ -48,20 +59,21 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
       disabled={disabled}
       onPress={onPress}
       on={display ? 'accent' : on}
-      radius={radius.pill}
-      style={[
+      radius={radius.control}
+      style={({ pressed }) => [
         {
           minHeight: display ? 52 : 48,
           paddingHorizontal: 20,
           paddingVertical: 8,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: shown.bg,
+          // A quiet button is solid over its lip, so the lip shows only below it.
+          backgroundColor: shown.bg === 'transparent' && lip !== null ? colors.night : shown.bg,
           borderWidth: space.border,
           borderColor: shown.border,
-          borderRadius: radius.pill,
+          borderRadius: radius.control,
         },
-        style,
+        pressed && lip !== null ? { transform: [{ translateY: LIP }] } : null,
       ]}
     >
       <Text
@@ -76,5 +88,6 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
         {text}
       </Text>
     </Tap>
+    </View>
   );
 }

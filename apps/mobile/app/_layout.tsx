@@ -80,7 +80,7 @@ function ThemeReturn() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    'MPlusRounded-ExtraBold': require('../assets/fonts/MPlusRounded1c-ExtraBold-Latin.ttf'),
+    LilitaOne: require('../assets/fonts/LilitaOne-Regular-Latin.ttf'),
     'MPlusRounded-Regular': require('../assets/fonts/MPlusRounded1c-Regular-Latin.ttf'),
     'MPlusRounded-Medium': require('../assets/fonts/MPlusRounded1c-Medium-Latin.ttf'),
     'MPlusRounded-Bold': require('../assets/fonts/MPlusRounded1c-Bold-Latin.ttf'),
