@@ -28,3 +28,6 @@ art/class/_set.jpg
 # Story pictures (M14): only the picked set in art/story/v1 is kept
 art/story/renders/
 art/story/_set.jpg
+
+# Grumble renders (Monster Week): only the picked stills are kept
+art/grumbles/renders/

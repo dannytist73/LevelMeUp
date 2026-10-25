@@ -839,3 +839,23 @@ code, same signing), not yet seen.
 | 10 | Change today: swaps read "Swap · 1 of 1 left"; with none left the swap stays, off, and the line says when they come back. A Monk's Stillness cooling down stays, off, with the days left. Over the rest limit, Rest day names the day the next one can be. | Swap count **Pass** 2026-10-21, emulator. Find X9: |
 | 11 | Chronicle: "0 of 2" shields and the line on how a shield comes and at which streak the next one does. Character: "15 / 50 XP · 45 XP total" and "35 XP to Lv 3". Quest rows say "+10 XP". | **Pass** 2026-10-21, emulator. Find X9: |
 | 12 | Swap, Pain, Class change, Delete and the Pact carry their name in the top bar; Book, Class change, Your game and Training load with a skeleton (no "preparing your trials"). | Swap **Pass** 2026-10-21, emulator. Find X9: |
+
+## Monster Week (branch `monster-week`, 2026-10-25)
+
+Plan and rules: `docs/2026-10-25-monster-week.md`. Server: no migration; `loadHistory` reads every day's cleared quests
+by stat, and the state carries `battle` and `camp` (functions deploy needs the owner's yes). App 0.11.0 (version code
+13): the Monster Night look, Lilita One titles, chunky buttons, React Native Skia (a new native module, so a new build),
+the arena, power on each quest, the battle result, the Camp tab, Me with the streak and the Chronicle. Use a NEW test
+character for every row that clears or rests (never Vera).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Every screen is the Monster Night look: night background, lime main buttons that stand on a darker lip and drop onto it while pressed (a disabled one lies flat), Lilita One titles. Titles with "→", "′" or a no-break space draw whole (Lilita One lacks those; Android takes them from its own font). | Find X9: |
+| 2 | Tabs read Today, Camp, Lessons, Me; the active tab's pill is lime. Me has a "Chronicle" row with "N day streak · 0 of 2 shields" (and "paused" while a check-in waits); it opens the Chronicle with a back bar. | Find X9: |
+| 3 | Day 1 of a new character: the one-time card explains the battles; Got it removes it for good. The arena shows Snoozle with its line, "Weak to Vitality", the battle clock ("Battle Wed 28 Oct 4:00 AM · in 2 d 15 h", moving each minute) and the power bar to 8. | Find X9: |
+| 4 | Every open quest shows its power: "+1" outlined in candy, "+2 · weakness" filled on a Vitality quest. Clearing one charges the bar at once (even offline), the Grumble flinches, a ring and sparkles go off, "+N" floats up and the phone ticks. With "Remove animations" on: the bar and the numbers change, nothing moves. | Find X9: |
+| 5 | Rest today (or "I felt pain" resting the day): the need falls by that day's share at once. | Find X9: |
+| 6 | After the third day ends (4:00 AM by default), opening the app plays the battle once: shots fly in, each lands with a flinch, the power counts up; then "Snoozle joined your camp!" with how you won and the next silhouette's hint, or "Snoozle stays for a rematch" (nothing lost; next time it needs 1 less). Skip goes straight to the result. It never shows twice. | Find X9: |
+| 7 | Camp: the fire with every friend, the Grumble at the edge of camp with its battle time, the Grumble book with 24 cells (friends with "Joined once", the one here now outlined in candy, the rest "?" with a dark silhouette). TalkBack reads each cell. | Find X9: |
+| 8 | A day built offline past the battle's last day: the arena says "This battle is over. Its result shows once you're back online."; reconnect: the result plays. | Find X9: |
+| 9 | Settings → Your look: Monster Night is free and in use; Moonlight, System Blue and Mint Night are Plus. | Find X9: |
