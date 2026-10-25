@@ -26,7 +26,6 @@ COMFY = "http://127.0.0.1:8188"
 ROOT = Path(__file__).resolve().parents[2]
 RENDERS = ROOT / "art" / "grumbles" / "renders"
 SIZE = 1024
-GREEN = (0, 177, 64)  # the green screen the prompts ask for
 FONT = "C\\:/Windows/Fonts/arial.ttf"
 
 BACKDROP = ("full body, centered, the whole character in frame with space around it, isolated on a perfectly flat solid "
@@ -222,17 +221,36 @@ def upload(src: Path) -> str:
     return json.loads(call("/upload/image", raw=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}))["name"]
 
 
+def alpha_of(rgb: np.ndarray) -> np.ndarray:
+    """How much of each pixel is the character (see `key`)."""
+    excess = rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])
+    border = np.concatenate([excess[:12].ravel(), excess[-12:].ravel(), excess[:, :12].ravel(), excess[:, -12:].ravel()])
+    backdrop = max(float(np.median(border)), 20.0)
+    gone, kept = backdrop * 0.55, backdrop * 0.15  # at least this green: backdrop; at most this: the character
+    return np.clip((gone - excess) / (gone - kept), 0.0, 1.0)
+
+
+def box_of(src: Path) -> tuple[int, int, int, int]:
+    """The character's box in a render."""
+    a = alpha_of(np.asarray(Image.open(src).convert("RGB")).astype(np.float32))
+    ys, xs = np.nonzero(a > 0.5)
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
 def key(src: Path, dest: Path, size: int = 512, trim: tuple[int, int, int, int] | None = None) -> Path:
-    """The green screen keyed out: alpha from how much greener a pixel is than its red and blue, the green spill pulled
-    back to them on the edges, trimmed to the character (or to `trim`, so a clip's frames share one box) and squared."""
+    """The backdrop keyed out. Z-Image paints a soft mint backdrop with a vignette and a floor shadow rather than a flat
+    green, and no Grumble is ever green, so a pixel's alpha comes from how green it is (green over its red and blue),
+    measured against the backdrop's own greenness sampled from the border: the backdrop and its shadow go, the character
+    stays. Edge pixels lose their leftover green. Then trimmed to the character (or to `trim`, so a clip's frames share one
+    box) and squared."""
     rgb = np.asarray(Image.open(src).convert("RGB")).astype(np.float32)
-    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
-    excess = g - np.maximum(r, b)
-    alpha = np.clip(1.0 - (excess - 18.0) / 60.0, 0.0, 1.0)  # under 18 kept whole, over 78 gone
-    spill = np.minimum(g, np.maximum(r, b) + 12.0)
-    out = np.dstack([r, np.where(excess > 0, spill, g), b, alpha * 255.0]).clip(0, 255).astype(np.uint8)
+    alpha = alpha_of(rgb)
+    fg = rgb.copy()
+    soft = alpha < 1.0
+    fg[..., 1] = np.where(soft, np.minimum(rgb[..., 1], np.maximum(rgb[..., 0], rgb[..., 2])), rgb[..., 1])
+    out = np.dstack([fg, alpha[..., None] * 255.0]).clip(0, 255).astype(np.uint8)
     img = Image.fromarray(out, "RGBA")
-    box = trim or img.getbbox() or (0, 0, img.width, img.height)
+    box = trim or Image.fromarray((alpha > 0.5).astype(np.uint8) * 255).getbbox() or (0, 0, img.width, img.height)
     img = img.crop(box)
     side = int(max(img.width, img.height) * 1.08)
     square = Image.new("RGBA", (side, side), (0, 0, 0, 0))
@@ -295,8 +313,9 @@ def clip(stem: str, motion: str) -> None:
     # One box for every frame (the union of their characters), so the keyed clip doesn't jitter.
     boxes = []
     for f in sorted(frames_dir.glob("*.png")):
-        rgb = np.asarray(Image.open(f).convert("RGB")).astype(np.int16)
-        mask = (rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])) < 40
+        rgb = np.asarray(Image.open(f).convert("RGB")).astype(np.float32)
+        excess = rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])
+        mask = excess < max(float(np.median(np.concatenate([excess[:12].ravel(), excess[-12:].ravel()]))), 20.0) * 0.35
         ys, xs = np.nonzero(mask)
         if len(xs):
             boxes.append((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
@@ -348,8 +367,12 @@ def pick() -> None:
         old.unlink()
     lines = []
     for gid, stem in PICKS.items():
-        for p in STILLS:
-            key(RENDERS / (f"{stem}.png" if p == "idle" else f"{stem}-{p}.png"), ASSETS / f"{gid}-{p}.webp", 384)
+        # One box for all five, so the Grumble keeps its size and place as its pose changes.
+        srcs = {p: RENDERS / (f"{stem}.png" if p == "idle" else f"{stem}-{p}.png") for p in STILLS}
+        boxes = [box_of(src) for src in srcs.values()]
+        box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+        for p, src in srcs.items():
+            key(src, ASSETS / f"{gid}-{p}.webp", 384, box)
         poses = ", ".join(f"{p}: require('../../assets/grumbles/{gid}-{p}.webp')" for p in STILLS)
         lines.append(f"  {gid}: {{ {poses} }},")
     head = MANIFEST.read_text(encoding="utf-8").split("/** Filled by the art pipeline")[0]
