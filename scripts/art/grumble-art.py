@@ -241,13 +241,13 @@ def key(src: Path, dest: Path, size: int = 512, trim: tuple[int, int, int, int] 
     """The backdrop keyed out. Z-Image paints a soft mint backdrop with a vignette and a floor shadow rather than a flat
     green, and no Grumble is ever green, so a pixel's alpha comes from how green it is (green over its red and blue),
     measured against the backdrop's own greenness sampled from the border: the backdrop and its shadow go, the character
-    stays. Edge pixels lose their leftover green. Then trimmed to the character (or to `trim`, so a clip's frames share one
-    box) and squared."""
+    stays. Every pixel loses green above its red and blue (no Grumble is green). Then trimmed to the character (or to
+    `trim`, so a clip's frames share one box) and squared."""
     rgb = np.asarray(Image.open(src).convert("RGB")).astype(np.float32)
     alpha = alpha_of(rgb)
     fg = rgb.copy()
-    soft = alpha < 1.0
-    fg[..., 1] = np.where(soft, np.minimum(rgb[..., 1], np.maximum(rgb[..., 0], rgb[..., 2])), rgb[..., 1])
+    # No Grumble is green, so green above red and blue anywhere is the backdrop's light on it (fur picks it up in clips).
+    fg[..., 1] = np.minimum(rgb[..., 1], np.maximum(rgb[..., 0], rgb[..., 2]))
     out = np.dstack([fg, alpha[..., None] * 255.0]).clip(0, 255).astype(np.uint8)
     img = Image.fromarray(out, "RGBA")
     box = trim or Image.fromarray((alpha > 0.5).astype(np.uint8) * 255).getbbox() or (0, 0, img.width, img.height)
