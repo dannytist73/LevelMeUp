@@ -1,6 +1,6 @@
 // The quests on Today (D1 board; Lantern, M11; Round 3, M12 boards R3-1 and R3-4). Words come from the content package
 // in the player's voice; numbers from the quest's stored snapshot. M12 (plan decision 3, audit 1): one quest is "Up
-// next", a card holding the screen's only bright button (the core quest keeps its picture); the others are quiet rows
+// next", a card holding the screen's only bright button; the others are quiet rows
 // that open their quest, and a check-off quest's row has a check circle that clears it (Today offers Undo). A cleared
 // quest is a slim row with its XP.
 import {
@@ -15,7 +15,6 @@ import { clockTime } from '../lib/dates.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Chip } from '../ui/Chip.tsx';
 import { Icon } from '../ui/icons.tsx';
-import { QuestArt } from '../ui/QuestArt.tsx';
 import { PowerChip, powerWords } from '../ui/PowerChip.tsx';
 import type { Power } from '../ui/PowerChip.tsx';
 import { SlamIn } from '../ui/SlamIn.tsx';
@@ -23,12 +22,6 @@ import { Tap } from '../ui/Tap.tsx';
 import { Body, Caption, Heading, Label, Meta, Small, Title } from '../ui/Text.tsx';
 
 export const COMPLETION_NAMES = { tap: 'Check off', timer: 'Timer', reps: 'Rep log', text: 'One sentence' } as const;
-
-/**
- * M10c: the core card's picture is a wider crop than the quest screen's 16:9 (emulator: Begin fell below the fold). M17:
- * wider again (2.6:1, about 40 dp less), so Begin stays in view with a System note above it (UX audit 2026-10-20, N1).
- */
-export const TODAY_ART_RATIO = 2.6;
 
 export const questXp = (quest: QuestView): number => Object.values(quest.xp).reduce((sum, x) => sum + (x ?? 0), 0);
 
@@ -69,8 +62,6 @@ export type UpNextProps = {
   waiting: boolean;
   /** Opens the quest screen; for a check-off side quest, clears it instead (Today offers Undo). */
   onGo: () => void;
-  /** The core quest's picture, or null for the ink fallback (M6a decision 10). */
-  artUri: string | null;
   resting?: boolean;
   /** Monster Week: the power it gives the battle. */
   power?: Power;
@@ -80,7 +71,7 @@ export type UpNextProps = {
  * Up next (board R3-1): the quest to do now. The whole card is one button; "I felt pain" is never inside it (M17: it sits
  * under it, beside Change today, in DayActions).
  */
-export function UpNextCard({ quest, voice, waiting, onGo, artUri, resting = false, power }: UpNextProps) {
+export function UpNextCard({ quest, voice, waiting, onGo, resting = false, power }: UpNextProps) {
   const template = authoredTemplate(quest.templateId);
   const words = template.voice[voice];
   const xp = questXp(quest);
@@ -97,9 +88,8 @@ export function UpNextCard({ quest, voice, waiting, onGo, artUri, resting = fals
         radius={radius.card}
       >
         <SlamIn>
-          {/* The card you act on now is outlined in the accent; the core quest's picture runs across its top. */}
+          {/* The card you act on now is outlined in the accent. Monster Week: the core quest's picture is gone from its top. */}
           <View testID="up-next" style={{ borderRadius: radius.card, borderWidth: space.heroBorder, borderColor: colors.accent, backgroundColor: colors.panel, overflow: 'hidden' }}>
-            {core && <QuestArt uri={artUri} label={fillText(PLAY_TEXT.quest.picture, { stat })} fallback={stat} decorative ratio={TODAY_ART_RATIO} rounded={false} anchor="top" />}
             <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 18, gap: 8 }}>
               {/* M17: "Up next" leads the card's own line instead of a heading above it (one row less above Begin). */}
               <Label tone="accentText">{`${TODAY_TEXT.upNext} · ${SLOT_NAMES[quest.slot]} · ${stat}`}</Label>

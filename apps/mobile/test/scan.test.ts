@@ -48,7 +48,7 @@ describe('the app bundle scan (architecture §8)', () => {
 describe('developer-only code in a release bundle (M9b decision 3)', () => {
   it('names each developer marker it finds, and none in clean text', () => {
     expect(devMarkersIn('var a="levelmeup-selfcheck.db";')).toEqual(['levelmeup-selfcheck.db']);
-    expect(devMarkersIn('"wall-clock parts in Manila" … "Warrior a, level 1, marked"')).toEqual(['wall-clock parts in Manila', 'level 1, marked']);
+    expect(devMarkersIn('"wall-clock parts in Manila" … "A made-up battle. Clears here are not sent."')).toEqual(['wall-clock parts in Manila', 'A made-up battle. Clears here are not sent.']);
     expect(devMarkersIn('Today, Character, Chronicle')).toEqual([]);
   });
 

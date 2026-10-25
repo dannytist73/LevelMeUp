@@ -66,7 +66,7 @@ export function after(ms: number, then: () => void): number {
 /** When each part of a moment starts, in ms from the screen opening (spec decision 4). */
 export const MOMENTS = {
   cleared: { stamp: 220, panel: 380, rank: 500, bar: 600 },
-  level: { label: 100, number: 200, portrait: 450, line: 600 },
+  level: { label: 100, number: 200, line: 600 },
   achievement: { name: 100, rest: 350 },
   reveal: { panel: 150 },
   shadow: { stamp: 300 },
@@ -122,16 +122,11 @@ export function inkDrops(count: number, radius: number): InkDrop[] {
   });
 }
 
-/** M10b (spec decision 7): the living Shadow. Where the painted eyes are, as shares of the frame (measured from
- * shadow.webp, 960 × 540), and the glow's width as a share of the frame's. */
-export type ShadowEye = { x: number; y: number };
-export const SHADOW_EYES: readonly ShadowEye[] = [{ x: 0.488, y: 0.227 }, { x: 0.533, y: 0.227 }];
-export const GLOW_SHARE = 0.09;
-/** The eyes' pulse: opacity from PULSE_FROM to PULSE_TO and back, PULSE_MS each way (a 3-second breath). */
+/** M10b (spec decision 7): the living Shadow. The eyes' pulse: opacity from PULSE_FROM to PULSE_TO and back, PULSE_MS each way (a 3-second breath). */
 export const PULSE_MS = 1_500;
 export const PULSE_FROM = 0.3;
 export const PULSE_TO = 0.85;
-/** The painting's breath after the creep: 1.5 % larger and back, BREATH_MS each way. */
+/** The Shadow's breath after the creep: 1.5 % larger and back, BREATH_MS each way. */
 export const BREATH_MS = 2_500;
 export const BREATH_TO = 1.015;
 

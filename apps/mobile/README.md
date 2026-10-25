@@ -40,8 +40,8 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   cleared" (numbers from `src/quest/cleared.ts`). Payloads come from `src/quest/payload.ts`, tested against the server's
   own `checkCompletionPayload`. Timers are timestamps kept in `lmu.timers` (`src/quest/timer.ts`), so they keep counting
   with the screen off. Level-ups and achievements queue in the store after the server confirms them and show in a modal
-  (`src/screens/Celebration.tsx`). Quest pictures come from the public `lmu-art` bucket: its `v2/manifest.json` is fetched
-  once per launch and kept in `lmu.art-manifest` (`src/art/manifest.ts`); without it, an ink panel shows.
+  (`src/screens/Celebration.tsx`). Quest pictures (M6a, from the public `lmu-art` bucket) were retired in Monster Week
+  (2026-10-25), with the class portraits (M9a), the Shadow's painting and the story pictures (M14): the app loads none.
 - **Adjusting the day** (M6b): Today's buttons (`src/screens/DayActions.tsx`) send `swap`, `hard_day`, `plan_rest`,
   `ability` and `resume` through the outbox; `app/swap.tsx` (`src/screens/Swap.tsx`), `app/pain/[id].tsx`
   (`src/screens/Pain.tsx`), `app/class.tsx` (`src/screens/ClassChange.tsx`, from Character) and `app/vanish.tsx`
@@ -59,7 +59,7 @@ Never Expo Go: it crashes on the Find X9. Always `eas-cli@latest`: the global ea
   once and marks today's open workout "Will sync" until the server re-plans it. The cache dropped older states (version 4).
 - **Character and Chronicle** (M6d): `src/screens/Character.tsx` with its parts in `src/screens/character/` (stats with
   a bar to the next point, the class path from `src/game/character.ts`, achievements, Scholar's Path) and the framed
-  class emblem `src/ui/Portrait.tsx` (M9 brings the painted portraits); the vow is read from `lmu.vow` at boot.
+  class emblem `src/ui/Portrait.tsx` (M9a's painted portraits are retired); the vow is read from `lmu.vow` at boot.
   `src/screens/Chronicle.tsx` draws the state's `calendar` as a month grid (`src/screens/chronicle/Calendar.tsx`,
   `src/lib/calendar.ts`; today's cell follows the phone's own day) and the `growth` since day 1. Scholar's Path:
   `app/book.tsx` (`src/screens/Book.tsx`) sends a `book` event; reading quests show "Reading: <book>". Players from

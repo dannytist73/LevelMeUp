@@ -79,9 +79,8 @@ describe('the story lesson (M14)', () => {
     for (const value of bad) expect(asDeck(value)).toBeNull();
   });
 
-  it('keeps a picture of the published shape, and drops any other without losing the story', () => {
-    expect(asDeck({ ...STORY, picture: 'story-v1/article-31.webp' })).toEqual({ ...STORY, picture: 'story-v1/article-31.webp' });
-    for (const picture of ['https://example.com/x.webp', '../story-v1/article-31.webp', 'story-v1/article-31.png', 3]) {
+  it('leaves out the story\'s picture, whatever its shape, and keeps the story (Monster Week: the M14 pictures are retired)', () => {
+    for (const picture of ['story-v1/article-31.webp', 'https://example.com/x.webp', '../story-v1/article-31.webp', 3]) {
       expect(asDeck({ ...STORY, picture })).toEqual(STORY);
     }
   });
@@ -139,18 +138,13 @@ describe('the story lesson on screen (M14)', () => {
     expect(screen.getByText('turn')).toBeTruthy();
   });
 
-  it('shows the story\'s picture on the cover, and the cover as before when it fails to load', async () => {
+  it('shows the cover without a picture, even for a deck that names one (Monster Week: the M14 pictures are retired)', async () => {
     await render(
       <Deck article={{ ...SAMPLE_STORY_ARTICLE, deck: { ...STORY, picture: 'story-v1/article-0.webp' } }} label="Today's reading" xp={10}
         turn={<Text>turn</Text>} onClose={jest.fn()} onFullArticle={jest.fn()} kept={false} onKeep={jest.fn()} reduceMotion />,
     );
-    const picture = screen.getByTestId('deck-picture', { includeHiddenElements: true });
-    expect(picture.props.source.uri).toMatch(/\/storage\/v1\/object\/public\/lmu-art\/story-v1\/article-0\.webp$/);
-    await fireEvent(picture, 'error');
     expect(screen.queryByTestId('deck-picture', { includeHiddenElements: true })).toBeNull();
     expect(screen.getByText(D.todaysStory)).toBeTruthy();
-    await renderStory();
-    expect(screen.queryByTestId('deck-picture', { includeHiddenElements: true })).toBeNull(); // no picture: none drawn
   });
 
   it('says Right for the right answer, and can be skipped', async () => {

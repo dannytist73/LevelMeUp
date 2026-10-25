@@ -49,7 +49,6 @@ function madeUp(state: ServerState, mode: Mode): ServerState {
 export default function MonsterPreview() {
   const insets = useSafeAreaInsets();
   const cached = useGame((s) => s.cached);
-  const art = useGame((s) => s.art);
   const [mode, setMode] = useState<Mode>('today');
   const store = useMemo(() => {
     const state = cached?.state;
@@ -64,15 +63,15 @@ export default function MonsterPreview() {
       s.setState({ view: { ...v, today: { ...v.today!, quests } } });
     };
     s = createStore(() => ({
-      account: { kind: 'guest' }, accountKnown: true, offers: ['monster:intro'], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
-      phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
+      account: { kind: 'guest' }, accountKnown: true, offers: ['monster:intro'], vow: null, markOffer: noop, articles: {}, codex: [],
+      phase: 'ready', view, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null, shadowSeen: null, celebrations: [],
       error: null, pending: [], cached: null,
       syncNow: noop, dismissNotice: noop, enqueue, startOver: noop, dismissTrainingNotice: noop,
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,
     })) as unknown as StoreApi<GameState>;
     return s;
-  }, [cached, art, mode]);
+  }, [cached, mode]);
 
   const pick = (label: string, m: Mode) => (
     <Button key={m} label={label} variant={mode === m ? 'primary' : 'secondary'} onPress={() => setMode(m)} style={{ flexGrow: 1, minWidth: 96 }} />

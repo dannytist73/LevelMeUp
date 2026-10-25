@@ -187,11 +187,9 @@ describe('Today (M10c, M12)', () => {
 });
 
 describe('Character and the Chronicle (M10c)', () => {
-  it('switches the portrait from the button on its corner; the stats have no lead line', async () => {
+  it('the stats have no lead line', async () => {
     const store = testStore({ view: project(serverState(), []) });
     await render(withStore(store, <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
-    await fireEvent.press(screen.getByRole('button', { name: CHARACTER_TEXT.switchPortrait }));
-    expect(store.getState().setPortrait).toHaveBeenCalled();
     expect(screen.queryByText('Bars show progress to the next point.')).toBeNull();
   });
 

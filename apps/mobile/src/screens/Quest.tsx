@@ -5,7 +5,7 @@
 // M12 (Round 3, board R3-2; audit 2, 9, 10, 12): one top bar; the title, then the log first, its button fixed at the
 // bottom; How and Why fold below, Safety stays open; Cleared leads on to the next quest; a half-written takeaway waits.
 import {
-  ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey,
+  ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES,
   authoredTemplate, fillText, programBlockLabel, questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
 import { swapLimit } from '@levelmeup/rules';
@@ -14,7 +14,6 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { timerTargetMs } from '../../../../supabase/functions/_shared/events.ts';
-import { artUrl } from '../art/manifest.ts';
 import { isResting } from '../game/adjust.ts';
 import { findQuest } from '../game/offline.ts';
 import { sealedQuest, shadowHold } from '../game/pact.ts';
@@ -31,7 +30,6 @@ import { Appear } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
-import { QuestArt } from '../ui/QuestArt.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
@@ -77,7 +75,6 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const pending = useGame((s) => s.pending);
-  const art = useGame((s) => s.art);
   const enqueue = useGame((s) => s.enqueue);
   const loadTimer = useGame((s) => s.timer);
   const saveTimer = useGame((s) => s.saveTimer);
@@ -425,11 +422,6 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
             <RowLink label={T.steps} open={showHow} onPress={() => setShowHow((s) => !s)} />
             {showHow && (
               <Appear style={{ gap: 10, paddingHorizontal: 4 }}>
-                <QuestArt
-                  uri={artUrl(art, artKey(template, quest.condition), quest.id)}
-                  label={fillText(T.picture, { stat: STAT_NAMES[quest.stat] })}
-                  fallback={STAT_NAMES[quest.stat]}
-                />
                 {hasHow && template.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
               </Appear>
             )}

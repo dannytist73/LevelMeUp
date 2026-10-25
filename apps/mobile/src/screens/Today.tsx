@@ -7,15 +7,13 @@
 // screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
 // the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
 import {
-  ADJUST_TEXT, FEEDBACK_TEXT, MONSTER_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine,
+  ADJUST_TEXT, FEEDBACK_TEXT, MONSTER_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, authoredTemplate, fillText, shadowLine,
 } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Linking, View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { LayoutAnimationConfig } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { artUrl } from '../art/manifest.ts';
-import { figureFor, portraitUrl } from '../art/portraits.ts';
 import { isExercise, isResting } from '../game/adjust.ts';
 import { battleShown, questHit } from '../game/battle.ts';
 import { trainingUnset } from '../game/character.ts';
@@ -158,7 +156,6 @@ export function Today({
   const view = useGame((s) => s.view);
   // Monster Week: the battle on top of Today (the streak and the XP bar moved to Me).
   const battle = view === null ? null : battleShown(view);
-  const art = useGame((s) => s.art);
   // M17: a sync starting or ending over a usable day changes nothing Today shows, so Today doesn't draw again for it
   // (every tap starts one). Without a usable day the status shows: loading, offline, retrying.
   const status = useGame((s): Status => (s.status === 'syncing' && dayShown(s.view, now()) ? 'idle' : s.status));
@@ -276,16 +273,12 @@ export function Today({
     play('undo');
     void enqueue({ type: 'undo', instanceId: id });
   };
-  // M17 (perf audit 2026-10-20): once Today is drawn, the day's sounds get their players and the portrait its picture,
-  // so the first Claim sounds as it lands and Character opens with its portrait already there.
-  const portrait = useGame((s) => (s.view === null ? null : portraitUrl(s.view.profile.classId, figureFor(s.portrait, s.view.profile.programStyle), s.view.character.level)));
+  // M17 (perf audit 2026-10-20): once Today is drawn, the day's sounds get their players, so the first Claim sounds as it
+  // lands.
   useEffect(() => {
     const t = setTimeout(() => warm(['claim', 'undo', 'streak', 'dayDone', 'cardTurn']), 1500);
     return () => clearTimeout(t);
   }, []);
-  useEffect(() => {
-    if (portrait !== null) Promise.resolve().then(() => Image.prefetch(portrait)).catch(() => {});
-  }, [portrait]);
   // M12 decision 11: a warm chord the moment the day becomes done while Today is in front (never on opening).
   const paused = view?.paused;
   const doneNow = today !== null && usable && dayCleared(today, (q) => q.completedAt === null && isResting(q, paused ?? []));
@@ -304,7 +297,7 @@ export function Today({
       onRetry={() => void syncNow()} />;
   } else {
     body = (
-      <DayBody view={view!} today={today!} hold={hold} art={art} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onPain={onPain}
+      <DayBody view={view!} today={today!} hold={hold} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onPain={onPain}
         onShadow={onShadow} onTrial={onTrial} onSwap={onSwap} onVanish={onVanish} onCheck={check} showDone={showDone}
         onToggleDone={() => setShowDone((s) => !s)} enqueue={enqueue}
         power={battle === null || battle.decided ? null : (q) => questHit(q, battle.weakness)} />
@@ -350,7 +343,6 @@ type DayBodyProps = {
   view: Shown;
   today: TodayView;
   hold: ShadowHold | null;
-  art: Parameters<typeof artUrl>[0];
   onOpenQuest: (questId: number) => void;
   onOpenReading?: (articleId: string) => void;
   onPain: (questId: number) => void;
@@ -368,7 +360,7 @@ type DayBodyProps = {
 
 /** A usable day: Up next or the day done, the other open quests, the day's options, and what's cleared. */
 function DayBody({
-  view, today, hold, art, onOpenQuest, onOpenReading, onPain, onShadow, onTrial, onSwap, onVanish, onCheck, showDone, onToggleDone, enqueue, power,
+  view, today, hold, onOpenQuest, onOpenReading, onPain, onShadow, onTrial, onSwap, onVanish, onCheck, showDone, onToggleDone, enqueue, power,
 }: DayBodyProps) {
   const voice = view.profile.voice;
   // Premium pass A6: on a day built offline, until when what is cleared still counts, said before it passes.
@@ -445,7 +437,6 @@ function DayBody({
               waiting={view.waiting.has(next.id)}
               // The core quest always opens its screen (steps, safety, Cleared); a check-off side quest clears here (review).
               onGo={quickClearable(next, false) && next.slot !== 'core' ? () => onCheck(next, authoredTemplate(next.templateId).voice[voice].title) : () => onOpenQuest(next.id)}
-              artUri={next.slot === 'core' ? artUrl(art, artKey(authoredTemplate(next.templateId), next.condition), next.id) : null}
               resting={resting(next)}
               {...(power === null ? {} : { power: power(next) })}
             />

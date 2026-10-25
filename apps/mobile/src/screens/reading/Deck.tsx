@@ -10,10 +10,9 @@ import { CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/con
 import type { CastMember } from '@levelmeup/content';
 import type { ReactNode } from 'react';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, KeyboardAvoidingView, PanResponder, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, PanResponder, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ArticleBody } from '../../game/types.ts';
-import { storyPictureUrl } from '../../art/stories.ts';
 import { CAST_COLORS, CAST_INK } from '../../reading/castColors.ts';
 import { coverTitle, deckCards, deckMinutes, deckPerson, isStory } from '../../reading/deck.ts';
 import type { ArticleDeck, Card } from '../../reading/deck.ts';
@@ -99,9 +98,6 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
   const story = isStory(deck) ? deck : null;
   const person = deckPerson(deck);
   const cover = coverTitle(article.title, deck);
-  /** The story's picture (M14), until it fails to load: the cover then reads as before. */
-  const [pictureFailed, setPictureFailed] = useState(false);
-  const picture = story?.picture !== undefined && !pictureFailed ? storyPictureUrl(story.picture) : null;
   /** The quick check's pick: kept while the deck is open, sent nowhere (M14 decision 3). */
   const [chosen, setChosen] = useState<number | null>(null);
   const [step, setStep] = useState(() => Math.max(0, Math.min(initialStep, cards.length - 1)));
@@ -189,14 +185,8 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
           <View style={{ flex: 1, gap: 12 }}>
             {/* M17 (design critique): the topic alone; the bar above already says which reading this is. */}
             <Label tone="onAccent">{CLUSTER_NAMES[article.cluster]}</Label>
-            {picture !== null && (
-              <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.control, overflow: 'hidden', backgroundColor: colors.paper }}
-                accessible={false} importantForAccessibility="no-hide-descendants">
-                <Image testID="deck-picture" source={{ uri: picture }} onError={() => setPictureFailed(true)} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
-              </View>
-            )}
-            {/* With a picture the cover reads top down from it; without one the title sits low, as before (emulator). */}
-            {picture === null && <View style={{ flex: 1, minHeight: 40 }} />}
+            {/* The title sits low (emulator). Monster Week: the story's picture (M14) that sat above it is gone. */}
+            <View style={{ flex: 1, minHeight: 40 }} />
             {person !== null && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <PersonBadge person={person} size={48} ring />
@@ -208,7 +198,6 @@ export function Deck({ article, label, xp, turn, onClose, onFullArticle, kept, o
             )}
             <Title tone="onAccent">{cover.title}</Title>
             {cover.subtitle !== null && <Body tone="onAccent" weight="medium" style={{ fontSize: 19, lineHeight: 27 }}>{cover.subtitle}</Body>}
-            {picture !== null && <View style={{ flex: 1, minHeight: 16 }} />}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 8 }}>
               <Small tone="onAccent">{meta}</Small>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

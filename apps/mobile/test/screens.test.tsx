@@ -50,10 +50,10 @@ describe('Today', () => {
     expect(onOpenQuest).toHaveBeenCalledWith(side2.id);
   });
 
-  it('shows the core quest\'s picture, or its ink fallback, as part of the card for TalkBack (M6a, review)', async () => {
+  it('shows the core quest without a picture (Monster Week: the M6a pictures are retired)', async () => {
     await renderToday();
-    expect(within(screen.getByTestId('up-next')).getByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.queryByLabelText(/quest picture/)).toBeNull(); // not a stop of its own inside the card
+    expect(within(screen.getByTestId('up-next')).queryByTestId('quest-art', { includeHiddenElements: true })).toBeNull();
+    expect(within(screen.getByTestId('up-next')).queryByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeNull();
     // M8b: the reading has no button until the day has an article. M12: Up next and the open side quest open their quest;
     // the cleared one waits folded under "Done today".
     expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(2);

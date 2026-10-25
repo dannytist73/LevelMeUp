@@ -1,6 +1,7 @@
-import { CHARACTER_TEXT, PLAY_TEXT, SHADOW_TEXT } from '@levelmeup/content';
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import { PORTRAIT_BASE, SHADOW_ART_URL } from '../src/art/portraits.ts';
+// Monster Week (2026-10-25): the owner retired the earlier generated pictures. The class portrait is its frame and emblem
+// alone, Switch portrait and the level-up's new portrait are gone, and the Shadow is its dark panel and eyes.
+import { PLAY_TEXT, SHADOW_TEXT } from '@levelmeup/content';
+import { render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import { Celebration } from '../src/screens/Celebration.tsx';
 import { Character } from '../src/screens/Character.tsx';
@@ -11,116 +12,73 @@ import { DAY_TWO_NOW, READY_DRAFT, REVEAL, claimedState, serverState } from './s
 import { testStore, withStore } from './support/store.ts';
 
 const hidden = { includeHiddenElements: true } as const;
+type Node = { type: string; children?: (Node | string)[] | null };
+/** Every picture drawn: the host tree's Image elements. */
+const pictures = (): Node[] => {
+  const found: Node[] = [];
+  const walk = (n: Node | Node[] | string | null): void => {
+    if (n === null || typeof n === 'string') return;
+    if (Array.isArray(n)) return n.forEach(walk);
+    if (n.type === 'Image') found.push(n);
+    (n.children ?? []).forEach(walk);
+  };
+  walk(screen.toJSON() as Node | Node[] | null);
+  return found;
+};
 
-describe('the painted portrait (M9a)', () => {
-  it("shows the class's picture for the figure and the level's tier, over its emblem", async () => {
-    await render(<Portrait classId="mage" level={6} figure="b" label="Mage portrait, level 6" />);
+describe('the class portrait without its paintings (Monster Week)', () => {
+  it("is the class's emblem in its frame, labelled for screen readers, and loads no picture", async () => {
+    await render(<Portrait classId="mage" label="Mage portrait, level 6" />);
     expect(screen.getByLabelText('Mage portrait, level 6')).toBeTruthy();
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/mage-b-2.webp` });
-    expect(screen.queryByTestId('portrait-art')).toBeNull(); // hidden from screen readers: the frame's label says it (review)
     expect(screen.getByTestId('portrait-emblem', hidden)).toBeTruthy();
-  });
-
-  it('keeps the emblem when the picture cannot load (offline before it was first seen)', async () => {
-    await render(<Portrait classId="rogue" level={12} figure="a" label="Rogue portrait, level 12" />);
-    await fireEvent(screen.getByTestId('portrait-art', hidden), 'error');
     expect(screen.queryByTestId('portrait-art', hidden)).toBeNull();
-    expect(screen.getByTestId('portrait-emblem', hidden)).toBeTruthy();
-    expect(screen.getByLabelText('Rogue portrait, level 12')).toBeTruthy();
+    expect(pictures()).toEqual([]);
   });
 
-  it('tries the next tier even after a failed one', async () => {
-    await render(<Portrait classId="monk" level={9} figure="a" label="Monk portrait, level 9" />);
-    await fireEvent(screen.getByTestId('portrait-art', hidden), 'error');
-    await screen.rerender(<Portrait classId="monk" level={10} figure="a" label="Monk portrait, level 10" />);
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/monk-a-3.webp` });
-  });
-
-  it('tries a figure again after switching back to it (review)', async () => {
-    await render(<Portrait classId="monk" level={3} figure="a" label="Monk portrait, level 3" />);
-    await fireEvent(screen.getByTestId('portrait-art', hidden), 'error');
-    await screen.rerender(<Portrait classId="monk" level={3} figure="b" label="Monk portrait, level 3" />);
-    await screen.rerender(<Portrait classId="monk" level={3} figure="a" label="Monk portrait, level 3" />);
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/monk-a-1.webp` });
-  });
-
-  it("draws the Shadow's mark over the picture (M7c decision 9)", async () => {
-    await render(<Portrait classId="warrior" level={3} figure="a" label="Warrior portrait, level 3" marked />);
+  it("still draws the Shadow's mark over it (M7c decision 9)", async () => {
+    await render(<Portrait classId="warrior" label="Warrior portrait, level 3" marked />);
     expect(screen.getByTestId('shadow-mark', hidden)).toBeTruthy();
-    expect(screen.getByTestId('portrait-art', hidden)).toBeTruthy();
   });
 });
 
-describe('Character and the reveal show the portrait (M9a decisions 5, 8)', () => {
+describe('Character and the reveal: the portrait, no Switch portrait', () => {
   const SERVER = serverState();
-  const women = () => {
-    const s = serverState();
-    return { ...s, profile: { ...s.profile, programStyle: 'women' as const } };
-  };
 
-  it('Character shows the painted portrait of the level, and Switch portrait swaps the figure', async () => {
-    const store = testStore({ view: project(SERVER, []) });
-    await render(withStore(store, <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
+  it('Character shows the portrait and no switch', async () => {
+    await render(withStore(testStore({ view: project(SERVER, []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
     expect(screen.getByLabelText('Warrior portrait, level 1')).toBeTruthy();
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-a-1.webp` });
-    await fireEvent.press(screen.getByRole('button', { name: CHARACTER_TEXT.switchPortrait }));
-    expect(store.getState().setPortrait).toHaveBeenCalledWith('b');
+    expect(screen.queryByRole('button', { name: 'Switch portrait' })).toBeNull();
+    expect(pictures()).toEqual([]);
   });
 
-  it("shows the player's choice, and before one the Women's program shows figure b", async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), portrait: 'b' }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-b-1.webp` });
-    await render(withStore(testStore({ view: project(women(), []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-b-1.webp` });
-  });
-
-  it('the reveal shows the class portrait under the class name, with Switch portrait', async () => {
+  it('the reveal shows the class portrait under the class name, and no switch', async () => {
     const store = testStore({ phase: 'not_started', draft: READY_DRAFT, reveal: REVEAL, view: project(SERVER, []) });
     await render(withStore(store, <Reveal onAccept={() => {}} onFix={() => {}} />));
     expect(screen.getByLabelText('Warrior portrait, level 1')).toBeTruthy();
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-a-1.webp` });
-    await fireEvent.press(screen.getByRole('button', { name: CHARACTER_TEXT.switchPortrait }));
-    expect(store.getState().setPortrait).toHaveBeenCalledWith('b');
+    expect(screen.queryByRole('button', { name: 'Switch portrait' })).toBeNull();
+    expect(pictures()).toEqual([]);
   });
 });
 
-describe('the level-up shows a new portrait at levels 5 and 10 (M9a decision 8)', () => {
+describe('a level-up shows no portrait, at levels 5 and 10 too', () => {
   const SERVER = serverState();
 
-  it('at level 5: the tier-2 portrait and its line', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 5, from: 4 }] }), <Celebration />));
-    expect(screen.getByLabelText('Warrior portrait, level 5')).toBeTruthy();
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-a-2.webp` });
-    expect(screen.getByText(PLAY_TEXT.celebration.portrait)).toBeTruthy();
-  });
-
-  it('at level 10, with the chosen figure', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), portrait: 'b', celebrations: [{ kind: 'level', level: 10, from: 9 }] }), <Celebration />));
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-b-3.webp` });
-  });
-
-  it('a sync that crosses level 5 on the way to 6 still shows it (review)', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 6, from: 4 }] }), <Celebration />));
-    expect(screen.getByTestId('portrait-art', hidden).props.source).toEqual({ uri: `${PORTRAIT_BASE}/warrior-a-2.webp` });
-    expect(screen.getByText(PLAY_TEXT.celebration.portrait)).toBeTruthy();
-  });
-
-  it('other levels show no portrait', async () => {
-    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level: 6, from: 5 }] }), <Celebration />));
-    expect(screen.queryByTestId('portrait-art', hidden)).toBeNull();
-    expect(screen.queryByText(PLAY_TEXT.celebration.portrait)).toBeNull();
+  it.each([[5, 4], [10, 9], [6, 4]])('level %i from %i: the level and its ability, no portrait', async (level, from) => {
+    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level, from }] }), <Celebration />));
+    expect(screen.getByText(`Lv ${level}`)).toBeTruthy();
+    expect(screen.queryByLabelText(/portrait/)).toBeNull();
+    expect(screen.queryByText(/portrait/i)).toBeNull();
+    expect(screen.getByText(PLAY_TEXT.celebration.continue)).toBeTruthy();
   });
 });
 
-describe("the Shadow's painted art (M9a decisions 4, 7)", () => {
-  it('shows the painted Shadow on its scene, and the dark panel when it cannot load', async () => {
+describe('the Shadow without its painting', () => {
+  it('is the dark panel and its eyes on its scene, labelled, loading no picture', async () => {
     await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
       <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
-    const art = screen.getByTestId('shadow-art', hidden);
-    expect(art.props.source).toEqual({ uri: SHADOW_ART_URL });
     expect(screen.getByLabelText(SHADOW_TEXT.art)).toBeTruthy();
-    await fireEvent(art, 'error');
+    expect(screen.getByTestId('shadow-eyes', hidden)).toBeTruthy();
     expect(screen.queryByTestId('shadow-art', hidden)).toBeNull();
-    expect(screen.getByLabelText(SHADOW_TEXT.art)).toBeTruthy();
+    expect(pictures()).toEqual([]);
   });
 });

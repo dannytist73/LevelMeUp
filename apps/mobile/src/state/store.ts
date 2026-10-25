@@ -1,7 +1,7 @@
 // The game store the screens read (M4 plan, Task 11): the cached server state, the outbox, the notices, what to show,
 // how the last sync went, and the onboarding (M5): the interview's draft, the reveal and the account. Every action goes
 // through the outbox first, then a sync is requested.
-// M6a adds the celebration queue, the quest-art manifest and the quest timers.
+// M6a adds the celebration queue, the quest-art manifest (gone in Monster Week) and the quest timers.
 // M6b: adjustments go through the same outbox; a quest replaced by a swap, gentle movement or an ability loses its stored
 // timer.
 // M6e: when today has ended and the server can't be reached, the store builds the next day (`nextOfflineDay`) and queues it;
@@ -14,10 +14,6 @@ import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
-import { parseArtManifest } from '../art/manifest.ts';
-import type { ArtManifest } from '../art/manifest.ts';
-import { readFigure } from '../art/portraits.ts';
-import type { Figure } from '../art/portraits.ts';
 import type { Account, GoogleProblem, GoogleResult } from '../auth/google.ts';
 import type { SessionState } from '../auth/session.ts';
 import type { Blobs } from '../auth/sessionStorage.ts';
@@ -75,8 +71,6 @@ export type GameDeps = {
   /** Who is signed in, read from the stored session. */
   account: () => Promise<Account>;
   google: { link: () => Promise<GoogleResult>; signIn: () => Promise<GoogleResult> };
-  /** The quest-art manifest from the art bucket (M6a); whatever arrives is checked, null when it can't be fetched. */
-  artManifest: () => Promise<unknown>;
   /** M7d: the phone's notifications (`src/notify/os.ts`); the store's only way to them. */
   notes: NoteOs;
   /** M13: the signed-in player's id (RevenueCat's customer id for them), or null without a sign-in. */
@@ -90,7 +84,6 @@ export type Status = 'idle' | 'syncing' | 'offline' | 'retrying';
 export const DRAFT_KEY = 'lmu.onboarding-draft';
 export const VOW_KEY = 'lmu.vow';
 export const TIMERS_KEY = 'lmu.timers';
-export const ART_KEY = 'lmu.art-manifest';
 export const TRAINING_NOTICE_KEY = 'lmu.training-notice';
 /** M7a: the last check-in result the player dismissed (decision 10). */
 export const CHECKIN_RESULT_KEY = 'lmu.checkin-result';
@@ -98,7 +91,8 @@ export const CHECKIN_RESULT_KEY = 'lmu.checkin-result';
 export const SHADOW_KEY = 'lmu.shadow-seen';
 /** M7c: the Trial's focus minutes so far, for one check-in (decision 7). */
 export const TRIAL_KEY = 'lmu.trial';
-/** M9a: the portrait's figure the player chose (decision 5). */
+/** M9a: the portrait's figure the player chose (decision 5). Monster Week: no longer kept; cleared with the character,
+ * so an older install's choice goes too. */
 export const PORTRAIT_KEY = 'lmu.portrait';
 /** M10b: the Haptics switch, kept as 'on' or 'off' (spec decision 4); anything else, or nothing, counts as on. */
 export const HAPTICS_KEY = 'lmu.haptics';
@@ -187,8 +181,6 @@ export type GameState = {
   unreachable: boolean;
   /** Level-ups and achievements the server confirmed, shown one at a time. */
   celebrations: Celebration[];
-  /** Which quest pictures exist online. */
-  art: ArtManifest | null;
   /** The vow sworn in onboarding, kept on the phone (M5 owner decision 3); shown on Character (M6d). */
   vow: string | null;
   /** The one-time "set up your training" note has been shown and dismissed (M6d decision 13). */
@@ -205,8 +197,6 @@ export type GameState = {
   permission: Permission;
   /** M7d: the notifications planned now (the developer screen lists them). */
   planned: readonly PlannedNote[];
-  /** M9a: the portrait's figure the player chose, kept on this phone (decision 5); null before a choice. */
-  portrait: Figure | null;
   /** M10b: the Haptics switch (Settings → Game), kept on this phone; on unless turned off. */
   haptics: boolean;
   /** M12: the Sounds switch (Settings), kept on this phone; on unless turned off. */
@@ -229,8 +219,6 @@ export type GameState = {
   finishOnboarding: () => Promise<void>;
   /** The vow stays on the phone (owner decision 3, 2026-10-11); Character shows it (M6d). */
   saveVow: (text: string) => Promise<void>;
-  /** M9a: keeps the portrait's figure on this phone; shown at once, even if the phone can't store it. */
-  setPortrait: (figure: Figure) => Promise<void>;
   /** M10b: keeps the switch on the phone; it applies at once, even if the phone can't store it. */
   setHaptics: (on: boolean) => Promise<void>;
   /** M12: keeps the switch on the phone; it applies at once, even if the phone can't store it. */
@@ -313,15 +301,6 @@ function readTrial(text: string | null, checkinId: number): number {
     return id === checkinId && Number.isSafeInteger(ms) && (ms as number) >= 0 ? (ms as number) : 0;
   } catch {
     return 0;
-  }
-}
-
-function readKeptArt(text: string | null): ArtManifest | null {
-  if (text === null) return null;
-  try {
-    return parseArtManifest(JSON.parse(text));
-  } catch {
-    return null;
   }
 }
 
@@ -412,20 +391,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
     const wanted = new Set<string>();
     /** M11 (review): bodies held from before their Story Deck, asked for once a launch so Read again gets the cards. */
     const deckAsked = new Set<string>();
-
-    /** The art manifest is fetched once per launch, after the first sync (or a new player's onboarding). */
-    let artChecked = false;
-    const checkArt = (): void => {
-      if (artChecked) return;
-      artChecked = true;
-      void refreshArt();
-    };
-    const refreshArt = async (): Promise<void> => {
-      const manifest = parseArtManifest(await deps.artManifest().catch(() => null));
-      if (manifest === null) return;
-      set({ art: manifest });
-      await deps.kv.setItem(ART_KEY, JSON.stringify(manifest)).catch(() => {});
-    };
 
     /**
      * The level of the last state a sync confirmed. Not the cached state: anything that reloads the screen while a sync
@@ -556,7 +521,7 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       confirmedLevel = null;
       set({
         draft: NEW_DRAFT, reveal: null, celebrations: [], vow: null, trainingNoticeSeen: false, checkinResultSeen: null, checkinLater: null,
-        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], portrait: null, lastSets: {}, codex: [], offers: [], frame: 'none',
+        shadowSeen: null, notify: DEFAULT_NOTIFY, planned: [], lastSets: {}, codex: [], offers: [], frame: 'none',
         account: await deps.account(), accountKnown: true,
       });
       await refresh({ phase: 'loading', status: 'idle', error: null, signInLost: false });
@@ -584,7 +549,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
           if (before !== null && after !== null && after > before) found.push({ kind: 'level', level: after, from: before });
           for (const id of outcome.newAchievements) found.push({ kind: 'achievement', id });
           if (found.length > 0) set({ celebrations: [...get().celebrations, ...found] });
-          checkArt();
           return;
         }
         case 'not_started':
@@ -646,7 +610,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       accountKnown: false,
       unreachable: false,
       celebrations: [],
-      art: null,
       vow: null,
       trainingNoticeSeen: true, // nothing flashes before boot reads the phone
       checkinLater: null,
@@ -655,7 +618,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
       notify: DEFAULT_NOTIFY,
       permission: 'unknown',
       planned: [],
-      portrait: null,
       haptics: true,
       sounds: true,
       lastSets: {},
@@ -675,16 +637,14 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         accountReading = accountRead.then((account) => {
           if (!get().accountKnown) set({ account, accountKnown: true });
         });
-        const [saved, keptArt, vowText, notice, seen, shadow, notifyText, permission, portraitText, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText, draftsText] = await Promise.all([
+        const [saved, vowText, notice, seen, shadow, notifyText, permission, hapticsText, setsText, codexText, offersText, soundsText, themeText, frameText, draftsText] = await Promise.all([
           deps.kv.getItem(DRAFT_KEY).catch(() => null),
-          deps.kv.getItem(ART_KEY).catch(() => null),
           deps.kv.getItem(VOW_KEY).catch(() => null),
           deps.kv.getItem(TRAINING_NOTICE_KEY).catch(() => null),
           deps.kv.getItem(CHECKIN_RESULT_KEY).catch(() => null),
           deps.kv.getItem(SHADOW_KEY).catch(() => null),
           deps.kv.getItem(NOTIFY_KEY).catch(() => null),
           deps.notes.permission().catch((): Permission => 'unknown'),
-          deps.kv.getItem(PORTRAIT_KEY).catch(() => null),
           deps.kv.getItem(HAPTICS_KEY).catch(() => null),
           deps.kv.getItem(LAST_SETS_KEY).catch(() => null),
           deps.kv.getItem(CODEX_KEY).catch(() => null),
@@ -702,9 +662,9 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         // M17 (review): the phone's own records first, before the snapshot that can fail; Today's cards read `offers` once
         // the account is known, and an answered card must stay answered.
         set({
-          notify: readNotify(notifyText), permission, haptics, sounds, art: readKeptArt(keptArt), vow: readVow(vowText),
+          notify: readNotify(notifyText), permission, haptics, sounds, vow: readVow(vowText),
           trainingNoticeSeen: notice !== null, checkinResultSeen: readSeen(seen), checkinLater: null, shadowSeen: readSeen(shadow),
-          portrait: readFigure(portraitText), lastSets: readLastSets(setsText), codex: readCodex(codexText),
+          lastSets: readLastSets(setsText), codex: readCodex(codexText),
           offers: readOffers(offersText), theme: asTheme(themeText), frame: asFrame(frameText),
         });
         notifyLoaded = true;
@@ -772,8 +732,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
             await refresh({
               phase: 'ready', status: 'idle', error: null, reveal: started.body.reveal, account: await deps.account(), accountKnown: true, trainingNoticeSeen: true,
             });
-            // A new player's first launch never synced a character, so the quest art is fetched now (M6e device check).
-            checkArt();
             return { ok: true };
           };
           const holding = get().cached !== null;
@@ -799,11 +757,6 @@ export function createGameStore(deps: GameDeps): StoreApi<GameState> {
         const vow = text.trim();
         await deps.kv.setItem(VOW_KEY, vow);
         set({ vow: vow === '' ? null : vow });
-      },
-
-      setPortrait: async (figure) => {
-        set({ portrait: figure });
-        await deps.kv.setItem(PORTRAIT_KEY, figure).catch(() => {});
       },
 
       setHaptics: async (on) => {

@@ -6,8 +6,6 @@ import { ACHIEVEMENTS } from './achievements.ts';
 export const CHARACTER_TEXT = {
   label: 'Character',
   portrait: '{className} portrait, level {level}',
-  /** M9a decision 5: the reveal's and Character's button that swaps the portrait's figure. */
-  switchPortrait: 'Switch portrait',
   /** Premium pass C2: the level's progress as Cleared and Day done say it, the total beside it. */
   totalXp: '{into} / {span} XP · {total} XP total',
   next: '{xp} XP to Lv {level}',

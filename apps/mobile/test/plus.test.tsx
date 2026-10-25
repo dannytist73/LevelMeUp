@@ -272,7 +272,7 @@ describe('the Plus looks', () => {
   });
 
   it('a frame draws over the portrait', async () => {
-    await render(<Portrait classId="warrior" level={3} figure="a" label="Your portrait" frame="moon" />);
+    await render(<Portrait classId="warrior" label="Your portrait" frame="moon" />);
     expect(screen.getByTestId('frame-moon', { includeHiddenElements: true })).toBeTruthy();
   });
 });

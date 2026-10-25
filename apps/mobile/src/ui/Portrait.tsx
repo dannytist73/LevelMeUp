@@ -1,12 +1,9 @@
-// The class portrait (board D4): a paper panel with ink hatching, tilted 2°. M9a: the painted portrait of the class, the
-// player's figure and the level's tier (decisions 2, 5), over the class's ink emblem, which shows while it loads or when
-// it can't (offline before it was first seen, decision 6). M7c: the Shadow's mark over a corner while the Shadow holds the day.
+// The class portrait (board D4): a paper panel with ink hatching, tilted 2°, and the class's ink emblem. Monster Week
+// (2026-10-25): the M9a paintings are gone (the owner retired the earlier pictures); the emblem stands alone until the
+// clay character comes. M7c: the Shadow's mark over a corner while the Shadow holds the day.
 import type { ClassId } from '@levelmeup/rules';
-import { useState } from 'react';
-import { Image, View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Defs, G, Line, Path, Pattern, Rect } from 'react-native-svg';
-import { portraitUrl } from '../art/portraits.ts';
-import type { Figure } from '../art/portraits.ts';
 import type { FrameName } from '../plus/plus.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { PortraitFrame } from './PortraitFrame.tsx';
@@ -18,34 +15,22 @@ const EMBLEM: Record<ClassId, string[]> = {
   monk: ['M12 20c-4 0-8-3-8-7 3 0 6 2 8 5 2-3 5-5 8-5 0 4-4 7-8 7z', 'M12 18c-2-3-2-8 0-12 2 4 2 9 0 12z'],
 };
 
-/** The frame's ink edge (6 units, half of it inside): the picture sits inside it. */
+/** The frame's ink edge (6 units, half of it inside): the hatching sits inside it. */
 const EDGE = 3;
 const LAYER = { position: 'absolute', left: 0, top: 0 } as const;
 
 export type PortraitProps = {
-  classId: ClassId; level: number; figure: Figure; label: string; marked?: boolean;
+  classId: ClassId; label: string; marked?: boolean;
   /** M13: a Plus frame (or the Founder's), already checked as the player's to use (plus.ts shownFrame). */
   frame?: FrameName;
   /** M17: the widest it may be (260 by default); the Reveal's is smaller, so its words come sooner. */
   maxWidth?: number;
 };
 
-/** The painted picture, inside the frame's ink edge. Keyed by its address, so a new tier or figure, or a figure switched
- * back to, is tried afresh after a failed load (review). */
-function Painting({ uri, w, h }: { uri: string; w: number; h: number }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return null;
-  return (
-    <Image testID="portrait-art" source={{ uri }} onError={() => setFailed(true)} resizeMode="cover"
-      style={{ position: 'absolute', left: EDGE, top: EDGE, width: w - 2 * EDGE, height: h - 2 * EDGE }} />
-  );
-}
-
-export function Portrait({ classId, level, figure, label, marked = false, frame = 'none', maxWidth = 260 }: PortraitProps) {
+export function Portrait({ classId, label, marked = false, frame = 'none', maxWidth = 260 }: PortraitProps) {
   const { width } = useWindowDimensions();
   const w = Math.min(maxWidth, width - 2 * space.gutter - 12);
   const h = Math.round(w * 1.04);
-  const uri = portraitUrl(classId, figure, level);
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label}
       style={{ alignSelf: 'center', borderRadius: radius.card + 6, overflow: 'hidden', borderWidth: 2, borderColor: colors.line }}>
@@ -65,7 +50,6 @@ export function Portrait({ classId, level, figure, label, marked = false, frame 
             {classId === 'rogue' && <Circle cx="12" cy="20.5" r="1.5" />}
           </G>
         </Svg>
-        <Painting key={uri} uri={uri} w={w} h={h} />
         <Svg width={w} height={h} style={LAYER}>
           {marked && (
             // M7c decision 9: the Shadow's mark, a dark corner creeping in, edged in ember, until the recovery quest is cleared.

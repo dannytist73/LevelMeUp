@@ -26,7 +26,6 @@ type Screen = 'today' | 'scene' | 'pact' | 'trial';
 export default function ShadowPreview() {
   const insets = useSafeAreaInsets();
   const cached = useGame((s) => s.cached);
-  const art = useGame((s) => s.art);
   const [kind, setKind] = useState<'shadow' | 'trial' | 'paused'>('shadow');
   const [screen, setScreen] = useState<Screen>('today');
   const store = useMemo(() => {
@@ -56,14 +55,14 @@ export default function ShadowPreview() {
     }, []);
     return createStore(() => ({
       // M17: what Today reads since M12/M13 (the preview crashed on `account` without it).
-      account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
-      phase: 'ready', view, art, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
+      account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [],
+      phase: 'ready', view, status: 'idle', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null, shadowSeen: null, draft: { pact: null }, pending: [],
       error: null, cached: null, // premium pass: what Today reads now (a refused sync, the deadline)
       syncNow: noop, dismissNotice: noop, enqueue: noop, startOver: noop, dismissTrainingNotice: noop, editDraft: () => {},
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop, seeShadow: noop, trialMs: async () => 0, saveTrialMs: noop,
     })) as unknown as StoreApi<GameState>;
-  }, [cached, art, kind]);
+  }, [cached, kind]);
 
   const back = () => setScreen('today');
   return (

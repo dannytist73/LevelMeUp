@@ -1,8 +1,8 @@
 // The Shadow's scene (spec §4.3, board F2; M7c decision 5): after "I just didn't" under a pact, once. The Shadow claims
 // the day, a stamp names the day it took, the player may leave a private note, and "Take back the day" opens the
 // recovery quest; at level 2 the trial is one tap away. Paused (3 in 7 days): the Shadow steps back. Opening it marks it
-// shown. M9a: the painted Shadow, over the dark panel that shows while it loads or when it can't. M10a: the painting creeps
-// closer, the box slams in, the claimed stamp thuds. M10b: the painting lives (src/ui/ShadowArt.tsx); the claimed stamp
+// shown. M9a: the painted Shadow (Monster Week: retired; the dark panel and its eyes remain). M10a: the Shadow creeps
+// closer, the box slams in, the claimed stamp thuds. M10b: the Shadow lives (src/ui/ShadowArt.tsx); the claimed stamp
 // stays quiet (spec decision 3).
 import { SHADOW_TEXT, fillText, retreatLine, shadowLine } from '@levelmeup/content';
 import { useEffect, useState } from 'react';

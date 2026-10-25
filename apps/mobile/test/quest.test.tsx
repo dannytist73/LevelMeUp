@@ -1,5 +1,5 @@
 import {
-  ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, artKey, authoredTemplate, questSummary, renderWhy,
+  ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, authoredTemplate, questSummary, renderWhy,
 } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -264,21 +264,19 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     if (template.exercise !== null) expect(screen.getByText(EXERCISE_SAFETY_LINE)).toBeTruthy();
     // Folded until asked for.
     expect(screen.queryByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeNull();
-    expect(screen.queryByTestId('quest-art-fallback')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.steps }));
     for (const [i, step] of template.steps.entries()) expect(screen.getByText(`${i + 1}. ${step}`)).toBeTruthy();
-    expect(screen.getByTestId('quest-art-fallback')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.why }));
     expect(screen.getByText(template.voice.system.line)).toBeTruthy();
     expect(screen.getByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeTruthy();
   });
 
-  it('shows the picture once the manifest lists the quest\'s key', async () => {
+  it('shows no picture with the steps (Monster Week: the M6a pictures are retired)', async () => {
     const core = coreOf(SERVER);
-    const key = artKey(authoredTemplate(core.templateId));
-    await renderQuest(SERVER, core.id, { art: { version: 1, art: { [key]: 1 } } });
+    await renderQuest(SERVER, core.id);
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.steps }));
-    expect(screen.getByTestId('quest-art').props.source.uri).toContain(`/lmu-art/v3/${key}-1.webp`);
+    expect(screen.queryByTestId('quest-art', { includeHiddenElements: true })).toBeNull();
+    expect(screen.queryByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeNull();
   });
 
   it('keeps a half-written takeaway when the reading is closed and opened again (M12, audit 9)', async () => {

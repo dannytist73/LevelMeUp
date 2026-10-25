@@ -5,7 +5,6 @@ import { getCalendars } from 'expo-localization';
 import kvStore from 'expo-sqlite/kv-store';
 import * as WebBrowser from 'expo-web-browser';
 import { APP_VERSION } from '../appVersion.ts';
-import { ART_MANIFEST_URL } from '../art/manifest.ts';
 import { freshSessionStore, sessionStore, supabase } from '../auth/client.ts';
 import { linkGoogle, readAccount, signInWithGoogle } from '../auth/google.ts';
 import { ensureSession, sessionAlive } from '../auth/session.ts';
@@ -13,7 +12,6 @@ import { storageWorks } from '../auth/sessionStorage.ts';
 import { openExpoSql } from '../data/expoSql.ts';
 import { makeLocal, migrate } from '../data/local.ts';
 import { makeApi } from '../net/api.ts';
-import { timedFetch } from '../net/timedFetch.ts';
 import { expoNotes } from '../notify/os.ts';
 import { createGameStore } from './store.ts';
 
@@ -24,9 +22,6 @@ export function deviceZone(): string {
   const intl = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return typeof intl === 'string' && isValidTimeZone(intl) ? intl : 'UTC';
 }
-
-/** The art manifest is small; a slow network gets 10 seconds, then the ink fallback stays. */
-const artFetch = timedFetch(10_000);
 
 export async function createAppStore() {
   const sql = await openExpoSql();
@@ -50,7 +45,6 @@ export async function createAppStore() {
       link: () => linkGoogle(supabase, WebBrowser.openAuthSessionAsync),
       signIn: () => signInWithGoogle(supabase, WebBrowser.openAuthSessionAsync),
     },
-    artManifest: () => artFetch(ART_MANIFEST_URL).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     notes: expoNotes,
     playerId: async () => (await supabase.auth.getSession().catch(() => null))?.data.session?.user.id ?? null,
   });

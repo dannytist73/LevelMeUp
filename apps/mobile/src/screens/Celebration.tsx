@@ -1,13 +1,13 @@
 // Level-ups and achievements (spec §2.3, §2.6; M6a decision 8): shown over every screen once the server confirms them,
 // one at a time, with speed lines and Continue. A modal, so the screen behind can't be tapped or reached by TalkBack, and
-// Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared"). M9a: at levels 5 and 10 the new
-// portrait (decision 8). M10a: each moves (spec decision 4) and is keyed, so the next one plays afresh (plan decision 6).
+// Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared"). M9a's new portrait at levels 5
+// and 10 went with its paintings (Monster Week). M10a: each moves (spec decision 4) and is keyed, so the next one plays
+// afresh (plan decision 6).
 // M10b: the double click as "LV n" lands, the firm click as an achievement's name lands.
-import { ABILITY_LINES, ABILITY_NAMES, ACHIEVEMENTS, CHARACTER_TEXT, CLASS_NAMES, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { ABILITY_LINES, ABILITY_NAMES, ACHIEVEMENTS, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { ABILITIES, ABILITY_IDS } from '@levelmeup/rules';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { figureFor, portraitChanges } from '../art/portraits.ts';
 import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -15,7 +15,6 @@ import { FadeIn } from '../ui/FadeIn.tsx';
 import { InkBurst } from '../ui/InkBurst.tsx';
 import { MOMENTS } from '../ui/motion.ts';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
-import { Portrait } from '../ui/Portrait.tsx';
 import { SlamIn } from '../ui/SlamIn.tsx';
 import { SpeedLines } from '../ui/SpeedLines.tsx';
 import { Body, Display, Label, Small, Title } from '../ui/Text.tsx';
@@ -28,12 +27,10 @@ export function Celebration() {
   const next = useGame((s) => s.celebrations[0] ?? null);
   const dismiss = useGame((s) => s.dismissCelebration);
   const view = useGame((s) => s.view);
-  const chosen = useGame((s) => s.portrait);
   if (next === null) return null;
 
   let body;
   if (next.kind === 'level') {
-    const shown = view !== null && portraitChanges(next.from, next.level) ? view.profile : null;
     // M17: the class abilities this level brings (levels 5 and 10), named with what they do: the reward to use.
     const unlocked = view === null ? [] : ABILITY_IDS.filter((a) =>
       ABILITIES[a].classId === view.profile.classId && ABILITIES[a].level > next.from && ABILITIES[a].level <= next.level);
@@ -44,14 +41,7 @@ export function Celebration() {
         <InkBurst count={16} radius={120} delay={M.number}>
           <Thud delay={M.number} haptic="level" sound="level" testID="level-thud"><Display>{`Lv ${next.level}`}</Display></Thud>
         </InkBurst>
-        {shown !== null && (
-          <FadeIn rise delay={M.portrait}>
-            <Portrait classId={shown.classId} level={next.level} figure={figureFor(chosen, shown.programStyle)}
-              label={fillText(CHARACTER_TEXT.portrait, { className: CLASS_NAMES[shown.classId], level: next.level })} />
-          </FadeIn>
-        )}
         <SlamIn delay={M.line} style={{ alignSelf: 'stretch' }}><NarrationBox>{fillText(T.level, { level: next.level })}</NarrationBox></SlamIn>
-        {shown !== null && <FadeIn delay={M.line}><Small>{T.portrait}</Small></FadeIn>}
         {unlocked.map((a) => (
           <FadeIn key={a} rise delay={M.line}>
             <View accessible style={{ gap: 4, paddingVertical: 12, paddingHorizontal: 16, borderRadius: radius.control, borderWidth: space.border, borderColor: colors.line, backgroundColor: colors.panel }}>

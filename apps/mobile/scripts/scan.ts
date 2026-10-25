@@ -43,12 +43,12 @@ export function findSecrets(text: string): Hit[] {
  * that every screen has one and no shipped file does.
  */
 export const DEV_MARKERS: readonly string[] = [
-  'levelmeup-selfcheck.db', 'wall-clock parts in Manila', 'level 1, marked', 'Start a test character first.',
+  'levelmeup-selfcheck.db', 'wall-clock parts in Manila', 'Start a test character first.',
   'A made-up check-in for yesterday', 'Nothing waiting.', 'Your trials are set. Clear the core quest',
   'Planned: the copy shows in 10 seconds', '00000000-0000-4000-8000-0000000000ff', 'No day is cached yet: sync once',
   'Workout preview', 'Why tiny wins change how you see yourself',
   'Motion bench: replay each piece and moment', 'beats a large one planned for someday',
-  'Crash test: this screen throws on purpose',
+  'Crash test: this screen throws on purpose', 'A made-up battle. Clears here are not sent.',
 ];
 
 export function devMarkersIn(text: string): string[] {

@@ -1,7 +1,8 @@
 // O08 Character reveal (spec §1.1 beat 9, §4.2): the rules' character in the System's words, the stats labelled game
 // estimates. "Change class" and "Fix an assumption" run the analysis again (the server allows it until the first
-// action). M9a: the class portrait, and Switch portrait (decisions 5, 8). M10a: the lines burst once and the class panel
-// slams in. M12 (plan decision 7): the slip question and the Pact moved to day 2's card; Accept ends the onboarding.
+// action). M9a: the class portrait (Monster Week: its emblem alone; the paintings and Switch portrait are gone). M10a:
+// the lines burst once and the class panel slams in. M12 (plan decision 7): the slip question and the Pact moved to day
+// 2's card; Accept ends the onboarding.
 // M17 (UX audit 2026-10-20, O2): Accept stays in a bar at the bottom (it sat about 1,400 dp down, under the stats and the
 // routine); Change class and Fix an assumption sit together under the System's words; the portrait is a little smaller.
 import { CHARACTER_TEXT, CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, STAT_NAMES, classStats, fillText, routineLine } from '@levelmeup/content';
@@ -10,7 +11,6 @@ import type { ClassId } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { figureFor, otherFigure } from '../../art/portraits.ts';
 import { STEP_PATH, asksMind } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
 import { space } from '../../theme/tokens.ts';
@@ -37,8 +37,6 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
   const draft = useGame((s) => s.draft);
   const editDraft = useGame((s) => s.editDraft);
   const startCharacter = useGame((s) => s.startCharacter);
-  const chosen = useGame((s) => s.portrait);
-  const setPortrait = useGame((s) => s.setPortrait);
   const [mode, setMode] = useState<'reveal' | 'class' | 'fix'>('reveal');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -52,7 +50,6 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
     );
   }
   const { profile, character } = view;
-  const figure = figureFor(chosen, profile.programStyle);
 
   const changeClass = async (classId: ClassId) => {
     setMode('reveal');
@@ -112,10 +109,8 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
             <Label tone="chalk">{classStats(CLASSES[profile.classId])}</Label>
           </View>
         </SlamIn>
-        <Portrait classId={profile.classId} level={character.level} figure={figure} maxWidth={210}
+        <Portrait classId={profile.classId} maxWidth={210}
           label={fillText(CHARACTER_TEXT.portrait, { className: CLASS_NAMES[profile.classId], level: character.level })} />
-        <Button label={CHARACTER_TEXT.switchPortrait} variant="secondary" onPress={() => void setPortrait(otherFigure(figure))}
-          style={{ alignSelf: 'center' }} />
         <NarrationBox>{busy ? T.rewriting : reveal.narrative}</NarrationBox>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           <Button label={T.change} variant="secondary" disabled={busy} onPress={() => setMode('class')} style={{ flexGrow: 1 }} />

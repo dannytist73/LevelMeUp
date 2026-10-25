@@ -4,8 +4,8 @@ import { colors } from '../theme/tokens.ts';
 
 export type IconName =
   | 'settings' | 'flame' | 'shield' | 'sun' | 'user' | 'calendar' | 'chevronLeft' | 'chevronRight'
-  // M10c: rows that open in place, the portrait's switch, a set done.
-  | 'chevronDown' | 'chevronUp' | 'switch' | 'check'
+  // M10c: rows that open in place, a set done.
+  | 'chevronDown' | 'chevronUp' | 'check'
   // M11: the Story Deck's close, arrows, keep and share.
   | 'close' | 'arrowLeft' | 'arrowRight' | 'bookmark' | 'share'
   // M12: the Library tab, offline and failed states, the reminder offer.
@@ -47,8 +47,6 @@ function shapes(name: IconName) {
       return [<Path key="p" d="M6 9l6 6 6-6" />];
     case 'chevronUp':
       return [<Path key="p" d="M18 15l-6-6-6 6" />];
-    case 'switch':
-      return [<Path key="p" d="M4 8h13l-3-3M20 16H7l3 3" />];
     case 'check':
       return [<Path key="p" d="M5 12l5 5 9-10" />];
     case 'close':

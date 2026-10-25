@@ -13,7 +13,7 @@ import { DEFAULT_NOTIFY, NOTIFY_KEY } from '../src/notify/settings.ts';
 import type { NoteOs, Permission, PlannedNote } from '../src/notify/types.ts';
 import { NEW_DRAFT, toRequest } from '../src/onboarding/flow.ts';
 import {
-  ART_KEY, CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, OFFERS_KEY, createGameStore,
+  CHECKIN_RESULT_KEY, CODEX_KEY, DRAFT_KEY, FRAME_KEY, HAPTICS_KEY, THEME_KEY, LAST_SETS_KEY, PORTRAIT_KEY, SHADOW_KEY, TIMERS_KEY, TRAINING_NOTICE_KEY, TRIAL_KEY, VOW_KEY, OFFERS_KEY, createGameStore,
 } from '../src/state/store.ts';
 import type { GameDeps } from '../src/state/store.ts';
 import { DRAFTS_KEY, flushDrafts, readDraft, restoredDraft, writeDraft } from '../src/state/drafts.ts';
@@ -89,7 +89,6 @@ async function setup(syncReplies: SyncReply[], over: Partial<GameDeps> = {}) {
     kv: blobs,
     account: jest.fn(async (): Promise<Account> => ({ kind: 'guest' })),
     google: { link: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })), signIn: jest.fn(async (): Promise<GoogleResult> => ({ ok: true })) },
-    artManifest: jest.fn(async (): Promise<unknown> => ({ version: 1, art: { 'ladder-push': 2 } })),
     notes: fakeNotes(),
     playerId: jest.fn(async () => '00000000-0000-4000-8000-0000000000aa'),
     ...over,
@@ -528,36 +527,14 @@ describe('the game store', () => {
     store.getState().stop();
   });
 
-  it('keeps the portrait figure on the phone and reads it at boot (M9a decision 5)', async () => {
-    const { store, local, kv } = await setup([ok(SERVER)]);
-    await local.acknowledge([], [], SERVER, 1);
-    kv.set(PORTRAIT_KEY, 'b');
-    expect(store.getState().portrait).toBeNull();
-    await store.getState().boot();
-    expect(store.getState().portrait).toBe('b');
-    await store.getState().setPortrait('a');
-    expect(store.getState().portrait).toBe('a');
-    expect(kv.get(PORTRAIT_KEY)).toBe('a');
-    expect(await local.pending(10)).toEqual([]); // cosmetic: nothing goes to the server (decision 5)
-    store.getState().stop();
-  });
-
-  it('reads an unreadable figure as no choice (M9a)', async () => {
-    const { store, local, kv } = await setup([ok(SERVER)]);
-    await local.acknowledge([], [], SERVER, 1);
-    kv.set(PORTRAIT_KEY, 'zz');
-    await store.getState().boot();
-    expect(store.getState().portrait).toBeNull();
-    store.getState().stop();
-  });
-
-  it('forgets the figure with the character (M9a decision 5)', async () => {
+  it("forgets an older install's portrait figure with the character (Monster Week: no figure is kept now)", async () => {
     const { store, local, kv } = await setup([{ ok: false, status: 404, code: 'not_started' }]);
     await local.acknowledge([], [], SERVER, 1);
-    await store.getState().setPortrait('b');
+    kv.set(PORTRAIT_KEY, 'b');
+    await store.getState().boot();
+    expect(kv.get(PORTRAIT_KEY)).toBe('b'); // read by nothing
     await store.getState().startOver();
     expect(kv.has(PORTRAIT_KEY)).toBe(false);
-    expect(store.getState().portrait).toBeNull();
     store.getState().stop();
   });
 
@@ -901,45 +878,6 @@ describe('celebrations (M6a decision 8)', () => {
     const { store } = await setup([ok(serverState([], { xp_strength: 400 }))]);
     await store.getState().boot();
     expect(store.getState().celebrations).toEqual([]);
-  });
-});
-
-describe('the art manifest (M6a decision 10)', () => {
-  it('is fetched after the first sync of a launch, kept on the phone, and read back at the next launch', async () => {
-    const { store, deps, kv } = await setup([ok(SERVER)]);
-    await store.getState().boot();
-    await settle();
-    expect(store.getState().art).toEqual({ version: 1, art: { 'ladder-push': 2 } });
-    await store.getState().syncNow();
-    await settle();
-    expect(deps.artManifest).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(kv.get(ART_KEY)!)).toEqual({ version: 1, art: { 'ladder-push': 2 } });
-    const next = createGameStore({ ...deps, artManifest: jest.fn(async () => null) });
-    made.push(next);
-    await next.getState().boot();
-    expect(next.getState().art).toEqual({ version: 1, art: { 'ladder-push': 2 } });
-  });
-
-  it('a manifest it can\'t read changes nothing, and the kept one stays', async () => {
-    const { store, deps, kv } = await setup([ok(SERVER)], { artManifest: jest.fn(async () => ({ version: 9 })) });
-    kv.set(ART_KEY, JSON.stringify({ version: 1, art: { 'ladder-walk': 1 } }));
-    await store.getState().boot();
-    await settle();
-    expect(deps.artManifest).toHaveBeenCalledTimes(1);
-    expect(store.getState().art).toEqual({ version: 1, art: { 'ladder-walk': 1 } });
-    expect(JSON.parse(kv.get(ART_KEY)!)).toEqual({ version: 1, art: { 'ladder-walk': 1 } });
-  });
-
-  it("is fetched for a new player too, whose first launch never synced a character (M6e device check)", async () => {
-    const { store, deps } = await setup([{ ok: false, status: 404, code: 'not_started' }], { ensureSession: guestSession() });
-    await store.getState().boot();
-    await settle();
-    expect(deps.artManifest).not.toHaveBeenCalled();
-    store.getState().editDraft(READY_DRAFT);
-    expect(await store.getState().startCharacter()).toEqual({ ok: true });
-    await settle();
-    expect(deps.artManifest).toHaveBeenCalledTimes(1);
-    expect(store.getState().art).toEqual({ version: 1, art: { 'ladder-push': 2 } });
   });
 });
 

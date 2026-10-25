@@ -20,8 +20,8 @@ import { colors } from '../src/theme/tokens.ts';
 import { FadeIn } from '../src/ui/FadeIn.tsx';
 import { InkBurst } from '../src/ui/InkBurst.tsx';
 import {
-  BURST_FROM, EMBERS, FILL_MS, GLOW_SHARE, INK_FROM, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SETTLE_MS, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
-  inkDrops, SHADOW_EYES,
+  BURST_FROM, EMBERS, FILL_MS, INK_FROM, FLASH_MS, MOMENTS, REFILL_MS, RISE_MS, RISE_PX, SETTLE_MS, SLAM_MS, SLAM_PX, THUD_FROM, THUD_SETTLE_MS, WRAP_FILL_MS, countPlan, fillSegments,
+  inkDrops,
 } from '../src/ui/motion.ts';
 import type { BarPoint, CountPlan } from '../src/ui/motion.ts';
 import * as motion from '../src/ui/motion.ts';
@@ -69,7 +69,6 @@ describe('the motion numbers (M10a decisions 3–5)', () => {
       MOMENTS.cleared.bar + WRAP_FILL_MS + FLASH_MS + REFILL_MS, // the longest: a level crossed
       MOMENTS.cleared.rank + THUD_SETTLE_MS,
       MOMENTS.level.line + SLAM_MS,
-      MOMENTS.level.portrait + RISE_MS,
       MOMENTS.achievement.rest + RISE_MS,
       MOMENTS.reveal.panel + SLAM_MS,
       MOMENTS.shadow.stamp + THUD_SETTLE_MS,
@@ -318,15 +317,14 @@ describe('Quest cleared moves (M10a decision 4)', () => {
 });
 
 describe('level-ups and achievements move (M10a decision 4)', () => {
-  it('a level-up: bursting lines, a thud in a bigger splash, the portrait rising, the line slamming in', async () => {
+  it('a level-up: bursting lines, a thud in a bigger splash, the line slamming in', async () => {
     await render(withStore(testStore({ view: project(serverState(), []), celebrations: [{ kind: 'level', level: 5, from: 4 }] }), <Celebration />));
     expect(flat(screen.getByTestId('speed-lines', hidden).props.style).transform).toBeDefined();
     expect(screen.getByTestId('level-thud')).toBeTruthy();
     expect(screen.getByText('Lv 5')).toBeTruthy();
     expect(screen.getAllByTestId('ink-drop', hidden)).toHaveLength(16);
-    expect(screen.getAllByTestId('fade-in')).toHaveLength(3); // the portrait, its line and (M17) the new ability
+    expect(screen.getAllByTestId('fade-in')).toHaveLength(1); // (M17) the new ability; the portrait went with its paintings
     expect(screen.getAllByTestId('slam-in')).toHaveLength(2); // LEVEL UP and the System's line
-    expect(screen.getByText(PLAY_TEXT.celebration.portrait)).toBeTruthy();
     expect(screen.getByText('New ability: Second Wind')).toBeTruthy(); // M17: a Warrior's level 5
   });
 
@@ -367,11 +365,11 @@ describe('the reveal, the Shadow and the vow move (M10a decision 4)', () => {
     expect(screen.getAllByTestId('slam-in')).toHaveLength(1);
   });
 
-  it('the Shadow: the painting creeps, the box slams in, the claimed stamp thuds', async () => {
+  it('the Shadow: it creeps, the box slams in, the claimed stamp thuds', async () => {
     await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
       <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
     expect(flat(screen.getByTestId('shadow-creep', hidden).props.style).transform).toBeDefined();
-    expect(screen.getByTestId('shadow-art', hidden)).toBeTruthy();
+    expect(screen.getByTestId('shadow-eyes', hidden)).toBeTruthy();
     expect(screen.getAllByTestId('slam-in')).toHaveLength(1);
     expect(screen.getByTestId('claimed-thud')).toBeTruthy();
     expect(screen.getByText(/^Claimed · /)).toBeTruthy();
@@ -420,15 +418,6 @@ describe('Today and Me move only when something changes (M10a decision 7; Monste
 });
 
 describe("the living Shadow's numbers (M10b spec decision 7)", () => {
-  it('the glows sit on the painted eyes, whole inside the frame', () => {
-    expect(SHADOW_EYES).toEqual([{ x: 0.488, y: 0.227 }, { x: 0.533, y: 0.227 }]); // measured from shadow.webp, 960 × 540
-    for (const eye of SHADOW_EYES) {
-      expect(eye.x - GLOW_SHARE / 2).toBeGreaterThan(0);
-      expect(eye.x + GLOW_SHARE / 2).toBeLessThan(1);
-      expect(eye.y - (GLOW_SHARE / 2) * (16 / 9)).toBeGreaterThan(0); // the glow is square; the frame 16:9
-    }
-  });
-
   it('ten embers from a fixed table, starting in its lower half, small and slow', () => {
     expect(EMBERS).toHaveLength(10);
     expect(EMBERS.filter((e) => e.y < 0.5 || e.y >= 1 || e.x <= 0 || e.x >= 1)).toEqual([]);

@@ -23,7 +23,6 @@ const noop = async () => {};
 export default function OfflinePreview() {
   const insets = useSafeAreaInsets();
   const cached = useGame((s) => s.cached);
-  const art = useGame((s) => s.art);
   const preview = useMemo(() => {
     if (cached === null) return null;
     const shown = project(cached.state, []);
@@ -36,8 +35,8 @@ export default function OfflinePreview() {
     const view = project(cached.state, [built]);
     const store = createStore(() => ({
       // M17: what Today reads since M12/M13 (the preview crashed on `account` without it).
-      account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [], portrait: null,
-      phase: 'ready', view, art, status: 'offline', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
+      account: { kind: 'guest' }, accountKnown: true, offers: [], vow: null, markOffer: noop, articles: {}, codex: [],
+      phase: 'ready', view, status: 'offline', notices: [], signInLost: false, updateRequired: false, trainingNoticeSeen: true, lastSyncedAt: null,
       checkinLater: null, checkinResultSeen: null,
       // Premium pass A3, A6: Today reads the refused sync, what waits, and the cached state (the day's deadline).
       error: null, pending: [built], cached: { state: cached.state, syncedAt: 0 },
@@ -45,7 +44,7 @@ export default function OfflinePreview() {
       answerLater: () => {}, reopen: () => {}, dismissCheckinResult: noop,
     })) as unknown as StoreApi<GameState>;
     return { store, at };
-  }, [cached, art]);
+  }, [cached]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>

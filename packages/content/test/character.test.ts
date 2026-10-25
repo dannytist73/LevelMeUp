@@ -2,17 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from '../src/achievements.ts';
 import { ABILITIES_LATER, BOOK_TEXT, CHARACTER_TEXT, CHRONICLE_TEXT, growthLine, latestTitle } from '../src/character.ts';
 import { lintText } from '../src/lint.ts';
-import { PLAY_TEXT, fillText } from '../src/play.ts';
+import { fillText } from '../src/play.ts';
 
 const strings = (value: unknown): string[] =>
   typeof value === 'string' ? [value] : typeof value === 'object' && value !== null ? Object.values(value).flatMap(strings) : [];
 
 describe('the words of Character, Chronicle and Scholar\'s Path (M6d)', () => {
-  it('names the portrait switch and the new portrait (M9a)', () => {
-    expect(CHARACTER_TEXT.switchPortrait).toBe('Switch portrait');
-    expect(PLAY_TEXT.celebration.portrait).toBe('Your portrait has changed.');
-  });
-
   it('pass the lint', () => {
     const all = [...strings(CHARACTER_TEXT), ...strings(CHRONICLE_TEXT), ...strings(BOOK_TEXT)];
     expect(all.length).toBeGreaterThan(40);

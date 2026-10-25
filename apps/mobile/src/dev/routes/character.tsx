@@ -60,7 +60,7 @@ export default function CharacterPreview() {
   const real = useGame((s) => s.view);
   const [tab, setTab] = useState<'character' | 'chronicle'>('character');
   const store = useMemo(
-    () => (real === null ? null : (createStore(() => ({ view: scholar(real), vow: 'I rise before the sun.', status: 'idle', lastSyncedAt: null, portrait: null, setPortrait: async () => {} })) as unknown as StoreApi<GameState>)),
+    () => (real === null ? null : (createStore(() => ({ view: scholar(real), vow: 'I rise before the sun.', status: 'idle', lastSyncedAt: null })) as unknown as StoreApi<GameState>)),
     [real],
   );
   return (

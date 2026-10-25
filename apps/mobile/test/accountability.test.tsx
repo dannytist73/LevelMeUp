@@ -33,10 +33,10 @@ describe("the Shadow's look (visual spec §2–3)", () => {
   it('marks the header and the portrait, and says so to screen readers', async () => {
     await render(<ShadowMark label={SHADOW_TEXT.mark} accessibilityLabel={SHADOW_TEXT.markLabel} />);
     expect(screen.getByLabelText(SHADOW_TEXT.markLabel)).toBeTruthy();
-    await render(<Portrait classId="warrior" level={3} figure="a" label="Warrior, level 3" marked />);
+    await render(<Portrait classId="warrior" label="Warrior, level 3" marked />);
     expect(screen.getByLabelText('Warrior, level 3')).toBeTruthy();
     expect(screen.getByTestId('shadow-mark', { includeHiddenElements: true })).toBeTruthy();
-    await render(<Portrait classId="warrior" level={3} figure="a" label="Warrior, level 3" />);
+    await render(<Portrait classId="warrior" label="Warrior, level 3" />);
     expect(screen.queryByTestId('shadow-mark', { includeHiddenElements: true })).toBeNull();
   });
 });

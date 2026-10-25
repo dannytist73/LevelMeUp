@@ -13,7 +13,6 @@ export const PLAY_TEXT = {
     gone: "This quest's day has closed. Today's quests are on the Today tab.",
     article: "Today's reading opens once the daily articles arrive. Nothing is lost while it waits.",
     willSync: 'Will sync',
-    picture: '{stat} quest picture',
     slots: { core: 'Core quest', side: 'Side quest', article: "Today's reading", recovery: 'Recovery quest' },
     /** M12 (board R3-2): under the fixed button of a rep log or a workout. */
     kept: 'Your sets are kept for next time.',
@@ -126,8 +125,6 @@ export const PLAY_TEXT = {
     level: 'Level {level}. The System marks your growth.',
     achievementLabel: 'Achievement',
     titleEarned: 'Title earned: {title}',
-    /** M9a decision 8: a level-up that changes the portrait's tier (levels 5 and 10). */
-    portrait: 'Your portrait has changed.',
     /** M17: a level that unlocks a class ability says which (levels 5 and 10). */
     ability: 'New ability: {name}',
     continue: 'Continue',

@@ -23,7 +23,7 @@ export const PRIVACY_TEXT = {
     },
     {
       title: 'Kept only on this phone',
-      lines: ['Your vow, your portrait choice, your notification times, the lessons you keep in your Codex, articles saved for days without a connection, and anything not yet sent.'],
+      lines: ['Your vow, your notification times, the lessons you keep in your Codex, articles saved for days without a connection, and anything not yet sent.'],
     },
     {
       title: 'Never kept',
