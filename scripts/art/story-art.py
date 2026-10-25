@@ -104,7 +104,12 @@ SCENES = {
 FRAME = "medium wide shot, one person, the face clearly visible, quiet everyday moment"
 
 # Filled in after picking from the sheets: article -> seed.
-PICKS: dict[str, int] = {}
+PICKS: dict[str, int] = {
+    "article-9": 22, "article-20": 11, "article-21": 11, "article-22": 11, "article-23": 22, "article-24": 22, "article-25": 11,
+    "article-27": 22, "article-28": 11, "article-29": 11, "article-30": 11, "article-31": 11, "article-32": 22, "article-33": 11,
+    "article-34": 22, "article-35": 11, "article-36": 11, "article-37": 11, "article-55": 11, "article-56": 11, "article-122": 11,
+    "article-140": 11, "article-141": 11, "article-142": 11, "article-143": 22, "article-144": 11,
+}  # picked 2026-10-26 from the sheets: the regular clear, the little monster whole and apart from them
 
 
 def workflow(prompt: str, seed: int, prefix: str, size: tuple[int, int] = (W, H)) -> dict:
