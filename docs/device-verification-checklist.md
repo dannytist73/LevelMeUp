@@ -864,3 +864,23 @@ The Find X9 column is the owner's, on the 0.11.0 preview APK built 2026-10-25 03
 | 8 | A day built offline past the battle's last day: the arena says "This battle is over. Its result shows once you're back online."; reconnect: the result plays. | Find X9: |
 | 9 | Settings → Your look: Monster Night is free and in use; Moonlight, System Blue and Mint Night are Plus. | Find X9: |
 | 10 | A missed day whose check-in isn't answered: the arena says "Snoozle waits for your check-in. Answer it, and the battle plays." with no clock or bar; answered sick, injured or emergency, that day asks nothing of the battle. | **Pass** 2026-10-25, emulator (Vera has one waiting; shown, not answered). Find X9: |
+
+## Monster Buddy (branch `monster-week`, 2026-10-25)
+
+Plan: `docs/2026-10-25-monster-buddy.md`. No server change. The earlier generated pictures are out of the app (class
+portraits, the old Shadow painting, quest and lesson pictures); the 24 Grumbles are painted in clay; your class hatches a
+buddy (Warrior Pummel, Mage Starkit, Rogue Whisk, Monk Mochi) that grows at levels 5 and 10; the Shadow is painted again in
+clay. Use a NEW test character for every row that clears or levels (never Vera).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Every Grumble is a painted clay monster (arena, battle, camp, Grumble book), breathing and blinking; the book's unmet ones are dark silhouettes; no green fringe or holes on the pale ones (Cloudle, Blurb, Tabbit). | Find X9: |
+| 2 | Sign-up's reveal: the class's buddy in the portrait frame, "Pummel hatched!" and its line; Change class lists each class's buddy. | Find X9: |
+| 3 | Me: the buddy alive in the frame, "Pummel · little" beside the level; TalkBack reads "Pummel, your Warrior buddy, little, level 1". | Find X9: |
+| 4 | A level-up to 5 (and 10): "Pummel grew!" with the buddy cheering at its new size, then the ability; other levels show no growing. | Find X9: |
+| 5 | A decided battle: the buddy in the lower left throws the shots from its paw into the Grumble; a win, it cheers; a loss, it stands as it was. | Find X9: |
+| 6 | Camp: the buddy beside the fire, "Pummel keeps the fire." | Find X9: |
+| 7 | Today's Up next (core quest): the buddy doing that quest across the card's top, Begin still on the first screen; the quest screen's How shows it too. | Find X9: |
+| 8 | The Shadow's scene: the clay Shadow, its eyes glowing and pulsing, embers rising; with Remove animations, still. | Find X9: |
+| 9 | A Plus frame and the Shadow's mark still draw over the portrait. | Find X9: |
+| 10 | Change class (Me → Change class): each class names its buddy; after the change, Me shows the new class's buddy. | Find X9: |

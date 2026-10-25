@@ -1,5 +1,5 @@
 import {
-  CLASS_DAYS, GOAL_CHOICES, GOOGLE_ERRORS, OBSTACLES, ONBOARDING_TEXT, SAFETY_CHECK, SETUP_TEXT, SLIP_SUGGESTIONS, classStats, routineLine,
+  BUDDIES, BUDDY_TEXT, CLASS_DAYS, GOAL_CHOICES, GOOGLE_ERRORS, OBSTACLES, ONBOARDING_TEXT, SAFETY_CHECK, SETUP_TEXT, SLIP_SUGGESTIONS, classStats, fillText, routineLine,
 } from '@levelmeup/content';
 import { CLASSES } from '@levelmeup/rules';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
@@ -261,7 +261,7 @@ describe('Character reveal (O08)', () => {
   it('changing class runs the analysis again with the player\'s class', async () => {
     const store = await show(<Reveal onAccept={() => {}} onFix={() => {}} />, READY_DRAFT, revealed());
     await fireEvent.press(screen.getByRole('button', { name: ONBOARDING_TEXT.reveal.change }));
-    await fireEvent.press(screen.getByRole('radio', { name: `Monk. ${classStats(CLASSES.monk)}. ${CLASS_DAYS.monk}` }));
+    await fireEvent.press(screen.getByRole('radio', { name: `Monk. ${classStats(CLASSES.monk)}. ${CLASS_DAYS.monk} ${fillText(BUDDY_TEXT.becomes, BUDDIES.monk)}.` }));
     await waitFor(() => expect(store.getState().startCharacter).toHaveBeenCalled());
     expect(store.getState().draft.classId).toBe('monk');
   });

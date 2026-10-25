@@ -2,14 +2,16 @@
 // one at a time, with speed lines and Continue. A modal, so the screen behind can't be tapped or reached by TalkBack, and
 // Back dismisses it (emulator check: a plain overlay let taps through to "Quest cleared"). M9a's new portrait at levels 5
 // and 10 went with its paintings (Monster Week). M10a: each moves (spec decision 4) and is keyed, so the next one plays
-// afresh (plan decision 6).
+// afresh (plan decision 6). Monster Buddy: at levels 5 and 10 your buddy grows here, cheering.
 // M10b: the double click as "LV n" lands, the firm click as an achievement's name lands.
-import { ABILITY_LINES, ABILITY_NAMES, ACHIEVEMENTS, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { ABILITY_LINES, ABILITY_NAMES, ACHIEVEMENTS, BUDDIES, BUDDY_TEXT, CLASS_NAMES, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { ABILITIES, ABILITY_IDS } from '@levelmeup/rules';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { buddyGrows, buddySizeName } from '../game/buddy.ts';
 import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
+import { BuddyArt } from '../ui/BuddyArt.tsx';
 import { Button } from '../ui/Button.tsx';
 import { FadeIn } from '../ui/FadeIn.tsx';
 import { InkBurst } from '../ui/InkBurst.tsx';
@@ -35,12 +37,25 @@ export function Celebration() {
     const unlocked = view === null ? [] : ABILITY_IDS.filter((a) =>
       ABILITIES[a].classId === view.profile.classId && ABILITIES[a].level > next.from && ABILITIES[a].level <= next.level);
     const M = MOMENTS.level;
+    const classId = view?.profile.classId;
+    const buddy = classId === undefined ? undefined : BUDDIES[classId];
+    const size = buddySizeName(next.level);
     body = (
       <>
         <SlamIn delay={M.label}><Label tone="accentText">{T.levelLabel}</Label></SlamIn>
         <InkBurst count={16} radius={120} delay={M.number}>
           <Thud delay={M.number} haptic="level" sound="level" testID="level-thud"><Display>{`Lv ${next.level}`}</Display></Thud>
         </InkBurst>
+        {classId !== undefined && buddy !== undefined && buddyGrows(next.from, next.level) && (
+          <FadeIn rise delay={M.line}>
+            <View testID="buddy-grew" style={{ alignItems: 'center', gap: 6 }}>
+              <BuddyArt classId={classId} level={next.level} size={200} pose="happy"
+                accessibilityLabel={fillText(BUDDY_TEXT.label, { name: buddy.name, className: CLASS_NAMES[classId], size, level: next.level })} />
+              <Title style={{ textAlign: 'center' }}>{fillText(BUDDY_TEXT.grew, buddy)}</Title>
+              <Body style={{ textAlign: 'center' }}>{fillText(BUDDY_TEXT.grewLine, { level: next.level, name: buddy.name, size })}</Body>
+            </View>
+          </FadeIn>
+        )}
         <SlamIn delay={M.line} style={{ alignSelf: 'stretch' }}><NarrationBox>{fillText(T.level, { level: next.level })}</NarrationBox></SlamIn>
         {unlocked.map((a) => (
           <FadeIn key={a} rise delay={M.line}>

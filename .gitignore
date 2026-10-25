@@ -31,3 +31,6 @@ art/story/_set.jpg
 
 # Grumble renders (Monster Week): only the picked stills are kept
 art/grumbles/renders/
+# Buddy renders (Monster Buddy): only the picked stills in apps/mobile/assets/buddies are kept
+art/buddies/renders/
+__pycache__/

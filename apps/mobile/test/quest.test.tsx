@@ -271,11 +271,11 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     expect(screen.getByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeTruthy();
   });
 
-  it('shows no picture with the steps (Monster Week: the M6a pictures are retired)', async () => {
+  it('shows your buddy doing it with the steps (Monster Buddy; the M6a pictures are retired)', async () => {
     const core = coreOf(SERVER);
     await renderQuest(SERVER, core.id);
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.steps }));
-    expect(screen.queryByTestId('quest-art', { includeHiddenElements: true })).toBeNull();
+    expect(screen.getByTestId('quest-art', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeNull();
   });
 

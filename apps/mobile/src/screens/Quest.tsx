@@ -5,7 +5,7 @@
 // M12 (Round 3, board R3-2; audit 2, 9, 10, 12): one top bar; the title, then the log first, its button fixed at the
 // bottom; How and Why fold below, Safety stays open; Cleared leads on to the next quest; a half-written takeaway waits.
 import {
-  ADJUST_TEXT, BOOK_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES,
+  ADJUST_TEXT, BOOK_TEXT, BUDDIES, BUDDY_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey,
   authoredTemplate, fillText, programBlockLabel, questSummary, renderWhy, shadowLine,
 } from '@levelmeup/content';
 import { swapLimit } from '@levelmeup/rules';
@@ -30,6 +30,7 @@ import { Appear } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { NarrationBox } from '../ui/NarrationBox.tsx';
+import { QuestArt } from '../ui/QuestArt.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
@@ -422,6 +423,9 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
             <RowLink label={T.steps} open={showHow} onPress={() => setShowHow((s) => !s)} />
             {showHow && (
               <Appear style={{ gap: 10, paddingHorizontal: 4 }}>
+                {/* Monster Buddy: your buddy doing this kind of quest. */}
+                <QuestArt classId={view.profile.classId} artKey={artKey(template, quest.condition)}
+                  label={fillText(BUDDY_TEXT.questPicture, { name: BUDDIES[view.profile.classId].name, stat: STAT_NAMES[quest.stat] })} />
                 {hasHow && template.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
               </Appear>
             )}

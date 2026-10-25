@@ -1,6 +1,7 @@
 // Class change (spec §2.5; M6b decision 9): the four classes with their typical day, stats and abilities; at most one
 // change every 14 days. Level, XP, stats and achievements stay; abilities follow the class at the player's level.
-import { ABILITY_LINES, ABILITY_NAMES, ADJUST_TEXT, CLASS_DAYS, CLASS_NAMES, FEEDBACK_TEXT, classStats, fillText } from '@levelmeup/content';
+// Monster Buddy: so does the buddy, and each class names the one it brings.
+import { ABILITY_LINES, ABILITY_NAMES, ADJUST_TEXT, BUDDIES, BUDDY_TEXT, CLASS_DAYS, CLASS_NAMES, FEEDBACK_TEXT, classStats, fillText } from '@levelmeup/content';
 import { ABILITIES, ABILITY_IDS, CLASSES, classChangeOpensAt } from '@levelmeup/rules';
 import type { AbilityId, ClassId } from '@levelmeup/rules';
 import { useState } from 'react';
@@ -91,7 +92,7 @@ export function ClassChange({ onDone, onBack, now = Date.now }: ClassChangeProps
             <OptionCard
               key={c}
               label={c === current ? fillText(T.current, { class: CLASS_NAMES[c] }) : CLASS_NAMES[c]}
-              detail={`${classStats(CLASSES[c])}. ${CLASS_DAYS[c]} ${fillText(T.levels, { five: ABILITY_NAMES[five!], ten: ABILITY_NAMES[ten!] })}`}
+              detail={`${classStats(CLASSES[c])}. ${CLASS_DAYS[c]} ${fillText(T.levels, { five: ABILITY_NAMES[five!], ten: ABILITY_NAMES[ten!] })} ${fillText(BUDDY_TEXT.becomes, BUDDIES[c])}.`}
               selected={picked === c}
               disabled={lock !== null || c === current}
               // M17 (UX audit O11): every class stays readable, the current one and while changes are locked too.

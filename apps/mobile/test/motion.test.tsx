@@ -323,7 +323,7 @@ describe('level-ups and achievements move (M10a decision 4)', () => {
     expect(screen.getByTestId('level-thud')).toBeTruthy();
     expect(screen.getByText('Lv 5')).toBeTruthy();
     expect(screen.getAllByTestId('ink-drop', hidden)).toHaveLength(16);
-    expect(screen.getAllByTestId('fade-in')).toHaveLength(1); // (M17) the new ability; the portrait went with its paintings
+    expect(screen.getAllByTestId('fade-in')).toHaveLength(2); // the buddy growing (Monster Buddy) and (M17) the new ability
     expect(screen.getAllByTestId('slam-in')).toHaveLength(2); // LEVEL UP and the System's line
     expect(screen.getByText('New ability: Second Wind')).toBeTruthy(); // M17: a Warrior's level 5
   });
@@ -369,7 +369,7 @@ describe('the reveal, the Shadow and the vow move (M10a decision 4)', () => {
     await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
       <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
     expect(flat(screen.getByTestId('shadow-creep', hidden).props.style).transform).toBeDefined();
-    expect(screen.getByTestId('shadow-eyes', hidden)).toBeTruthy();
+    expect(screen.getByTestId('shadow-art', hidden)).toBeTruthy();
     expect(screen.getAllByTestId('slam-in')).toHaveLength(1);
     expect(screen.getByTestId('claimed-thud')).toBeTruthy();
     expect(screen.getByText(/^Claimed · /)).toBeTruthy();

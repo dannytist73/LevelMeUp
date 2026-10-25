@@ -72,15 +72,11 @@ export type GrumbleArtProps = {
   accessibilityLabel?: string;
 };
 
-export function GrumbleArt({ id, weakness, size, pose = 'idle', silhouette = false, living = true, hitKey = 0, accessibilityLabel }: GrumbleArtProps) {
-  const reduce = useReduce();
-  const active = useAppActive();
-  const alive = living && !silhouette && !reduce && active;
+/** Breathing (0 to 1 and back, for a scale) and, now and then, a blink, while `alive`; asleep, no blink. `first` staggers
+ * the blinks of creatures side by side. Monster Buddy: the buddies live the same way (BuddyArt). */
+export function useBreathBlink(alive: boolean, pose: string, first: number) {
   const breath = useSharedValue(0);
-  const squash = useSharedValue(0);
   const [blink, setBlink] = useState(false);
-  const [hit, setHit] = useState(false);
-  const firstHit = useRef(hitKey);
 
   useEffect(() => {
     if (!alive) return;
@@ -93,7 +89,7 @@ export function GrumbleArt({ id, weakness, size, pose = 'idle', silhouette = fal
 
   useEffect(() => {
     if (!alive || pose === 'sleep') return;
-    let turn = id.length;
+    let turn = first;
     let timer: ReturnType<typeof setTimeout>;
     const next = () => {
       timer = setTimeout(() => {
@@ -110,7 +106,19 @@ export function GrumbleArt({ id, weakness, size, pose = 'idle', silhouette = fal
       clearTimeout(timer);
       setBlink(false);
     };
-  }, [alive, pose, id]);
+  }, [alive, pose, first]);
+
+  return { breath, blink };
+}
+
+export function GrumbleArt({ id, weakness, size, pose = 'idle', silhouette = false, living = true, hitKey = 0, accessibilityLabel }: GrumbleArtProps) {
+  const reduce = useReduce();
+  const active = useAppActive();
+  const alive = living && !silhouette && !reduce && active;
+  const { breath, blink } = useBreathBlink(alive, pose, id.length);
+  const squash = useSharedValue(0);
+  const [hit, setHit] = useState(false);
+  const firstHit = useRef(hitKey);
 
   useEffect(() => {
     if (hitKey === firstHit.current) return;

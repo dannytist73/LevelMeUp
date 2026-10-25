@@ -1,19 +1,49 @@
-// The Shadow (board F2): a 16:9 dark with two ember eyes. M9a's painting is gone (Monster Week: the owner retired the
-// earlier pictures), so the dark and its eyes are the Shadow until it is drawn again. M10a: it creeps closer over four
-// seconds, once. M10b (spec decision 7): it lives. The eyes pulse, embers rise from its lower half, and after the creep
-// it breathes. The one screen that keeps moving while it's open: nothing runs while LevelMeUp is in the background, and
+// The Shadow (board F2): a 16:9 painting. M9a's went with Monster Week (the owner retired the earlier pictures); Monster
+// Buddy paints it again in clay, shipped in the app, a hooded figure of dark smoke with two glowing eyes. M10a: it creeps
+// closer over four seconds, once. M10b (spec decision 7): it lives. A glow pulses over each painted eye, embers rise from
+// its lower half, and after the creep it breathes. The one screen that keeps moving while it's open: nothing runs while LevelMeUp is in the background, and
 // with reduced motion it is still.
 import { SHADOW_TEXT } from '@levelmeup/content';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { colors, radius } from '../theme/tokens.ts';
-import { BREATH_MS, BREATH_TO, CREEP_MS, CREEP_TO, EMBERS, PULSE_FROM, PULSE_MS, PULSE_TO, delayed, forever, timing } from './motion.ts';
-import type { Ember as EmberSpec } from './motion.ts';
+import {
+  BREATH_MS, BREATH_TO, CREEP_MS, CREEP_TO, EMBERS, GLOW_SHARE, PULSE_FROM, PULSE_MS, PULSE_TO, SHADOW_EYES, delayed, forever, timing,
+} from './motion.ts';
+import type { Ember as EmberSpec, ShadowEye } from './motion.ts';
 import { useAppActive, useReduce } from './useMotion.ts';
 
 const T = SHADOW_TEXT;
+const PAINTING = require('../../assets/shadow/shadow.webp');
+
+/** A soft red glow over one painted eye; both share the pulse. */
+function Glow({ eye, id, pulse }: { eye: ShadowEye; id: string; pulse: SharedValue<number> }) {
+  const glowing = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  // Placed by its corner: a percentage width is of the frame's width but a percentage top of its height (and Yoga reads a
+  // placed view's top margin against the height too; review), so the square's half side is GLOW_SHARE / 2 across and
+  // that times 16/9 down the 16:9 frame.
+  const corner = { left: `${(eye.x - GLOW_SHARE / 2) * 100}%`, top: `${(eye.y - (GLOW_SHARE / 2) * (16 / 9)) * 100}%` } as const;
+  return (
+    <Animated.View
+      testID="eye-glow"
+      style={[{ position: 'absolute', ...corner, width: `${GLOW_SHARE * 100}%`, aspectRatio: 1 }, glowing]}
+    >
+      <Svg width="100%" height="100%" viewBox="0 0 100 100">
+        <Defs>
+          <RadialGradient id={id} cx="50" cy="50" r="50" gradientUnits="userSpaceOnUse">
+            <Stop offset="0" stopColor={colors.shadow} stopOpacity={0.9} />
+            <Stop offset="0.4" stopColor={colors.shadow} stopOpacity={0.45} />
+            <Stop offset="1" stopColor={colors.shadow} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx="50" cy="50" r="50" fill={`url(#${id})`} />
+      </Svg>
+    </Animated.View>
+  );
+}
 
 /** One ember: it rises, drifting a little, fading in and out, then starts again. */
 function Ember({ ember, running }: { ember: EmberSpec; running: boolean }) {
@@ -73,19 +103,15 @@ export function ShadowArt() {
     };
   }, [reduce, active, pulse]);
   const moving = useAnimatedStyle(() => ({ transform: [{ scale: creep.value * breath.value }] }));
-  const smouldering = useAnimatedStyle(() => ({ opacity: Math.min(1, pulse.value + 0.15) }));
-  const eye = { width: 34, height: 7, backgroundColor: colors.shadow };
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={T.art}
       style={{ width: '100%', aspectRatio: 16 / 9, overflow: 'hidden', borderRadius: radius.card, backgroundColor: colors.void }}>
       <Animated.View testID="shadow-creep" pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }, reduce ? null : moving]}>
-        <Animated.View testID="shadow-eyes" style={[{ flexDirection: 'row', gap: 22 }, reduce ? null : smouldering]}>
-          <View style={[eye, { transform: [{ rotate: '10deg' }] }]} />
-          <View style={[eye, { transform: [{ rotate: '-10deg' }] }]} />
-        </Animated.View>
+        style={[StyleSheet.absoluteFill, reduce ? null : moving]}>
+        <Image testID="shadow-art" source={PAINTING} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
         {!reduce && (
           <View testID="shadow-life" pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={StyleSheet.absoluteFill}>
+            {SHADOW_EYES.map((e, i) => <Glow key={i} eye={e} id={`shadow-eye-${i}`} pulse={pulse} />)}
             {EMBERS.map((e, i) => <Ember key={i} ember={e} running={living} />)}
           </View>
         )}

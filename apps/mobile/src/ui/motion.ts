@@ -122,7 +122,13 @@ export function inkDrops(count: number, radius: number): InkDrop[] {
   });
 }
 
-/** M10b (spec decision 7): the living Shadow. The eyes' pulse: opacity from PULSE_FROM to PULSE_TO and back, PULSE_MS each way (a 3-second breath). */
+/** M10b (spec decision 7): the living Shadow. Monster Buddy: it is painted again, in clay. Where the painted eyes are, as
+ * shares of the frame (measured from assets/shadow/shadow.webp, 1280 × 720), and the glow's width as a share of the
+ * frame's. */
+export type ShadowEye = { x: number; y: number };
+export const SHADOW_EYES: readonly ShadowEye[] = [{ x: 0.454, y: 0.419 }, { x: 0.561, y: 0.419 }];
+export const GLOW_SHARE = 0.09;
+/** The eyes' pulse: opacity from PULSE_FROM to PULSE_TO and back, PULSE_MS each way (a 3-second breath). */
 export const PULSE_MS = 1_500;
 export const PULSE_FROM = 0.3;
 export const PULSE_TO = 0.85;

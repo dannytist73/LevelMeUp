@@ -2,15 +2,17 @@
 // estimates. "Change class" and "Fix an assumption" run the analysis again (the server allows it until the first
 // action). M9a: the class portrait (Monster Week: its emblem alone; the paintings and Switch portrait are gone). M10a:
 // the lines burst once and the class panel slams in. M12 (plan decision 7): the slip question and the Pact moved to day
-// 2's card; Accept ends the onboarding.
+// 2's card; Accept ends the onboarding. Monster Buddy: the class hatches its buddy here, in the portrait, named under it,
+// and each class to choose from says which buddy it brings.
 // M17 (UX audit 2026-10-20, O2): Accept stays in a bar at the bottom (it sat about 1,400 dp down, under the stats and the
 // routine); Change class and Fix an assumption sit together under the System's words; the portrait is a little smaller.
-import { CHARACTER_TEXT, CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, STAT_NAMES, classStats, fillText, routineLine } from '@levelmeup/content';
+import { BUDDIES, BUDDY_TEXT, CLASS_DAYS, CLASS_NAMES, ONBOARDING_TEXT, STAT_NAMES, classStats, fillText, routineLine } from '@levelmeup/content';
 import { CLASSES, STATS } from '@levelmeup/rules';
 import type { ClassId } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { buddySizeName } from '../../game/buddy.ts';
 import { STEP_PATH, asksMind } from '../../onboarding/flow.ts';
 import { useGame } from '../../state/store.ts';
 import { space } from '../../theme/tokens.ts';
@@ -50,6 +52,8 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
     );
   }
   const { profile, character } = view;
+  const className = CLASS_NAMES[profile.classId];
+  const buddy = BUDDIES[profile.classId];
 
   const changeClass = async (classId: ClassId) => {
     setMode('reveal');
@@ -75,7 +79,8 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
       <View style={{ gap: 12 }}>
         <Heading>{T.pickClass}</Heading>
         {CLASS_IDS.map((c) => (
-          <OptionCard key={c} label={CLASS_NAMES[c]} detail={`${classStats(CLASSES[c])}. ${CLASS_DAYS[c]}`} selected={c === profile.classId}
+          <OptionCard key={c} label={CLASS_NAMES[c]} selected={c === profile.classId}
+            detail={`${classStats(CLASSES[c])}. ${CLASS_DAYS[c]} ${fillText(BUDDY_TEXT.becomes, BUDDIES[c])}.`}
             onPress={() => void changeClass(c)} />
         ))}
         <Button label={T.back} variant="secondary" onPress={() => setMode('reveal')} />
@@ -109,8 +114,12 @@ export function Reveal({ onAccept, onFix }: { onAccept: () => void; onFix: (path
             <Label tone="chalk">{classStats(CLASSES[profile.classId])}</Label>
           </View>
         </SlamIn>
-        <Portrait classId={profile.classId} maxWidth={210}
-          label={fillText(CHARACTER_TEXT.portrait, { className: CLASS_NAMES[profile.classId], level: character.level })} />
+        <Portrait classId={profile.classId} level={character.level} maxWidth={210}
+          label={fillText(BUDDY_TEXT.label, { name: buddy.name, className, size: buddySizeName(character.level), level: character.level })} />
+        <View style={{ gap: 4, alignItems: 'center' }}>
+          <Title style={{ textAlign: 'center' }}>{fillText(BUDDY_TEXT.hatched, buddy)}</Title>
+          <Body style={{ textAlign: 'center' }}>{fillText(BUDDY_TEXT.hatchedLine, { className, kind: buddy.kind })}</Body>
+        </View>
         <NarrationBox>{busy ? T.rewriting : reveal.narrative}</NarrationBox>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           <Button label={T.change} variant="secondary" disabled={busy} onPress={() => setMode('class')} style={{ flexGrow: 1 }} />

@@ -1,11 +1,12 @@
 // Character (spec §1.3, board D4; M6d): the portrait frame, name, level and title, the stats with progress to their next
 // point, the class path, Scholar's Path for a Mage at level 10, the achievements, the vow, and the class change (M6b).
 // M10c: the class change is a row. M12: the Codex moved to the Library tab (plan decision 1). Monster Week: Switch portrait
-// went with the M9a paintings (no picture differs by figure now).
-import { ADJUST_TEXT, CHARACTER_TEXT, CLASS_NAMES, MONSTER_TEXT, SHADOW_TEXT, TODAY_TEXT, fillText, latestTitle } from '@levelmeup/content';
+// went with the M9a paintings (no picture differs by figure now). Monster Buddy: the portrait is your buddy, named under it.
+import { ADJUST_TEXT, BUDDIES, BUDDY_TEXT, CHARACTER_TEXT, CLASS_NAMES, MONSTER_TEXT, SHADOW_TEXT, TODAY_TEXT, fillText, latestTitle } from '@levelmeup/content';
 import { MAX_SHIELDS } from '@levelmeup/rules';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { buddySizeName } from '../game/buddy.ts';
 import { scholarsPathOpen } from '../game/character.ts';
 import { marked, shadowHold } from '../game/pact.ts';
 import { streakNote } from '../game/checkin.ts';
@@ -81,6 +82,8 @@ export function Character({ onChangeClass, onOpenBook, onSettings, onVow, onChro
   const { classId, timeZone } = view.profile;
   const { level } = view.character;
   const className = CLASS_NAMES[classId];
+  const buddy = BUDDIES[classId];
+  const size = buddySizeName(level);
   const title = latestTitle(view.achievements);
   const lock = classLock(view, now());
   // M7c decision 9: the Shadow's mark while it holds the day.
@@ -91,12 +94,14 @@ export function Character({ onChangeClass, onOpenBook, onSettings, onVow, onChro
       <ScreenHeader style={{ paddingTop: insets.top + 12 }}>
         {/* M17: the tab's title is the player's name, large like the other tabs' (it sat small under the portrait). */}
         <TabTop onSettings={onSettings}><Title accessibilityRole="header">{view.profile.name}</Title></TabTop>
-        <Portrait classId={classId} marked={mark} frame={frame}
-          label={`${fillText(T.portrait, { className, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
+        <Portrait classId={classId} level={level} marked={mark} frame={frame}
+          label={`${fillText(BUDDY_TEXT.label, { name: buddy.name, className, size, level })}${mark ? ` ${SHADOW_TEXT.markLabel}` : ''}`} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <View style={{ paddingVertical: 3, paddingHorizontal: 12, backgroundColor: colors.paper, borderRadius: radius.pill }}>
             <Label tone="ink">{`Lv ${level} ${className}`}</Label>
           </View>
+          {/* The portrait's label already says it to a screen reader (review). */}
+          <Body tone="chalk" weight="bold" importantForAccessibility="no" accessibilityElementsHidden>{fillText(BUDDY_TEXT.caption, { name: buddy.name, size })}</Body>
           {title !== null && <Body tone="accentText" weight="bold">{`“${title}”`}</Body>}
         </View>
         <View style={{ gap: 6 }}>

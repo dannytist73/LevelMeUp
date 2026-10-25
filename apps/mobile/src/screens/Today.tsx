@@ -7,7 +7,7 @@
 // screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
 // the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
 import {
-  ADJUST_TEXT, FEEDBACK_TEXT, MONSTER_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, authoredTemplate, fillText, shadowLine,
+  ADJUST_TEXT, FEEDBACK_TEXT, MONSTER_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine,
 } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
@@ -439,6 +439,8 @@ function DayBody({
               onGo={quickClearable(next, false) && next.slot !== 'core' ? () => onCheck(next, authoredTemplate(next.templateId).voice[voice].title) : () => onOpenQuest(next.id)}
               resting={resting(next)}
               {...(power === null ? {} : { power: power(next) })}
+              // Monster Buddy: the core quest's picture, your buddy doing it.
+              {...(next.slot === 'core' ? { art: { classId: view.profile.classId, key: artKey(authoredTemplate(next.templateId), next.condition) } } : {})}
             />
           )}
           <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish}

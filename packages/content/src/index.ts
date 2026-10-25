@@ -29,3 +29,4 @@ export * from './quests/workout.ts';
 export * from './training/moves.ts';
 export * from './training/programs.ts';
 export * from './grumbles.ts';
+export * from './buddies.ts';

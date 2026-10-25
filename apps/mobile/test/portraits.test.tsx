@@ -1,7 +1,7 @@
-// Monster Week (2026-10-25): the owner retired the earlier generated pictures. The class portrait is its frame and emblem
-// alone, Switch portrait and the level-up's new portrait are gone, and the Shadow is its dark panel and eyes.
-import { PLAY_TEXT, SHADOW_TEXT } from '@levelmeup/content';
-import { render, screen } from '@testing-library/react-native';
+// Monster Week (2026-10-25): the owner retired the earlier generated pictures, and Switch portrait went with them. Monster
+// Buddy: the portrait is your buddy, which grows at levels 5 and 10, and the Shadow is painted again in clay.
+import { BUDDIES, BUDDY_TEXT, ONBOARDING_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import { Celebration } from '../src/screens/Celebration.tsx';
 import { Character } from '../src/screens/Character.tsx';
@@ -12,73 +12,73 @@ import { DAY_TWO_NOW, READY_DRAFT, REVEAL, claimedState, serverState } from './s
 import { testStore, withStore } from './support/store.ts';
 
 const hidden = { includeHiddenElements: true } as const;
-type Node = { type: string; children?: (Node | string)[] | null };
-/** Every picture drawn: the host tree's Image elements. */
-const pictures = (): Node[] => {
-  const found: Node[] = [];
-  const walk = (n: Node | Node[] | string | null): void => {
-    if (n === null || typeof n === 'string') return;
-    if (Array.isArray(n)) return n.forEach(walk);
-    if (n.type === 'Image') found.push(n);
-    (n.children ?? []).forEach(walk);
-  };
-  walk(screen.toJSON() as Node | Node[] | null);
-  return found;
-};
 
-describe('the class portrait without its paintings (Monster Week)', () => {
-  it("is the class's emblem in its frame, labelled for screen readers, and loads no picture", async () => {
-    await render(<Portrait classId="mage" label="Mage portrait, level 6" />);
-    expect(screen.getByLabelText('Mage portrait, level 6')).toBeTruthy();
-    expect(screen.getByTestId('portrait-emblem', hidden)).toBeTruthy();
-    expect(screen.queryByTestId('portrait-art', hidden)).toBeNull();
-    expect(pictures()).toEqual([]);
+describe('the portrait is your buddy (Monster Buddy)', () => {
+  it('draws the class’s buddy at its size, alive, labelled for screen readers', async () => {
+    await render(<Portrait classId="mage" level={6} label="Starkit, your Mage buddy, grown, level 6" />);
+    expect(screen.getByLabelText('Starkit, your Mage buddy, grown, level 6')).toBeTruthy();
+    expect(screen.getByTestId('buddy-mage', hidden)).toBeTruthy();
+    expect(screen.getByTestId('buddy-still', hidden)).toBeTruthy();
+    expect(screen.queryByTestId('portrait-emblem', hidden)).toBeNull();
   });
 
   it("still draws the Shadow's mark over it (M7c decision 9)", async () => {
-    await render(<Portrait classId="warrior" label="Warrior portrait, level 3" marked />);
+    await render(<Portrait classId="warrior" level={3} label="Pummel" marked />);
     expect(screen.getByTestId('shadow-mark', hidden)).toBeTruthy();
   });
 });
 
-describe('Character and the reveal: the portrait, no Switch portrait', () => {
+describe('Character and the reveal: your buddy, named', () => {
   const SERVER = serverState();
 
-  it('Character shows the portrait and no switch', async () => {
+  it('Character shows the buddy and its name and size, and no Switch portrait', async () => {
     await render(withStore(testStore({ view: project(SERVER, []) }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
-    expect(screen.getByLabelText('Warrior portrait, level 1')).toBeTruthy();
+    expect(screen.getByLabelText('Pummel, your Warrior buddy, little, level 1')).toBeTruthy();
+    expect(screen.getByText('Pummel · little', hidden)).toBeTruthy(); // shown, and said once, by the portrait's label
     expect(screen.queryByRole('button', { name: 'Switch portrait' })).toBeNull();
-    expect(pictures()).toEqual([]);
   });
 
-  it('the reveal shows the class portrait under the class name, and no switch', async () => {
+  it('the reveal hatches the class’s buddy under the class name', async () => {
     const store = testStore({ phase: 'not_started', draft: READY_DRAFT, reveal: REVEAL, view: project(SERVER, []) });
     await render(withStore(store, <Reveal onAccept={() => {}} onFix={() => {}} />));
-    expect(screen.getByLabelText('Warrior portrait, level 1')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Switch portrait' })).toBeNull();
-    expect(pictures()).toEqual([]);
+    expect(screen.getByLabelText('Pummel, your Warrior buddy, little, level 1')).toBeTruthy();
+    expect(screen.getByText('Pummel hatched!')).toBeTruthy();
+    expect(screen.getByText(fillText(BUDDY_TEXT.hatchedLine, { className: 'Warrior', kind: BUDDIES.warrior.kind }))).toBeTruthy();
+  });
+
+  it('choosing a class there says which buddy each brings', async () => {
+    const store = testStore({ phase: 'not_started', draft: READY_DRAFT, reveal: REVEAL, view: project(SERVER, []) });
+    await render(withStore(store, <Reveal onAccept={() => {}} onFix={() => {}} />));
+    await fireEvent.press(screen.getByText(ONBOARDING_TEXT.reveal.change));
+    expect(screen.getByText(/Buddy: Starkit, a violet fox/)).toBeTruthy();
+    expect(screen.getByText(/Buddy: Mochi, a white seal pup/)).toBeTruthy();
   });
 });
 
-describe('a level-up shows no portrait, at levels 5 and 10 too', () => {
+describe('a level-up grows the buddy at levels 5 and 10, and only then', () => {
   const SERVER = serverState();
 
-  it.each([[5, 4], [10, 9], [6, 4]])('level %i from %i: the level and its ability, no portrait', async (level, from) => {
+  it.each([[5, 4, 'grown'], [10, 9, 'grand'], [6, 4, 'grown'], [11, 3, 'grand']])('level %i from %i: Pummel is %s now', async (level, from, size) => {
     await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level, from }] }), <Celebration />));
     expect(screen.getByText(`Lv ${level}`)).toBeTruthy();
-    expect(screen.queryByLabelText(/portrait/)).toBeNull();
-    expect(screen.queryByText(/portrait/i)).toBeNull();
+    expect(screen.getByText('Pummel grew!')).toBeTruthy();
+    expect(screen.getByText(fillText(BUDDY_TEXT.grewLine, { level, name: 'Pummel', size }))).toBeTruthy();
     expect(screen.getByText(PLAY_TEXT.celebration.continue)).toBeTruthy();
+  });
+
+  it.each([[2, 1], [7, 6], [12, 10]])('level %i from %i: no growing', async (level, from) => {
+    await render(withStore(testStore({ view: project(SERVER, []), celebrations: [{ kind: 'level', level, from }] }), <Celebration />));
+    expect(screen.getByText(`Lv ${level}`)).toBeTruthy();
+    expect(screen.queryByTestId('buddy-grew', hidden)).toBeNull();
   });
 });
 
-describe('the Shadow without its painting', () => {
-  it('is the dark panel and its eyes on its scene, labelled, loading no picture', async () => {
+describe('the Shadow, painted again in clay (Monster Buddy)', () => {
+  it('is its painting on its scene, labelled, with a glow over each eye', async () => {
     await render(withStore(testStore({ view: project(claimedState('shadow'), []) }),
       <ShadowScene onDone={jest.fn()} onRecovery={jest.fn()} onTrial={jest.fn()} onPact={jest.fn()} now={() => DAY_TWO_NOW} />));
     expect(screen.getByLabelText(SHADOW_TEXT.art)).toBeTruthy();
-    expect(screen.getByTestId('shadow-eyes', hidden)).toBeTruthy();
-    expect(screen.queryByTestId('shadow-art', hidden)).toBeNull();
-    expect(pictures()).toEqual([]);
+    expect(screen.getAllByTestId('shadow-art', hidden).length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('eye-glow', hidden).length).toBeGreaterThan(0);
   });
 });

@@ -1,6 +1,7 @@
 // Monster Week's effects, drawn on the GPU with React Native Skia (the only file that imports it, as haptics.ts is for
 // expo-haptics). A power burst where a shot lands: a ring that widens and fades, and sparkles that fly out. Power shots
-// for the battle: glowing comets that arc up into the Grumble, one after another. With reduced motion neither draws;
+// for the battle: glowing comets that arc up into the Grumble, one after another (Monster Buddy: out of your buddy's
+// paw into the Grumble where it stands, when the screen says). With reduced motion neither draws;
 // the screens show the numbers without them.
 import { BlurMask, Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia';
 import { useEffect, useMemo, useRef } from 'react';
@@ -54,18 +55,24 @@ export function PowerBurst({ burstKey, size, color }: { burstKey: number; size: 
   );
 }
 
-function Shot({ index, width, height, color, run }: { index: number; width: number; height: number; color: string; run: number }) {
+type Point = { x: number; y: number };
+
+function Shot({ index, width, height, color, run, origin, target }: {
+  index: number; width: number; height: number; color: string; run: number; origin?: Point; target?: Point;
+}) {
   const t = useSharedValue(0);
   useEffect(() => {
     if (run === 0) return;
     t.value = 0;
     t.value = delayed(index * SHOT_GAP_MS, withTiming(1, timing(SHOT_MS, Easing.in(Easing.quad))));
   }, [run, index, t]);
-  // From low on the left or right, arcing into the Grumble at the top middle.
+  // From low on the left or right, arcing into the Grumble at the top middle; or from the buddy's paw, looping up over it.
   const side = index % 2 === 0 ? -1 : 1;
-  const from = { x: width / 2 + side * width * (0.25 + 0.1 * (index % 3)), y: height };
-  const to = { x: width / 2, y: height * 0.32 };
-  const bend = { x: width / 2 + side * width * 0.42, y: height * 0.55 };
+  const to = target ?? { x: width / 2, y: height * 0.32 };
+  const from = origin ?? { x: width / 2 + side * width * (0.25 + 0.1 * (index % 3)), y: height };
+  const bend = origin === undefined
+    ? { x: width / 2 + side * width * 0.42, y: height * 0.55 }
+    : { x: (origin.x + to.x) / 2 + side * width * 0.06, y: Math.min(origin.y, to.y) - height * 0.12 };
   const at = (u: number) => {
     'worklet';
     const a = (1 - u) * (1 - u);
@@ -92,13 +99,16 @@ function Shot({ index, width, height, color, run }: { index: number; width: numb
   );
 }
 
-/** `colors.length` shots, one after another, each new `run`; the screen times its hits by SHOT_GAP_MS and SHOT_MS. */
-export function PowerShots({ colors, width, height, run }: { colors: readonly string[]; width: number; height: number; run: number }) {
+/** `colors.length` shots, one after another, each new `run`; the screen times its hits by SHOT_GAP_MS and SHOT_MS. They
+ * leave from `origin` and land on `target` when given. */
+export function PowerShots({ colors, width, height, run, origin, target }: {
+  colors: readonly string[]; width: number; height: number; run: number; origin?: Point; target?: Point;
+}) {
   const reduce = useReduce();
   if (reduce || width === 0) return null;
   return (
     <Canvas testID="power-shots" pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, width, height }}>
-      {colors.map((color, i) => <Shot key={i} index={i} width={width} height={height} color={color} run={run} />)}
+      {colors.map((color, i) => <Shot key={i} index={i} width={width} height={height} color={color} run={run} origin={origin} target={target} />)}
     </Canvas>
   );
 }

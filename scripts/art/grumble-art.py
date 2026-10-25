@@ -4,23 +4,27 @@ Each Grumble is a few stills the app brings to life (apps/mobile/src/ui/GrumbleA
 on a flat green screen that is keyed out to transparency. Z-Image Turbo paints the idle still; Qwen-Image-Edit 2511 makes
 the other poses from it, so the Grumble stays on-model; Wan 2.2 (image to video, 4-step) animates the big moments.
 
-Start ComfyUI first (as scripts/art/story-art.py says), and run with its Python (PIL and numpy):
+Start ComfyUI first (as scripts/art/story-art.py says), and run with its Python (PIL, numpy and scipy):
   D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe scripts/art/grumble-art.py style [--seeds 11 22]
     -> art/grumbles/renders/style-<look>-<seed>.png   (the style test: Snoozle in each look)
   grumble-art.py paint ID LOOK [--seeds 11 22]      -> art/grumbles/renders/<id>-<look>-<seed>.png (any Grumble)
   grumble-art.py poses STEM                          -> <stem>-<pose>.png (blink, hit, happy, sleep), STEM a render's name
   grumble-art.py clip STEM [--motion idle]           -> <stem>-clip-<motion>/ (frames) + <stem>-clip-<motion>.webp
-  grumble-art.py key SRC DEST                        -> DEST, the green screen keyed out, trimmed, square, 512 px
+  grumble-art.py black STEM                          -> <id>-black-<seed>.png: the still on black, without the green light
+                                                        (pale Grumbles catch it, and it keys out with the backdrop); then
+                                                        `poses <id>-black-<seed>` and pick that stem
+  grumble-art.py key SRC DEST                        -> DEST, the backdrop keyed out, trimmed, square, 512 px
   grumble-art.py sheet                               -> art/grumbles/renders/_style.jpg (every style render)
   grumble-art.py pick                                -> apps/mobile/assets/grumbles/<id>-<pose>.webp from PICKS, and
                                                         apps/mobile/src/art/grumbles.ts (the app's manifest)
 Existing renders are skipped, so a changed prompt needs new seeds (or the old renders deleted).
 """
-import argparse, json, random, subprocess, sys, time, urllib.parse, urllib.request
+import argparse, json, random, shutil, subprocess, sys, time, urllib.parse, urllib.request
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 COMFY = "http://127.0.0.1:8188"
 ROOT = Path(__file__).resolve().parents[2]
@@ -95,13 +99,13 @@ GRUMBLES = {
 }
 
 POSES = {
-    "blink": "Make its eyes fully closed in a calm blink. Keep everything else exactly the same: the same character, the same pose, the same colours, the same green background.",
+    "blink": "Make its eyes fully closed in a calm blink. Keep everything else exactly the same: the same character, the same pose, the same colours, the same plain background.",
     "hit": ("Make it flinch as if bonked by a soft sparkle: eyes squeezed shut, cheeks puffed, leaning back a little, a tiny "
-            "surprised mouth. The same character, colours, accessories and the same flat green background."),
+            "surprised mouth. The same character, colours, accessories and the same plain background."),
     "happy": ("Make it beam with joy: eyes closed in happy arcs, a big open smile, both little arms raised in cheer. The same "
-              "character, colours, accessories and the same flat green background."),
+              "character, colours, accessories and the same plain background."),
     "sleep": ("Make it fast asleep, curled up cozily with its eyes closed and a peaceful smile. The same character, colours, "
-              "accessories and the same flat green background."),
+              "accessories and the same plain background."),
 }
 
 MOTIONS = {
@@ -111,6 +115,12 @@ MOTIONS = {
                  "the plain flat green background stays exactly the same"),
 }
 WAN_NEG = (ROOT / "scripts" / "art" / "wan-negative.txt")
+
+# A pale character's underside catches the green screen's light and keys out with it (holes under a white chin). Qwen puts
+# it on black instead, lit neutrally, and the key reads brightness there.
+BLACK = ("Replace the green background with a plain flat solid pure black background and remove all the green light from the "
+         "character, so it is lit by soft neutral white studio light. Keep the character exactly the same: the same shape, pose, "
+         "face, colours and accessories.")
 
 
 def zimage(prompt: str, seed: int, prefix: str) -> dict:
@@ -221,13 +231,46 @@ def upload(src: Path) -> str:
     return json.loads(call("/upload/image", raw=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}))["name"]
 
 
+def _edge(a: np.ndarray) -> np.ndarray:
+    """A render's border, 12 px deep: only backdrop there."""
+    return np.concatenate([a[:12].ravel(), a[-12:].ravel(), a[:, :12].ravel(), a[:, -12:].ravel()])
+
+
+def on_green(rgb: np.ndarray) -> bool:
+    """The green screen Z-Image paints on; otherwise the black `black` puts a still on."""
+    return float(np.median(_edge(rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])))) >= 20.0
+
+
 def alpha_of(rgb: np.ndarray) -> np.ndarray:
-    """How much of each pixel is the character (see `key`)."""
-    excess = rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])
-    border = np.concatenate([excess[:12].ravel(), excess[-12:].ravel(), excess[:, :12].ravel(), excess[:, -12:].ravel()])
-    backdrop = max(float(np.median(border)), 20.0)
-    gone, kept = backdrop * 0.55, backdrop * 0.15  # at least this green: backdrop; at most this: the character
-    return np.clip((gone - excess) / (gone - kept), 0.0, 1.0)
+    """How much of each pixel is the character (see `key`).
+
+    On the green screen, by how green it is, against the backdrop's own greenness sampled from the border: at least `gone`
+    green is backdrop, at most `kept` is the character; then everything inside the outline is solid (a chin that caught the
+    green light) except a gap that is fully backdrop.
+
+    On black, by how bright it is, so a glow fades out as it does on black. Dark parts enclosed by the character (eyes, a
+    dark mouth) are solid, but an enclosed gap the black shows through (inside a halo ring, between an arm and the body),
+    as dark as the border, stays clear."""
+    if on_green(rgb):
+        excess = rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])
+        backdrop = float(np.median(_edge(excess)))
+        gone, kept = backdrop * 0.55, backdrop * 0.15
+        alpha = np.clip((gone - excess) / (gone - kept), 0.0, 1.0)
+        solid = ndimage.binary_fill_holes(alpha > 0.5) & (alpha > 0)
+        return np.where(ndimage.binary_erosion(solid, iterations=3), 1.0, alpha)
+    bright = rgb.max(axis=2)
+    floor = float(np.percentile(_edge(bright), 99))
+    alpha = np.clip((bright - floor - 4.0) / 40.0, 0.0, 1.0)
+    holes, n = ndimage.label(ndimage.binary_fill_holes(alpha > 0.5) & (alpha <= 0.5))
+    if n:
+        # A gap is as dark as the border's middle (1-3 on Qwen's black); eyes and dark fur measure 13 and up.
+        lit = np.asarray(ndimage.median(bright, holes, np.arange(1, n + 1))) > float(np.median(_edge(bright))) + 5.0
+        alpha = np.where(np.concatenate([[False], lit])[holes], 1.0, alpha)
+    return alpha
+
+
+def union(boxes: list[tuple[int, int, int, int]]) -> tuple[int, int, int, int]:
+    return min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)
 
 
 def box_of(src: Path) -> tuple[int, int, int, int]:
@@ -238,16 +281,22 @@ def box_of(src: Path) -> tuple[int, int, int, int]:
 
 
 def key(src: Path, dest: Path, size: int = 512, trim: tuple[int, int, int, int] | None = None) -> Path:
-    """The backdrop keyed out. Z-Image paints a soft mint backdrop with a vignette and a floor shadow rather than a flat
-    green, and no Grumble is ever green, so a pixel's alpha comes from how green it is (green over its red and blue),
-    measured against the backdrop's own greenness sampled from the border: the backdrop and its shadow go, the character
-    stays. Every pixel loses green above its red and blue (no Grumble is green). Then trimmed to the character (or to
-    `trim`, so a clip's frames share one box) and squared."""
+    """The backdrop keyed out (alpha_of: Z-Image paints a soft mint backdrop with a vignette and a floor shadow rather than
+    a flat green, and no Grumble is ever green, so the green screen keys by greenness; a still on black, by brightness).
+    Every pixel loses green above its red and blue. Then trimmed to the character (or to `trim`, so a clip's frames share
+    one box) and squared."""
     rgb = np.asarray(Image.open(src).convert("RGB")).astype(np.float32)
     alpha = alpha_of(rgb)
     fg = rgb.copy()
-    # No Grumble is green, so green above red and blue anywhere is the backdrop's light on it (fur picks it up in clips).
-    fg[..., 1] = np.minimum(rgb[..., 1], np.maximum(rgb[..., 0], rgb[..., 2]))
+    if on_green(rgb):
+        # No Grumble is green, so green above red and blue anywhere is the backdrop's light on it (fur picks it up in clips).
+        # It comes back as grey, so a green-lit crease keeps its brightness instead of turning dark.
+        spill = np.clip(rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2]), 0.0, None)
+        fg[..., 1] -= spill
+        fg += spill[..., None] * 0.5
+    else:
+        # On black a half-clear pixel is its colour times its alpha: divided back out, a glow and a soft edge keep their colour.
+        fg = np.where(alpha[..., None] > 0, rgb / np.maximum(alpha, 1e-3)[..., None], 0.0)
     out = np.dstack([fg, alpha[..., None] * 255.0]).clip(0, 255).astype(np.uint8)
     img = Image.fromarray(out, "RGBA")
     box = trim or Image.fromarray((alpha > 0.5).astype(np.uint8) * 255).getbbox() or (0, 0, img.width, img.height)
@@ -287,6 +336,17 @@ def seed_of(stem: str) -> int:
     return int(stem.rsplit("-", 1)[1])
 
 
+def black(stem: str) -> None:
+    """The still `stem` on black, as a new stem `<id>-black-<seed>` to make poses from."""
+    gid, seed = stem.split("-")[0], seed_of(stem)
+    dest = RENDERS / f"{gid}-black-{seed}.png"
+    if dest.exists():
+        return
+    t = time.time()
+    fetch(run(qwen_edit(upload(RENDERS / f"{stem}.png"), BLACK, seed, f"lmu/grumble-{dest.stem}"))[0], dest)
+    print(f"{dest.name} ({time.time() - t:.0f} s)", flush=True)
+
+
 def poses(stem: str) -> None:
     src = RENDERS / f"{stem}.png"
     seed = seed_of(stem)
@@ -311,15 +371,7 @@ def clip(stem: str, motion: str) -> None:
             fetch(img, frames_dir / f"{i:03d}.png")
         print(f"{frames_dir.name}: {len(images)} frames ({time.time() - t:.0f} s)", flush=True)
     # One box for every frame (the union of their characters), so the keyed clip doesn't jitter.
-    boxes = []
-    for f in sorted(frames_dir.glob("*.png")):
-        rgb = np.asarray(Image.open(f).convert("RGB")).astype(np.float32)
-        excess = rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])
-        mask = excess < max(float(np.median(np.concatenate([excess[:12].ravel(), excess[-12:].ravel()]))), 20.0) * 0.35
-        ys, xs = np.nonzero(mask)
-        if len(xs):
-            boxes.append((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
-    box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+    box = union([box_of(f) for f in sorted(frames_dir.glob("*.png"))])
     keyed = RENDERS / f"{frames_dir.name}-keyed"
     for f in sorted(frames_dir.glob("*.png")):
         key(f, keyed / f.name, 320, box)
@@ -349,8 +401,16 @@ def sheet() -> None:
     print(out)
 
 
-# Filled in after the owner picks: Grumble id -> the render stem whose stills ship (e.g. "snoozle-clay-22").
-PICKS: dict[str, str] = {}
+# Filled in after the owner picks: Grumble id -> the render stem whose stills ship. The picked clay renders, each put
+# on black (`black`) with its poses made again from there.
+PICKS: dict[str, str] = {
+    "snoozle": "snoozle-black-11", "scrollo": "scrollo-black-11", "laterpillar": "laterpillar-black-22", "knowitowl": "knowitowl-black-22",
+    "fizzbit": "fizzbit-black-11", "pingle": "pingle-black-22", "slumpkin": "slumpkin-black-22", "skimmy": "skimmy-black-11",
+    "nightowlet": "nightowlet-black-11", "tabbit": "tabbit-black-22", "comfortoise": "comfortoise-black-22", "blurb": "blurb-black-11",
+    "stiffle": "stiffle-black-11", "grabbit": "grabbit-black-22", "excusaurus": "excusaurus-black-22", "forgetto": "forgetto-black-11",
+    "rushkin": "rushkin-black-22", "juggles": "juggles-black-22", "shyling": "shyling-black-22", "zonkle": "zonkle-black-22",
+    "liftle": "liftle-black-11", "cloudle": "cloudle-black-11", "mehbit": "mehbit-black-22", "shrugget": "shrugget-black-11",
+}
 STILLS = ["idle", "blink", "hit", "happy", "sleep"]
 ASSETS = ROOT / "apps" / "mobile" / "assets" / "grumbles"
 MANIFEST = ROOT / "apps" / "mobile" / "src" / "art" / "grumbles.ts"
@@ -362,19 +422,22 @@ def pick() -> None:
                if not (RENDERS / (f"{stem}.png" if p == "idle" else f"{stem}-{p}.png")).exists()]
     if missing:  # check everything before writing anything
         sys.exit(f"missing renders: {', '.join(missing)}")
-    ASSETS.mkdir(parents=True, exist_ok=True)
-    for old in ASSETS.glob("*.webp"):
-        old.unlink()
+    # Keyed into a fresh folder that replaces the old one only when all of it is done: a failure halfway leaves the app's
+    # pictures and its manifest as they were.
+    new = ASSETS.with_name(ASSETS.name + ".new")
+    shutil.rmtree(new, ignore_errors=True)
+    new.mkdir(parents=True)
     lines = []
     for gid, stem in PICKS.items():
         # One box for all five, so the Grumble keeps its size and place as its pose changes.
         srcs = {p: RENDERS / (f"{stem}.png" if p == "idle" else f"{stem}-{p}.png") for p in STILLS}
-        boxes = [box_of(src) for src in srcs.values()]
-        box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+        box = union([box_of(src) for src in srcs.values()])
         for p, src in srcs.items():
-            key(src, ASSETS / f"{gid}-{p}.webp", 384, box)
+            key(src, new / f"{gid}-{p}.webp", 384, box)
         poses = ", ".join(f"{p}: require('../../assets/grumbles/{gid}-{p}.webp')" for p in STILLS)
         lines.append(f"  {gid}: {{ {poses} }},")
+    shutil.rmtree(ASSETS, ignore_errors=True)
+    new.rename(ASSETS)
     head = MANIFEST.read_text(encoding="utf-8").split("/** Filled by the art pipeline")[0]
     MANIFEST.write_text(head + "/** Filled by the art pipeline (scripts/art/grumble-art.py pick), one entry per painted Grumble. */\n"
                         "export const GRUMBLE_ART: Readonly<Record<string, GrumbleStills>> = {\n" + "\n".join(lines) + "\n};\n", encoding="utf-8")
@@ -391,6 +454,8 @@ def main() -> None:
     s.add_argument("grumble", choices=GRUMBLES)
     s.add_argument("look", choices=LOOKS)
     s.add_argument("--seeds", type=int, nargs="+", default=[11, 22])
+    s = sub.add_parser("black")
+    s.add_argument("stem")
     s = sub.add_parser("poses")
     s.add_argument("stem")
     s = sub.add_parser("clip")
@@ -406,6 +471,8 @@ def main() -> None:
         style(a.seeds)
     elif a.cmd == "paint":
         paint(a.grumble, a.look, a.seeds)
+    elif a.cmd == "black":
+        black(a.stem)
     elif a.cmd == "poses":
         poses(a.stem)
     elif a.cmd == "clip":

@@ -1,7 +1,8 @@
 // Monster Week (docs/2026-10-25-monster-week.md, board p3-camp): the Camp tab. The campfire with every Grumble you have
 // befriended, the one at the edge of camp now with its battle time, and the Grumble book: all 24, the befriended ones with
-// how many times they joined, the one here now, and the rest as dark silhouettes until they arrive.
-import { GRUMBLES, MONSTER_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
+// how many times they joined, the one here now, and the rest as dark silhouettes until they arrive. Monster Buddy: your
+// buddy keeps the fire.
+import { BUDDIES, BUDDY_TEXT, GRUMBLES, MONSTER_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import type { Grumble } from '@levelmeup/content';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +10,7 @@ import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-na
 import { battleShown } from '../game/battle.ts';
 import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
+import { BuddyArt } from '../ui/BuddyArt.tsx';
 import { GrumbleArt } from '../ui/GrumbleArt.tsx';
 import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
@@ -90,7 +92,11 @@ export function Camp({ onSettings, now = Date.now }: { onSettings?: () => void; 
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
         <View testID="camp-scene" style={{ alignItems: 'center', gap: 12, paddingVertical: 18, paddingHorizontal: 12, borderRadius: radius.card, backgroundColor: colors.halftone }}>
-          <Fire />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}>
+            <BuddyArt classId={view.profile.classId} level={view.character.level} size={110} />
+            <Fire />
+          </View>
+          <Small tone="ashLight">{fillText(BUDDY_TEXT.camp, BUDDIES[view.profile.classId])}</Small>
           {friends.length === 0 ? (
             <Body style={{ textAlign: 'center' }}>{C.empty}</Body>
           ) : (

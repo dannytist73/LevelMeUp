@@ -50,9 +50,9 @@ describe('Today', () => {
     expect(onOpenQuest).toHaveBeenCalledWith(side2.id);
   });
 
-  it('shows the core quest without a picture (Monster Week: the M6a pictures are retired)', async () => {
+  it('shows the core quest with your buddy doing it (Monster Buddy; the M6a pictures are retired)', async () => {
     await renderToday();
-    expect(within(screen.getByTestId('up-next')).queryByTestId('quest-art', { includeHiddenElements: true })).toBeNull();
+    expect(within(screen.getByTestId('up-next')).getByTestId('quest-art', { includeHiddenElements: true })).toBeTruthy();
     expect(within(screen.getByTestId('up-next')).queryByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeNull();
     // M8b: the reading has no button until the day has an article. M12: Up next and the open side quest open their quest;
     // the cleared one waits folded under "Done today".
@@ -199,7 +199,7 @@ describe('Character (M6d)', () => {
   it('shows the portrait frame, the name, the level and the XP', async () => {
     const view = project(SERVER, []);
     await render(withStore(testStore({ view }), <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} />));
-    expect(screen.getByLabelText('Warrior portrait, level 1')).toBeTruthy();
+    expect(screen.getByLabelText('Pummel, your Warrior buddy, little, level 1')).toBeTruthy();
     expect(screen.getByText(view.profile.name)).toBeTruthy();
     expect(screen.getByText('Lv 1 Warrior')).toBeTruthy();
     expect(screen.getByText(/XP total/)).toBeTruthy();

@@ -88,7 +88,7 @@ export const ADJUST_TEXT = {
     label: 'Class',
     title: 'Choose your class',
     keeps:
-      "Your level, XP, stats and achievements stay. Abilities follow the new class at your level. Today's quests stay; " +
+      "Your level, XP, stats and achievements stay. Abilities and your buddy follow the new class at your level. Today's quests stay; " +
       'tomorrow is built for the new class.',
     once: 'You can change class once every 14 days.',
     current: '{class} · current',

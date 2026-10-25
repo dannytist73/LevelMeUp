@@ -1,6 +1,6 @@
 // M10b (spec decision 7): the living Shadow. Reanimated's functions are spied (a file-level mock) to see which loops start
-// and stop; its mock runs nothing, so these check what starts when, not frames. Monster Week: the painting is gone, so the
-// dark panel and its eyes live from the first frame.
+// and stop; its mock runs nothing, so these check what starts when, not frames. Monster Buddy: the clay painting ships in
+// the app, so it and its eyes live from the first frame.
 import { SHADOW_TEXT } from '@levelmeup/content';
 import { act, render, screen } from '@testing-library/react-native';
 import { AppState, StyleSheet } from 'react-native';
@@ -35,6 +35,7 @@ afterEach(() => {
 describe('the living Shadow (M10b spec decision 7)', () => {
   it('from the first frame: the eyes pulse, it creeps closer once, ten embers rise, and the breath follows the creep', async () => {
     await render(<ShadowArt />);
+    expect(screen.getAllByTestId('eye-glow', hidden)).toHaveLength(2); // one over each painted eye
     expect(timed(PULSE_TO)).toBeGreaterThan(0);
     expect(timed(CREEP_TO)).toBe(1);
     expect(screen.getAllByTestId('ember', hidden)).toHaveLength(EMBERS.length);
@@ -56,7 +57,8 @@ describe('the living Shadow (M10b spec decision 7)', () => {
     expect(timed(CREEP_TO)).toBe(0);
     expect(screen.queryAllByTestId('ember', hidden)).toEqual([]);
     expect(flat(screen.getByTestId('shadow-creep', hidden).props.style).transform).toBeUndefined();
-    expect(screen.getByTestId('shadow-eyes', hidden)).toBeTruthy();
+    expect(screen.getByTestId('shadow-art', hidden)).toBeTruthy(); // the painting stays, its painted eyes with it
+    expect(screen.queryAllByTestId('eye-glow', hidden)).toEqual([]);
   });
 
   it('stops in the background and starts again on return: it never runs unseen', async () => {
@@ -85,6 +87,6 @@ describe('the living Shadow (M10b spec decision 7)', () => {
     expect(life.props.importantForAccessibility).toBe('no-hide-descendants');
     expect(life.props.pointerEvents).toBe('none');
     expect(screen.getByRole('image', { name: SHADOW_TEXT.art })).toBeTruthy();
-    expect(screen.queryByTestId('shadow-art', hidden)).toBeNull();
+    expect(screen.getByTestId('shadow-art', hidden)).toBeTruthy(); // inside the labelled panel
   });
 });

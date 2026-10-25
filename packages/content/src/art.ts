@@ -1,8 +1,7 @@
 // Quest pictures (M6a decisions 1 and 10; M6c decision 13): a fixed art set covers every quest. A workout shows its first
 // exercise's family; a rung whose exercise differs from its ladder's picture has its own key; other rungs show their
-// ladder's, small quests their stat's, and special quests their role's. The app shows a key's picture when the art
-// manifest online lists it, otherwise an ink fallback (apps/mobile/src/art/manifest.ts). The art brief,
-// docs/design/quest-art.md, describes a picture for every key.
+// ladder's, small quests their stat's, and special quests their role's. Monster Buddy: the app shows your buddy doing a key's
+// kind of quest, painted for every key and shipped in the app (apps/mobile/src/art/buddies.ts, scripts/art/buddy-art.py).
 import type { Condition, QuestTemplate } from '../../rules/src/index.ts';
 import { TEMPLATES } from './library.ts';
 import { MOVES, authoredMove } from './training/moves.ts';
