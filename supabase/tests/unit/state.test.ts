@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { cumulativeXpForLevel, newLadder } from '../../../packages/rules/src/index.ts';
 import { LIBRARY } from '../../../packages/content/src/index.ts';
-import { CALENDAR_DAYS, calendarDate, calendarMark, stateView } from '../../functions/_shared/state.ts';
-import type { CalendarRow, Snapshot } from '../../functions/_shared/state.ts';
+import { CALENDAR_DAYS, battleDay, calendarDate, calendarMark, monsterView, stateView } from '../../functions/_shared/state.ts';
+import type { BattleDayRow, CalendarRow, Snapshot } from '../../functions/_shared/state.ts';
 import { dayOffers } from '../../functions/_shared/today.ts';
 import { DAY1, DAY_TWO_SLOTS, HOUR, characterRow, dayTwoSnapshot, historyOf, ladderRows, manilaDay, pendingCheckin, profileRow } from './fixtures.ts';
 
@@ -151,6 +151,40 @@ describe('the pact in the state (M7c)', () => {
     });
     expect(view(dayTwoSnapshot(DAY_TWO_SLOTS, { checkin: held })).checkin).toMatchObject({
       answer: 'just_didnt', recoveryDayId: 2, consequence: 'trial', trialDone: true, note: 'A late shift.',
+    });
+  });
+});
+
+describe('Monster Week in the state (docs/2026-10-25-monster-week.md)', () => {
+  const battleRow = (day_number: number, over: Partial<BattleDayRow> = {}): BattleDayRow => ({
+    day_number, status: 'closed', protection: null, resolution: 'streak_day', quests: 4,
+    strength: 0, vitality: 0, wisdom: 0, focus: 0, discipline: 0, ...over,
+  });
+
+  it("day 2: battle 1 against Snoozle, charged by the cleared quests, ending when day 3 ends", () => {
+    const s = dayTwoSnapshot();
+    const view = stateView(s, dayOffers(s, LIBRARY), historyOf(s));
+    const cleared = s.instances.filter((q) => q.completed_at !== null);
+    expect(cleared.length).toBeGreaterThan(0);
+    const power = cleared.reduce((p, q) => p + (q.stat === 'vitality' ? 2 : 1), 0);
+    expect(view.battle).toMatchObject({ n: 1, grumble: 'snoozle', weakness: 'vitality', rematch: 0, first: 1, last: 3, power });
+    expect(view.battle.days.map((d) => d.state)).toEqual(['played', 'played', 'later']);
+    expect(view.battle.endsAt).toBe(new Date(manilaDay(3).endsAt).toISOString());
+    expect(view.camp).toEqual({ wins: {}, last: null });
+  });
+
+  it('a protected day counts as rest, and a check-in that protected a day does too', () => {
+    const rows = [battleRow(1, { vitality: 2 }), battleRow(2, { protection: 'planned_rest', resolution: 'protected' }), battleRow(3, { resolution: 'protected' })];
+    const latest = dayTwoSnapshot().days[0]!;
+    const mv = monsterView(rows, { ...latest, day_number: 3 }, 240);
+    expect(mv.camp.last).toMatchObject({ n: 1, grumble: 'snoozle', won: true, power: 4, need: 2 });
+    expect(mv.camp.wins).toEqual({ snoozle: 1 });
+    expect(mv.battle).toMatchObject({ n: 2, grumble: 'scrollo' });
+  });
+
+  it('reads the day row as the battles need it', () => {
+    expect(battleDay(battleRow(5, { status: 'open', resolution: null, quests: 3, focus: 2, discipline: 1 }))).toEqual({
+      dayNumber: 5, closed: false, protected: false, quests: 3, cleared: { focus: 2, discipline: 1 },
     });
   });
 });

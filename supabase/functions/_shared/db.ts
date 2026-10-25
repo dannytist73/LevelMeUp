@@ -9,7 +9,7 @@ import { READINGS_SHOWN, articleBody } from './reading.ts';
 import type { ArticleBody, ArticleRow, CandidateRow, ReadingRow, SourceRow } from './reading.ts';
 import { CALENDAR_DAYS } from './state.ts';
 import type {
-  AnsweredRow, CalendarRow, CharacterRow, DayRow, History, InstanceRow, LadderRow, PendingCheckin, ProfileRow, QueuedDay, ResultRow, Snapshot,
+  AnsweredRow, BattleDayRow, CalendarRow, CharacterRow, DayRow, History, InstanceRow, LadderRow, PendingCheckin, ProfileRow, QueuedDay, ResultRow, Snapshot,
 } from './state.ts';
 
 export type Sql = postgres.Sql;
@@ -141,7 +141,7 @@ export async function loadHistory(tx: Tx, userId: string, book: string | null, p
   await asPlayer(tx, userId);
   try {
     // M17: independent reads, sent together (see loadSnapshot).
-    const [days, [dayOne], rungRows, reading, readings, weeks] = await Promise.all([
+    const [days, [dayOne], rungRows, reading, readings, weeks, battleDays] = await Promise.all([
       tx<CalendarRow[]>`
         select day_number, starts_at, ends_at, time_zone, status, resolution, protection, hard_day from levelmeup.quest_days
         where user_id = ${userId} order by day_number desc limit ${CALENDAR_DAYS}`,
@@ -166,8 +166,24 @@ export async function loadHistory(tx: Tx, userId: string, book: string | null, p
         where d.user_id = ${userId}
         order by d.day_number desc limit ${READINGS_SHOWN}`,
       plus ? statWeeksOf(tx, userId) : Promise.resolve(null),
+      // Monster Week: every day with its number of quests and its cleared quests by stat (the battles are decided from these).
+      tx<BattleDayRow[]>`
+        select d.day_number, d.status, d.protection, d.resolution, count(q.id)::int as quests,
+          count(q.id) filter (where q.completed_at is not null and q.stat = 'strength')::int as strength,
+          count(q.id) filter (where q.completed_at is not null and q.stat = 'vitality')::int as vitality,
+          count(q.id) filter (where q.completed_at is not null and q.stat = 'wisdom')::int as wisdom,
+          count(q.id) filter (where q.completed_at is not null and q.stat = 'focus')::int as focus,
+          count(q.id) filter (where q.completed_at is not null and q.stat = 'discipline')::int as discipline
+        from levelmeup.quest_days d
+        left join levelmeup.quest_instances q on q.day_id = d.id
+        where d.user_id = ${userId}
+        group by d.id
+        order by d.day_number`,
     ]);
-    return { days: [...days], dayOne: dayOne ?? null, newRungs: one(rungRows).rungs, reading, readings: [...readings], statWeeks: weeks };
+    return {
+      days: [...days], dayOne: dayOne ?? null, newRungs: one(rungRows).rungs, reading, readings: [...readings], statWeeks: weeks,
+      battleDays: [...battleDays],
+    };
   } finally {
     await asService(tx);
   }

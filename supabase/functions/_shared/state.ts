@@ -1,10 +1,11 @@
 // Database rows and what the rules make of them. Pure: no database access here.
+import { GRUMBLE_ROSTER } from '../../../packages/content/src/index.ts';
 import {
-  STATS, TRAINABLE_STATS, checkinEvents, levelForXp, levelProgress, lighterMinutes, lighterPlanOffered, newLadder, programRun, questDayDate,
-  rankFor, statPoints, xpToNextPoint,
+  STATS, TRAINABLE_STATS, battleEndsAt, checkinEvents, levelForXp, levelProgress, lighterMinutes, lighterPlanOffered, newLadder, programRun, questDayDate,
+  monsterWeek, rankFor, statPoints, xpToNextPoint,
 } from '../../../packages/rules/src/index.ts';
 import type {
-  AbilityId, AchievementProgress, CheckinAnswer, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState,
+  AbilityId, BattleDay, AchievementProgress, CheckinAnswer, ClassId, CompletionType, Condition, DayWindow, Difficulty, Equipment, Goal, LadderState,
   Limitation, PastDay, PlayerProfile, ProgramStyle, Protection, Rank, Rating, Slot, Stat, StatMap, StreakState, Tier, TrainableStat, TrainingPlan,
   WhyReason, XpByStat,
 } from '../../../packages/rules/src/index.ts';
@@ -181,7 +182,31 @@ export type History = {
   readings: ReadingRow[];
   /** M13: the all-time stat chart, oldest week first; null when the player isn't Plus. */
   statWeeks: StatWeek[] | null;
+  /** Monster Week: every day, as the battles read it. */
+  battleDays: BattleDayRow[];
 };
+
+/** Monster Week: a day, its number of quests and its cleared quests by stat (`loadHistory`). */
+export type BattleDayRow = Pick<DayRow, 'day_number' | 'status' | 'protection' | 'resolution'> & { quests: number } & Record<Stat, number>;
+
+export function battleDay(r: BattleDayRow): BattleDay {
+  const cleared: BattleDay['cleared'] = {};
+  for (const stat of STATS) if (r[stat] > 0) cleared[stat] = r[stat];
+  return {
+    dayNumber: r.day_number, closed: r.status === 'closed', protected: r.protection !== null || r.resolution === 'protected',
+    quests: r.quests, cleared,
+  };
+}
+
+/**
+ * Monster Week: the current battle (with when it ends, from the latest day's window) and the camp, decided by the rules
+ * from the stored days (docs/2026-10-25-monster-week.md).
+ */
+export function monsterView(rows: readonly BattleDayRow[], latest: DayRow | null, boundaryMinutes: number) {
+  const mw = monsterWeek(GRUMBLE_ROSTER, rows.map(battleDay));
+  const endsAt = latest === null ? null : new Date(battleEndsAt(dayWindow(latest), latest.day_number, mw.battle.last, boundaryMinutes)).toISOString();
+  return { battle: { ...mw.battle, endsAt }, camp: { wins: mw.wins, last: mw.last } };
+}
 
 export type CalendarMark = 'open' | 'cleared' | 'hard' | 'rest' | 'paused' | 'none';
 
@@ -538,5 +563,7 @@ export function stateView(s: Snapshot, offers: DayOffers, history: History) {
     plus: plusView(s.entitlements, s.readAt),
     /** M13: the all-time stat chart, for Plus only (null otherwise). */
     statWeeks: history.statWeeks,
+    /** Monster Week: `battle` (the current one) and `camp` (times each Grumble joined, the latest decided battle). */
+    ...monsterView(history.battleDays, today, s.profile.boundary_minutes),
   };
 }

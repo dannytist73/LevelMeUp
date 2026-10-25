@@ -2,7 +2,7 @@
 import {
   DAY_MS, draftQuest, isProgram, isWorkout, nextDayWindow, planProgram, planWorkout, programBlockFor, specialTemplate, templateById,
 } from '../../../packages/rules/src/index.ts';
-import type { LadderState, Slot, WhyReason } from '../../../packages/rules/src/index.ts';
+import type { LadderState, Slot, Stat, WhyReason } from '../../../packages/rules/src/index.ts';
 import { CONTENT_VERSION, LIBRARY } from '../../../packages/content/src/index.ts';
 import { startArgs, templateReveal } from '../../functions/_shared/onboarding.ts';
 import type { Choices } from '../../functions/_shared/onboarding.ts';
@@ -151,11 +151,21 @@ export function dayTwoSnapshot(
   };
 }
 
-/** The history `loadHistory` would read for a snapshot: its days, day 1, no rungs, nothing read. */
+/** The history `loadHistory` would read for a snapshot: its days, day 1, no rungs, nothing read, its days for the battles. */
 export function historyOf(s: Snapshot): History {
   const days = [...s.days].sort((a, b) => b.day_number - a.day_number);
   const one = days.find((d) => d.day_number === 1);
-  return { days, dayOne: one === undefined ? null : one, newRungs: 0, reading: { sessions: 0, minutes: 0 }, readings: [], statWeeks: null };
+  const battleDays = [...days].reverse().map((d) => {
+    const quests = s.instances.filter((q) => String(q.day_id) === String(d.id));
+    const cleared = (stat: Stat) => quests.filter((q) => q.completed_at !== null && q.stat === stat).length;
+    return {
+      day_number: d.day_number, status: d.status, protection: d.protection, resolution: d.resolution, quests: quests.length,
+      strength: cleared('strength'), vitality: cleared('vitality'), wisdom: cleared('wisdom'), focus: cleared('focus'), discipline: cleared('discipline'),
+    };
+  });
+  return {
+    days, dayOne: one === undefined ? null : one, newRungs: 0, reading: { sessions: 0, minutes: 0 }, readings: [], statWeeks: null, battleDays,
+  };
 }
 
 export { DAY_MS };
