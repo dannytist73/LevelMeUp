@@ -1,7 +1,9 @@
 // Monster Week (docs/2026-10-25-monster-week.md): every three quest days a Grumble arrives, the day's cleared quests
 // charge power (double on its weakness), and when the third day ends the battle is decided: enough power befriends it,
 // too little keeps it for a friendlier rematch. Nothing is taken. Derived from the stored days alone, so the server and
-// the phone always agree and the same days always give the same camp.
+// the phone always agree and the same days always give the same camp. Review: a battle with a missed day whose check-in
+// isn't answered waits for the answer (as the streak does, spec §3.7), so an answer of sick or injured, which asks nothing
+// of that day, comes before the result instead of changing it afterwards.
 import type { Stat, TrainableStat } from './types.ts';
 import { nextDayWindow } from './time.ts';
 import type { DayWindow } from './time.ts';
@@ -25,8 +27,10 @@ export type Grumbler = { id: string; weakness: TrainableStat };
 export type BattleDay = {
   dayNumber: number;
   closed: boolean;
-  /** Planned rest, pain, an outage, no quests, or a check-in that protected it. */
+  /** Planned rest, pain, an outage, no quests, or a check-in answered sick, injured or emergency. */
   protected: boolean;
+  /** Its check-in isn't answered yet: its battle waits. */
+  waiting?: boolean;
   /** Quests the day had. */
   quests: number;
   /** Its cleared quests, counted by stat. */
@@ -58,6 +62,8 @@ export type CurrentBattle = {
   need: number;
   power: number;
   days: BattleDayView[];
+  /** Its days are over but a check-in on one of them isn't answered: the battle plays once it is. */
+  waiting: boolean;
 };
 
 export type MonsterWeek = {
@@ -132,15 +138,20 @@ export function monsterWeek(roster: readonly Grumbler[], stored: readonly Battle
   const wins: Record<string, number> = {};
   let last: BattleResult | null = null;
   let rematch = 0;
+  let held = false;
   let n = 1;
   for (; latest > 0 && n <= battleOf(latest); n++) {
     const { first, last: end } = battleDays(n);
     const endDay = byNumber.get(end);
     const decided = latest > end || (endDay !== undefined && endDay.closed);
     if (!decided) break;
-    let any = false;
-    for (let d = first; d <= end; d++) if (byNumber.has(d)) any = true;
-    if (!any) continue; // spent away: no battle
+    const inWindow = [first, first + 1, end].flatMap((d) => byNumber.get(d) ?? []);
+    if (inWindow.some((d) => d.waiting === true)) {
+      held = true; // a check-in to answer first
+      break;
+    }
+    // Spent away, or nothing to clear on any of its days: no battle.
+    if (inWindow.reduce((sum, d) => sum + d.quests, 0) === 0) continue;
     const g = opponent(roster, wins);
     const w = windowView(n, byNumber, latest, g, rematch);
     const won = w.power >= w.need;
@@ -157,7 +168,7 @@ export function monsterWeek(roster: readonly Grumbler[], stored: readonly Battle
   return {
     wins,
     last,
-    battle: { n, grumble: g.id, weakness: g.weakness, rematch, first: w.first, last: w.last, need: w.need, power: w.power, days: w.days },
+    battle: { n, grumble: g.id, weakness: g.weakness, rematch, first: w.first, last: w.last, need: w.need, power: w.power, days: w.days, waiting: held },
   };
 }
 

@@ -166,9 +166,12 @@ export async function loadHistory(tx: Tx, userId: string, book: string | null, p
         where d.user_id = ${userId}
         order by d.day_number desc limit ${READINGS_SHOWN}`,
       plus ? statWeeksOf(tx, userId) : Promise.resolve(null),
-      // Monster Week: every day with its number of quests and its cleared quests by stat (the battles are decided from these).
+      // Monster Week: every day with its number of quests, its cleared quests by stat and its check-in (the battles are
+      // decided from these; a check-in not answered yet holds its battle).
       tx<BattleDayRow[]>`
         select d.day_number, d.status, d.protection, d.resolution, count(q.id)::int as quests,
+          exists (select 1 from levelmeup.checkins c where c.day_id = d.id and c.answer is null) as checkin_waiting,
+          exists (select 1 from levelmeup.checkins c where c.day_id = d.id and c.outcome = 'protected') as checkin_protected,
           count(q.id) filter (where q.completed_at is not null and q.stat = 'strength')::int as strength,
           count(q.id) filter (where q.completed_at is not null and q.stat = 'vitality')::int as vitality,
           count(q.id) filter (where q.completed_at is not null and q.stat = 'wisdom')::int as wisdom,

@@ -393,7 +393,11 @@ function DayBody({
   // M17: each row fades in and out, and the rows under it glide (Appear).
   const row = (q: QuestView) => {
     if (q.slot === 'article') {
-      return <Appear key={q.id}><ReadingRow quest={q} article={today.article} waiting={view.waiting.has(q.id)} onOpen={() => openReading(q)} /></Appear>;
+      return (
+        <Appear key={q.id}>
+          <ReadingRow quest={q} article={today.article} waiting={view.waiting.has(q.id)} onOpen={() => openReading(q)} {...(power === null ? {} : { power: power(q) })} />
+        </Appear>
+      );
     }
     const isSealed = sealed(q);
     const title = authoredTemplate(q.templateId).voice[voice].title;
@@ -432,7 +436,8 @@ function DayBody({
       {next !== null && (
         <View style={{ gap: 12 }}>
           {next.slot === 'article' && today.article !== null ? (
-            <ReadingHero quest={next} article={today.article} waiting={view.waiting.has(next.id)} onOpen={() => openReading(next)} lead={TODAY_TEXT.upNext} />
+            <ReadingHero quest={next} article={today.article} waiting={view.waiting.has(next.id)} onOpen={() => openReading(next)} lead={TODAY_TEXT.upNext}
+              {...(power === null ? {} : { power: power(next) })} />
           ) : (
             <UpNextCard
               quest={next}

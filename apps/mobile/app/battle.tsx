@@ -5,5 +5,10 @@ export { ScreenCrashed as ErrorBoundary } from '../src/screens/Crashed.tsx'; // 
 
 // Monster Week: a decided battle, opened once from Today.
 export default function BattleRoute() {
-  return <BattleResult onDone={goBack} onCamp={() => router.replace('/camp')} />;
+  return (
+    <BattleResult onDone={goBack} onCamp={() => {
+      goBack();
+      router.navigate('/camp');
+    }} />
+  );
 }

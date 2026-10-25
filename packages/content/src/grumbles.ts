@@ -70,6 +70,7 @@ export const MONSTER_TEXT = {
     inDays: 'in {d} d {h} h',
     rematch: 'Rematch · a little friendlier',
     decidedOffline: "This battle is over. Its result shows once you're back online.",
+    waiting: '{name} waits for your check-in. Answer it, and the battle plays.',
     questPower: '+{n}',
     questWeak: '+{n} · weakness',
     questPowerLabel: 'gives {n} power',

@@ -38,7 +38,12 @@ export function shotsOf(result: Pick<BattleResultView, 'byStat'>, weakness: Stat
 
 export function BattleResult({ onDone, onCamp }: { onDone: () => void; onCamp: () => void }) {
   const reduce = useReduce();
-  const result = useGame((s) => s.view?.camp?.last ?? null);
+  const live = useGame((s) => s.view?.camp?.last ?? null);
+  // The battle this screen opened with; a later sync's copy of it would restart the replay (review).
+  const [result, setResult] = useState(live);
+  useEffect(() => {
+    if (result === null && live !== null) setResult(live);
+  }, [live, result]);
   const nextUp = useGame((s) => s.view?.battle ?? null);
   const markOffer = useGame((s) => s.markOffer);
   const g = result === null ? undefined : grumbleById(result.grumble);

@@ -26,8 +26,10 @@ export function battleShown(view: Pick<Shown, 'battle' | 'today'>): BattleShown 
   const battle = (view.battle as Battle | undefined) ?? null;
   if (battle === null) return null;
   const today = view.today;
-  if (today === null || today.dayNumber < battle.first) return { ...battle, more: 0, decided: false };
-  if (today.dayNumber > battle.last) return { ...battle, more: 0, decided: true };
+  // A server from before the review has no `waiting`; and a battle that waits for a check-in is over but not offline.
+  const waiting = battle.waiting ?? false;
+  if (today === null || today.dayNumber < battle.first) return { ...battle, waiting, more: 0, decided: false };
+  if (today.dayNumber > battle.last) return { ...battle, waiting, more: 0, decided: !waiting };
   const done = today.quests.filter((q) => q.completedAt !== null);
   const power = done.reduce((sum, q) => sum + questPower(q.stat, battle.weakness), 0);
   const need = dayNeed({ dayNumber: today.dayNumber, closed: false, protected: today.protection !== null, quests: today.quests.length, cleared: {} });
@@ -42,6 +44,7 @@ export function battleShown(view: Pick<Shown, 'battle' | 'today'>): BattleShown 
     days,
     power: days.reduce((sum, d) => sum + d.power, 0),
     need: battleNeed(days.map((d) => d.need), battle.rematch),
+    waiting,
     more,
     decided: false,
   };
@@ -56,8 +59,11 @@ export function timeLeft(endsAt: number, now: number): { d: number; h: number; m
 /** The once-only key of a decided battle's moment: a lost battle that later reaches its need shows its joining then. */
 export const resultKey = (r: Pick<BattleResultView, 'n' | 'won'>): `battle:${string}` => `battle:${r.n}:${r.won ? 'won' : 'lost'}`;
 
-/** The decided battle Today should show once (its key not yet in the offers), or null. */
+/**
+ * The decided battle Today should show once (its key not yet in the offers), or null. Review: never before the one-time
+ * card that explains the battles (a pilot player's first state already has one decided).
+ */
 export function resultToShow(view: Pick<Shown, 'camp'>, offers: readonly string[]): BattleResultView | null {
   const last = (view.camp as ServerState['camp'] | undefined)?.last ?? null;
-  return last === null || offers.includes(resultKey(last)) ? null : last;
+  return last === null || !offers.includes('monster:intro') || offers.includes(resultKey(last)) ? null : last;
 }

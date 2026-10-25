@@ -157,7 +157,7 @@ describe('the pact in the state (M7c)', () => {
 
 describe('Monster Week in the state (docs/2026-10-25-monster-week.md)', () => {
   const battleRow = (day_number: number, over: Partial<BattleDayRow> = {}): BattleDayRow => ({
-    day_number, status: 'closed', protection: null, resolution: 'streak_day', quests: 4,
+    day_number, status: 'closed', protection: null, resolution: 'streak_day', quests: 4, checkin_waiting: false, checkin_protected: false,
     strength: 0, vitality: 0, wisdom: 0, focus: 0, discipline: 0, ...over,
   });
 
@@ -184,7 +184,26 @@ describe('Monster Week in the state (docs/2026-10-25-monster-week.md)', () => {
 
   it('reads the day row as the battles need it', () => {
     expect(battleDay(battleRow(5, { status: 'open', resolution: null, quests: 3, focus: 2, discipline: 1 }))).toEqual({
-      dayNumber: 5, closed: false, protected: false, quests: 3, cleared: { focus: 2, discipline: 1 },
+      dayNumber: 5, closed: false, protected: false, waiting: false, quests: 3, cleared: { focus: 2, discipline: 1 },
     });
+  });
+
+  it('a missed day holds its battle until its check-in is answered; sick, injured or emergency then asks nothing of it (review)', () => {
+    const latest = { ...dayTwoSnapshot().days[0]!, day_number: 4 };
+    const missed = (over: Partial<BattleDayRow>) => [battleRow(1, { vitality: 2 }), battleRow(2, { vitality: 1 }), battleRow(3, { resolution: 'awaiting_checkin', ...over }), battleRow(4, { status: 'open', resolution: null })];
+    const waiting = monsterView(missed({ checkin_waiting: true }), latest, 240);
+    expect(waiting.camp.last).toBeNull();
+    expect(waiting.battle).toMatchObject({ n: 1, waiting: true });
+    const sick = monsterView(missed({ checkin_protected: true }), latest, 240);
+    expect(sick.camp.last).toMatchObject({ n: 1, won: true, need: 5 });
+    const didnt = monsterView(missed({}), latest, 240);
+    expect(didnt.camp.last).toMatchObject({ n: 1, won: false, need: 8 });
+  });
+
+  it("a pending check-in doesn't hold a battle whose clock is still running", () => {
+    const s = dayTwoSnapshot(undefined, { checkin: pendingCheckin() });
+    expect(historyOf(s).battleDays.find((d) => d.day_number === 1)!.checkin_waiting).toBe(true);
+    const view = stateView(s, dayOffers(s, LIBRARY), historyOf(s));
+    expect(view.battle).toMatchObject({ n: 1, waiting: false });
   });
 });

@@ -12,6 +12,8 @@ export default function TodayRoute() {
   const view = useGame((s) => s.view);
   const seen = useGame((s) => s.shadowSeen);
   const offers = useGame((s) => s.offers);
+  // Review: a level-up or achievement (a modal over everything) goes first; the battle opens once it is dismissed.
+  const celebrating = useGame((s) => s.celebrations.length > 0);
   const pushed = useRef<number | null>(null);
   // Monster Week: a decided battle opens its moment once, while Today is in front, after the Shadow's scene if one is due.
   const battlePushed = useRef<string | null>(null);
@@ -25,11 +27,11 @@ export default function TodayRoute() {
         router.push('/shadow');
         return;
       }
-      const result = view === null ? null : resultToShow(view, offers);
+      const result = view === null || celebrating ? null : resultToShow(view, offers);
       if (result === null || resultKey(result) === battlePushed.current) return;
       battlePushed.current = resultKey(result);
       router.push('/battle');
-    }, [view, seen, offers]),
+    }, [view, seen, offers, celebrating]),
   );
   return (
     <Today

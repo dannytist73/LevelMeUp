@@ -64,6 +64,24 @@ describe('the arena on Today', () => {
     expect(store.getState().markOffer).toHaveBeenCalledWith('monster:intro');
   });
 
+  it('a battle waiting for a check-in says so instead of its clock and power', async () => {
+    const s = serverState([]);
+    const held = { ...s, battle: { ...s.battle, waiting: true }, today: { ...s.today!, dayNumber: 4 } };
+    await renderToday(testStore({ view: project(held, []) }));
+    const arena = within(screen.getByTestId('arena'));
+    expect(arena.getByText(fillText(A.waiting, { name: 'Snoozle' }))).toBeTruthy();
+    expect(arena.queryByRole('progressbar')).toBeNull();
+  });
+
+  it('the reading quest shows its power too', async () => {
+    const base = serverState([]);
+    const s = { ...base, today: { ...base.today!, article: { id: 'article-9', cluster: 'sleep' as const, title: 'Wake time', minutes: 6 } } };
+    await renderToday(testStore({ view: project(s, []) }));
+    const reading = s.today.quests.find((q) => q.slot === 'article')!;
+    const label = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string).find((l) => typeof l === 'string' && l.includes('Wake time'))!;
+    expect(label).toContain(fillText(reading.stat === 'vitality' ? A.questWeakLabel : A.questPowerLabel, { n: questPower(reading.stat, 'vitality') }));
+  });
+
   it('says how far away the battle is, in days or hours', () => {
     const ends = new Date(Date.UTC(2026, 9, 12, 20)).toISOString(); // 04:00 on 13 Oct in Manila
     expect(clockLine(ends, 'Asia/Manila', Date.UTC(2026, 9, 11, 14))).toBe('Battle Tue 13 Oct 4:00 AM · in 1 d 6 h');

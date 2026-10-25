@@ -88,7 +88,7 @@ export function Arena({ battle, timeZone, now = Date.now, shown = true }: { batt
   return (
     <View testID="arena" style={{ gap: 14, padding: 16, borderRadius: radius.card, backgroundColor: colors.panel, borderWidth: space.border, borderColor: colors.line }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {battle.endsAt !== null && !battle.decided && <Chip label={clockLine(battle.endsAt, timeZone, at)} kind="outline" />}
+        {battle.endsAt !== null && !battle.decided && !battle.waiting && <Chip label={clockLine(battle.endsAt, timeZone, at)} kind="outline" />}
         {battle.rematch > 0 && <Chip label={A.rematch} kind="solid" />}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
@@ -109,7 +109,9 @@ export function Arena({ battle, timeZone, now = Date.now, shown = true }: { batt
         <Chip label={fillText(A.weakTo, { stat: STAT_NAMES[battle.weakness] })} kind="candy" />
         <Small>{WEAKNESS_TEXT[battle.weakness]}</Small>
       </View>
-      {battle.decided ? (
+      {battle.waiting ? (
+        <Body>{fillText(A.waiting, { name: g.name })}</Body>
+      ) : battle.decided ? (
         <Body>{A.decidedOffline}</Body>
       ) : (
         <View style={{ gap: 8 }}>

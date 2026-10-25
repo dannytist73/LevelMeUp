@@ -39,6 +39,13 @@ describe('every tap answers (audit 4)', () => {
     expect(flat(screen.getByTestId('button-lip').props.style)).toMatchObject({ backgroundColor: colors.accentLip, top: LIP });
   });
 
+  it('a quiet button on paper is paper over a darker paper lip, its words ink (review: it was night under ink)', async () => {
+    await render(<Button label="Edit" variant="secondary" on="paper" onPress={() => {}} />);
+    expect(flat(screen.getByRole('button', { name: 'Edit' }).props.style).backgroundColor).toBe(colors.paper);
+    expect(flat(screen.getByTestId('button-lip').props.style).backgroundColor).toBe(colors.trackOnPaper);
+    expect(flat(screen.getByText('Edit').props.style).color).toBe(colors.ink);
+  });
+
   it('a disabled button lies flat: no lip', async () => {
     await render(<Button label="Begin" disabled onPress={() => {}} />);
     expect(screen.queryByTestId('button-lip')).toBeNull();

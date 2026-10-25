@@ -35,14 +35,21 @@ own unsent completions until the next sync.
   quests, or a check-in that protected it) and an away day add 0; a day not built yet adds 3. Then
   `need = max(2, total − 1 − min(rematch, 3))`. Three normal days: 9 − 1 = **8**. Need only ever falls as the days
   are built: resting lowers it, it never rises.
-- **Decided.** When the window's last day has closed, or a later day exists. A window with no day rows at all (all away)
-  is skipped: no battle, no rematch.
+- **Decided.** When the window's last day has closed, or a later day exists. A window with no day rows at all (all away),
+  or whose days had no quests to clear, is skipped: no battle, no rematch. **A missed day whose check-in isn't answered
+  holds its battle** until it is (review, as the streak waits, spec §3.7): an answer of sick, injured or emergency then
+  asks nothing of that day, so the result comes after the answer and never changes because of it. The arena says the
+  battle waits for the check-in.
 - **Won** when power ≥ need. The opponent is the roster Grumble befriended the fewest times, ties in roster order, so a
   loss keeps the same Grumble (a rematch) and the book fills in order; once all 24 are friends the cycle starts again
   (each friend then shows how many times it joined).
 - **Rematch** = losses in a row against the current Grumble; each makes it 1 friendlier, at most 3.
 - **Late completions** (the 7-day late window) can still raise a decided battle's power: being derived, a lost battle
-  that later reaches its need becomes won, and the phone shows the joining then.
+  that later reaches its need becomes won, and the phone shows the joining then. Known limit (review): such a change also
+  re-judges the battles after it (who came next, their rematches). One phone can't cause it (a phone that was offline
+  sends everything before its days close, so nothing was shown in between); a second phone syncing old work days later
+  could. Accepted for now; if it is ever seen, decided battles get stored (a small table) instead of derived.
+- **Shown once**, after the one-time card that explains the battles and after any level-up or achievement in front.
 - **When it ends.** The window's last day's end, from the rules' own day windows (time zone and day boundary), so the
   clock is exact: battles end at the day boundary (4:00 by default), and the result is waiting in the morning.
 

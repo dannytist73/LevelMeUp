@@ -68,7 +68,8 @@ export type GrumbleArtProps = {
   living?: boolean;
   /** A new value plays a hit: a flinch and the hit pose. */
   hitKey?: number;
-  accessibilityLabel: string;
+  /** What a screen reader says; none when the cell around it says it (then the art is hidden from it). */
+  accessibilityLabel?: string;
 };
 
 export function GrumbleArt({ id, weakness, size, pose = 'idle', silhouette = false, living = true, hitKey = 0, accessibilityLabel }: GrumbleArtProps) {
@@ -133,7 +134,9 @@ export function GrumbleArt({ id, weakness, size, pose = 'idle', silhouette = fal
   const shown: GrumblePose = hit ? 'hit' : pose;
   const stills = GRUMBLE_ART[id];
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={accessibilityLabel} testID={`grumble-${id}`} style={{ width: size, height: size }}>
+    <View {...(accessibilityLabel === undefined
+      ? { importantForAccessibility: 'no-hide-descendants' as const, accessibilityElementsHidden: true }
+      : { accessible: true, accessibilityRole: 'image' as const, accessibilityLabel })} testID={`grumble-${id}`} style={{ width: size, height: size }}>
       <Animated.View testID="grumble-body" style={[{ width: size, height: size, transformOrigin: 'bottom' }, moving]}>
         {stills === undefined ? (
           <StandIn weakness={weakness} pose={shown} blink={blink} silhouette={silhouette} size={size} />

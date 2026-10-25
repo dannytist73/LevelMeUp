@@ -45,7 +45,7 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
   // broken (their label fell to about 1.5:1).
   // Its edge is the quiet line (review), so a disabled outline doesn't look like an enabled one beside it.
   const shown = disabled ? { bg: 'transparent', fg: on === 'night' ? colors.ash : colors.inkMuted, border: on === 'night' ? colors.line : colors.trackOnPaper } : look;
-  const lip = disabled ? null : display ? (on === 'night' || variant === 'commitment' ? colors.accentLip : colors.inkSoft) : colors.lip;
+  const lip = disabled ? null : display ? (on === 'night' || variant === 'commitment' ? colors.accentLip : colors.inkSoft) : on === 'night' ? colors.lip : colors.trackOnPaper;
   return (
     <View style={[{ paddingBottom: lip === null ? 0 : LIP }, style]}>
       {lip !== null && (
@@ -67,8 +67,8 @@ export function Button({ label, onPress, variant = 'primary', on = 'night', disa
           paddingVertical: 8,
           alignItems: 'center',
           justifyContent: 'center',
-          // A quiet button is solid over its lip, so the lip shows only below it.
-          backgroundColor: shown.bg === 'transparent' && lip !== null ? colors.night : shown.bg,
+          // A quiet button is solid over its lip, so the lip shows only below it: the night's colour, or paper's (review).
+          backgroundColor: shown.bg === 'transparent' && lip !== null ? (on === 'night' ? colors.night : colors.paper) : shown.bg,
           borderWidth: space.border,
           borderColor: shown.border,
           borderRadius: radius.control,

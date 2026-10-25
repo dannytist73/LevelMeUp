@@ -41,6 +41,12 @@ describe('the battle on the phone (Monster Week)', () => {
     expect(battleShown(later)).toMatchObject({ decided: true, more: 0 });
   });
 
+  it('a battle that waits for a check-in is over but not offline: it says so, and charges nothing more', () => {
+    const s = serverState([]);
+    const held = { ...s, battle: { ...s.battle, waiting: true }, today: { ...s.today!, dayNumber: 4 } };
+    expect(battleShown(held)).toMatchObject({ waiting: true, decided: false, more: 0 });
+  });
+
   it('a state from a server before Monster Week shows no battle', () => {
     const { battle: _b, ...old } = serverState([]);
     expect(battleShown(old as unknown as ServerState)).toBeNull();
@@ -55,10 +61,12 @@ describe('the battle on the phone (Monster Week)', () => {
   it('shows a decided battle once, and again if a lost one later becomes won', () => {
     const lost = { n: 1, grumble: 'snoozle', won: false, power: 5, need: 8, rematch: 0, byStat: {} };
     const camp = { wins: {}, last: lost };
-    expect(resultToShow({ camp }, [])).toBe(lost);
-    expect(resultToShow({ camp }, [resultKey(lost)])).toBeNull();
+    expect(resultToShow({ camp }, ['monster:intro'])).toBe(lost);
+    expect(resultToShow({ camp }, ['monster:intro', resultKey(lost)])).toBeNull();
     const won = { ...lost, won: true, power: 8 };
-    expect(resultToShow({ camp: { wins: { snoozle: 1 }, last: won } }, [resultKey(lost)])).toBe(won);
+    expect(resultToShow({ camp: { wins: { snoozle: 1 }, last: won } }, ['monster:intro', resultKey(lost)])).toBe(won);
+    // Never before the card that explains the battles (review).
+    expect(resultToShow({ camp }, [])).toBeNull();
     expect(resultKey(won)).toBe('battle:1:won');
   });
 });

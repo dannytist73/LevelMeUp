@@ -160,6 +160,7 @@ export function historyOf(s: Snapshot): History {
     const cleared = (stat: Stat) => quests.filter((q) => q.completed_at !== null && q.stat === stat).length;
     return {
       day_number: d.day_number, status: d.status, protection: d.protection, resolution: d.resolution, quests: quests.length,
+      checkin_waiting: s.checkin !== null && s.checkin.answer === null && String(s.checkin.day_id) === String(d.id), checkin_protected: false,
       strength: cleared('strength'), vitality: cleared('vitality'), wisdom: cleared('wisdom'), focus: cleared('focus'), discipline: cleared('discipline'),
     };
   });

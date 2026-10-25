@@ -77,6 +77,21 @@ describe('Today opens a decided battle by itself, once (Monster Week)', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
   });
 
+  it('waits while a level-up or achievement is in front, then opens (review)', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.UTC(2026, 9, 10, 13));
+    const store = testStore({ view: project(decided(), []), celebrations: [{ kind: 'level', level: 2, from: 1 }] });
+    await render(withStore(store, <TodayRoute />));
+    expect(router.push).not.toHaveBeenCalled();
+    await act(async () => store.setState({ celebrations: [] }));
+    expect(router.push).toHaveBeenCalledWith('/battle');
+  });
+
+  it('never before the card that explains the battles', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.UTC(2026, 9, 10, 13));
+    await render(withStore(testStore({ view: project(decided(), []), offers: [] }), <TodayRoute />));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
   it('never for one already shown', async () => {
     jest.spyOn(Date, 'now').mockReturnValue(Date.UTC(2026, 9, 10, 13));
     await render(withStore(testStore({ view: project(decided(), []), offers: ['monster:intro', 'battle:1:won'] }), <TodayRoute />));

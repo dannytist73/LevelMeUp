@@ -65,7 +65,7 @@ describe('monsterWeek: the camp and the current battle, derived from the stored 
     const mw = monsterWeek(ROSTER, []);
     expect(mw.wins).toEqual({});
     expect(mw.last).toBeNull();
-    expect(mw.battle).toMatchObject({ n: 1, grumble: 'snoozle', weakness: 'vitality', rematch: 0, first: 1, last: 3, need: 8, power: 0 });
+    expect(mw.battle).toMatchObject({ n: 1, grumble: 'snoozle', weakness: 'vitality', rematch: 0, first: 1, last: 3, need: 8, power: 0, waiting: false });
     expect(mw.battle.days.map((d) => d.state)).toEqual(['later', 'later', 'later']);
   });
 
@@ -141,6 +141,30 @@ describe('monsterWeek: the camp and the current battle, derived from the stored 
     const mw = monsterWeek(ROSTER, days);
     expect(mw.wins).toEqual({ snoozle: 1, scrollo: 1, laterpillar: 1 });
     expect(mw.battle.grumble).toBe('snoozle');
+  });
+
+  it('waits for an unanswered check-in on one of its days: no result, later days charge nothing yet (review)', () => {
+    const days = [day(1, { vitality: 2 }), day(2), day(3, {}, { waiting: true }), day(4, { focus: 3 }, { closed: false })];
+    const mw = monsterWeek(ROSTER, days);
+    expect(mw.last).toBeNull();
+    expect(mw.battle).toMatchObject({ n: 1, grumble: 'snoozle', waiting: true, power: 4, need: 8 });
+    // Answered sick: that day asks nothing, the battle is decided, and battle 2 counts day 4.
+    const answered = [day(1, { vitality: 2 }), day(2, { vitality: 1 }), day(3, {}, { protected: true }), day(4, { focus: 3 }, { closed: false })];
+    const after = monsterWeek(ROSTER, answered);
+    expect(after.last).toMatchObject({ n: 1, won: true, power: 6, need: 5 });
+    expect(after.battle).toMatchObject({ n: 2, grumble: 'scrollo', waiting: false, power: 6 });
+  });
+
+  it('a check-in waiting on a battle still running holds nothing yet', () => {
+    const mw = monsterWeek(ROSTER, [day(1, {}, { waiting: true }), day(2, {}, { closed: false })]);
+    expect(mw.battle).toMatchObject({ n: 1, waiting: false });
+  });
+
+  it('a window with nothing to clear on any day is skipped, not lost (review)', () => {
+    const empty = (n: number) => day(n, {}, { quests: 0, protected: true });
+    const mw = monsterWeek(ROSTER, [empty(1), empty(2), empty(3), day(4, {}, { closed: false })]);
+    expect(mw.last).toBeNull();
+    expect(mw.battle).toMatchObject({ n: 2, grumble: 'snoozle', rematch: 0 });
   });
 
   it('reads the days in any order', () => {

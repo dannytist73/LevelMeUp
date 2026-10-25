@@ -186,15 +186,21 @@ export type History = {
   battleDays: BattleDayRow[];
 };
 
-/** Monster Week: a day, its number of quests and its cleared quests by stat (`loadHistory`). */
-export type BattleDayRow = Pick<DayRow, 'day_number' | 'status' | 'protection' | 'resolution'> & { quests: number } & Record<Stat, number>;
+/**
+ * Monster Week: a day, its number of quests and its cleared quests by stat (`loadHistory`), and its check-in: not answered
+ * yet (`checkin_waiting`), or answered sick, injured or emergency (`checkin_protected`, the outcome "protected").
+ */
+export type BattleDayRow = Pick<DayRow, 'day_number' | 'status' | 'protection' | 'resolution'> & {
+  quests: number; checkin_waiting: boolean; checkin_protected: boolean;
+} & Record<Stat, number>;
 
 export function battleDay(r: BattleDayRow): BattleDay {
   const cleared: BattleDay['cleared'] = {};
   for (const stat of STATS) if (r[stat] > 0) cleared[stat] = r[stat];
   return {
-    dayNumber: r.day_number, closed: r.status === 'closed', protected: r.protection !== null || r.resolution === 'protected',
-    quests: r.quests, cleared,
+    dayNumber: r.day_number, closed: r.status === 'closed',
+    protected: r.protection !== null || r.resolution === 'protected' || r.checkin_protected,
+    waiting: r.checkin_waiting, quests: r.quests, cleared,
   };
 }
 

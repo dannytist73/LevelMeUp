@@ -11,6 +11,8 @@ import { colors, radius, space } from '../../theme/tokens.ts';
 import { Icon } from '../../ui/icons.tsx';
 import { Tap } from '../../ui/Tap.tsx';
 import { Body, Heading, Label, Small, Title } from '../../ui/Text.tsx';
+import { PowerChip, powerWords } from '../../ui/PowerChip.tsx';
+import type { Power } from '../../ui/PowerChip.tsx';
 import { QuestRow, WillSync, questXp } from '../QuestCard.tsx';
 
 /** "6 cards · about 3 min", or "6 min read" for an article without a deck on this phone. */
@@ -28,10 +30,11 @@ export function useReadingLength(article: ArticleSummary): string {
 /** M17: past this many characters a reading's title takes the heading size. */
 const LONG_TITLE = 28;
 
-export type ReadingProps = { quest: QuestView; article: ArticleSummary | null; waiting: boolean; onOpen: () => void };
+/** Monster Week: `power`, what the reading gives the battle. */
+export type ReadingProps = { quest: QuestView; article: ArticleSummary | null; waiting: boolean; onOpen: () => void; power?: Power };
 
 /** Up next: the reading as the thing to do now. */
-export function ReadingHero({ quest, article, waiting, onOpen, label = READING_TEXT.read, lead }: ReadingProps & {
+export function ReadingHero({ quest, article, waiting, onOpen, label = READING_TEXT.read, lead, power }: ReadingProps & {
   article: ArticleSummary;
   label?: string;
   /** M17: Today's "Up next", leading the card's line. */
@@ -40,13 +43,14 @@ export function ReadingHero({ quest, article, waiting, onOpen, label = READING_T
   const xp = questXp(quest);
   const length = useReadingLength(article);
   return (
-    <Tap accessibilityRole="button" accessibilityLabel={`${lead === undefined ? '' : `${lead}. `}${READING_TEXT.label}, ${CLUSTER_NAMES[article.cluster]}. ${article.title}. ${length}. ${label}, +${xp} XP`}
+    <Tap accessibilityRole="button" accessibilityLabel={`${lead === undefined ? '' : `${lead}. `}${READING_TEXT.label}, ${CLUSTER_NAMES[article.cluster]}. ${article.title}. ${length}. ${label}, +${xp} XP${power === undefined ? '' : `, ${powerWords(power)}`}`}
       onPress={onOpen} radius={radius.card}>
       <View testID="up-next" style={{ gap: 8, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18, borderRadius: radius.card, borderWidth: space.heroBorder, borderColor: colors.accent, backgroundColor: colors.panel }}>
         <Label tone="accentText">{[lead, READING_TEXT.label, CLUSTER_NAMES[article.cluster]].filter((x) => x !== undefined).join(' · ')}</Label>
         {/* M17 (design critique): a long title at heading size; a short one keeps the title's. */}
         {article.title.length > LONG_TITLE ? <Heading>{article.title}</Heading> : <Title>{article.title}</Title>}
         <Body tone="ashLight" weight="medium">{`${length} · +${xp} XP`}</Body>
+        {power !== undefined && <View style={{ alignSelf: 'flex-start' }}><PowerChip power={power} /></View>}
         {waiting && <WillSync />}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 54, marginTop: 4, borderRadius: radius.pill, backgroundColor: colors.commit }}>
           <Heading tone="onAccent">{label}</Heading>
@@ -58,7 +62,7 @@ export function ReadingHero({ quest, article, waiting, onOpen, label = READING_T
 }
 
 /** Then: the reading as a quiet row; the waiting line while the day has no article. */
-export function ReadingRow({ quest, article, waiting, onOpen }: ReadingProps) {
+export function ReadingRow({ quest, article, waiting, onOpen, power }: ReadingProps) {
   if (article === null) {
     return (
       <View style={{ paddingHorizontal: 16, paddingVertical: 14, borderRadius: radius.control, borderWidth: space.border, borderColor: colors.divider, backgroundColor: colors.panel }}>
@@ -66,10 +70,13 @@ export function ReadingRow({ quest, article, waiting, onOpen }: ReadingProps) {
       </View>
     );
   }
-  return <ReadingLine quest={quest} article={article} waiting={waiting} onOpen={onOpen} />;
+  return <ReadingLine quest={quest} article={article} waiting={waiting} onOpen={onOpen} {...(power === undefined ? {} : { power })} />;
 }
 
-function ReadingLine({ quest, article, waiting, onOpen }: ReadingProps & { article: ArticleSummary }) {
+function ReadingLine({ quest, article, waiting, onOpen, power }: ReadingProps & { article: ArticleSummary }) {
   const length = useReadingLength(article);
-  return <QuestRow title={article.title} line={`${CLUSTER_NAMES[article.cluster]} · ${length}`} xp={questXp(quest)} waiting={waiting} onOpen={onOpen} />;
+  return (
+    <QuestRow title={article.title} line={`${CLUSTER_NAMES[article.cluster]} · ${length}`} xp={questXp(quest)} waiting={waiting} onOpen={onOpen}
+      {...(power === undefined ? {} : { power })} />
+  );
 }

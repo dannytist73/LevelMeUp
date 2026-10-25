@@ -12,6 +12,8 @@ export function Chip({ label, kind = 'solid', on = 'night' }: { label: string; k
       testID="chip"
       style={{
         alignSelf: 'flex-start',
+        maxWidth: '100%',
+        flexShrink: 1,
         paddingVertical: solid ? 4 : 3,
         paddingHorizontal: solid ? 11 : 10,
         borderRadius: radius.pill,

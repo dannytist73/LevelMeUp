@@ -48,7 +48,7 @@ function BookCell({ g, wins, here }: { g: Grumble; wins: number; here: boolean }
     <View accessible accessibilityLabel={label} testID={`book-${g.id}`}
       style={{ width: '31%', flexGrow: 1, alignItems: 'center', gap: 4, paddingVertical: 10, paddingHorizontal: 6, borderRadius: radius.control,
         backgroundColor: here ? colors.halftone : colors.panel, borderWidth: here ? space.heroBorder : space.border, borderColor: here ? colors.candy : colors.divider }}>
-      <GrumbleArt id={g.id} weakness={g.weakness} size={64} living={false} silhouette={!met && !here} accessibilityLabel={label} />
+      <GrumbleArt id={g.id} weakness={g.weakness} size={64} living={false} silhouette={!met && !here} />
       <Label tone={met || here ? 'chalk' : 'ash'} style={{ textAlign: 'center' }}>{met || here ? g.name : '?'}</Label>
       <Caption style={{ textAlign: 'center' }}>{line}</Caption>
     </View>
@@ -96,8 +96,8 @@ export function Camp({ onSettings, now = Date.now }: { onSettings?: () => void; 
           ) : (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
               {friends.map((g, i) => (
-                <View key={g.id} style={{ alignItems: 'center', width: 84 }}>
-                  <GrumbleArt id={g.id} weakness={g.weakness} size={72} pose="happy" living={i < LIVING_AT_FIRE} accessibilityLabel={g.name} />
+                <View key={g.id} accessible accessibilityLabel={g.name} style={{ alignItems: 'center', width: 84 }}>
+                  <GrumbleArt id={g.id} weakness={g.weakness} size={72} pose="happy" living={i < LIVING_AT_FIRE} />
                   <Caption tone="ashLight" style={{ textAlign: 'center' }}>{g.name}</Caption>
                 </View>
               ))}
@@ -109,7 +109,7 @@ export function Camp({ onSettings, now = Date.now }: { onSettings?: () => void; 
             <GrumbleArt id={here.id} weakness={here.weakness} size={72} accessibilityLabel={`${here.name}, ${here.standsFor}`} />
             <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
               <Body weight="bold">{fillText(C.here, { name: here.name })}</Body>
-              {battle.endsAt !== null && !battle.decided && <Small>{fillText(C.battle, { when: clockLine(battle.endsAt, view.today?.timeZone ?? view.profile.timeZone, now()) })}</Small>}
+              {battle.endsAt !== null && !battle.decided && !battle.waiting && <Small>{fillText(C.battle, { when: clockLine(battle.endsAt, view.today?.timeZone ?? view.profile.timeZone, now()) })}</Small>}
               <Small tone="candy">{fillText(MONSTER_TEXT.arena.weakTo, { stat: STAT_NAMES[here.weakness] })}</Small>
             </View>
           </View>

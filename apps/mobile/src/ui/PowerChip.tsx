@@ -15,11 +15,11 @@ export function PowerChip({ power }: { power: Power }) {
   return (
     <View testID={power.weak ? 'power-chip-weak' : 'power-chip'} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden
       style={{
-        flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'center', paddingVertical: 3, paddingHorizontal: 9, borderRadius: radius.pill,
+        flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'center', maxWidth: '100%', flexShrink: 1, paddingVertical: 3, paddingHorizontal: 9, borderRadius: radius.pill,
         backgroundColor: power.weak ? colors.candy : 'transparent', borderWidth: 1.5, borderColor: colors.candy,
       }}>
       <Icon name="bolt" size={14} color={fg} />
-      <Text maxFontSizeMultiplier={2} style={{ fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 17, color: fg }}>
+      <Text maxFontSizeMultiplier={2} style={{ flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 17, color: fg }}>
         {fillText(power.weak ? MONSTER_TEXT.arena.questWeak : MONSTER_TEXT.arena.questPower, { n: power.n })}
       </Text>
     </View>

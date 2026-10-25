@@ -181,7 +181,7 @@ export function QuestRow({ title, line, xp, onOpen, onCheck, tag, note, waiting 
           {waiting && <WillSync />}
         </View>
         {tag !== undefined ? <Chip label={tag} kind="outline" /> : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 8, maxWidth: '100%' }}>
             {power !== undefined && <PowerChip power={power} />}
             <Label tone="accentText">{`+${xp} XP`}</Label>
           </View>
