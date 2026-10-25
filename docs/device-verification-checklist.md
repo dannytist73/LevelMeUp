@@ -850,6 +850,8 @@ character for every row that clears or rests (never Vera).
 
 Emulator, 2026-10-25, development build 0.11.0 (version code 13, built on this PC from 68d6883, installed over 0.10.0; Vera kept). Vera was only looked at (tabs and screens opened, nothing pressed that changes her); the moving parts were checked in Developer → Monster Week preview, which makes up a battle from the cached day and sends nothing. The server path is checked live instead (test:live: a new player's battle 1, and a clear charging it). Grumbles still show the stand-in drawing: the painted stills come after the owner picks a look (style test https://claude.ai/artifact/H98ZgeMvx6Cp3KX6ZJYh2K).
 
+The Find X9 column is the owner's, on the 0.11.0 preview APK built 2026-10-25 03:07 UTC on this PC from fe1d11c: `apps/mobile/dist/levelmeup-0.11.0-preview.apk` (167 MB, version code 13, sha256 3fde5f3c92aebde0…; 26/26 arm64 libraries 16 KB aligned; the bundle scan is clean). On the emulator it installed over the development build, kept Vera, opened in 1.9 s and showed the same screens; nothing in the crash log. It installs over 0.10.0 on the phone (higher version code, same signing; not yet seen). It works with the server as deployed (lmu-sync v34).
+
 | # | Check | Result |
 |---|---|---|
 | 1 | Every screen is the Monster Night look: night background, lime main buttons that stand on a darker lip and drop onto it while pressed (a disabled one lies flat), Lilita One titles. Titles with "→", "′" or a no-break space draw whole (Lilita One lacks those; Android takes them from its own font). **Pass** 2026-10-25, emulator (Monster Night, Lilita One titles, lip buttons; the → / no-break-space titles not seen yet). Find X9: |
