@@ -59,7 +59,11 @@ export function Gain({ n, run }: { n: number; run: number }) {
 /** The clock's line moves on each minute while Camp is in front. */
 export const CLOCK_TICK_MS = 30_000;
 
-export function BattleStrip({ battle, timeZone, now = Date.now, shown = true }: { battle: BattleShown; timeZone: string; now?: () => number; shown?: boolean }) {
+/**
+ * `asking`: the check-in's question is on the card below, so the line saying the battle waits for it goes (2026-10-27: the
+ * question was said three times, and the answers didn't fit the screen); after "Ask me later" the line says why it waits.
+ */
+export function BattleStrip({ battle, timeZone, now = Date.now, shown = true, asking = false }: { battle: BattleShown; timeZone: string; now?: () => number; shown?: boolean; asking?: boolean }) {
   const [at, setAt] = useState(now);
   useEffect(() => {
     if (!shown) return;
@@ -78,7 +82,7 @@ export function BattleStrip({ battle, timeZone, now = Date.now, shown = true }: 
         {battle.rematch > 0 && <Chip label={A.rematch} kind="solid" />}
       </View>
       {battle.waiting ? (
-        <Body>{fillText(A.waiting, { name: g.name })}</Body>
+        !asking && <Body>{fillText(A.waiting, { name: g.name })}</Body>
       ) : battle.decided ? (
         <Body>{A.decidedOffline}</Body>
       ) : (

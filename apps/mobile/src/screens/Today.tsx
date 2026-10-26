@@ -327,7 +327,7 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onPain, onShadow = ()
             bubble={bubble} night={night} gain={gain} />
         )}
         <View style={{ paddingHorizontal: space.gutter, gap: 20 }}>
-          {battle !== null && usable && <BattleStrip battle={battle} timeZone={today!.timeZone} now={now} shown={shown} />}
+          {battle !== null && usable && <BattleStrip battle={battle} timeZone={today!.timeZone} now={now} shown={shown} asking={asking} />}
           {recap !== null && <Small testID="week-recap">{recapLine(recap)}</Small>}
           {updateRequired && <UpdateNeeded />}
           {strip[0] !== undefined && (

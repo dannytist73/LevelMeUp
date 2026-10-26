@@ -77,6 +77,14 @@ describe('the battle on Camp (a simpler day)', () => {
     expect(screen.queryByText(CAMP_TEXT.bubble.ask)).toBeNull(); // it asks only while the question waits (review)
   });
 
+  it('while the check-in is asked below, the strip leaves the asking to it (2026-10-27)', async () => {
+    const s = checkinState();
+    const asked = { ...s, battle: { ...s.battle!, waiting: true } };
+    await renderToday(testStore({ view: project(asked, []) }));
+    expect(screen.getByTestId('checkin-ask')).toBeTruthy();
+    expect(within(screen.getByTestId('battle-strip')).queryByText(fillText(A.waiting, { name: 'Snoozle' }))).toBeNull();
+  });
+
   it('the reading quest shows its power too', async () => {
     const base = serverState([]);
     const s = { ...base, today: { ...base.today!, article: { id: 'article-9', cluster: 'sleep' as const, title: 'Wake time', minutes: 6 } } };
