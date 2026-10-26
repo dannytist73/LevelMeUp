@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReadingView } from '../game/types.ts';
 import { clockTime, dateKeyLabel } from '../lib/dates.ts';
 import type { CodexEntry } from '../reading/codex.ts';
-import { asDeck } from '../reading/deck.ts';
+import { asDeck, isStory } from '../reading/deck.ts';
 import { useGame } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Icon } from '../ui/icons.tsx';
@@ -88,13 +88,13 @@ export function Library({ onOpenQuest, onOpenReading, onOpenCodex, onSettings }:
   const open = today !== null && Date.parse(today.endsAt!) > Date.now();
   const past = view?.readings.filter((r) => r.dayNumber !== today?.dayNumber) ?? [];
   const held = article === null ? null : (articles[article.id] ?? null);
-  const hasDeck = held !== null && asDeck(held.deck) !== null;
+  const deck = held === null ? null : asDeck(held.deck);
 
   let todays = null;
   if (quest !== null && open) {
     if (article === null) todays = <ReadingRow quest={quest} article={null} waiting={false} onOpen={() => {}} />;
     else if (quest.completedAt === null) {
-      todays = <ReadingHero quest={quest} article={article} waiting={view!.waiting.has(quest.id)} onOpen={() => onOpenQuest(quest.id)} label={hasDeck ? L.openCards : READING_TEXT.read} />;
+      todays = <ReadingHero quest={quest} article={article} waiting={view!.waiting.has(quest.id)} onOpen={() => onOpenQuest(quest.id)} label={deck === null ? READING_TEXT.read : isStory(deck) ? L.readStory : L.openCards} />;
     } else {
       todays = (
         <ClearedRow title={article.title} stat={CLUSTER_NAMES[article.cluster]} time={clockTime(quest.completedAt, today!.timeZone)} xp={questXp(quest)}

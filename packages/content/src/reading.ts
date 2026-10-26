@@ -86,10 +86,11 @@ export const READING_TEXT = {
   },
   /** M12 (board R3-5, plan decision 1): the Library tab. */
   library: {
-    title: 'Library',
-    line: 'Your readings and the lessons you kept',
+    title: 'Stories',
+    line: 'Your stories and the lessons you kept',
     today: "Today's reading",
     openCards: 'Open the cards',
+    readStory: 'Read the story',
     readAgain: 'Read again',
     kept: 'Kept lessons · {n}',
     /** M17: with none kept the empty card says so; the heading doesn't add " · 0". */

@@ -30,7 +30,7 @@ export const CAMP_ART: Readonly<Record<CampStage, CampArt>> = {
     picture: require('../../assets/camp/first.webp'),
     ratio: RATIO,
     fire: { x: 0.54, y: 0.55, r: 0.2 },
-    buddy: { x: 0.36, y: 0.66, h: 0.17 },
+    buddy: { x: 0.36, y: 0.67, h: 0.21 },
     visitor: { x: 0.7, y: 0.76, h: 0.17 },
     friends: [{ x: 0.66, y: 0.5, h: 0.1 }, { x: 0.2, y: 0.64, h: 0.1 }],
   },
@@ -38,7 +38,7 @@ export const CAMP_ART: Readonly<Record<CampStage, CampArt>> = {
     picture: require('../../assets/camp/cabin.webp'),
     ratio: RATIO,
     fire: { x: 0.5, y: 0.55, r: 0.18 },
-    buddy: { x: 0.64, y: 0.66, h: 0.16 },
+    buddy: { x: 0.64, y: 0.67, h: 0.2 },
     visitor: { x: 0.73, y: 0.79, h: 0.15 },
     friends: [
       { x: 0.36, y: 0.62, h: 0.11 }, { x: 0.62, y: 0.5, h: 0.1 }, { x: 0.47, y: 0.76, h: 0.11 },
@@ -49,7 +49,7 @@ export const CAMP_ART: Readonly<Record<CampStage, CampArt>> = {
     picture: require('../../assets/camp/lodge.webp'),
     ratio: RATIO,
     fire: { x: 0.51, y: 0.56, r: 0.18 },
-    buddy: { x: 0.63, y: 0.66, h: 0.15 },
+    buddy: { x: 0.63, y: 0.67, h: 0.19 },
     visitor: { x: 0.8, y: 0.8, h: 0.14 },
     friends: [
       { x: 0.36, y: 0.58, h: 0.1 }, { x: 0.66, y: 0.5, h: 0.09 }, { x: 0.46, y: 0.74, h: 0.1 },

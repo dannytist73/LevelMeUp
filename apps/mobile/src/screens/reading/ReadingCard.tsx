@@ -2,10 +2,10 @@
 // with the screen's one bright Read button; otherwise a quiet row. The line says what reading it takes: "6 cards ·
 // about 3 min" once the phone holds its Story Deck, else the article's minutes. While the day has no article yet, the
 // waiting line.
-import { CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
+import { CAMP_TEXT, CLUSTER_NAMES, PLAY_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import { View } from 'react-native';
 import type { ArticleBody, ArticleSummary, QuestView } from '../../game/types.ts';
-import { asDeck, deckCards, deckMinutes } from '../../reading/deck.ts';
+import { asDeck, deckCards, deckMinutes, isStory } from '../../reading/deck.ts';
 import { useGame } from '../../state/store.ts';
 import { colors, radius, space } from '../../theme/tokens.ts';
 import { Icon } from '../../ui/icons.tsx';
@@ -15,11 +15,12 @@ import { PowerChip, powerWords } from '../../ui/PowerChip.tsx';
 import type { Power } from '../../ui/PowerChip.tsx';
 import { QuestRow, WillSync, questXp } from '../QuestCard.tsx';
 
-/** "6 cards · about 3 min", or "6 min read" for an article without a deck on this phone. */
+/** "about 4 min" for a story lesson, "6 cards · about 3 min" for an older deck, or "6 min read" without a deck on this phone. */
 export function readingLength(article: ArticleSummary, held: ArticleBody | null): string {
   const deck = held === null ? null : asDeck(held.deck);
-  return deck === null
-    ? fillText(READING_TEXT.minutes, { n: article.minutes })
+  if (deck === null) return fillText(READING_TEXT.minutes, { n: article.minutes });
+  // A simpler day: a story lesson is one scroll, so it has minutes, not cards.
+  return isStory(deck) ? fillText(CAMP_TEXT.storyLength, { n: deckMinutes(deck) })
     : fillText(READING_TEXT.deck.cards, { cards: deckCards(deck).length, minutes: deckMinutes(deck) });
 }
 

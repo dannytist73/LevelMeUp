@@ -71,7 +71,8 @@ export function StoryScroll({ article, label, xp, onClose, onFullArticle, kept, 
     }
   }, [deck]);
   const minutes = deckMinutes(deck);
-  const meta = xp === null ? fillText(D.cards, { cards: deck.story.length, minutes }) : fillText(D.cardsXp, { cards: deck.story.length, minutes, xp });
+  const length = fillText(CAMP_TEXT.storyLength, { n: minutes });
+  const meta = xp === null ? length : `${length} · +${xp}\u00a0XP`;
   const share = () => {
     Share.share({ message: fillText(D.shareLine, { lesson: deck.lesson, title: article.title }) }).catch(() => {});
   };
@@ -117,7 +118,7 @@ export function StoryScroll({ article, label, xp, onClose, onFullArticle, kept, 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <PersonBadge person={person} size={44} />
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Caption>{D.todaysStory}</Caption>
+                {xp !== null && <Caption>{D.todaysStory}</Caption>}
                 <Body weight="bold">{`${person.name}, ${person.line}`}</Body>
               </View>
             </View>

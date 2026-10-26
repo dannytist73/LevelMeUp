@@ -1,7 +1,7 @@
 // M12 phase 4: the Library tab (plan decision 1, board R3-5; audit 18).
-import { READING_TEXT, fillText } from '@levelmeup/content';
+import { CAMP_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { SAMPLE_ARTICLE } from '../src/dev/sampleArticle.ts';
+import { SAMPLE_ARTICLE, SAMPLE_STORY_ARTICLE } from '../src/dev/sampleArticle.ts';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { LIBRARY_LESSONS, Library } from '../src/screens/Library.tsx';
@@ -37,6 +37,15 @@ describe('the Library (M12 decision 1)', () => {
   it('says "Open the cards" once the phone holds its Story Deck', async () => {
     await renderLibrary(withArticle(false), { articles: { [SAMPLE_ARTICLE.id]: SAMPLE_ARTICLE } });
     expect(screen.getByText(L.openCards)).toBeTruthy();
+  });
+
+  it('a story lesson is read, not opened as cards, and has minutes (a simpler day)', async () => {
+    await renderLibrary(withArticle(false), { articles: { [SAMPLE_ARTICLE.id]: SAMPLE_STORY_ARTICLE } });
+    expect(screen.getByText(L.readStory)).toBeTruthy();
+    expect(screen.queryByText(L.openCards)).toBeNull();
+    expect(screen.queryByText(/cards/)).toBeNull();
+    // The text matcher folds the length's no-break spaces into plain ones.
+    expect(screen.getByText(new RegExp(CAMP_TEXT.storyLength.replace(/ /g, ' ').replace('{n}', '\\d+')))).toBeTruthy();
   });
 
   it("once claimed, today's reading opens again", async () => {

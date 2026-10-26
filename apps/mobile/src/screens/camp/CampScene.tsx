@@ -3,13 +3,14 @@
 // six friends around it, and this week's Grumble at the edge, holding out today's quest. The fire's glow flickers. When
 // power lands, the visitor flinches, a burst goes off, your buddy throws and the gain floats up. Once the day is done the
 // camp goes dark and everyone sleeps. Tapping a friend says the line it joined with. With reduced motion nothing moves.
-// A bubble too tall to sit above the visitor (large text) moves under the painting, so nothing is cut off.
+// The visitor's bubble sits in the sky at the top right, over nothing; one too tall to fit there (large text) moves under
+// the painting, so nothing is cut off.
 import { BUDDIES, CAMP_TEXT, fillText, grumbleById } from '@levelmeup/content';
 import type { ClassId, TrainableStat } from '@levelmeup/rules';
 import { useEffect, useState } from 'react';
 import { Image, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { CAMP_ART, campStage } from '../../art/camp.ts';
 import type { Spot } from '../../art/camp.ts';
 import type { BuddyPose } from '../../art/buddies.ts';
@@ -49,11 +50,21 @@ const box = (s: Spot, w: number, h: number) => {
   return { left: Math.round(s.x * w - size / 2), top: Math.round(s.y * h - size), size };
 };
 
-/** A soft oval under someone's feet, so they stand on the grass. */
+/** A soft shadow under someone's feet, fading at its edge, so they stand on the grass. */
 function Ground({ size }: { size: number }) {
+  const w = size * 0.7;
+  const h = size * 0.14;
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: size * 0.16, bottom: -size * 0.04, width: size * 0.68, height: size * 0.12,
-      borderRadius: radius.pill, backgroundColor: colors.lip, opacity: 0.45 }} />
+    <Svg pointerEvents="none" width={w} height={h} style={{ position: 'absolute', left: (size - w) / 2, bottom: -h / 2 }}
+      accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Defs>
+        <RadialGradient id="camp-ground" cx="50%" cy="50%" rx="50%" ry="50%">
+          <Stop offset="0" stopColor={colors.lip} stopOpacity={0.55} />
+          <Stop offset="1" stopColor={colors.lip} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Ellipse cx={w / 2} cy={h / 2} rx={w / 2} ry={h / 2} fill="url(#camp-ground)" />
+    </Svg>
   );
 }
 
@@ -119,6 +130,8 @@ export function CampScene({ classId, level, friends, visitor, bubble, night, gai
   const v = box(art.visitor, width, height);
 
   const said = bubble !== null && visitor !== null;
+  /** Where the bubble starts: the empty sky above the island. */
+  const sky = Math.round(height * 0.04);
   return (
     <View>
     <View testID="camp-scene" style={{ width, height }}>
@@ -156,8 +169,8 @@ export function CampScene({ classId, level, friends, visitor, bubble, night, gai
         </>
       )}
       {said && !below && (
-        <View testID="camp-bubble" accessibilityLiveRegion="polite" onLayout={(e) => { if (e.nativeEvent.layout.height > v.top - 4) setBelow(true); }}
-          style={{ position: 'absolute', right: Math.max(8, width - (v.left + v.size)), bottom: height - v.top + 2, maxWidth: width * 0.56,
+        <View testID="camp-bubble" accessibilityLiveRegion="polite" onLayout={(e) => { if (sky + e.nativeEvent.layout.height > v.top - 8) setBelow(true); }}
+          style={{ position: 'absolute', right: 16, top: sky, maxWidth: width * 0.58,
             paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.control, borderBottomRightRadius: 4, backgroundColor: colors.paper }}>
           <Small tone="ink">{bubble}</Small>
         </View>

@@ -27,7 +27,7 @@ import type { Shown } from '../game/project.ts';
 import { dayCleared, dayOff, openQuests, quickClearable, shownStreak, upNext, xpToday } from '../game/today.ts';
 import type { QuestView, TodayView } from '../game/types.ts';
 import { clockTime, dateLine, dayLabel } from '../lib/dates.ts';
-import { asDeck, deckMinutes, isStory } from '../reading/deck.ts';
+import { asDeck, isStory } from '../reading/deck.ts';
 import { useGame } from '../state/store.ts';
 import type { GameState, Status } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
@@ -398,7 +398,7 @@ function DayBody({
   const held = article === null ? null : (articles[article.id] ?? null);
   const deck = held === null ? null : asDeck(held.deck);
   const story = deck !== null && isStory(deck) ? deck : null;
-  const length = article === null ? '' : story !== null ? fillText(CAMP_TEXT.storyLength, { n: deckMinutes(story) }) : readingLength(article, held);
+  const length = article === null ? '' : readingLength(article, held);
   const extra = (q: QuestView): Extra => {
     const title = titleOf(q);
     // M8b: the reading has nothing to open until the day has its article.
