@@ -918,3 +918,5 @@ offers are on Me. The app is called Grumble Camp. Use a NEW test character for e
 | 9 | Change today: swap, hard day, rest, the abilities, the paused exercises, "I felt pain" for an exercise quest. | Find X9: |
 | 10 | Me: a Set up list (save, voice, gear, slip, vow, the program, the morning briefing, Plus) with Not now on each, and a dot on Me's tab while one waits. Settings' gear only on Me. | Find X9: |
 | 11 | A friend at the fire, tapped: its line ("Snoozle: “Fine. Mornings are nice too.”"). | Find X9: |
+| 12 | The bubble sits in the sky at the top right, clear of the fire; at the largest text size it moves under the painting, nothing cut off. Soft shadows under feet, no dark bars. | Find X9: |
+| 13 | Stories: titled Stories, no gear; today's story says "about N min · +XP" and "Read the story" (no "cards"); a past story's scroll has no "Today's story" label. | Find X9: |
