@@ -62,7 +62,9 @@ export const CAMP_TEXT = {
     which: 'Which line will you take with you?',
     own: 'Write my own',
     read: '{n}% read',
-    checkSkip: 'Scroll on to skip. Nothing is lost either way.',
+    checkSkip: 'Swipe on to skip. Nothing is lost either way.',
+    /** The cover's hint: the story is a reel, one card a screen. */
+    swipe: 'Swipe up',
     back: 'Back to the story',
   },
   /** Me's Set up list: what the notice strip used to offer one card at a time. */

@@ -8,6 +8,7 @@ import { project } from '../src/game/project.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import { storyLines } from '../src/reading/deck.ts';
 import { FRIENDS_AT_FIRE } from '../src/screens/camp/CampScene.tsx';
+import { reelStops } from '../src/screens/reading/StoryScroll.tsx';
 import { Quest } from '../src/screens/Quest.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { InkTabBar } from '../src/ui/InkTabBar.tsx';
@@ -140,6 +141,34 @@ describe('the story as one scroll (decision 10)', () => {
       <Quest questId={reading.id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
     await fireEvent.press(screen.getByRole('button', { name: CAMP_TEXT.story.own }));
     expect(screen.getByLabelText('Your takeaway, one sentence')).toBeTruthy();
+  });
+});
+
+describe('the story as reels (owner, 2026-10-27)', () => {
+  it('stops at the top of each piece, and a screen at a time through a piece taller than the screen', () => {
+    expect(reelStops([{ y: 0, h: 800 }, { y: 800, h: 800 }, { y: 1600, h: 800 }], 800)).toEqual([0, 800, 1600]);
+    // A card at large text, 2,000 tall on an 800 screen: its top, two stops inside, its end, then the next card.
+    expect(reelStops([{ y: 0, h: 800 }, { y: 800, h: 2000 }, { y: 2800, h: 800 }], 800)).toEqual([0, 800, 1480, 2000, 2800]);
+    expect(reelStops([{ y: 0, h: 800 }], 0)).toEqual([]); // before the screen is measured: a plain scroll
+  });
+
+  it('each piece fills the screen and a swipe snaps to the next', async () => {
+    const base = serverState(['core']);
+    const s: ServerState = { ...base, today: { ...base.today!, article: { id: SAMPLE_STORY_ARTICLE.id, cluster: SAMPLE_STORY_ARTICLE.cluster, title: SAMPLE_STORY_ARTICLE.title, minutes: 6 } } };
+    const reading = s.today!.quests.find((q) => q.slot === 'article')!;
+    await render(withStore(testStore({ view: project(s, []), articles: { [SAMPLE_STORY_ARTICLE.id]: SAMPLE_STORY_ARTICLE } }),
+      <Quest questId={reading.id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
+    expect(screen.getByText(CAMP_TEXT.story.swipe, { includeHiddenElements: true })).toBeTruthy(); // hidden from screen readers, which don't swipe
+    const reel = screen.getByTestId('story-reel');
+    expect(reel.props.snapToOffsets).toBeUndefined(); // a plain scroll until measured
+    await fireEvent(reel, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 700 } } });
+    const pages = SAMPLE_STORY_DECK.story.length + 5; // the cover, the cards, why, the check, the lesson, the end
+    for (let i = 0; i < pages; i++) {
+      const page = screen.getByTestId(`story-page-${i}`);
+      expect(page.props.style).toMatchObject({ minHeight: 700 });
+      await fireEvent(page, 'layout', { nativeEvent: { layout: { x: 0, y: i * 700, width: 400, height: 700 } } });
+    }
+    expect(screen.getByTestId('story-reel').props.snapToOffsets).toEqual(Array.from({ length: pages }, (_, i) => i * 700));
   });
 });
 
