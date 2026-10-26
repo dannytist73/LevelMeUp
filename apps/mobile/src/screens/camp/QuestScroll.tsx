@@ -198,8 +198,10 @@ export function StoryCard({ title, length, xp, picture, power, waiting, onRead, 
 const RATINGS: readonly (readonly [Rating, string])[] = [['easy', PLAY_TEXT.cleared.easy], ['right', PLAY_TEXT.cleared.right], ['too_hard', PLAY_TEXT.cleared.tooHard]];
 
 /** The quest just cleared, rated in place: optional (no answer counts as Right on the server), as on Cleared. */
-export function FeelRow({ title, rating, canStepDown, onRate, onStepDown }: {
+export function FeelRow({ title, rating, canStepDown, onRate, onStepDown, onPain }: {
   title: string; rating: Rating | null; canStepDown: boolean; onRate: (r: Rating) => void; onStepDown: () => void;
+  /** An exercise: "I felt pain" stays in reach after clearing it, as on Cleared. */
+  onPain?: () => void;
 }) {
   const [eased, setEased] = useState(false);
   return (
@@ -220,6 +222,7 @@ export function FeelRow({ title, rating, canStepDown, onRate, onStepDown }: {
       ) : (
         <Small>{PLAY_TEXT.cleared.tooHardNote}</Small>
       ))}
+      {onPain !== undefined && <LinkButton label={ADJUST_TEXT.pain.open} onPress={onPain} style={{ alignSelf: 'flex-start' }} />}
     </View>
   );
 }

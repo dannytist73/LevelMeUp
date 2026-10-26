@@ -703,14 +703,14 @@ describe('Today after a missed day (M7a)', () => {
     expect(screen.queryByText(T.held)).toBeNull();
   });
 
-  it('says a settled miss once, as the app\'s note (a simpler day)', async () => {
+  it('shows a settled miss once', async () => {
     const state = { ...checkinState(), checkin: null, checkinResult: { id: 9, outcome: 'shield' as const } };
     const { store } = await renderToday(testStore({ view: project(state, []) }), DAY_TWO_NOW);
-    expect(peekToast()?.message).toBe(T.result.shield);
+    expect(screen.getByText(T.result.shield)).toBeTruthy();
+    await fireEvent.press(screen.getByText(T.done));
     expect(store.getState().dismissCheckinResult).toHaveBeenCalledWith(9);
-    const seen = testStore({ view: project(state, []), checkinResultSeen: 9 });
-    await renderToday(seen, DAY_TWO_NOW);
-    expect(seen.getState().dismissCheckinResult).not.toHaveBeenCalled();
+    await renderToday(testStore({ view: project(state, []), checkinResultSeen: 9 }), DAY_TWO_NOW);
+    expect(screen.queryByText(T.result.shield)).toBeNull();
   });
 
   it('offers the lighter plan when the state does, both ways', async () => {

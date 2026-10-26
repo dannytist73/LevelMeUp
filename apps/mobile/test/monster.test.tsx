@@ -74,7 +74,7 @@ describe('the battle on Camp (a simpler day)', () => {
     const strip = within(screen.getByTestId('battle-strip'));
     expect(strip.getByText(fillText(A.waiting, { name: 'Snoozle' }))).toBeTruthy();
     expect(strip.queryByRole('progressbar')).toBeNull();
-    expect(within(screen.getByTestId('camp-bubble')).getByText(CAMP_TEXT.bubble.ask)).toBeTruthy();
+    expect(screen.queryByText(CAMP_TEXT.bubble.ask)).toBeNull(); // it asks only while the question waits (review)
   });
 
   it('the reading quest shows its power too', async () => {

@@ -3,6 +3,7 @@
 // six friends around it, and this week's Grumble at the edge, holding out today's quest. The fire's glow flickers. When
 // power lands, the visitor flinches, a burst goes off, your buddy throws and the gain floats up. Once the day is done the
 // camp goes dark and everyone sleeps. Tapping a friend says the line it joined with. With reduced motion nothing moves.
+// A bubble too tall to sit above the visitor (large text) moves under the painting, so nothing is cut off.
 import { BUDDIES, CAMP_TEXT, fillText, grumbleById } from '@levelmeup/content';
 import type { ClassId, TrainableStat } from '@levelmeup/rules';
 import { useEffect, useState } from 'react';
@@ -100,6 +101,9 @@ export function CampScene({ classId, level, friends, visitor, bubble, night, gai
     return () => clearTimeout(t);
   }, [gain.key]);
   const buddyPose: BuddyPose = night ? 'sleep' : throwing ? 'throw' : 'idle';
+  /** The bubble didn't fit above the visitor: it sits under the painting instead (measured again for new words). */
+  const [below, setBelow] = useState(false);
+  useEffect(() => setBelow(false), [bubble]);
   const buddy = BUDDIES[classId];
   const shown = friends.slice(0, FRIENDS_AT_FIRE).flatMap((id, i) => {
     const g = grumbleById(id);
@@ -114,7 +118,9 @@ export function CampScene({ classId, level, friends, visitor, bubble, night, gai
   const b = box(art.buddy, width, height);
   const v = box(art.visitor, width, height);
 
+  const said = bubble !== null && visitor !== null;
   return (
+    <View>
     <View testID="camp-scene" style={{ width, height }}>
       <Image source={art.picture} resizeMode="cover" accessible accessibilityRole="image" accessibilityLabel={label}
         style={{ position: 'absolute', width, height }} />
@@ -149,10 +155,18 @@ export function CampScene({ classId, level, friends, visitor, bubble, night, gai
           <FireGlow {...fire} night />
         </>
       )}
-      {bubble !== null && visitor !== null && (
-        <View testID="camp-bubble" accessibilityLiveRegion="polite"
+      {said && !below && (
+        <View testID="camp-bubble" accessibilityLiveRegion="polite" onLayout={(e) => { if (e.nativeEvent.layout.height > v.top - 4) setBelow(true); }}
           style={{ position: 'absolute', right: Math.max(8, width - (v.left + v.size)), bottom: height - v.top + 2, maxWidth: width * 0.56,
             paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.control, borderBottomRightRadius: 4, backgroundColor: colors.paper }}>
+          <Small tone="ink">{bubble}</Small>
+        </View>
+      )}
+    </View>
+      {said && below && (
+        <View testID="camp-bubble" accessibilityLiveRegion="polite"
+          style={{ alignSelf: 'flex-end', marginHorizontal: 16, marginTop: -6, maxWidth: width - 32,
+            paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.control, borderTopRightRadius: 4, backgroundColor: colors.paper }}>
           <Small tone="ink">{bubble}</Small>
         </View>
       )}

@@ -39,6 +39,7 @@ export default function TodayRoute() {
       onOpenQuest={(id) => router.push(`/quest/${id}`)}
       onOpenReading={(id) => router.push(`/reading/${id}`)}
       onDay={() => router.push('/day')}
+      onPain={(id) => router.push(`/pain/${id}`)}
       onShadow={() => router.push('/shadow')}
       onTrial={() => router.push('/trial')}
       shown={shown}

@@ -15,9 +15,8 @@ import { View } from 'react-native';
 import { LayoutAnimationConfig } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { storyPictureUrl } from '../art/stories.ts';
-import { isResting } from '../game/adjust.ts';
+import { isExercise, isResting } from '../game/adjust.ts';
 import { battleShown, questHit } from '../game/battle.ts';
-import { resultText } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
 import { countsUntil } from '../game/offline.ts';
 import { marked, sealedQuest, shadowHold } from '../game/pact.ts';
@@ -76,6 +75,8 @@ export type TodayProps = {
   onOpenReading?: (articleId: string) => void;
   /** The day's options: swap, hard day, rest, the class abilities, the paused exercises. */
   onDay: () => void;
+  /** "I felt pain" for an exercise just cleared: pain always offers a rest (CLAUDE.md). */
+  onPain?: (questId: number) => void;
   /** The Shadow's scene, opened again from its box (M7c decision 5). */
   onShadow?: () => void;
   /** The Trial of Stillness's focus session (M7c decision 7). */
@@ -126,7 +127,7 @@ function dayState(view: Shown, today: TodayView, hold: ShadowHold | null) {
   return { sealed, resting, cleared, done, next, rest };
 }
 
-export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, onTrial = () => {}, shown = true, now = Date.now }: TodayProps) {
+export function Today({ onOpenQuest, onOpenReading, onDay, onPain, onShadow = () => {}, onTrial = () => {}, shown = true, now = Date.now }: TodayProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const battle = view === null ? null : battleShown(view);
@@ -149,8 +150,6 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, 
   const articles = useGame((s) => s.articles);
   const codex = useGame((s) => s.codex);
   const checkinLater = useGame((s) => s.checkinLater);
-  const resultSeen = useGame((s) => s.checkinResultSeen);
-  const dismissResult = useGame((s) => s.dismissCheckinResult);
   /** Premium pass (review): a note shows at the bottom (the check circle's Undo among them), so the last row clears it. */
   const noting = useToast() !== null;
   /** Quests a check is on its way for: a quick second tap sends nothing (review). */
@@ -172,17 +171,20 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, 
   const visitor = battle === null ? undefined : grumbleById(battle.grumble);
 
   // The battle explained once, in the visitor's own words, on its first visit (it was the one-time System card). It counts
-  // as said once the player leaves Camp, so a decided battle's replay (which waits for it) never covers it.
+  // as said once the bubble said it and the player left Camp, or once power landed, so a decided battle's replay (which
+  // waits for it) never covers it.
   const introNow = battle !== null && accountKnown && !offers.includes('monster:intro');
   const [intro, setIntro] = useState(false);
+  /** The bubble has said it while Camp was in front. */
+  const [introHeard, setIntroHeard] = useState(false);
   /** The first power landed: the battle has shown itself, so the intro is said. */
   const [introSaid, setIntroSaid] = useState(false);
   useEffect(() => {
     if (introNow) setIntro(true);
   }, [introNow]);
   useEffect(() => {
-    if (introNow && (introSaid || (intro && !shown))) void markOffer('monster:intro');
-  }, [intro, introSaid, introNow, shown, markOffer]);
+    if (introNow && (introSaid || (introHeard && !shown))) void markOffer('monster:intro');
+  }, [introHeard, introSaid, introNow, shown, markOffer]);
   // M17: the first open of a new week, how last week went: one line under the scene, kept while Camp stays.
   const recapNow = view === null || !accountKnown || asking ? null : weekRecap(view.calendar, offers);
   const [recap, setRecap] = useState<WeekRecap | null>(null);
@@ -191,32 +193,37 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, 
     setRecap(recapNow);
     void markOffer(recapNow.key);
   }, [recapNow, recap, markOffer]);
-  // How a settled miss ended: the app's note says it once (it was a System card with its own Got it).
-  const result = view?.checkinResult ?? null;
-  const best = view?.character.streak.best ?? 0;
-  useEffect(() => {
-    if (result === null || result.id === resultSeen) return;
-    toast(resultText(result.outcome, best));
-    void dismissResult(result.id);
-  }, [result, resultSeen, best, dismissResult]);
-
   // When power rises while Camp is in front, the visitor flinches and cheers (it was the Arena's).
   const [gain, setGain] = useState({ key: 0, n: 0 });
   const [cheering, setCheering] = useState(false);
+  /** The power Camp last showed: a claim on the quest screen lands while Camp is out of sight, and plays on coming back. */
   const lastPower = useRef(battle?.power ?? 0);
   const power = battle?.power ?? 0;
   useEffect(() => {
+    if (!shown) return;
     const gained = power - lastPower.current;
     lastPower.current = power;
-    if (gained <= 0 || !shown) return;
+    if (gained <= 0) return;
     setGain((g) => ({ key: g.key + 1, n: gained }));
-    setCheering(true);
     setIntro(false);
     setIntroSaid(true);
     buzz('stamp');
+  }, [power, shown]);
+  useEffect(() => {
+    if (gain.key === 0) return;
+    setCheering(true);
     const t = setTimeout(() => setCheering(false), CHEER_MS);
     return () => clearTimeout(t);
-  }, [power, shown]);
+  }, [gain.key]);
+  // How it felt is asked while the player is at Camp; once they leave, the question goes (review).
+  const feltAsked = useRef<number | null>(null);
+  useEffect(() => {
+    if (shown && justCleared !== null) feltAsked.current = justCleared;
+    if (!shown && justCleared !== null && feltAsked.current === justCleared) {
+      feltAsked.current = null;
+      markJustCleared(null);
+    }
+  }, [shown, justCleared]);
 
   const R = TODAY_TEXT.states;
   const strip: Notice[] = [
@@ -262,15 +269,20 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, 
 
   const night = day?.done ?? false;
   const ready = battle !== null && !battle.decided && !battle.waiting && battle.power >= battle.need;
+  const introText = visitor === undefined ? '' : fillText(B.intro, { name: visitor.name, standsFor: visitor.standsFor });
   const bubble = !usable || visitor === undefined ? null
-    : asking || battle?.waiting ? B.ask
+    : asking ? (view?.checkin?.gap ? B.askGap : B.ask)
       : cheering ? B.cheer
-        : intro ? fillText(B.intro, { name: visitor.name, standsFor: visitor.standsFor })
+        : intro ? introText
           : night ? B.asleep
             : ready ? B.ready
               : day?.next?.slot === 'article' ? B.story
                 : day?.next != null ? (day.next.slot === 'core' ? B.gift : B.more) : null;
-  const pose = asking || battle?.waiting || day === null ? 'idle' : night ? 'sleep' : day.next !== null ? 'gift' : 'idle';
+  const pose = asking || day === null ? 'idle' : night ? 'sleep' : day.next !== null ? 'gift' : 'idle';
+  const saidIntro = intro && bubble === introText && shown;
+  useEffect(() => {
+    if (saidIntro) setIntroHeard(true);
+  }, [saidIntro]);
   const friends = view?.camp === undefined ? [] : GRUMBLES.filter((g) => (view.camp!.wins[g.id] ?? 0) > 0).map((g) => g.id).reverse();
 
   let body;
@@ -282,7 +294,7 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, 
       onRetry={() => void syncNow()} />;
   } else {
     body = (
-      <DayBody view={view!} today={today} hold={hold} day={day} asking={asking} visitorName={visitor?.name ?? null} articles={articles}
+      <DayBody view={view!} today={today} hold={hold} day={day} asking={asking} onPain={onPain} visitorName={visitor?.name ?? null} articles={articles}
         kept={keptToday(codex, today)} justCleared={justCleared} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onDay={onDay}
         onShadow={onShadow} onTrial={onTrial} onCheck={check} showDone={showDone} onToggleDone={() => setShowDone((s) => !s)}
         onRate={(id, rating) => {
@@ -292,7 +304,7 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, 
         }}
         onStepDown={(id) => { if (open()) void enqueue({ type: 'step_down', instanceId: id }); }}
         enqueue={enqueue}
-        power={battle === null || battle.decided ? null : (q) => questHit(q, battle.weakness)} now={now} />
+        power={battle === null || battle.decided ? null : (q) => questHit(q, battle.weakness)} />
     );
   }
 
@@ -322,6 +334,8 @@ export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, 
             <SystemCard key={strip[0].key} testID="notice-strip" text={strip[0].text} actions={strip[0].actions}
               {...(strip.length > 1 ? { count: fillText(TODAY_TEXT.notices, { n: 1, total: strip.length }) } : {})} />
           )}
+          {view !== null && asking && !signInLost && <CheckinAsk view={view} />}
+          {view !== null && !signInLost && <CheckinNotes view={view} now={now} />}
           {body}
           {view?.camp !== undefined && <GrumbleBook wins={view.camp.wins} here={battle?.grumble ?? null} />}
         </View>
@@ -357,16 +371,16 @@ type DayBodyProps = {
   onToggleDone: () => void;
   onRate: (questId: number, rating: Rating) => void;
   onStepDown: (questId: number) => void;
+  onPain?: (questId: number) => void;
   enqueue: GameState['enqueue'];
   /** Monster Week: the power each quest gives the battle, or null without one. */
   power: ((q: QuestView) => Power) | null;
-  now: () => number;
 };
 
 /** A usable day: the one card, what's beside it, what the day needs, and what's done. */
 function DayBody({
   view, today, hold, day, asking, visitorName, articles, kept, justCleared, onOpenQuest, onOpenReading, onDay, onShadow, onTrial, onCheck, showDone,
-  onToggleDone, onRate, onStepDown, enqueue, power, now,
+  onToggleDone, onRate, onStepDown, onPain, enqueue, power,
 }: DayBodyProps) {
   const voice = view.profile.voice;
   // Premium pass A6: on a day built offline, until when what is cleared still counts, said before it passes.
@@ -414,7 +428,7 @@ function DayBody({
 
   let card = null;
   if (asking) {
-    card = <CheckinAsk view={view} />;
+    card = null; // the check-in is asked first, above (one card)
   } else if (done) {
     card = (
       <DayEnd
@@ -470,11 +484,11 @@ function DayBody({
       {felt !== undefined && !asking && (
         <Appear>
           <FeelRow key={felt.id} title={titleOf(felt)} rating={felt.rating} canStepDown={felt.canStepDown}
-            onRate={(r) => onRate(felt.id, r)} onStepDown={() => onStepDown(felt.id)} />
+            onRate={(r) => onRate(felt.id, r)} onStepDown={() => onStepDown(felt.id)}
+            {...(onPain !== undefined && isExercise(felt) ? { onPain: () => onPain(felt.id) } : {})} />
         </Appear>
       )}
       {card}
-      <CheckinNotes view={view} now={now} />
       {anySealed && <TrialPanel onTrial={onTrial} />}
       {view.insight !== null && <InsightPanel insight={view.insight} onChoose={(cluster) => void enqueue({ type: 'insight', cluster })} />}
       {extrasAfter.length > 0 && (

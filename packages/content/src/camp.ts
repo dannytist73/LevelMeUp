@@ -30,6 +30,7 @@ export const CAMP_TEXT = {
     ready: 'Fine, fine. I might stay.',
     asleep: 'Zzz…',
     ask: 'Yesterday slipped by. What happened?',
+    askGap: 'A few days slipped by. What happened?',
   },
   /** The check-in, asked at the fire: one tap answers. */
   ask: { later: 'Ask me later' },

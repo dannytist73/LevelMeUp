@@ -1,9 +1,10 @@
-// Camp's part of the check-in (M7a, board F3 without the Pact's parts): the held streak after "I just didn't", and the
-// lighter-plan offer. M12 (audit 1): its buttons are quiet, so the card keeps the screen's one bright button. M17: each
-// note is one card, its answers inside it. A simpler day: the question is asked at the fire (camp/CheckinAsk.tsx), and how
-// a settled miss ended is the app's note (Today).
+// Camp's part of the check-in (M7a, board F3 without the Pact's parts): a settled miss once, the held streak after "I just
+// didn't", and the lighter-plan offer. M12 (audit 1): its buttons are quiet, so the card keeps the screen's one bright
+// button. M17: each note is one card, its answers inside it. A simpler day: the question is asked at the fire
+// (camp/CheckinAsk.tsx).
 import { CHECKIN_TEXT, FEEDBACK_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
+import { resultText } from '../game/checkin.ts';
 import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { useGame } from '../state/store.ts';
@@ -16,6 +17,8 @@ export type CheckinNotesProps = { view: Shown; now?: () => number };
 
 export function CheckinNotes({ view, now = Date.now }: CheckinNotesProps) {
   const enqueue = useGame((s) => s.enqueue);
+  const seen = useGame((s) => s.checkinResultSeen);
+  const dismissResult = useGame((s) => s.dismissCheckinResult);
   // The offer goes at the first tap: a second accept would drop the minutes another step (review).
   const [answeredOffer, setAnsweredOffer] = useState(false);
   const answerOffer = (accept: boolean, to: number) => {
@@ -29,7 +32,7 @@ export function CheckinNotes({ view, now = Date.now }: CheckinNotesProps) {
       },
     );
   };
-  const { checkin, lighterPlan } = view;
+  const { checkin, checkinResult: result, lighterPlan } = view;
   // Once the answer is in the view the offer is quiet anyway; a later offer (after its 14 days) shows again.
   const offered = lighterPlan?.offered === true;
   // Once the recovery quest is cleared the streak is safe, and the note says so (emulator finding, M7b).
@@ -45,6 +48,9 @@ export function CheckinNotes({ view, now = Date.now }: CheckinNotesProps) {
   // M17: each note is one System card with its answers inside it.
   return (
     <>
+      {result !== null && result.id !== seen && (
+        <SystemCard text={resultText(result.outcome, view.character.streak.best)} actions={[{ label: T.done, onPress: () => void dismissResult(result.id) }]} />
+      )}
       {checkin !== null && checkin.answer === 'just_didnt' && (
         <SystemCard text={held} {...(view.answering ? { detail: T.waiting } : {})} />
       )}

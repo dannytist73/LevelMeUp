@@ -22,8 +22,8 @@ import { findQuest } from '../game/offline.ts';
 import { sealedQuest, shadowHold } from '../game/pact.ts';
 import { upNext } from '../game/today.ts';
 import { clearedSummary } from '../quest/cleared.ts';
-import { questKey, sessionMemory } from '../quest/lastSets.ts';
-import { repsPayload, sessionPayload, startingSession, startingSets, textPayload } from '../quest/payload.ts';
+import { questKey, sessionMemory, startFromLast } from '../quest/lastSets.ts';
+import { repsPayload, sessionPayload, startingSets, textPayload } from '../quest/payload.ts';
 import type { Shot } from '../quest/cleared.ts';
 import { NEW_TIMER, pauseTimer } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
@@ -354,7 +354,7 @@ export function Quest({ questId, onBack, onPain, onTraining, onTrial, onRead, on
             onClaim={(payload) => void claim(payload)} last={lastSets} now={now} draftKey={logKey} />
         ) : (
           <QuickDone label={CAMP_TEXT.quest.doneWorkout} disabled={busy || replanning} onDifferent={() => setDetailed(true)}
-            onDone={() => quest.condition.kind === 'session' && void claim(sessionPayload(startingSession(quest.condition.moves)))} />
+            onDone={() => quest.condition.kind === 'session' && void claim(sessionPayload(startFromLast(quest.condition.moves, lastSets)))} />
         )}
       </View>
     );

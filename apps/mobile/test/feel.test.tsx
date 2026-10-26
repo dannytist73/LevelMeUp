@@ -220,15 +220,17 @@ describe('the moments buzz on rewards (M10b spec decision 2)', () => {
     expect(felt()).toEqual(['stamp']);
   });
 
-  it('Today under another tab or screen: power that grows there stays quiet, then and on return (review)', async () => {
+  it('Camp under another tab or screen: power that grows there stays quiet until Camp is back, then lands once (a simpler day)', async () => {
     const view = project(serverState(), []);
     const store = testStore({ view });
     const shown = await render(today(store, false));
     await act(async () => store.setState({ view: powerUp(view) }));
     await wait(2_000);
+    expect(felt()).toEqual([]);
+    // The quest screen's claim lands while it is in front; back at Camp the cheer plays (docs/2026-10-26-simpler-day.md, 6).
     await shown.rerender(today(store, true));
     await wait(2_000);
-    expect(felt()).toEqual([]);
+    expect(felt()).toEqual(['stamp']);
   });
 });
 

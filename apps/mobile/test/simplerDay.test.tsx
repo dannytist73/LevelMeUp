@@ -1,6 +1,6 @@
 // A simpler day (docs/2026-10-26-simpler-day.md): the camp's stages and friends, the visitor's cheer, "How did it feel?"
 // for the quest just cleared, the story as one scroll that ends on lines to take with you, and Me's tab dot.
-import { CAMP_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
+import { ADJUST_TEXT, CAMP_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { campStage } from '../src/art/camp.ts';
 import { SAMPLE_STORY_ARTICLE, SAMPLE_STORY_DECK } from '../src/dev/sampleArticle.ts';
@@ -12,7 +12,8 @@ import { Quest } from '../src/screens/Quest.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import { InkTabBar } from '../src/ui/InkTabBar.tsx';
 import { markJustCleared } from '../src/ui/justCleared.ts';
-import { serverState } from './support/fixtures.ts';
+import { startFromLast } from '../src/quest/lastSets.ts';
+import { DAY_TWO_NOW, serverState, workoutState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 
 const NOW = Date.UTC(2026, 9, 10, 13); // inside day 1
@@ -42,8 +43,23 @@ describe('the camp', () => {
   });
 });
 
+describe('the cheer after a claim on the quest screen (review)', () => {
+  it('power that landed while Camp was out of sight cheers once Camp is back', async () => {
+    const view = project(serverState([]), []);
+    const store = testStore({ view });
+    const camp = (shown: boolean) => withStore(store, <Today onOpenQuest={jest.fn()} onDay={jest.fn()} shown={shown} now={() => NOW} />);
+    const screenView = await render(camp(false));
+    const core = coreOf(serverState([]));
+    const cleared = { ...view, today: { ...view.today!, quests: view.today!.quests.map((q) => (q.id === core.id ? { ...q, completedAt: new Date(NOW).toISOString() } : q)) } };
+    await act(async () => store.setState({ view: cleared }));
+    expect(screen.queryByText(CAMP_TEXT.bubble.cheer)).toBeNull();
+    await screenView.rerender(camp(true));
+    expect(within(screen.getByTestId('camp-bubble')).getByText(CAMP_TEXT.bubble.cheer)).toBeTruthy();
+  });
+});
+
 describe('"How did it feel?" for the quest just cleared', () => {
-  afterEach(() => markJustCleared(null));
+  afterEach(async () => { await act(async () => markJustCleared(null)); });
 
   it('asks once the quest screen cleared it; a rating is sent and the row goes', async () => {
     const s = serverState(['core']);
@@ -54,6 +70,27 @@ describe('"How did it feel?" for the quest just cleared', () => {
     await fireEvent.press(row.getByRole('button', { name: PLAY_TEXT.cleared.easy }));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'rate', instanceId: coreOf(s).id, rating: 'easy' });
     expect(screen.queryByTestId('feel-row')).toBeNull();
+  });
+
+  it('goes once the player leaves Camp after seeing it (review)', async () => {
+    const s = serverState(['core']);
+    const store = testStore({ view: project(s, []) });
+    const camp = (shown: boolean) => withStore(store, <Today onOpenQuest={jest.fn()} onDay={jest.fn()} shown={shown} now={() => NOW} />);
+    await act(async () => markJustCleared(coreOf(s).id)); // claimed while the quest screen was in front
+    const v = await render(camp(true));
+    expect(screen.getByTestId('feel-row')).toBeTruthy();
+    await v.rerender(camp(false));
+    await v.rerender(camp(true));
+    expect(screen.queryByTestId('feel-row')).toBeNull();
+  });
+
+  it('keeps "I felt pain" in reach for an exercise, as Cleared did (review)', async () => {
+    const s = serverState(['core']);
+    const onPain = jest.fn();
+    await act(async () => markJustCleared(coreOf(s).id));
+    await render(withStore(testStore({ view: project(s, []) }), <Today onOpenQuest={jest.fn()} onDay={jest.fn()} onPain={onPain} now={() => NOW} />));
+    await fireEvent.press(within(screen.getByTestId('feel-row')).getByRole('button', { name: ADJUST_TEXT.pain.open }));
+    expect(onPain).toHaveBeenCalledWith(coreOf(s).id);
   });
 
   it('never for a quest that is not cleared, and never unasked', async () => {
@@ -103,6 +140,22 @@ describe('the story as one scroll (decision 10)', () => {
       <Quest questId={reading.id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
     await fireEvent.press(screen.getByRole('button', { name: CAMP_TEXT.story.own }));
     expect(screen.getByLabelText('Your takeaway, one sentence')).toBeTruthy();
+  });
+});
+
+describe('one-tap Done (decision 4)', () => {
+  it("a workout done as planned logs what the log would have started from: last time's numbers (review)", async () => {
+    const server = workoutState();
+    const quest = server.today!.quests.find((q) => q.id === 200)!;
+    if (quest.condition.kind !== 'session') throw new Error('expected a workout');
+    const last = { 'move:goblet-squat': [12, 11] };
+    const store = testStore({ view: project(server, []), lastSets: last });
+    const enqueue = jest.fn(async (_event: Omit<PhoneEvent, 'id'>) => {});
+    store.setState({ enqueue: enqueue as never });
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${CAMP_TEXT.quest.doneWorkout} · `) }));
+    const sent = (enqueue.mock.calls.at(-1)![0] as unknown as { payload: { sets: number[] } }).payload.sets;
+    expect(sent).toEqual(startFromLast(quest.condition.moves, last).flat());
   });
 });
 
