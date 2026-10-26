@@ -54,7 +54,7 @@ export function CheckinAsk({ view }: { view: Shown }) {
   };
 
   return (
-    <View testID="checkin-ask" style={{ gap: 8 }}>
+    <View testID="checkin-ask" style={{ gap: 6 }}>
       <Heading accessibilityRole="header">{T.title}</Heading>
       {checkin.gap && <Small>{checkinLead(checkin, view.today?.dayNumber ?? null)}</Small>}
       <Small>{CAMP_TEXT.ask.paused}</Small>

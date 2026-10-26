@@ -42,7 +42,7 @@ export const CAMP_TEXT = {
       sick_or_injured: 'lighter tomorrow',
       too_hard: 'that quest steps down',
       lighter_load: 'fewer minutes a day',
-      just_didnt: 'a 5-min quest keeps your streak',
+      just_didnt: '5 min keeps your streak',
     },
   },
   /** The quest just cleared, rated in place (optional, as on Cleared). */
