@@ -920,3 +920,7 @@ offers are on Me. The app is called Grumble Camp. Use a NEW test character for e
 | 11 | A friend at the fire, tapped: its line ("Snoozle: “Fine. Mornings are nice too.”"). | Find X9: |
 | 12 | The bubble sits in the sky at the top right, clear of the fire; at the largest text size it moves under the painting, nothing cut off. Soft shadows under feet, no dark bars. | Find X9: |
 | 13 | Stories: titled Stories, no gear; today's story says "about N min · +XP" and "Read the story" (no "cards"); a past story's scroll has no "Today's story" label. | Find X9: |
+| 14 | Plain words (2026-10-26): Stories' titles say plainly what you'll learn (no colons); a story's cards read simply, with no comparisons to decode. | Find X9: |
+| 15 | The icon (2026-10-27): Snoozle holding out today's quest on lime, on the home screen and the splash; with themed icons on, his silhouette in the theme's colour. | Find X9: |
+| 16 | Reels: a story opens on its cover ("Swipe up"); one swipe up snaps to each card, then why it works, the check, the lesson, the end. At the largest text a long card scrolls through before the next snaps in. | Find X9: |
+| 17 | Buttons: "Change today" and "Different numbers" are outlined pills beside the main button; the check-in's five answers fit on one screen under the camp, "The first four pause your streak" said once. | Find X9: |
