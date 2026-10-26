@@ -37,3 +37,6 @@ art/buddies/renders/
 # Camp paintings (a simpler day): only the picked ones in apps/mobile/assets/camp are kept
 art/camp/renders/
 __pycache__/
+art/icon/renders/
+art/icon/keyed/
+art/icon/_*.jpg
