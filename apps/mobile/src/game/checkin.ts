@@ -1,6 +1,6 @@
 // The check-in's words for this player (M7a, board F1): which day it asks about, what each answer does here, how a settled
 // miss ended, and the streak's note. Pure.
-import { CHECKIN_TEXT, fillText } from '@levelmeup/content';
+import { CAMP_TEXT, CHECKIN_TEXT, fillText } from '@levelmeup/content';
 import { dateKeyLabel } from '../lib/dates.ts';
 import type { Shown } from './project.ts';
 import type { CheckinView, LighterView, MissOutcome } from './types.ts';
@@ -26,6 +26,13 @@ export function answerLine(choice: CheckinChoice, c: CheckinView, lighter: Light
   if (choice === 'too_hard' && c.ladder === null) return T.pausedOnly;
   if (choice === 'lighter_load' && lighter === null) return T.pausedOnly;
   return T.answers[choice].outcome;
+}
+
+/** 2026-10-27: beside an answer on the compact check-in, only what's different about it (its streak pause is said once). */
+export function answerExtra(choice: CheckinChoice, c: CheckinView, lighter: LighterView): string | null {
+  if (answerLine(choice, c, lighter) === T.pausedOnly) return null;
+  const extra: Partial<Record<CheckinChoice, string>> = CAMP_TEXT.ask.extra;
+  return extra[choice] ?? null;
 }
 
 /** How a settled "I just didn't" ended (decision 4). */

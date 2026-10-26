@@ -523,9 +523,12 @@ export function Quest({ questId, onBack, onPain, onTraining, onTrial, onRead, on
 /** A simpler day (decision 4): the target in one tap ("Done · 3 sets of 8"), or the full log for different numbers. */
 function QuickDone({ label, disabled, onDone, onDifferent }: { label: string; disabled: boolean; onDone: () => void; onDifferent: () => void }) {
   return (
-    <View testID="quick-done" style={{ gap: 4 }}>
-      <ClaimButton label={label} disabled={disabled} onPress={onDone} />
-      <LinkButton label={CAMP_TEXT.quest.different} onPress={onDifferent} style={{ alignSelf: 'flex-start' }} />
+    // 2026-10-27: side by side, the main one wide, so both sit under the thumb.
+    <View testID="quick-done" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+      <View style={{ flexGrow: 1, flexBasis: 190 }}>
+        <ClaimButton label={label} disabled={disabled} onPress={onDone} />
+      </View>
+      <LinkButton label={CAMP_TEXT.quest.different} onPress={onDifferent} style={{ flexGrow: 1 }} />
     </View>
   );
 }

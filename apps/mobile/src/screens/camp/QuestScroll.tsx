@@ -150,9 +150,14 @@ export function QuestScroll({ kicker, quest, voice, art, power, waiting, onGo, o
           {waiting && <Caption tone="inkMuted">{PLAY_TEXT.quest.willSync}</Caption>}
         </View>
       </View>
-      <Button label={clears ? PLAY_TEXT.claim.tap : CAMP_TEXT.go} variant="commitment" on="paper" onPress={onGo}
-        accessibilityLabel={`${clears ? fillText(TODAY_TEXT.markDone, { title: words.title }) : CAMP_TEXT.go}. ${words.title}${power === undefined ? '' : `, ${powerWords(power)}`}`} />
-      {onChange !== undefined && <LinkButton label={TODAY_TEXT.change} tone="accentInk" onPress={onChange} style={{ alignSelf: 'center' }} />}
+      {/* 2026-10-27 (the owner: buttons easier to hit): the two actions in one row, the main one wide. */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+        <View style={{ flexGrow: 1, flexBasis: 170 }}>
+          <Button label={clears ? PLAY_TEXT.claim.tap : CAMP_TEXT.go} variant="commitment" on="paper" onPress={onGo}
+            accessibilityLabel={`${clears ? fillText(TODAY_TEXT.markDone, { title: words.title }) : CAMP_TEXT.go}. ${words.title}${power === undefined ? '' : `, ${powerWords(power)}`}`} />
+        </View>
+        {onChange !== undefined && <LinkButton label={TODAY_TEXT.change} tone="accentInk" onPress={onChange} style={{ flexGrow: 1 }} />}
+      </View>
       <Extras extras={extras} />
     </Paper>
   );

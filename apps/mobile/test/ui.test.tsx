@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
-import { colors } from '../src/theme/tokens.ts';
+import { colors, radius, space } from '../src/theme/tokens.ts';
 import { Button } from '../src/ui/Button.tsx';
 import { Chip } from '../src/ui/Chip.tsx';
 import { Icon } from '../src/ui/icons.tsx';
@@ -386,12 +386,12 @@ describe('RowLink and LinkButton (M10c decision 5)', () => {
     expect(screen.getByTestId('icon-chevronUp', { includeHiddenElements: true })).toBeTruthy();
   });
 
-  it('a link button is underlined text, at least 48 high, and does nothing when disabled', async () => {
+  it('a link button is an outlined pill, at least 48 high, and does nothing when disabled (2026-10-27)', async () => {
     const onPress = jest.fn();
     await render(<LinkButton label="Logged by mistake? Undo" onPress={onPress} />);
     const link = screen.getByRole('button', { name: 'Logged by mistake? Undo' });
     expect(flat(link.props.style).minHeight).toBeGreaterThanOrEqual(48);
-    expect(flat(screen.getByText('Logged by mistake? Undo').props.style).textDecorationLine).toBe('underline');
+    expect(flat(link.props.style)).toMatchObject({ borderRadius: radius.pill, borderWidth: space.border });
     await fireEvent.press(link);
     expect(onPress).toHaveBeenCalledTimes(1);
     await render(<LinkButton label="Off" disabled onPress={onPress} />);

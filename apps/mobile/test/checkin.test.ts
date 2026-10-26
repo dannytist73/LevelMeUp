@@ -1,6 +1,6 @@
 /** @jest-environment node */
-import { CHECKIN_TEXT, fillText } from '@levelmeup/content';
-import { answerLine, checkinLead, resultText, streakNote } from '../src/game/checkin.ts';
+import { CAMP_TEXT, CHECKIN_TEXT, fillText } from '@levelmeup/content';
+import { answerExtra, answerLine, checkinLead, resultText, streakNote } from '../src/game/checkin.ts';
 import { project } from '../src/game/project.ts';
 import { checkinState } from './support/fixtures.ts';
 
@@ -21,6 +21,15 @@ describe('the check-in words (M7a)', () => {
     expect(answerLine('too_hard', checkin, shown.lighterPlan)).toBe(T.answers.too_hard.outcome);
     expect(answerLine('too_hard', { ...checkin, ladder: null }, shown.lighterPlan)).toBe(T.pausedOnly);
     expect(answerLine('lighter_load', checkin, null)).toBe(T.pausedOnly);
+  });
+
+  it('beside a compact answer, only what is different about it: its streak pause is said once above (2026-10-27)', () => {
+    expect(answerExtra('sick_or_injured', checkin, shown.lighterPlan)).toBe(CAMP_TEXT.ask.extra.sick_or_injured);
+    expect(answerExtra('emergency', checkin, shown.lighterPlan)).toBeNull();
+    expect(answerExtra('too_hard', checkin, shown.lighterPlan)).toBe(CAMP_TEXT.ask.extra.too_hard);
+    expect(answerExtra('too_hard', { ...checkin, ladder: null }, shown.lighterPlan)).toBeNull();
+    expect(answerExtra('lighter_load', checkin, null)).toBeNull();
+    expect(answerExtra('just_didnt', checkin, shown.lighterPlan)).toBe(CAMP_TEXT.ask.extra.just_didnt);
   });
 
   it('tells how a miss was settled, with the best streak after a reset', () => {

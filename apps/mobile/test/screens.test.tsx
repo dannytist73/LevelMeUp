@@ -661,6 +661,15 @@ describe('Today after a missed day (M7a)', () => {
     return { store };
   }
 
+  it('asks in tight rows: the streak pause said once, the extra beside each answer, the full outcome read out (2026-10-27)', async () => {
+    await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
+    expect(screen.getAllByText(CAMP_TEXT.ask.paused)).toHaveLength(1);
+    expect(screen.queryByText(T.answers.sick_or_injured.outcome)).toBeNull();
+    expect(screen.getByText(CAMP_TEXT.ask.extra.sick_or_injured)).toBeTruthy();
+    expect(screen.getByRole('radio', { name: `${T.answers.sick_or_injured.label}. ${T.answers.sick_or_injured.outcome}` })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: `${T.answers.emergency.label}. ${T.answers.emergency.outcome}` })).toBeTruthy();
+  });
+
   it('asks the check-in at the fire: one tap answers, and "Ask me later" puts it off (a simpler day)', async () => {
     const { store } = await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
     expect(screen.getByText(T.title)).toBeTruthy();

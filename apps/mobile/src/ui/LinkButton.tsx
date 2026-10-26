@@ -1,7 +1,8 @@
-// A quiet action (M10c decision 5): underlined text, for the thing you rarely need ("Logged by mistake? Undo"), so it
-// never competes with the screen's one main button. At least 48 high, as every button.
+// A quiet action (M10c decision 5), for the thing you rarely need ("Logged by mistake? Undo"), so it never competes with
+// the screen's one main button. Since 2026-10-27 (the owner: buttons easier to hit) a small outlined pill rather than
+// underlined text, so it looks like a button and its whole shape takes the tap. At least 48 high, as every button.
 import type { StyleProp, ViewStyle } from 'react-native';
-import { radius } from '../theme/tokens.ts';
+import { colors, radius, space } from '../theme/tokens.ts';
 import { Tap } from './Tap.tsx';
 import { Body } from './Text.tsx';
 
@@ -24,12 +25,14 @@ export function LinkButton({ label, onPress, tone = 'chalk', disabled = false, s
       disabled={disabled}
       onPress={onPress}
       on={tone === 'accentInk' ? 'paper' : 'night'}
-      radius={radius.small}
-      hitSlop={{ left: 8, right: 8 }}
-      // M17 (design critique): no side padding, so the words line up with the text above; hitSlop keeps the touch area.
-      style={({ pressed }) => [{ minHeight: 48, justifyContent: 'center', alignSelf: 'flex-start', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }, style]}
+      radius={radius.pill}
+      style={({ pressed }) => [{
+        minHeight: 48, paddingHorizontal: 16, paddingVertical: 8, justifyContent: 'center', alignSelf: 'flex-start', borderRadius: radius.pill,
+        borderWidth: space.border, borderColor: tone === 'accentText' ? colors.accentText : tone === 'accentInk' ? colors.accentInk : colors.lineStrong,
+        opacity: disabled ? 0.45 : pressed ? 0.7 : 1,
+      }, style]}
     >
-      <Body tone={tone} weight="bold" style={{ textDecorationLine: 'underline' }}>{label}</Body>
+      <Body tone={tone} weight="bold" style={{ textAlign: 'center' }}>{label}</Body>
     </Tap>
   );
 }

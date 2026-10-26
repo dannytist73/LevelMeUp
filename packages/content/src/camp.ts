@@ -33,7 +33,18 @@ export const CAMP_TEXT = {
     askGap: 'A few days slipped by. What happened?',
   },
   /** The check-in, asked at the fire: one tap answers. */
-  ask: { later: 'Ask me later' },
+  ask: {
+    later: 'Ask me later',
+    /** Under the question: what the first four answers share, said once instead of on each. */
+    paused: 'The first four pause your streak. Nothing is lost.',
+    /** Beside each answer: only what's different about it (the full outcome is still read out by screen readers). */
+    extra: {
+      sick_or_injured: 'lighter tomorrow',
+      too_hard: 'that quest steps down',
+      lighter_load: 'fewer minutes a day',
+      just_didnt: 'a 5-min quest keeps your streak',
+    },
+  },
   /** The quest just cleared, rated in place (optional, as on Cleared). */
   feel: 'How did it feel?',
   done: {
@@ -56,7 +67,7 @@ export const CAMP_TEXT = {
     back: 'Camp',
     done: 'Done · {target}',
     doneWorkout: 'Done as planned',
-    different: 'Did different numbers?',
+    different: 'Different numbers',
   },
   story: {
     which: 'Which line will you take with you?',

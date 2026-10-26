@@ -7,7 +7,7 @@ import { findTemplate } from '@levelmeup/rules';
 import type { CheckinAnswer } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { CHECKIN_CHOICES, answerLine, checkinLead } from '../../game/checkin.ts';
+import { CHECKIN_CHOICES, answerExtra, answerLine, checkinLead } from '../../game/checkin.ts';
 import type { CheckinChoice } from '../../game/checkin.ts';
 import type { Shown } from '../../game/project.ts';
 import { useGame } from '../../state/store.ts';
@@ -54,12 +54,17 @@ export function CheckinAsk({ view }: { view: Shown }) {
   };
 
   return (
-    <View testID="checkin-ask" style={{ gap: 10 }}>
+    <View testID="checkin-ask" style={{ gap: 8 }}>
       <Heading accessibilityRole="header">{T.title}</Heading>
       {checkin.gap && <Small>{checkinLead(checkin, view.today?.dayNumber ?? null)}</Small>}
-      {CHECKIN_CHOICES.map((c) => (
-        <OptionCard key={c} label={T.answers[c].label} detail={answerLine(c, checkin, view.lighterPlan)} selected={choice === c} onPress={() => pick(c)} />
-      ))}
+      <Small>{CAMP_TEXT.ask.paused}</Small>
+      {CHECKIN_CHOICES.map((c) => {
+        const extra = answerExtra(c, checkin, view.lighterPlan);
+        return (
+          <OptionCard key={c} compact label={T.answers[c].label} {...(extra === null ? {} : { detail: extra })} selected={choice === c} onPress={() => pick(c)}
+            accessibilityLabel={`${T.answers[c].label}. ${answerLine(c, checkin, view.lighterPlan)}`} />
+        );
+      })}
       {choice === 'sick_or_injured' && (
         <Appear style={{ gap: 10 }}>
           <Heading accessibilityRole="header">{T.which}</Heading>

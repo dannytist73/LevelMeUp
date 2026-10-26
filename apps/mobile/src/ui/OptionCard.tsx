@@ -27,9 +27,11 @@ export type OptionCardProps = {
   dim?: boolean;
   /** M17: a short choice in a row of them (minutes a day): its label centred, and only its label (no detail, aside or marker). */
   center?: boolean;
+  /** 2026-10-27: tighter, its detail beside the label (wrapping under it at large text), so a list of them fits one screen. */
+  compact?: boolean;
 };
 
-export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel, aside, dim = disabled, center = false }: OptionCardProps) {
+export function OptionCard({ label, detail, selected, onPress, kind = 'radio', disabled = false, accessibilityLabel, aside, dim = disabled, center = false, compact = false }: OptionCardProps) {
   return (
     <Tap
       accessibilityRole={kind}
@@ -43,7 +45,7 @@ export function OptionCard({ label, detail, selected, onPress, kind = 'radio', d
       <View
         testID={selected ? 'option-selected' : 'option'}
         style={{
-          minHeight: 52, paddingVertical: 12, paddingHorizontal: 16, gap: 2, justifyContent: 'center', borderRadius: radius.control,
+          minHeight: compact ? 48 : 52, paddingVertical: compact ? 8 : 12, paddingHorizontal: compact ? 14 : 16, gap: 2, justifyContent: 'center', borderRadius: radius.control,
           // M17 (design critique): the 2 dp edge only on the chosen card; eight bold outlines stacked read as a wall.
           borderWidth: selected ? space.heroBorder : space.border, borderColor: selected ? colors.accent : colors.lineStrong, backgroundColor: selected ? colors.paper : colors.panel,
           opacity: dim ? 0.45 : 1,
@@ -54,7 +56,7 @@ export function OptionCard({ label, detail, selected, onPress, kind = 'radio', d
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <Marker kind={kind} selected={selected} />
-            <View style={{ flex: 1, gap: 2 }}>
+            <View style={compact ? { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 8 } : { flex: 1, gap: 2 }}>
               <Body weight="bold" tone={selected ? 'ink' : 'chalk'}>{label}</Body>
               {detail !== undefined && <Small tone={selected ? 'inkSoft' : 'ashLight'}>{detail}</Small>}
               {aside !== undefined && <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ marginTop: 6 }}>{aside}</View>}
