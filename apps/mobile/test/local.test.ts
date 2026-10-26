@@ -23,7 +23,7 @@ describe('the phone database', () => {
     const sql = nodeSql();
     await migrate(sql);
     await migrate(sql);
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 8 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 9 }]);
   });
 
   it("drops a state cached before M6b, whose shape the new screens can't read, and keeps the outbox (M6b review)", async () => {
@@ -51,7 +51,7 @@ describe('the phone database', () => {
     await sql.exec('pragma user_version = 4'); // as an M6c install left it
     await migrate(sql);
     expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 8 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 9 }]);
   });
 
   it('drops a state cached before M7a, which has no check-in or lighter plan, and keeps the outbox', async () => {
@@ -61,7 +61,7 @@ describe('the phone database', () => {
     await sql.exec('pragma user_version = 5'); // as an M6d or M6e install left it
     await migrate(sql);
     expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 8 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 9 }]);
   });
 
   it('drops a state cached before M8b, which has no readings, and keeps the outbox', async () => {
@@ -72,7 +72,7 @@ describe('the phone database', () => {
     await sql.exec('drop table articles');
     await migrate(sql);
     expect(await local.snapshot()).toEqual({ cached: null, pending: [complete('a')], notices: [], articles: {} });
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 8 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 9 }]);
   });
 
   it('drops the articles a 0.7.0 install saved, so they come back with their pictures, and keeps the state (M14)', async () => {
@@ -87,7 +87,22 @@ describe('the phone database', () => {
     expect(after.articles).toEqual({});
     expect(after.cached?.syncedAt).toBe(1);
     expect(after.pending).toEqual([complete('a')]);
-    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 8 }]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 9 }]);
+  });
+
+  it('drops the articles saved before the plain-words pass, so the stories come back retold, and keeps the state (2026-10-26)', async () => {
+    const { sql, local } = await fresh();
+    const s = serverState();
+    const today: ServerState = { ...s, today: { ...s.today!, article: { id: 'article-1', cluster: 'sleep', title: 'One', minutes: 6 } } };
+    await local.enqueue(complete('a'), 1);
+    await local.acknowledge([], [], today, 1, [{ ...SAMPLE_STORY_ARTICLE, id: 'article-1' }]);
+    await sql.exec('pragma user_version = 8'); // as a 0.13.0 install left it
+    await migrate(sql);
+    const after = await local.snapshot();
+    expect(after.articles).toEqual({});
+    expect(after.cached?.syncedAt).toBe(1);
+    expect(after.pending).toEqual([complete('a')]);
+    expect(await sql.all('pragma user_version')).toEqual([{ user_version: 9 }]);
   });
 
   it('starts empty', async () => {

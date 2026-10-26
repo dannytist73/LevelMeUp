@@ -33,6 +33,9 @@ const MIGRATIONS: readonly string[] = [
   // M14: the story lessons gained their pictures after 0.7.0 had saved some; the saved articles go, so the next sync and
   // the readings opened bring them back with their pictures (the state and the outbox stay).
   `delete from articles;`,
+  // Plain words (2026-10-26): the stored stories and their titles were told again in plain words; the saved articles go,
+  // so the phone brings back the new ones (the state and the outbox stay).
+  `delete from articles;`,
 ];
 
 export async function migrate(sql: Sql): Promise<void> {
