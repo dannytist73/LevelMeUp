@@ -59,8 +59,7 @@ export default function CheckinPreview() {
           {screen === 'today'
             ? (
               <Today
-                onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}}
-                onCheckin={() => setScreen('checkin')}
+                onOpenQuest={() => {}} onDay={() => {}}
               />
             )
             : <Checkin onDone={() => setScreen('today')} />}

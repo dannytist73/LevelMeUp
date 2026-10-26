@@ -51,8 +51,7 @@ describe("Today's reading card on Today", () => {
     const onOpenQuest = jest.fn();
     const onOpenReading = jest.fn();
     const today = (server: ServerState) => withStore(testStore({ view: project(server, []) }), (
-      <Today onSettings={jest.fn()} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onSwap={jest.fn()} onPain={jest.fn()}
-        onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()} now={() => Date.UTC(2026, 9, 10, 13)} />
+      <Today onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onDay={jest.fn()} now={() => Date.UTC(2026, 9, 10, 13)} />
     ));
     const view = await render(today(withArticle(false)));
     await fireEvent.press(screen.getByText(SAMPLE_ARTICLE.title));

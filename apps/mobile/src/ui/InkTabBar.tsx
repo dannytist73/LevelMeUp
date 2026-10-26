@@ -37,7 +37,8 @@ function Pill({ selected }: { selected: boolean }) {
   );
 }
 
-export type TabItem = { key: string; label: string; icon: IconName };
+/** `dot`: something waits there (a simpler day: Me's Set up list); said after the label to a screen reader. */
+export type TabItem = { key: string; label: string; icon: IconName; dot?: string };
 
 export function InkTabBar({
   tabs,
@@ -63,7 +64,7 @@ export function InkTabBar({
           <Tap
             key={tab.key}
             accessibilityRole="tab"
-            accessibilityLabel={tab.label}
+            accessibilityLabel={tab.dot === undefined ? tab.label : `${tab.label}. ${tab.dot}`}
             accessibilityState={{ selected }}
             onPress={() => onSelect(tab.key)}
             radius={radius.control}
@@ -72,6 +73,10 @@ export function InkTabBar({
             <View style={{ paddingHorizontal: 20, paddingVertical: 4 }}>
               <Pill selected={selected} />
               <Icon name={tab.icon} color={selected ? colors.onAccent : tone} />
+              {tab.dot !== undefined && (
+                <View testID={`tab-dot-${tab.key}`} style={{ position: 'absolute', top: 2, right: 14, width: 10, height: 10, borderRadius: 5,
+                  backgroundColor: colors.candy, borderWidth: 2, borderColor: colors.tabBar }} />
+              )}
             </View>
             <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}
               style={{ fontFamily: selected ? fonts.display : fonts.bodyBold, fontSize: 12, lineHeight: 16, color: tone, textAlign: 'center' }}>

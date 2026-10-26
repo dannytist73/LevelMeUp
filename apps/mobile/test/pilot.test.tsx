@@ -19,10 +19,9 @@ const settings = (over: Partial<Parameters<typeof Settings>[0]> = {}) => (
 describe('the update card (M9b decision 5)', () => {
   it('Today says to update above the day, and the day is still there', async () => {
     await render(withStore(testStore({ view: project(SERVER, []), updateRequired: true }),
-      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-        onCheckin={jest.fn()} now={now} />));
+      <Today onOpenQuest={jest.fn()} onDay={jest.fn()} now={now} />));
     expect(screen.getByLabelText(`System: ${UPDATE_TEXT.line}`)).toBeTruthy();
-    expect(screen.getByTestId('up-next')).toBeTruthy();
+    expect(screen.getByTestId('quest-scroll')).toBeTruthy();
   });
 
   it('Settings says it in the Sync section; without it there is no card', async () => {

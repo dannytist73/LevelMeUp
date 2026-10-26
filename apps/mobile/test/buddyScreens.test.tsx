@@ -8,7 +8,6 @@ import { BUDDY_ART, BUDDY_QUEST_ART } from '../src/art/buddies.ts';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { BattleResult } from '../src/screens/BattleResult.tsx';
-import { Camp } from '../src/screens/Camp.tsx';
 import { ClassChange } from '../src/screens/ClassChange.tsx';
 import { Quest } from '../src/screens/Quest.tsx';
 import { Today } from '../src/screens/Today.tsx';
@@ -59,26 +58,23 @@ describe('your buddy in the battle replay', () => {
 
 describe('your buddy at camp', () => {
   it('keeps the fire', async () => {
-    await render(withStore(testStore({ view: project(serverState([]), []) }), <Camp now={() => NOW} />));
-    expect(screen.getByText(fillText(BUDDY_TEXT.camp, BUDDIES.warrior))).toBeTruthy();
+    await render(withStore(testStore({ view: project(serverState([]), []) }), <Today onOpenQuest={jest.fn()} onDay={jest.fn()} now={() => NOW} />));
+    expect(screen.getByLabelText(/^Your camp: Pummel by the fire\./)).toBeTruthy(); // a simpler day: the camp is home
     expect(screen.getByTestId('buddy-warrior', hidden)).toBeTruthy();
   });
 });
 
 describe('quest pictures: your buddy doing the quest', () => {
-  it('runs across the top of the core quest’s Up next card', async () => {
-    await render(withStore(testStore({ view: project(serverState([]), []) }),
-      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-        onCheckin={jest.fn()} now={() => NOW} />));
+  it('sits on the scroll the Grumble brings', async () => {
+    await render(withStore(testStore({ view: project(serverState([]), []) }), <Today onOpenQuest={jest.fn()} onDay={jest.fn()} now={() => NOW} />));
     expect(screen.getByTestId('quest-art', hidden)).toBeTruthy();
   });
 
-  it('shows in the quest screen’s How, labelled for screen readers', async () => {
+  it('shows at the top of the quest screen, labelled for screen readers', async () => {
     const server = serverState([]);
     const core = server.today!.quests.find((q) => q.slot === 'core')!;
     await render(withStore(testStore({ view: project(server, []) }),
-      <Quest questId={core.id} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
-    await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.steps }));
+      <Quest questId={core.id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
     expect(screen.getByLabelText(fillText(BUDDY_TEXT.questPicture, { name: 'Pummel', stat: STAT_NAMES[core.stat] }))).toBeTruthy();
   });
 });

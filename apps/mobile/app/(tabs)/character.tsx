@@ -4,5 +4,9 @@ export { ScreenCrashed as ErrorBoundary } from '../../src/screens/Crashed.tsx'; 
 
 export default function CharacterRoute() {
   return <Character onChangeClass={() => router.push('/class')} onOpenBook={() => router.push('/book')} onSettings={() => router.push('/settings')} onVow={() => router.push('/vow')}
-    onChronicle={() => router.push('/chronicle')} />;
+    onChronicle={() => router.push('/chronicle')}
+    setUp={{
+      onSettings: () => router.push('/settings'), onGame: () => router.push('/game'), onTraining: () => router.push('/training'),
+      onSlip: () => router.push('/slip'), onVow: () => router.push('/vow'), onPlus: () => router.push('/plus'),
+    }} />;
 }

@@ -55,8 +55,8 @@ export default function OfflinePreview() {
       {preview !== null && (
         <GameProvider store={preview.store}>
           <Today
-            onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}}
-            onCheckin={() => {}} now={() => preview.at}
+            onOpenQuest={() => {}} onDay={() => {}}
+            now={() => preview.at}
           />
         </GameProvider>
       )}

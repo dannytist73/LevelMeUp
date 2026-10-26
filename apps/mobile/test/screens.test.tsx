@@ -1,5 +1,5 @@
 import {
-  ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, PLAY_TEXT, TODAY_TEXT, fillText,
+  ACHIEVEMENTS, ADJUST_TEXT, BOOK_TEXT, CAMP_TEXT, CHECKIN_TEXT, CHRONICLE_TEXT, GOOGLE_ERRORS, LIGHTER_TEXT, OFFLINE_TEXT, PLAY_TEXT, TODAY_TEXT, fillText,
 } from '@levelmeup/content';
 import { ABOUT_TEXT, EXERCISE_SAFETY_LINE, STAT_NAMES, authoredTemplate, questSummary, renderWhy } from '@levelmeup/content';
 import { DAY_MS, levelForXp, newLadder } from '@levelmeup/rules';
@@ -12,12 +12,16 @@ import { Celebration } from '../src/screens/Celebration.tsx';
 import { Character } from '../src/screens/Character.tsx';
 import { Chronicle } from '../src/screens/Chronicle.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
+import { DayOptions } from '../src/screens/DayOptions.tsx';
 import { Today } from '../src/screens/Today.tsx';
 import {
   DAY_TWO_NOW, adjustState, characterRow, checkinState, completeEvent, ladderRows, offlineEvent, profileRow, serverState,
 } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
 import { peekToast } from '../src/ui/toast.ts';
+import { SETUP_TEXT } from '@levelmeup/content';
+
+const SETUP_NOT_NOW = SETUP_TEXT.notNow;
 
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC (8 PM–4 AM in Manila)
 const now = () => NOW;
@@ -28,23 +32,21 @@ const side1 = quests.find((q) => q.slot === 'side1')!;
 const side2 = quests.find((q) => q.slot === 'side2')!;
 const xpOf = (q: (typeof quests)[number]) => Object.values(q.xp).reduce((s, x) => s + (x ?? 0), 0);
 
+/** Camp, the home (a simpler day; it was Today). */
 async function renderToday(over: Parameters<typeof testStore>[0] = {}, server: ServerState = SERVER) {
   const store = testStore({ view: project(server, []), ...over });
-  const onSettings = jest.fn();
   const onOpenQuest = jest.fn();
-  const onTraining = jest.fn();
-  await render(withStore(store,
-    <Today
-      onSettings={onSettings} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={onTraining}
-      onCheckin={jest.fn()} now={now}
-    />));
-  return { store, onSettings, onOpenQuest, onTraining };
+  const onDay = jest.fn();
+  await render(withStore(store, <Today onOpenQuest={onOpenQuest} onDay={onDay} now={now} />));
+  return { store, onOpenQuest, onDay };
 }
+/** The scroll's Let's go, named after the quest it opens. */
+const go = (title: string) => screen.getByRole('button', { name: new RegExp(`^${CAMP_TEXT.go}\\. ${title}`) });
 
 describe('Today', () => {
-  it('opens a quest when its card is tapped (M6a)', async () => {
+  it("opens the quest the Grumble brought with Let's go, and an extra from its row (a simpler day)", async () => {
     const { onOpenQuest } = await renderToday();
-    await fireEvent.press(screen.getByText(authoredTemplate(core.templateId).voice.system.title));
+    await fireEvent.press(go(authoredTemplate(core.templateId).voice.system.title));
     expect(onOpenQuest).toHaveBeenCalledWith(core.id);
     await fireEvent.press(screen.getByText(authoredTemplate(side2.templateId).voice.system.title));
     expect(onOpenQuest).toHaveBeenCalledWith(side2.id);
@@ -52,40 +54,42 @@ describe('Today', () => {
 
   it('shows the core quest with your buddy doing it (Monster Buddy; the M6a pictures are retired)', async () => {
     await renderToday();
-    expect(within(screen.getByTestId('up-next')).getByTestId('quest-art', { includeHiddenElements: true })).toBeTruthy();
-    expect(within(screen.getByTestId('up-next')).queryByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeNull();
-    // M8b: the reading has no button until the day has an article. M12: Up next and the open side quest open their quest;
-    // the cleared one waits folded under "Done today".
-    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(2);
+    expect(within(screen.getByTestId('quest-scroll')).getByTestId('quest-art', { includeHiddenElements: true })).toBeTruthy();
+    expect(within(screen.getByTestId('quest-scroll')).queryByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeNull();
+    // M8b: the reading has no button until the day has an article. A simpler day: the open side quest is an extra on the
+    // card, opening its quest; the cleared one waits folded under "Done today".
+    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(1);
     expect(screen.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
   });
 
-  it('shows the day, the level and the battle; the streak and the XP bar live on Me (Monster Week)', async () => {
+  it('shows the day, the camp and the battle; the level, the streak and the XP bar live on Me (a simpler day)', async () => {
     await renderToday();
     expect(screen.getByText('Saturday, 10 Oct')).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Day 1' })).toBeTruthy();
-    expect(screen.getByText(/^Level \d+$/)).toBeTruthy();
-    expect(screen.getByTestId('arena')).toBeTruthy();
+    expect(screen.queryByText(/^Level \d+$/)).toBeNull();
+    expect(screen.getByTestId('camp-scene')).toBeTruthy();
+    expect(screen.getByTestId('battle-strip')).toBeTruthy();
     expect(screen.queryByText('day streak')).toBeNull();
     expect(screen.queryByRole('progressbar', { name: /Level \d+ progress/ })).toBeNull();
   });
 
-  it('shows the core quest as Up next in the player\'s voice, with its target, safety line and XP; its why is on its screen', async () => {
+  it("shows the core quest on the Grumble's scroll in the player's voice, with its target, stat and XP; its why and safety are on its screen", async () => {
     await renderToday();
     const template = authoredTemplate(core.templateId);
-    const next = within(screen.getByTestId('up-next'));
+    const next = within(screen.getByTestId('quest-scroll'));
+    expect(next.getByText(fillText(CAMP_TEXT.brought.core, { name: 'Snoozle' }))).toBeTruthy();
     expect(next.getByText(template.voice.system.title)).toBeTruthy();
-    expect(next.getByText(questSummary(core))).toBeTruthy();
+    expect(next.getByText(`${questSummary(core)} · ${STAT_NAMES[core.stat]} · +${xpOf(core)} XP`)).toBeTruthy();
     expect(screen.queryByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeNull(); // M12: the quest screen keeps it
-    if (template.exercise !== null) expect(next.getAllByText(EXERCISE_SAFETY_LINE).length).toBeGreaterThan(0);
-    expect(next.getByText(`· +${xpOf(core)} XP`)).toBeTruthy();
+    expect(screen.queryByText(EXERCISE_SAFETY_LINE)).toBeNull();
   });
 
-  it('shows the other open quests as rows with their XP, and the cleared ones folded under Done today', async () => {
+  it('shows the other open quests as extras on the card, and the cleared ones folded under Done today', async () => {
     await renderToday();
-    expect(screen.getByText('2 left')).toBeTruthy(); // side quest 2 and the reading
-    expect(screen.getByText(authoredTemplate(side2.templateId).voice.system.title)).toBeTruthy();
-    expect(screen.getByText(`+${xpOf(side2)} XP`)).toBeTruthy();
+    const also = within(screen.getByTestId('also-today'));
+    expect(also.getByText(CAMP_TEXT.also)).toBeTruthy();
+    expect(also.getByText(authoredTemplate(side2.templateId).voice.system.title)).toBeTruthy(); // side quest 2, and the reading's note
+    expect(also.getByText(/Today's reading opens once the daily articles arrive/)).toBeTruthy();
     expect(screen.queryByText(`${STAT_NAMES[side1.stat]} · cleared 9:00 PM`)).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Done today · 1' }));
     expect(screen.getByText(`${STAT_NAMES[side1.stat]} · cleared 9:00 PM`)).toBeTruthy();
@@ -94,7 +98,8 @@ describe('Today', () => {
 
   it('marks a quest whose change the server hasn\'t confirmed', async () => {
     await renderToday({ view: project(SERVER, [completeEvent(core.id)]) });
-    await fireEvent.press(screen.getByRole('button', { name: 'Done today · 2' }));
+    // With its core quest cleared and no article yet, the day is done: "That's today", its quests listed (a simpler day).
+    expect(screen.getByTestId('day-done')).toBeTruthy();
     expect(screen.getByText('Will sync')).toBeTruthy();
     expect(screen.getAllByText(`Cleared +${xpOf(core)}`)).toHaveLength(2); // the core quest and side quest 1
   });
@@ -178,10 +183,11 @@ describe('Today', () => {
     expect(store.getState().dismissNotice).toHaveBeenCalledWith('e1');
   });
 
-  it('the gear opens Settings', async () => {
-    const { onSettings } = await renderToday();
-    await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
-    expect(onSettings).toHaveBeenCalled();
+  it("Change today opens the day's options; the gear lives on Me (a simpler day)", async () => {
+    const { onDay } = await renderToday();
+    expect(screen.queryByRole('button', { name: 'Settings' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.change }));
+    expect(onDay).toHaveBeenCalled();
   });
 });
 
@@ -461,27 +467,22 @@ describe('Celebration (M6a decision 8)', () => {
   });
 });
 
-it('Today shows the day\'s adjustments, and "I felt pain" under an exercise core quest (M6b)', async () => {
+it('Change today shows the day\'s adjustments at once, and "I felt pain" for an exercise core quest (M6b; a simpler day)', async () => {
   const onPain = jest.fn();
   await render(withStore(testStore({ view: project(adjustState(), []) }),
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={onPain} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
-      now={() => DAY_TWO_NOW} />));
-  // M10c decision 3: the options open from "Change today"; the pain button stays in sight.
-  await fireEvent.press(screen.getByRole('button', { name: 'Change today' }));
-  expect(screen.getByRole('button', { name: 'Swap · 1 of 1 left' })).toBeTruthy();
+    <DayOptions onBack={jest.fn()} onSwap={jest.fn()} onVanish={jest.fn()} onPain={onPain} />));
+  expect(screen.getByRole('button', { name: 'Swap · 1 of 1 left' })).toBeTruthy(); // nothing folded on its own screen
   await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
   expect(onPain).toHaveBeenCalledWith(200);
 });
 
 it("Today tags a quest whose exercise is resting after pain (M6b review)", async () => {
   const resting = adjustState({ ladders: ladderRows({ push: { ...newLadder(1), paused: true } }) });
-  await render(withStore(testStore({ view: project(resting, []) }),
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
-      now={() => DAY_TWO_NOW} />));
-  // The core quest, push-1: a quiet row ending in its tag, never Up next (M12 review: a resting exercise isn't pushed).
+  await render(withStore(testStore({ view: project(resting, []) }), <Today onOpenQuest={jest.fn()} onDay={jest.fn()} now={() => DAY_TWO_NOW} />));
+  // The core quest, push-1: a quiet extra ending in its tag, never on the scroll (M12 review: a resting exercise isn't pushed).
   expect(screen.getAllByText(new RegExp(` · ${ADJUST_TEXT.paused.tag}$`))).toHaveLength(1);
   expect(screen.queryByText(authoredTemplate('push-1').voice.system.title, { exact: true })).toBeTruthy();
-  expect(screen.getByTestId('up-next')).toBeTruthy(); // the next quest that can be done
+  expect(screen.getByTestId('quest-scroll')).toBeTruthy(); // the next quest that can be done
 });
 
 it('Character offers a class change, and says when the next one opens (M6b)', async () => {
@@ -577,9 +578,8 @@ describe("Scholar's Path: the book screen (M6d decision 12)", () => {
     const server = adjustState();
     const quests = server.today!.quests.map((q) => (q.slot === 'core' || q.slot === 'side2' ? { ...q, book: 'Dune' } : q));
     await render(withStore(testStore({ view: project({ ...server, today: { ...server.today!, quests } }, []) }),
-      <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()} onCheckin={jest.fn()}
-      now={() => DAY_TWO_NOW} />));
-    expect(screen.getAllByText('Reading: Dune')).toHaveLength(2); // Up next and an open side quest's row
+      <Today onOpenQuest={jest.fn()} onDay={jest.fn()} now={() => DAY_TWO_NOW} />));
+    expect(screen.getAllByText('Reading: Dune')).toHaveLength(2); // the scroll and an open side quest's row
   });
 });
 
@@ -590,46 +590,53 @@ it("Today's header names the date the quest day mostly covers, as Chronicle does
   expect(screen.getByText('Monday, 12 Oct')).toBeTruthy();
 });
 
-describe('the training notice (M6d decision 13)', () => {
-  const NOTICE = `System: ${ADJUST_TEXT.training.notice}`;
+describe("the training notice (M6d decision 13), on Me's Set up list since a simpler day", () => {
+  const ROW = new RegExp(`^${CAMP_TEXT.setUp.training}\\. `);
+  async function renderMe(over: Parameters<typeof testStore>[0] = {}) {
+    const store = testStore({ view: project(SERVER, []), offers: ['monster:intro', 'reminder'], ...over });
+    const go = { onSettings: jest.fn(), onGame: jest.fn(), onTraining: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(), onPlus: jest.fn() };
+    await render(withStore(store, <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} setUp={go} now={now} />));
+    return { store, onTraining: go.onTraining };
+  }
 
-  it('shows once to a player with the default training; "Set up training" opens Settings → Training', async () => {
-    const { store, onTraining } = await renderToday({ trainingNoticeSeen: false });
-    expect(screen.getByLabelText(NOTICE)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.training.setUp }));
+  it('waits for a player with the default training; its row opens Training and leaves the list', async () => {
+    const { store, onTraining } = await renderMe({ trainingNoticeSeen: false });
+    await fireEvent.press(screen.getByRole('button', { name: ROW }));
     expect(onTraining).toHaveBeenCalled();
     expect(store.getState().dismissTrainingNotice).toHaveBeenCalled();
   });
 
   it('"Not now" only puts it away', async () => {
-    const { store, onTraining } = await renderToday({ trainingNoticeSeen: false });
-    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.day.notNow }));
+    const { store, onTraining } = await renderMe({ trainingNoticeSeen: false });
+    await fireEvent.press(screen.getByRole('button', { name: `${SETUP_NOT_NOW}: ${CAMP_TEXT.setUp.training}` }));
     expect(store.getState().dismissTrainingNotice).toHaveBeenCalled();
     expect(onTraining).not.toHaveBeenCalled();
   });
 
   it('is gone once seen', async () => {
-    await renderToday();
-    expect(screen.queryByLabelText(NOTICE)).toBeNull();
+    await renderMe();
+    expect(screen.queryByRole('button', { name: ROW })).toBeNull();
   });
 
   it.each([
     [{ equipment: ['bands' as const] }], [{ programStyle: 'women' as const }], [{ ownProgram: true }], [{ gentleStart: true }],
   ])('never shows to a player whose training is set: %j', async (profile) => {
     const view = project(SERVER, []);
-    await renderToday({ view: { ...view, profile: { ...view.profile, ...profile } }, trainingNoticeSeen: false });
-    expect(screen.queryByLabelText(NOTICE)).toBeNull();
+    await renderMe({ view: { ...view, profile: { ...view.profile, ...profile } }, trainingNoticeSeen: false });
+    expect(screen.queryByRole('button', { name: ROW })).toBeNull();
   });
 });
 
 describe('a day this phone built offline (M6e decision 8)', () => {
   it("says so, and keeps the day's adjustments for after the sync", async () => {
-    await renderToday({ view: project(serverState(), [offlineEvent()]) });
+    const view = project(serverState(), [offlineEvent()]);
+    await renderToday({ view });
     expect(screen.getByText(OFFLINE_TEXT.built)).toBeTruthy();
+    // A simpler day: the adjustments are on Change today, which says they wait for the sync.
+    await render(withStore(testStore({ view }), <DayOptions onBack={jest.fn()} onSwap={jest.fn()} onVanish={jest.fn()} onPain={jest.fn()} />));
     expect(screen.getByText(OFFLINE_TEXT.later)).toBeTruthy();
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.day.hardDay })).toBeNull();
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.day.rest })).toBeNull();
-    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityHint === 'Opens the quest').length).toBe(3); // + the reading card (M8b)
   });
 
   it('says until when what is cleared here counts (premium pass A6)', async () => {
@@ -648,30 +655,35 @@ describe('a day this phone built offline (M6e decision 8)', () => {
 
 describe('Today after a missed day (M7a)', () => {
   const T = CHECKIN_TEXT;
-  /** Today on day 2 with this store; `onCheckin` opens the check-in screen. */
+  /** Camp on day 2 with this store. */
   async function renderToday(store: ReturnType<typeof testStore>, at: number) {
-    const onCheckin = jest.fn();
-    await render(withStore(store,
-      <Today
-        onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-        onCheckin={onCheckin} now={() => at}
-      />));
-    return { store, onCheckin };
+    await render(withStore(store, <Today onOpenQuest={jest.fn()} onDay={jest.fn()} now={() => at} />));
+    return { store };
   }
 
-  it('asks the check-in, shows the streak paused, and opens the check-in screen', async () => {
-    const { store, onCheckin } = await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
+  it('asks the check-in at the fire: one tap answers, and "Ask me later" puts it off (a simpler day)', async () => {
+    const { store } = await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
     expect(screen.getByText(T.title)).toBeTruthy();
-    expect(screen.queryByText(T.leadYesterday)).toBeNull(); // M17: the details are on the check-in screen
-    await fireEvent.press(screen.getByText(T.open));
-    expect(onCheckin).toHaveBeenCalled();
-    await fireEvent.press(screen.getByText(T.openLater));
+    expect(screen.getByTestId('camp-bubble')).toBeTruthy();
+    expect(screen.queryByTestId('quest-scroll')).toBeNull(); // one card: the question first
+    await fireEvent.press(screen.getByText(T.answers.emergency.label));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin', checkinId: 7, answer: 'emergency', secondWind: false });
+    await fireEvent.press(screen.getByText(CAMP_TEXT.ask.later));
     expect(store.getState().answerLater).toHaveBeenCalledWith(7);
+  });
+
+  it('asks which, in place, for "sick or injured"', async () => {
+    const { store } = await renderToday(testStore({ view: project(checkinState(), []) }), DAY_TWO_NOW);
+    await fireEvent.press(screen.getByText(T.answers.sick_or_injured.label));
+    expect(store.getState().enqueue).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByText(T.injured));
+    expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'checkin', checkinId: 7, answer: 'injured', secondWind: false });
   });
 
   it('hides a check-in put off with "Later"', async () => {
     await renderToday(testStore({ view: project(checkinState(), []), checkinLater: 7 }), DAY_TWO_NOW);
     expect(screen.queryByText(T.title)).toBeNull();
+    expect(screen.getByTestId('quest-scroll')).toBeTruthy();
   });
 
   it('holds the streak after "I just didn\'t" and says the recovery quest is on its way', async () => {
@@ -691,14 +703,14 @@ describe('Today after a missed day (M7a)', () => {
     expect(screen.queryByText(T.held)).toBeNull();
   });
 
-  it('shows a settled miss once', async () => {
+  it('says a settled miss once, as the app\'s note (a simpler day)', async () => {
     const state = { ...checkinState(), checkin: null, checkinResult: { id: 9, outcome: 'shield' as const } };
     const { store } = await renderToday(testStore({ view: project(state, []) }), DAY_TWO_NOW);
-    expect(screen.getByText(T.result.shield)).toBeTruthy();
-    await fireEvent.press(screen.getByText(T.done));
+    expect(peekToast()?.message).toBe(T.result.shield);
     expect(store.getState().dismissCheckinResult).toHaveBeenCalledWith(9);
-    await renderToday(testStore({ view: project(state, []), checkinResultSeen: 9 }), DAY_TWO_NOW);
-    expect(screen.queryByText(T.result.shield)).toBeNull();
+    const seen = testStore({ view: project(state, []), checkinResultSeen: 9 });
+    await renderToday(seen, DAY_TWO_NOW);
+    expect(seen.getState().dismissCheckinResult).not.toHaveBeenCalled();
   });
 
   it('offers the lighter plan when the state does, both ways', async () => {

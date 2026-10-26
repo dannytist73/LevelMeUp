@@ -157,8 +157,7 @@ const clearedScreen = (numbers: ClearedNumbers) => (
 const cleared = (numbers: ClearedNumbers) => render(clearedScreen(numbers));
 const TODAY_NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
 const today = (store: ReturnType<typeof testStore>, shown?: boolean) => withStore(store,
-  <Today shown={shown} onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()}
-    onTraining={jest.fn()} onCheckin={jest.fn()} now={() => TODAY_NOW} />);
+  <Today shown={shown} onOpenQuest={jest.fn()} onDay={jest.fn()} now={() => TODAY_NOW} />);
 /** Monster Week: the core quest cleared, so the battle's power grows (the streak's tick left Today with the streak). */
 const powerUp = (view: ReturnType<typeof project>) => ({
   ...view,

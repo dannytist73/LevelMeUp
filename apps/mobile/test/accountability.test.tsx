@@ -164,13 +164,13 @@ describe("the Shadow's scene (board F2)", () => {
 
 describe('Today after a miss (board F3)', () => {
   const today = async (state = claimedState('shadow'), over = {}) => {
-    const props = { onSettings: jest.fn(), onOpenQuest: jest.fn(), onSwap: jest.fn(), onPain: jest.fn(), onVanish: jest.fn(), onTraining: jest.fn(), onCheckin: jest.fn(), onShadow: jest.fn(), onTrial: jest.fn() };
+    const props = { onOpenQuest: jest.fn(), onDay: jest.fn(), onShadow: jest.fn(), onTrial: jest.fn() };
     await render(withStore(testStore({ view: project(state, []), ...over }), <Today {...props} now={() => DAY_TWO_NOW} />));
     return props;
   };
-  it('puts the recovery quest Up next while it is open, for every player (M12 decision 3)', async () => {
+  it("puts the recovery quest on the Grumble's scroll while it is open, for every player (M12 decision 3)", async () => {
     await today(claimedState(null));
-    expect(within(screen.getByTestId('up-next')).getByText(/^Up next · Recovery quest · /)).toBeTruthy();
+    expect(within(screen.getByTestId('quest-scroll')).getByText(/brought a short quest that keeps your streak$/)).toBeTruthy();
     expect(screen.getByText(CHECKIN_TEXT.held)).toBeTruthy(); // no pact: M7a's line
   });
 
@@ -211,7 +211,7 @@ describe('a sealed side quest and the marked portrait (M7c)', () => {
   it('the quest screen asks for the Trial instead of the log', async () => {
     const onTrial = jest.fn();
     await render(withStore(testStore({ view: project(claimedState('trial'), []) }),
-      <Quest questId={201} now={() => DAY_TWO_NOW} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onTrial={onTrial} />));
+      <Quest questId={201} now={() => DAY_TWO_NOW} onBack={jest.fn()} onPain={jest.fn()} onTrial={onTrial} />));
     expect(screen.getByLabelText(`The Shadow: ${shadowLine('trial', 2)}`)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: SHADOW_TEXT.trial.start }));
     expect(onTrial).toHaveBeenCalled();
@@ -271,7 +271,7 @@ describe('the review fixes (M7c)', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it("the System's line names the Shadow only on the day it holds", async () => {
-    const props = { onSettings: jest.fn(), onOpenQuest: jest.fn(), onSwap: jest.fn(), onPain: jest.fn(), onVanish: jest.fn(), onTraining: jest.fn(), onCheckin: jest.fn() };
+    const props = { onOpenQuest: jest.fn(), onDay: jest.fn() };
     await render(withStore(testStore({ view: project(claimedState('shadow', { recovery_day_id: '1' }), []) }), <Today {...props} now={() => DAY_TWO_NOW} />));
     expect(screen.getByText(CHECKIN_TEXT.held)).toBeTruthy();
     expect(screen.queryByText(SHADOW_TEXT.heldYesterday)).toBeNull();

@@ -1,14 +1,15 @@
 // A reading read again (M8b decision 7): the article with the takeaway written that day; an article this phone doesn't
 // hold is asked for and arrives with the next sync. M11: it opens on its Story Deck when it has one, with the line written
 // that day on the Your turn card; the full article stays one tap away. One held from before its deck existed is asked
-// for again (once a launch), so it gets its cards (review).
-import { READING_TEXT, fillText } from '@levelmeup/content';
+// for again (once a launch), so it gets its cards (review). A simpler day (docs/2026-10-26-simpler-day.md, decision 10): a
+// story lesson reads as one scroll, ending on the line written that day.
+import { CAMP_TEXT, READING_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dateKeyLabel } from '../lib/dates.ts';
 import { isKept } from '../reading/codex.ts';
-import { asDeck, hasCurrentDeck } from '../reading/deck.ts';
+import { asDeck, hasCurrentDeck, isStory } from '../reading/deck.ts';
 import { useGame } from '../state/store.ts';
 import { space } from '../theme/tokens.ts';
 import { Button } from '../ui/Button.tsx';
@@ -17,6 +18,7 @@ import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { Body, Label } from '../ui/Text.tsx';
 import { Deck } from './reading/Deck.tsx';
 import { Reader } from './reading/Reader.tsx';
+import { StoryScroll } from './reading/StoryScroll.tsx';
 import { openSource } from './reading/openSource.ts';
 import { TopBar } from '../ui/TopBar.tsx';
 
@@ -55,6 +57,26 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
       <Body weight="medium">{reading?.takeaway ?? R.noTakeaway}</Body>
     </View>
   );
+  if (article !== null && deck !== null && isStory(deck) && !fullArticle) {
+    return (
+      <StoryScroll
+        article={{ ...article, deck }}
+        label={label}
+        xp={null}
+        end={(
+          <View style={{ gap: 16 }}>
+            {takeaway}
+            <Button label={R.deck.done} variant="secondary" onPress={onBack} />
+          </View>
+        )}
+        onClose={onBack}
+        onFullArticle={() => setFullArticle(true)}
+        buddy={view === null ? undefined : { classId: view.profile.classId, level: view.character.level }}
+        kept={isKept(codex, article.id)}
+        onKeep={() => void toggleKeep({ articleId: article.id, title: article.title, lesson: deck.lesson, keptAt: now() })}
+      />
+    );
+  }
   if (article !== null && deck !== null && !fullArticle) {
     return (
       <Deck
@@ -81,7 +103,7 @@ export function Reading({ articleId, dayNumber = null, onBack, now = Date.now }:
     <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
       <TopBar onBack={onBack} />
       {deck !== null
-        ? <Button label={R.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
+        ? <Button label={isStory(deck) ? CAMP_TEXT.story.back : R.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
         : null}
       {article === null ? (
         <NarrationBox>{known ? R.missing : R.gone}</NarrationBox>

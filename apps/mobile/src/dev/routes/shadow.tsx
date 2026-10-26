@@ -84,8 +84,8 @@ export default function ShadowPreview() {
         <GameProvider store={store}>
           {screen === 'today' && (
             <Today
-              onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}}
-              onCheckin={() => {}} onShadow={() => setScreen('scene')} onTrial={() => setScreen('trial')}
+              onOpenQuest={() => {}} onDay={() => {}}
+              onShadow={() => setScreen('scene')} onTrial={() => setScreen('trial')}
             />
           )}
           {screen === 'scene' && <ShadowScene onDone={back} onRecovery={back} onTrial={() => setScreen('trial')} onPact={() => setScreen('pact')} />}

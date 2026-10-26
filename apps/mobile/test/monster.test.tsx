@@ -1,15 +1,17 @@
-// Monster Week's screens (docs/2026-10-25-monster-week.md): the arena on Today, the power on each quest, the one-time
-// card, the streak on Me, the Camp and its Grumble book, and a decided battle shown once.
-import { CHECKIN_TEXT, GRUMBLES, MONSTER_TEXT, STAT_NAMES, TODAY_TEXT, fillText } from '@levelmeup/content';
+// Monster Week's screens (docs/2026-10-25-monster-week.md): the battle on Camp, the power on each quest, the battle
+// explained once, the streak on Me, the Grumble book, and a decided battle shown once. A simpler day
+// (docs/2026-10-26-simpler-day.md): the arena became the camp scene and its battle strip, and the Camp tab's book sits
+// under it.
+import { CAMP_TEXT, CHECKIN_TEXT, GRUMBLES, MONSTER_TEXT, STAT_NAMES, TODAY_TEXT, fillText } from '@levelmeup/content';
 import { questPower } from '@levelmeup/rules';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
 import { BattleResult, MAX_SHOTS, shotsOf } from '../src/screens/BattleResult.tsx';
-import { Camp } from '../src/screens/Camp.tsx';
 import { Character, streakLine } from '../src/screens/Character.tsx';
 import { Today } from '../src/screens/Today.tsx';
-import { clockLine } from '../src/screens/today/Arena.tsx';
+import { clockLine } from '../src/screens/camp/BattleStrip.tsx';
+import { peekToast } from '../src/ui/toast.ts';
 import { colors } from '../src/theme/tokens.ts';
 import { checkinState, serverState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
@@ -17,9 +19,8 @@ import { testStore, withStore } from './support/store.ts';
 const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
 const A = MONSTER_TEXT.arena;
 
-const renderToday = (store: ReturnType<typeof testStore>) => render(withStore(store,
-  <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-    onCheckin={jest.fn()} now={() => NOW} />));
+const renderToday = (store: ReturnType<typeof testStore>, shown = true) => render(withStore(store,
+  <Today onOpenQuest={jest.fn()} onDay={jest.fn()} shown={shown} now={() => NOW} />));
 
 /** The state with a decided battle 1 (won or lost) and battle 2 running. */
 function decided(won: boolean): ServerState {
@@ -32,17 +33,17 @@ function decided(won: boolean): ServerState {
   };
 }
 
-describe('the arena on Today', () => {
-  it("shows the Grumble here now, its line, its weakness, the battle clock and the power to its need", async () => {
-    const s = serverState(['core']);
+describe('the battle on Camp (a simpler day)', () => {
+  it("shows the Grumble here now at the edge of camp, holding out today's quest, and its weakness, clock and power in the strip", async () => {
+    const s = serverState([]);
     await renderToday(testStore({ view: project(s, []) }));
-    const arena = within(screen.getByTestId('arena'));
-    expect(arena.getByRole('header', { name: 'Snoozle' })).toBeTruthy();
-    expect(arena.getByText('Five more minutes…')).toBeTruthy();
-    expect(arena.getByText(fillText(A.weakTo, { stat: 'Vitality' }))).toBeTruthy();
-    expect(arena.getByText(fillText(A.power, { power: s.battle.power, need: s.battle.need }))).toBeTruthy();
-    expect(arena.getByText(clockLine(s.battle.endsAt!, s.today!.timeZone, NOW))).toBeTruthy();
-    expect(arena.getByRole('progressbar').props.accessibilityValue).toMatchObject({ max: s.battle.need, now: s.battle.power });
+    expect(screen.getByLabelText('Snoozle, the snooze button')).toBeTruthy();
+    expect(within(screen.getByTestId('camp-bubble')).getByText(CAMP_TEXT.bubble.gift)).toBeTruthy();
+    const strip = within(screen.getByTestId('battle-strip'));
+    expect(strip.getByText(fillText(CAMP_TEXT.power, { name: 'Snoozle', power: s.battle.power, need: s.battle.need }))).toBeTruthy();
+    expect(strip.getByText(fillText(A.weakTo, { stat: 'Vitality' }))).toBeTruthy();
+    expect(strip.getByText(clockLine(s.battle.endsAt!, s.today!.timeZone, NOW))).toBeTruthy();
+    expect(strip.getByRole('progressbar').props.accessibilityValue).toMatchObject({ max: s.battle.need, now: s.battle.power });
   });
 
   it('every open quest shows the power it gives; one on the weakness is marked so', async () => {
@@ -53,14 +54,16 @@ describe('the arena on Today', () => {
     const weak = s.today!.quests.filter((q) => q.slot !== 'article' && q.stat === 'vitality').length;
     expect(screen.queryAllByTestId('power-chip-weak', { includeHiddenElements: true })).toHaveLength(weak);
     const core = s.today!.quests.find((q) => q.slot === 'core')!;
-    expect(within(screen.getByTestId('up-next')).getAllByText(fillText(core.stat === 'vitality' ? A.questWeak : A.questPower, { n: questPower(core.stat, 'vitality') }), { includeHiddenElements: true }).length).toBe(1);
+    expect(within(screen.getByTestId('quest-scroll')).getAllByText(fillText(core.stat === 'vitality' ? A.questWeak : A.questPower, { n: questPower(core.stat, 'vitality') }), { includeHiddenElements: true }).length).toBeGreaterThanOrEqual(1); // the scroll holds the extras too
   });
 
-  it('a new player gets the one-time card that explains the battles; Got it marks it', async () => {
+  it('a new player hears the visitor explain itself, once: it counts as said once they leave Camp', async () => {
     const store = testStore({ view: project(serverState([]), []), offers: [] });
-    await renderToday(store);
-    expect(screen.getByText(MONSTER_TEXT.intro.line)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: MONSTER_TEXT.intro.go }));
+    const view = await renderToday(store);
+    const intro = fillText(CAMP_TEXT.bubble.intro, { name: 'Snoozle', standsFor: 'the snooze button' });
+    expect(within(screen.getByTestId('camp-bubble')).getByText(intro)).toBeTruthy();
+    expect(store.getState().markOffer).not.toHaveBeenCalledWith('monster:intro'); // a battle's replay waits for it
+    await view.rerender(withStore(store, <Today onOpenQuest={jest.fn()} onDay={jest.fn()} shown={false} now={() => NOW} />));
     expect(store.getState().markOffer).toHaveBeenCalledWith('monster:intro');
   });
 
@@ -68,9 +71,10 @@ describe('the arena on Today', () => {
     const s = serverState([]);
     const held = { ...s, battle: { ...s.battle, waiting: true }, today: { ...s.today!, dayNumber: 4 } };
     await renderToday(testStore({ view: project(held, []) }));
-    const arena = within(screen.getByTestId('arena'));
-    expect(arena.getByText(fillText(A.waiting, { name: 'Snoozle' }))).toBeTruthy();
-    expect(arena.queryByRole('progressbar')).toBeNull();
+    const strip = within(screen.getByTestId('battle-strip'));
+    expect(strip.getByText(fillText(A.waiting, { name: 'Snoozle' }))).toBeTruthy();
+    expect(strip.queryByRole('progressbar')).toBeNull();
+    expect(within(screen.getByTestId('camp-bubble')).getByText(CAMP_TEXT.bubble.ask)).toBeTruthy();
   });
 
   it('the reading quest shows its power too', async () => {
@@ -105,24 +109,25 @@ describe('the streak on Me (it left Today with Monster Week)', () => {
   });
 });
 
-describe('the Camp', () => {
-  it('before a first win: an empty fire, the Grumble here now, and a book of 24 dark silhouettes but one', async () => {
-    await render(withStore(testStore({ view: project(serverState([]), []) }), <Camp now={() => NOW} />));
-    expect(screen.getByText(MONSTER_TEXT.camp.friendsNone)).toBeTruthy();
-    expect(screen.getByText(MONSTER_TEXT.camp.empty)).toBeTruthy();
-    expect(screen.getByText(fillText(MONSTER_TEXT.camp.here, { name: 'Snoozle' }))).toBeTruthy();
+describe('the camp and its Grumble book (under the scene since a simpler day)', () => {
+  it('before a first win: nobody at the fire but your buddy, the Grumble here now, and a book of 24 dark silhouettes but one', async () => {
+    await renderToday(testStore({ view: project(serverState([]), []) }));
+    expect(screen.getByLabelText('Your camp: Pummel by the fire. Snoozle waits at the edge of camp.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /, a friend\./ })).toBeNull();
     expect(screen.getByText(fillText(MONSTER_TEXT.camp.bookCount, { n: 0, total: 24 }))).toBeTruthy();
     expect(GRUMBLES.map((g) => screen.getByTestId(`book-${g.id}`))).toHaveLength(24);
     expect(screen.getByTestId('book-snoozle').props.accessibilityLabel).toContain(MONSTER_TEXT.camp.hereNow);
     expect(screen.getByTestId('book-scrollo').props.accessibilityLabel).toBe(`${MONSTER_TEXT.camp.unknown}. It never reaches the bottom.`);
   });
 
-  it('after a win: the friend sits at the fire and the book counts it', async () => {
-    await render(withStore(testStore({ view: project(decided(true), []) }), <Camp now={() => NOW} />));
-    expect(screen.getByText(MONSTER_TEXT.camp.friendsOne)).toBeTruthy();
+  it('after a win: the friend sits at the fire and says its line when tapped; the book counts it', async () => {
+    await renderToday(testStore({ view: project(decided(true), []) }));
+    expect(screen.getByLabelText('Your camp: Pummel by the fire. Friends here: Snoozle. Scrollo waits at the edge of camp.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: fillText(CAMP_TEXT.scene.friend, { name: 'Snoozle' }) }));
+    expect(peekToast()?.message).toBe('Snoozle: “Fine. Mornings are nice too.”');
     expect(screen.getByText(fillText(MONSTER_TEXT.camp.bookCount, { n: 1, total: 24 }))).toBeTruthy();
     expect(screen.getByTestId('book-snoozle').props.accessibilityLabel).toContain(MONSTER_TEXT.camp.joinedOnce);
-    expect(screen.getByText(fillText(MONSTER_TEXT.camp.here, { name: 'Scrollo' }))).toBeTruthy();
+    expect(screen.getByTestId('book-scrollo').props.accessibilityLabel).toContain(MONSTER_TEXT.camp.hereNow);
   });
 });
 

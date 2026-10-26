@@ -30,3 +30,4 @@ export * from './training/moves.ts';
 export * from './training/programs.ts';
 export * from './grumbles.ts';
 export * from './buddies.ts';
+export * from './camp.ts';

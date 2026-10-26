@@ -44,12 +44,12 @@ export const NOTIFY_TEXT = {
   late: 'To save battery, your phone may deliver them late, sometimes by up to an hour.',
   ask: {
     title: 'Allow notifications?',
-    line: 'Your phone will ask whether LevelMeUp may send notifications. Only the ones you turn on here will come.',
+    line: 'Your phone will ask whether Grumble Camp may send notifications. Only the ones you turn on here will come.',
     allow: 'Allow notifications',
     notNow: 'Not now',
   },
   denied: {
-    line: "Notifications are off for LevelMeUp in your phone's settings, so none will arrive. Everything else works the same.",
+    line: "Notifications are off for Grumble Camp in your phone's settings, so none will arrive. Everything else works the same.",
     open: 'Open phone settings',
   },
   channels: { reminders: 'Reminders', timers: 'Quest timers' },

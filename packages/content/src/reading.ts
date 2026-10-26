@@ -54,7 +54,7 @@ export const READING_TEXT = {
     keptLabel: 'Take this lesson out of your Codex',
     keepNote: 'Kept lessons go to your Codex.',
     share: 'Share the lesson',
-    shareLine: '{lesson} — from {title}, in LevelMeUp',
+    shareLine: '{lesson} — from {title}, in Grumble Camp',
     turn: 'Your turn',
     full: 'Read the full article · {minutes} min',
     backToCards: 'Back to the cards',

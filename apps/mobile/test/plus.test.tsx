@@ -1,6 +1,6 @@
 // M13: LevelMeUp Plus on the phone: what each screen shows for the server's state.plus, the offer screen's Google Play
 // disclosures, the looks and frames it keeps for Plus, Today's one-time cards and the trial's words.
-import { NOTIFY_TEXT, PLUS_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
+import { CAMP_TEXT, NOTIFY_TEXT, PLUS_TEXT, STAT_NAMES, fillText } from '@levelmeup/content';
 import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import type { EntitlementRow } from '../../../supabase/functions/_shared/plus.ts';
@@ -14,7 +14,7 @@ import { DeleteCharacter } from '../src/screens/DeleteCharacter.tsx';
 import { Look } from '../src/screens/Look.tsx';
 import { Plus } from '../src/screens/Plus.tsx';
 import { Settings } from '../src/screens/Settings.tsx';
-import { Today } from '../src/screens/Today.tsx';
+import { Character } from '../src/screens/Character.tsx';
 import { StatChart, chartPoints } from '../src/screens/chronicle/StatChart.tsx';
 import { PALETTES, THEMES, appliedTheme, applyTheme } from '../src/theme/palettes.ts';
 import { colors } from '../src/theme/tokens.ts';
@@ -193,20 +193,19 @@ describe('Settings → LevelMeUp Plus', () => {
   });
 });
 
-describe('Today\'s Plus card', () => {
-  const today = (view: Shown, onPlus = jest.fn()) => withStore(testStore({ view }), (
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-      onCheckin={jest.fn()} onPlus={onPlus} now={() => NOW} />
+describe("Plus's one-time card, on Me's Set up list (a simpler day)", () => {
+  const today = (view: Shown, onPlus = jest.fn()) => withStore(testStore({ view, offers: ['monster:intro', 'reminder'] }), (
+    <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} now={() => NOW}
+      setUp={{ onSettings: jest.fn(), onGame: jest.fn(), onTraining: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(), onPlus }} />
   ));
 
-  it('a week in, once Plus is on sale, the card offers it once', async () => {
+  it('a week in, once Plus is on sale, its row offers it once', async () => {
     jest.spyOn(purchases, 'purchasesSetUp').mockReturnValue(true);
     const base = viewWith([], ['core']);
     const onPlus = jest.fn();
     await render(today({ ...base, today: { ...base.today!, dayNumber: 7 } }, onPlus));
-    const strip = screen.getByTestId('notice-strip');
-    expect(within(strip).getByText(`${PLUS_TEXT.day7.title}. ${PLUS_TEXT.day7.line}`)).toBeTruthy();
-    await fireEvent.press(within(strip).getByRole('button', { name: PLUS_TEXT.day7.see }));
+    const list = screen.getByTestId('set-up');
+    await fireEvent.press(within(list).getByRole('button', { name: `${CAMP_TEXT.setUp.plus}. ${PLUS_TEXT.day7.line}` }));
     expect(onPlus).toHaveBeenCalled();
   });
 

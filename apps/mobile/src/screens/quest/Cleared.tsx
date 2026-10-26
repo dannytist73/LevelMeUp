@@ -86,7 +86,7 @@ function LevelLine({ numbers }: { numbers: ClearedNumbers }) {
   );
 }
 
-function RateButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+export function RateButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
     <Tap
       accessibilityRole="button"

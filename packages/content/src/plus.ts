@@ -1,10 +1,10 @@
-// M13: LevelMeUp Plus's words (plan docs/superpowers/plans/2026-10-18-m13-plus.md). Google Play's subscription rules
+// M13: Grumble Camp Plus's words (plan docs/superpowers/plans/2026-10-18-m13-plus.md). Google Play's subscription rules
 // (docs/research/2026-10-18-google-play-policies.md §3): the price and how often it is charged, that it renews, what the
 // free trial is and what happens after it, how to cancel, and that the game works without it; never a monthly figure
 // for the yearly plan. Prices are never written here: they come from Google Play, in the player's own currency.
 
 export const PLUS_TEXT = {
-  name: 'LevelMeUp Plus',
+  name: 'Grumble Camp Plus',
   lead: 'The whole game stays free. Plus adds looks and the long view of your stats.',
   adds: [
     { title: 'Two more looks', line: 'System Blue and Mint Night, for the whole app.' },
@@ -38,7 +38,7 @@ export const PLUS_TEXT = {
   unavailable: "Plus can't be bought right now. Check your connection and try again.",
   retry: 'Try again',
   checking: 'Checking with Google Play.',
-  thanks: 'Plus is on. Thank you for supporting LevelMeUp.',
+  thanks: 'Plus is on. Thank you for supporting Grumble Camp.',
   pending: "Google Play is still processing the payment. Plus starts once it's done.",
   restored: 'Plus is back on.',
   nothingToRestore:
@@ -48,7 +48,7 @@ export const PLUS_TEXT = {
   owned: 'This Google account already has Plus. Tap Restore purchases to bring it to this character.',
   serverLate: 'Google Play took the payment, but the System has not heard yet. It checks again each time you open the app.',
   settings: {
-    section: 'LevelMeUp Plus',
+    section: 'Grumble Camp Plus',
     free: 'Not on Plus',
     see: 'See Plus',
     manage: 'Manage subscription',

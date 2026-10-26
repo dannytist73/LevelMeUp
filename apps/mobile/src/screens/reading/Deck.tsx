@@ -60,7 +60,7 @@ export type DeckProps = {
  * A regular's initial in their colour (M14). On the cover it wears a ring in the cover's ink: a regular's colour can
  * match the look's accent (Priya's is Moonlight's), and the badge would vanish into the cover (found on the emulator).
  */
-function PersonBadge({ person, size, ring = false }: { person: CastMember; size: number; ring?: boolean }) {
+export function PersonBadge({ person, size, ring = false }: { person: CastMember; size: number; ring?: boolean }) {
   return (
     <View accessible={false} importantForAccessibility="no-hide-descendants"
       style={{
@@ -72,7 +72,7 @@ function PersonBadge({ person, size, ring = false }: { person: CastMember; size:
   );
 }
 
-function RoundButton({ icon, label, onPress, disabled = false, filled = false }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean; filled?: boolean }) {
+export function RoundButton({ icon, label, onPress, disabled = false, filled = false }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean; filled?: boolean }) {
   return (
     <Tap
       accessibilityRole="button"

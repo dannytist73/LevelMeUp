@@ -1,6 +1,6 @@
 // M10c (clarity): Today says what to do next and quietens what's done; Character and the Chronicle lose their noise.
 // M12 (Round 3): Up next, Then, the day done once its core quest and reading are, the check circle with Undo.
-import { CHARACTER_TEXT, TODAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
+import { CAMP_TEXT, CHARACTER_TEXT, TODAY_TEXT, authoredTemplate, fillText } from '@levelmeup/content';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { ServerState } from '../src/game/types.ts';
@@ -23,8 +23,7 @@ async function renderToday(server: ServerState, over: Parameters<typeof testStor
   const store = testStore({ view: project(server, []), ...over });
   const onOpenQuest = jest.fn();
   await render(withStore(store,
-    <><Today onSettings={jest.fn()} onOpenQuest={onOpenQuest} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-      onCheckin={jest.fn()} now={() => NOW} /><Toasts /></>));
+    <><Today onOpenQuest={onOpenQuest} onDay={jest.fn()} now={() => NOW} /><Toasts /></>));
   return { store, onOpenQuest };
 }
 
@@ -34,36 +33,37 @@ afterEach(() => {
 });
 
 describe('Today (M10c, M12)', () => {
-  it('the open core quest is Up next, one card ending in Begin, the only bright button', async () => {
+  it("the open core quest is on the Grumble's scroll, one card ending in Let's go, the only bright button (a simpler day)", async () => {
     const s = serverState();
     const { onOpenQuest } = await renderToday(s);
-    const next = within(screen.getByTestId('up-next'));
-    expect(next.getByText('Begin')).toBeTruthy();
-    expect(screen.getAllByTestId('up-next')).toHaveLength(1);
-    await fireEvent.press(screen.getByText('Begin'));
+    const next = within(screen.getByTestId('quest-scroll'));
+    expect(next.getByText(CAMP_TEXT.go)).toBeTruthy();
+    expect(screen.getAllByTestId('quest-scroll')).toHaveLength(1);
+    await fireEvent.press(screen.getByText(CAMP_TEXT.go));
     expect(onOpenQuest).toHaveBeenCalledWith(s.today!.quests.find((q) => q.slot === 'core')!.id);
-    // The rest wait as rows under "Then".
-    expect(screen.getByText(TODAY_TEXT.then)).toBeTruthy();
-    expect(screen.getByText(titleOf(s, 'side2'))).toBeTruthy();
+    // The rest ride along under "Also today".
+    expect(within(screen.getByTestId('also-today')).getByText(titleOf(s, 'side2'))).toBeTruthy();
   });
 
   it('with the core quest cleared, the reading moves up (Monster Week: the streak is on Me, test/monster.test.tsx)', async () => {
     const base = serverState(['core'], { streak_current: 5, streak_best: 5 });
     const s = { ...base, today: { ...base.today!, article: { id: 'article-9', cluster: 'sleep' as const, title: 'Wake time', minutes: 6 } } };
     await renderToday(s);
-    expect(within(screen.getByTestId('up-next')).getByText('Wake time')).toBeTruthy();
+    expect(within(screen.getByTestId('story-card')).getByText('Wake time')).toBeTruthy();
     expect(screen.getByRole('button', { name: fillText(TODAY_TEXT.doneToday, { n: 1 }) })).toBeTruthy();
   });
 
-  it('a cleared day heads the list with what it earned and when the next day starts', async () => {
+  it("a cleared day says That's today, what it earned and when the next quest comes; the visitor dozes off", async () => {
     const all = serverState().today!.quests.map((q) => q.slot);
     const s = serverState(all);
     await renderToday(s);
-    expect(screen.getByText(fillText(TODAY_TEXT.dayCleared, { day: 1 }))).toBeTruthy();
+    expect(screen.getByRole('header', { name: CAMP_TEXT.done.title })).toBeTruthy();
+    expect(screen.getByText(fillText(CAMP_TEXT.done.asleep, { name: 'Snoozle' }))).toBeTruthy();
     const xp = all.reduce((sum, slot) => sum + xpOf(s, slot), 0);
     expect(screen.getByText(fillText(TODAY_TEXT.earned, { xp }))).toBeTruthy();
-    expect(screen.getByText(fillText(TODAY_TEXT.nextDay, { time: clockTime(s.today!.endsAt!, s.today!.timeZone) }))).toBeTruthy();
-    expect(screen.queryByTestId('up-next')).toBeNull();
+    expect(screen.getByText(fillText(CAMP_TEXT.done.next, { time: clockTime(s.today!.endsAt!, s.today!.timeZone) }))).toBeTruthy();
+    expect(screen.queryByTestId('quest-scroll')).toBeNull();
+    expect(within(screen.getByTestId('camp-bubble')).getByText(CAMP_TEXT.bubble.asleep)).toBeTruthy();
   });
 
   it('the day is done once the core quest and the reading are; side quests are then optional (decision 2)', async () => {
@@ -74,24 +74,25 @@ describe('Today (M10c, M12)', () => {
     expect(screen.getByText(TODAY_TEXT.extra)).toBeTruthy();
     expect(screen.getByText(TODAY_TEXT.optional)).toBeTruthy();
     expect(screen.getByText(titleOf(s, 'side1'))).toBeTruthy();
-    expect(screen.queryByTestId('up-next')).toBeNull();
+    expect(screen.queryByTestId('quest-scroll')).toBeNull();
   });
 
-  it('a check-off core quest opens its screen from Begin; it is never cleared from Today (review)', async () => {
+  it("a check-off core quest opens its screen from Let's go; it is never cleared from Camp (review)", async () => {
     const s = serverState();
     const tapCore = { ...s, today: { ...s.today!, quests: s.today!.quests.map((q) => (q.slot === 'core' ? { ...q, completion: 'tap' as const } : q)) } };
     const { store, onOpenQuest } = await renderToday(tapCore);
-    await fireEvent.press(screen.getByText('Begin'));
+    await fireEvent.press(screen.getByText(CAMP_TEXT.go));
     expect(onOpenQuest).toHaveBeenCalledWith(tapCore.today!.quests.find((q) => q.slot === 'core')!.id);
     expect(store.getState().enqueue).not.toHaveBeenCalled();
   });
 
-  it('a protected day (a planned rest) asks nothing: no Up next, its quests are optional extras (review)', async () => {
+  it("a protected day (a planned rest) asks nothing: no scroll, That's today, its quests optional extras (review)", async () => {
     const s = serverState();
     await renderToday({ ...s, today: { ...s.today!, protection: 'planned_rest' } });
-    expect(screen.queryByTestId('up-next')).toBeNull();
+    expect(screen.queryByTestId('quest-scroll')).toBeNull();
     expect(screen.getByText(TODAY_TEXT.extra)).toBeTruthy();
-    expect(screen.queryByTestId('day-done')).toBeNull(); // the rest-day banner says what the day is
+    expect(screen.getByTestId('day-done')).toBeTruthy();
+    expect(screen.getByText(TODAY_TEXT.dayDone.rest)).toBeTruthy();
   });
 
   it('a quick second tap on a check circle sends one completion (review)', async () => {
@@ -115,24 +116,25 @@ describe('Today (M10c, M12)', () => {
     expect(screen.getByTestId('day-done')).toBeTruthy();
   });
 
-  it('offers a morning briefing once, on the day done; Remind me asks the phone and turns it on (decision 9)', async () => {
-    const all = serverState().today!.quests.map((q) => q.slot);
-    const { store } = await renderToday(serverState(all), { permission: 'ask' });
-    expect(screen.getByTestId('reminder-offer')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.reminder.yes }));
+  it("offers a morning briefing on Me's Set up list; its row asks the phone and turns it on (decision 9; a simpler day)", async () => {
+    const store = testStore({ view: project(serverState(), []), permission: 'ask' });
+    const go = { onSettings: jest.fn(), onGame: jest.fn(), onTraining: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(), onPlus: jest.fn() };
+    await render(withStore(store, <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} setUp={go} now={() => NOW} />));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${CAMP_TEXT.setUp.reminder}\\. `) }));
     expect(store.getState().markOffer).toHaveBeenCalledWith('reminder');
     expect(store.getState().allowNotify).toHaveBeenCalled();
     expect(store.getState().setNotify).toHaveBeenCalledWith(expect.objectContaining({ optedIn: true, briefing: expect.objectContaining({ on: true }) }));
-    expect(screen.queryByTestId('reminder-offer')).toBeNull();
     expect(peekToast()?.message).toMatch(/^The morning reminder is on, at /); // premium pass B4
   });
 
   it('never offers it again, nor when refused for good or already on', async () => {
-    const all = serverState().today!.quests.map((q) => q.slot);
-    await renderToday(serverState(all), { offers: ['monster:intro', 'reminder'] });
-    expect(screen.queryByTestId('reminder-offer')).toBeNull();
-    await renderToday(serverState(all), { permission: 'denied' });
-    expect(screen.queryByTestId('reminder-offer')).toBeNull();
+    const row = () => screen.queryByRole('button', { name: new RegExp(`^${CAMP_TEXT.setUp.reminder}\\. `) });
+    const me = (over: Parameters<typeof testStore>[0]) => render(withStore(testStore({ view: project(serverState(), []), ...over }),
+      <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} setUp={{ onSettings: jest.fn(), onGame: jest.fn(), onTraining: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(), onPlus: jest.fn() }} now={() => NOW} />));
+    await me({ offers: ['monster:intro', 'reminder'] });
+    expect(row()).toBeNull();
+    await me({ permission: 'denied' });
+    expect(row()).toBeNull();
   });
 
   it('shows one notice at a time, with how many wait', async () => {

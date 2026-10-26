@@ -27,6 +27,8 @@ import { XpBar } from '../ui/XpBar.tsx';
 import { Achievements } from './character/Achievements.tsx';
 import { ClassPath } from './character/ClassPath.tsx';
 import { ScholarsPath } from './character/ScholarsPath.tsx';
+import { SetUpList } from './character/SetUp.tsx';
+import type { SetUpGo } from './character/SetUp.tsx';
 import { StatsPanel } from './character/StatsPanel.tsx';
 import { classLock, lockLine } from './ClassChange.tsx';
 import { usePullToSync } from './pull.ts';
@@ -45,12 +47,16 @@ export function streakLine(view: Parameters<typeof shownStreak>[0] & Parameters<
     fillText(TODAY_TEXT.shields, { n: view.character.streak.shields, max: MAX_SHIELDS })].join(' · ');
 }
 
-/** Monster Week: Me, with `onChronicle` (the streak and the calendar, which left the tabs). */
+/**
+ * Monster Week: Me, with `onChronicle` (the streak and the calendar, which left the tabs). A simpler day: `setUp`, where
+ * Me's Set up list goes (docs/2026-10-26-simpler-day.md, decision 9).
+ */
 export type CharacterProps = {
-  onChangeClass: () => void; onOpenBook: () => void; onSettings?: () => void; onVow?: () => void; onChronicle?: () => void; now?: () => number;
+  onChangeClass: () => void; onOpenBook: () => void; onSettings?: () => void; onVow?: () => void; onChronicle?: () => void; setUp?: SetUpGo;
+  now?: () => number;
 };
 
-export function Character({ onChangeClass, onOpenBook, onSettings, onVow, onChronicle, now = Date.now }: CharacterProps) {
+export function Character({ onChangeClass, onOpenBook, onSettings, onVow, onChronicle, setUp, now = Date.now }: CharacterProps) {
   const insets = useSafeAreaInsets();
   const pull = usePullToSync();
   const view = useGame((s) => s.view);
@@ -113,6 +119,7 @@ export function Character({ onChangeClass, onOpenBook, onSettings, onVow, onChro
         </View>
       </ScreenHeader>
       <View style={{ paddingHorizontal: space.gutter, gap: 24 }}>
+        {setUp !== undefined && <SetUpList go={setUp} now={now} />}
         {/* Monster Week: the streak left Today's header; the Chronicle, its home, opens from here. */}
         {onChronicle !== undefined && (
           <RowLink label={MONSTER_TEXT.me.chronicle}

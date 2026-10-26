@@ -97,7 +97,7 @@ describe('the offer on the quest screen (decision 12)', () => {
   it('once a timer runs without the timer notes: Show it asks the phone and turns them on', async () => {
     const s = timerDay();
     const store = testStore({ view: project(s, []), permission: 'ask' });
-    await render(withStore(store, <Quest questId={core(s).id} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
+    await render(withStore(store, <Quest questId={core(s).id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
     expect(screen.queryByTestId('live-offer')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Start' }));
     expect(screen.getByTestId('live-offer')).toBeTruthy();
@@ -110,11 +110,11 @@ describe('the offer on the quest screen (decision 12)', () => {
   it('never when they are on already, or once answered', async () => {
     const s = timerDay();
     await render(withStore(testStore({ view: project(s, []), notify: { ...DEFAULT_NOTIFY, optedIn: true } }),
-      <Quest questId={core(s).id} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
+      <Quest questId={core(s).id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
     await fireEvent.press(screen.getByRole('button', { name: 'Start' }));
     expect(screen.queryByTestId('live-offer')).toBeNull();
     await render(withStore(testStore({ view: project(s, []), permission: 'ask', offers: ['live-timer'] }),
-      <Quest questId={core(s).id} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
+      <Quest questId={core(s).id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
     await fireEvent.press(screen.getByRole('button', { name: 'Start' }));
     expect(screen.queryByTestId('live-offer')).toBeNull();
   });

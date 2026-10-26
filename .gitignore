@@ -34,4 +34,6 @@ art/story/_set.jpg
 art/grumbles/renders/
 # Buddy renders (Monster Buddy): only the picked stills in apps/mobile/assets/buddies are kept
 art/buddies/renders/
+# Camp paintings (a simpler day): only the picked ones in apps/mobile/assets/camp are kept
+art/camp/renders/
 __pycache__/

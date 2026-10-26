@@ -1,5 +1,5 @@
 import {
-  ADJUST_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, authoredTemplate, questSummary, renderWhy,
+  ADJUST_TEXT, CAMP_TEXT, EXERCISE_SAFETY_LINE, PLAY_TEXT, READING_TEXT, TODAY_TEXT, authoredTemplate, fillText, questSummary, renderWhy, targetText,
 } from '@levelmeup/content';
 import { DISCIPLINE_PER_CORE_DAY, newLadder } from '@levelmeup/rules';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -21,6 +21,8 @@ import { TimerPanel, clock } from '../src/screens/quest/TimerPanel.tsx';
 import { WorkoutLog } from '../src/screens/quest/WorkoutLog.tsx';
 import { DAY_TWO_NOW, adjustState, ladderRows, serverState, workoutState } from './support/fixtures.ts';
 import { testStore, withStore } from './support/store.ts';
+import { peekToast } from '../src/ui/toast.ts';
+import { markJustCleared, useJustCleared } from '../src/ui/justCleared.ts';
 
 const T0 = Date.UTC(2026, 9, 10, 13);
 const MIN = 60_000;
@@ -249,12 +251,12 @@ async function renderQuest(server: ServerState, questId: number, over: Parameter
   });
   store.setState({ enqueue: enqueue as never });
   const onBack = jest.fn();
-  await render(withStore(store, <Quest questId={questId} onBack={onBack} onSwap={jest.fn()} onPain={jest.fn()} now={now} />));
+  await render(withStore(store, <Quest questId={questId} onBack={onBack} onPain={jest.fn()} now={now} />));
   return { store, enqueue, onBack };
 }
 
 describe('the quest screen (M6a decisions 1, 9, 10)', () => {
-  it('shows the quest in the player\'s voice: the title, its target and the log first; how and why fold; safety stays open', async () => {
+  it("shows the quest in the player's voice: the title, its target and the steps open; safety stays open; why folds (a simpler day)", async () => {
     const core = coreOf(SERVER);
     const template = authoredTemplate(core.templateId);
     await renderQuest(SERVER, core.id);
@@ -262,19 +264,17 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     expect(screen.getByText(questSummary(core))).toBeTruthy();
     expect(screen.getByTestId('claim-bar')).toBeTruthy(); // the log's button, fixed at the bottom (M12)
     if (template.exercise !== null) expect(screen.getByText(EXERCISE_SAFETY_LINE)).toBeTruthy();
+    for (const [i, step] of template.steps.entries()) expect(screen.getByText(`${i + 1}. ${step}`)).toBeTruthy();
     // Folded until asked for.
     expect(screen.queryByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.steps }));
-    for (const [i, step] of template.steps.entries()) expect(screen.getByText(`${i + 1}. ${step}`)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.why }));
     expect(screen.getByText(template.voice.system.line)).toBeTruthy();
     expect(screen.getByText(renderWhy(core.why, 'system', { classId: 'warrior' }))).toBeTruthy();
   });
 
-  it('shows your buddy doing it with the steps (Monster Buddy; the M6a pictures are retired)', async () => {
+  it('shows your buddy doing it at the top (Monster Buddy; a simpler day: no fold)', async () => {
     const core = coreOf(SERVER);
     await renderQuest(SERVER, core.id);
-    await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.quest.steps }));
     expect(screen.getByTestId('quest-art', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByTestId('quest-art-fallback', { includeHiddenElements: true })).toBeNull();
   });
@@ -287,7 +287,7 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
     const first = await renderQuest(server, article.id, over);
     await fireEvent.changeText(screen.getByLabelText(READING_TEXT.takeawayLabel), 'Wake at the same time.');
     first.onBack.mockClear();
-    await render(withStore(testStore({ view: project(server, []), ...over }), <Quest questId={article.id} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
+    await render(withStore(testStore({ view: project(server, []), ...over }), <Quest questId={article.id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />));
     expect(screen.getByLabelText(READING_TEXT.takeawayLabel).props.value).toBe('Wake at the same time.');
   });
 
@@ -313,25 +313,65 @@ describe('the quest screen (M6a decisions 1, 9, 10)', () => {
       store.setState({ view: project(server, pending) });
     }) as never });
     const onNext = jest.fn();
-    await render(withStore(store, <Quest questId={core.id} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onNext={onNext} now={() => NOW} />));
+    await render(withStore(store, <Quest questId={core.id} onBack={jest.fn()} onPain={jest.fn()} onNext={onNext} now={() => NOW} />));
     await fireEvent.press(screen.getByRole('button', { name: BAR('Mark cleared') }));
     await fireEvent.press(screen.getByRole('button', { name: "Next: today's reading · 6 min read" }));
     expect(onNext).toHaveBeenCalledWith(article.id);
     expect(screen.getByRole('button', { name: PLAY_TEXT.cleared.back })).toBeTruthy();
   });
 
-  it('a rep log sends its sets', async () => {
+  it('a rep log claims its target in one tap, or opens the log for different numbers (a simpler day)', async () => {
     const server = withCore({ completion: 'reps', condition: { kind: 'reps', sets: 2, reps: 5, perSide: false } });
     const core = coreOf(server);
     const { enqueue } = await renderQuest(server, core.id);
-    await fireEvent.press(screen.getByRole('button', { name: /^Log \d+ sets? · \+\d+ XP$/ }));
+    expect(screen.queryByRole('button', { name: 'Set 1, one less' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: BAR(fillText(CAMP_TEXT.quest.done, { target: targetText(core.condition) })) }));
     expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { sets: [5, 5] } }));
   });
 
-  it('after an undo, a rep log comes back as it was logged, and says so (premium pass A4)', async () => {
+  it('"Did different numbers?" opens the full log, which sends what was done', async () => {
     const server = withCore({ completion: 'reps', condition: { kind: 'reps', sets: 2, reps: 5, perSide: false } });
     const core = coreOf(server);
     const { enqueue } = await renderQuest(server, core.id);
+    await fireEvent.press(screen.getByRole('button', { name: CAMP_TEXT.quest.different }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Set 2, one less' }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Log \d+ sets? · \+\d+ XP$/ }));
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { sets: [5, 4] } }));
+  });
+
+  it("a claim goes straight back to Camp with the app's note and Undo, and Camp will ask how it felt (a simpler day)", async () => {
+    markJustCleared(null);
+    const server = withCore({ completion: 'tap', condition: { kind: 'habit' } });
+    const core = coreOf(server);
+    const store = testStore({ view: project(server, []) });
+    const pending: PhoneEvent[] = [];
+    const enqueue = jest.fn(async (event: Omit<PhoneEvent, 'id'>) => {
+      pending.push({ ...event, id: `00000000-0000-4000-8000-${String(pending.length + 1).padStart(12, '0')}` } as PhoneEvent);
+      store.setState({ view: project(server, pending) });
+    });
+    store.setState({ enqueue: enqueue as never });
+    const onCleared = jest.fn();
+    let cleared: number | null = null;
+    function Probe() { cleared = useJustCleared(); return null; }
+    await render(withStore(store, <><Quest questId={core.id} onBack={jest.fn()} onPain={jest.fn()} onCleared={onCleared} now={() => NOW} /><Probe /></>));
+    await fireEvent.press(screen.getByRole('button', { name: BAR('Mark cleared') }));
+    expect(onCleared).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('header', { name: 'Cleared' })).toBeNull(); // no Cleared on the way out
+    expect(cleared).toBe(core.id);
+    const note = peekToast()!;
+    expect(note.message).toBe(fillText(TODAY_TEXT.markedDone, { title: authoredTemplate(core.templateId).voice.system.title }));
+    await act(async () => note.action!.onPress());
+    expect(enqueue).toHaveBeenLastCalledWith({ type: 'undo', instanceId: core.id });
+    expect(cleared).toBeNull();
+  });
+
+  it('after an undo, a rep log comes back as it was logged, and says so (premium pass A4)', async () => {
+    // A fresh phone: the test before left a draft of this very log, which would open it already (a simpler day).
+    startDrafts({ getItem: async () => null, setItem: async () => {}, removeItem: async () => {} }, '{}');
+    const server = withCore({ completion: 'reps', condition: { kind: 'reps', sets: 2, reps: 5, perSide: false } });
+    const core = coreOf(server);
+    const { enqueue } = await renderQuest(server, core.id);
+    await fireEvent.press(screen.getByRole('button', { name: CAMP_TEXT.quest.different }));
     await fireEvent.press(screen.getByRole('button', { name: 'Set 2, one less' }));
     await fireEvent.press(screen.getByRole('button', { name: /^Log \d+ sets? · \+\d+ XP$/ }));
     expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', payload: { sets: [5, 4] } }));
@@ -468,20 +508,20 @@ describe('adjusting from the quest screen (M6b)', () => {
   const at = () => DAY_TWO_NOW;
   const hardDay = { id: '00000000-0000-4000-9000-000000000001', type: 'hard_day', dayId: 2 } as const;
 
-  it('an open exercise quest offers "I felt pain" and "Swap this quest"', async () => {
-    const onSwap = jest.fn();
+  it('an open exercise quest offers "I felt pain", and Change today in its top bar (a simpler day: swap is there)', async () => {
+    const onDay = jest.fn();
     const onPain = jest.fn();
     await render(withStore(testStore({ view: project(adjustState(), []) }),
-      <Quest questId={200} now={at} onBack={jest.fn()} onSwap={onSwap} onPain={onPain} />));
+      <Quest questId={200} now={at} onBack={jest.fn()} onDay={onDay} onPain={onPain} />));
     await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.pain.open }));
     expect(onPain).toHaveBeenCalledWith(200);
-    await fireEvent.press(screen.getByRole('button', { name: /^Swap this quest · \d of \d left$/ }));
-    expect(onSwap).toHaveBeenCalledWith(200);
+    await fireEvent.press(screen.getByRole('button', { name: TODAY_TEXT.change }));
+    expect(onDay).toHaveBeenCalled();
   });
 
   it('a hard-day quest hides the line that quotes the full version, and says it is a hard day', async () => {
     await render(withStore(testStore({ view: project(adjustState(), [hardDay]) }),
-      <Quest questId={200} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+      <Quest questId={200} now={at} onBack={jest.fn()} onPain={jest.fn()} />));
     expect(screen.getByText(ADJUST_TEXT.hardDay.tag)).toBeTruthy();
     expect(screen.queryByText(authoredTemplate('push-1').voice.system.line)).toBeNull();
   });
@@ -489,13 +529,13 @@ describe('adjusting from the quest screen (M6b)', () => {
   it('an exercise resting after pain says so on its quest screen (device check)', async () => {
     const resting = adjustState({ ladders: ladderRows({ push: { ...newLadder(1), paused: true } }) });
     await render(withStore(testStore({ view: project(resting, []) }),
-      <Quest questId={200} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+      <Quest questId={200} now={at} onBack={jest.fn()} onPain={jest.fn()} />));
     expect(screen.getByText(ADJUST_TEXT.paused.quest)).toBeTruthy();
   });
 
   it('reading has no pain button; with no swap left there is no swap button', async () => {
     await render(withStore(testStore({ view: project(adjustState({}, { swaps_used: 1 }), []) }),
-      <Quest questId={202} now={at} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+      <Quest questId={202} now={at} onBack={jest.fn()} onPain={jest.fn()} />));
     expect(screen.queryByRole('button', { name: ADJUST_TEXT.pain.open })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Swap this quest · \d of \d left$/ })).toBeNull();
   });
@@ -507,7 +547,7 @@ describe('stepping down after "Too hard" (spec §3.3)', () => {
   it('Quest cleared offers the step down at the ladder\'s rung and sends it; "I felt pain" stays reachable', async () => {
     const store = testStore({ view: project(adjustState(), [tooHard]) });
     const onPain = jest.fn();
-    await render(withStore(store, <Quest questId={200} now={() => DAY_TWO_NOW} onBack={jest.fn()} onSwap={jest.fn()} onPain={onPain} />));
+    await render(withStore(store, <Quest questId={200} now={() => DAY_TWO_NOW} onBack={jest.fn()} onPain={onPain} />));
     expect(screen.getByText(ADJUST_TEXT.stepDown.offer)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.stepDown.accept }));
     expect(store.getState().enqueue).toHaveBeenCalledWith({ type: 'step_down', instanceId: 200 });
@@ -519,7 +559,7 @@ describe('stepping down after "Too hard" (spec §3.3)', () => {
   it('a quest that can\'t step down keeps the plain "too hard" note', async () => {
     const walk = { ...tooHard, instanceId: 201 };
     await render(withStore(testStore({ view: project(adjustState(), [walk]) }),
-      <Quest questId={201} now={() => DAY_TWO_NOW} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} />));
+      <Quest questId={201} now={() => DAY_TWO_NOW} onBack={jest.fn()} onPain={jest.fn()} />));
     expect(screen.getByText(PLAY_TEXT.cleared.tooHardNote)).toBeTruthy();
     expect(screen.queryByText(ADJUST_TEXT.stepDown.offer)).toBeNull();
   });
@@ -591,7 +631,8 @@ describe('a workout (M6c)', () => {
   it('a new plan from the server starts a fresh log, whatever its size (review)', async () => {
     const server = workoutState();
     const store = testStore({ view: project(server, []) });
-    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
+    await fireEvent.press(screen.getByRole('button', { name: CAMP_TEXT.quest.different }));
     expect(screen.getAllByText(/^Set \d$/)).toHaveLength(6);
     const four = [
       { move: 'goblet-squat', unit: 'reps', min: 10, max: 15, perSide: false, sets: 2 },
@@ -611,9 +652,9 @@ describe('a workout (M6c)', () => {
   it('while a training change waits to sync, the workout waits too (review)', async () => {
     const change: PhoneEvent = { id: 'e1', type: 'training', equipment: ['gym'], programStyle: 'men' };
     const store = testStore({ view: project(workoutState(), [change]), pending: [change] });
-    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
     expect(screen.getByText(PLAY_TEXT.workout.replanning)).toBeTruthy();
-    expect(screen.getByRole('button', { name: BAR(PLAY_TEXT.workout.log) }).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: BAR(CAMP_TEXT.quest.doneWorkout) }).props.accessibilityState.disabled).toBe(true);
   });
 
   it('the quest screen shows the workout and sends its log', async () => {
@@ -621,10 +662,10 @@ describe('a workout (M6c)', () => {
     const enqueue = jest.fn(async (_event: Omit<PhoneEvent, 'id'>) => {});
     store.setState({ enqueue: enqueue as never });
     const onTraining = jest.fn();
-    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onTraining={onTraining} now={() => DAY_TWO_NOW} />));
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onPain={jest.fn()} onTraining={onTraining} now={() => DAY_TWO_NOW} />));
     await fireEvent.press(screen.getByRole('button', { name: PLAY_TEXT.workout.change }));
     expect(onTraining).toHaveBeenCalled();
-    await fireEvent.press(screen.getByRole('button', { name: BAR(PLAY_TEXT.workout.log) }));
+    await fireEvent.press(screen.getByRole('button', { name: BAR(CAMP_TEXT.quest.doneWorkout) })); // as planned, in one tap
     const sent = enqueue.mock.calls.at(-1)![0];
     expect(sent).toMatchObject({ type: 'complete', instanceId: 200 });
     expect((sent as unknown as { payload: { sets: number[] } }).payload.sets).toHaveLength(6);

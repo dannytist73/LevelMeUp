@@ -1,14 +1,15 @@
 """Monster Week's Grumbles (docs/2026-10-25-monster-week.md, art pipeline), painted in the owner's local ComfyUI.
 
-Each Grumble is a few stills the app brings to life (apps/mobile/src/ui/GrumbleArt.tsx): idle, blink, hit, happy and sleep,
-on a flat green screen that is keyed out to transparency. Z-Image Turbo paints the idle still; Qwen-Image-Edit 2511 makes
-the other poses from it, so the Grumble stays on-model; Wan 2.2 (image to video, 4-step) animates the big moments.
+Each Grumble is a few stills the app brings to life (apps/mobile/src/ui/GrumbleArt.tsx): idle, blink, hit, happy, sleep
+and gift (holding out a scroll), on a flat green screen that is keyed out to transparency. Z-Image Turbo paints the idle
+still; Qwen-Image-Edit 2511 makes the other poses from it, so the Grumble stays on-model; Wan 2.2 (image to video, 4-step)
+animates the big moments.
 
 Start ComfyUI first (as scripts/art/story-art.py says), and run with its Python (PIL, numpy and scipy):
   D:\\ai\\ComfyUI\\venv\\Scripts\\python.exe scripts/art/grumble-art.py style [--seeds 11 22]
     -> art/grumbles/renders/style-<look>-<seed>.png   (the style test: Snoozle in each look)
   grumble-art.py paint ID LOOK [--seeds 11 22]      -> art/grumbles/renders/<id>-<look>-<seed>.png (any Grumble)
-  grumble-art.py poses STEM                          -> <stem>-<pose>.png (blink, hit, happy, sleep), STEM a render's name
+  grumble-art.py poses STEM                          -> <stem>-<pose>.png (blink, hit, happy, sleep, gift), STEM a render's name
   grumble-art.py clip STEM [--motion idle]           -> <stem>-clip-<motion>/ (frames) + <stem>-clip-<motion>.webp
   grumble-art.py black STEM                          -> <id>-black-<seed>.png: the still on black, without the green light
                                                         (pale Grumbles catch it, and it keys out with the backdrop); then
@@ -106,6 +107,10 @@ POSES = {
               "character, colours, accessories and the same plain background."),
     "sleep": ("Make it fast asleep, curled up cozily with its eyes closed and a peaceful smile. The same character, colours, "
               "accessories and the same plain background."),
+    # A simpler day (docs/2026-10-26-simpler-day.md): the visitor holds out today's quest at the edge of camp.
+    "gift": ("Make the character hold a small rolled paper scroll tied with a lime green ribbon, offering it forward towards "
+             "the viewer with a shy hopeful smile. Keep the character exactly the same: the same shape, colours, face, "
+             "accessories and plain black background."),
 }
 
 MOTIONS = {
@@ -411,7 +416,7 @@ PICKS: dict[str, str] = {
     "rushkin": "rushkin-black-22", "juggles": "juggles-black-22", "shyling": "shyling-black-22", "zonkle": "zonkle-black-22",
     "liftle": "liftle-black-11", "cloudle": "cloudle-black-11", "mehbit": "mehbit-black-22", "shrugget": "shrugget-black-11",
 }
-STILLS = ["idle", "blink", "hit", "happy", "sleep"]
+STILLS = ["idle", "blink", "hit", "happy", "sleep", "gift"]
 ASSETS = ROOT / "apps" / "mobile" / "assets" / "grumbles"
 MANIFEST = ROOT / "apps" / "mobile" / "src" / "art" / "grumbles.ts"
 

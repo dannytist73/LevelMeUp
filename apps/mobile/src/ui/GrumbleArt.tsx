@@ -1,5 +1,6 @@
 // Monster Week: a Grumble, alive. Its painted stills (src/art/grumbles.ts) breathe, blink now and then, and flinch with a
-// squash and a shake when a power shot lands (each new `hitKey`); a pose shows how it feels (idle, hit, happy, sleep).
+// squash and a shake when a power shot lands (each new `hitKey`); a pose shows how it feels (idle, hit, happy, sleep) or
+// what it does (gift: holding out today's quest).
 // Before a Grumble is painted, a soft stand-in in its weakness's colour takes its place. A silhouette is the Grumble yet to
 // come. Nothing moves in the background or with reduced motion: then a hit only shows its pose for a moment.
 import { useEffect, useRef, useState } from 'react';

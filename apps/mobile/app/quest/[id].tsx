@@ -8,12 +8,13 @@ export default function QuestRoute() {
     <Quest
       questId={Number(id)}
       onBack={() => router.back()}
-      onSwap={(questId) => router.push(`/swap?quest=${questId}`)}
       onPain={(questId) => router.push(`/pain/${questId}`)}
       onTraining={() => router.push('/training')}
       onTrial={() => router.push('/trial')}
       onRead={(articleId) => router.push(`/reading/${articleId}`)}
       onNext={(questId) => router.replace(`/quest/${questId}`)}
+      onDay={() => router.push('/day')}
+      onCleared={() => router.back()}
     />
   );
 }

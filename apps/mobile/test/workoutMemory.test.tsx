@@ -1,5 +1,5 @@
 // M10c decisions 7–8: workouts and rep logs remember last time on this phone, and a set's Done starts the rest.
-import { PLAY_TEXT, fillText } from '@levelmeup/content';
+import { CAMP_TEXT, PLAY_TEXT, fillText } from '@levelmeup/content';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { project } from '../src/game/project.ts';
 import type { PhoneEvent } from '../src/game/types.ts';
@@ -113,8 +113,8 @@ describe('the quest screen remembers what was logged', () => {
     const store = testStore({ view: project(server, []) });
     const enqueue = jest.fn(async (_event: Omit<PhoneEvent, 'id'>) => {});
     store.setState({ enqueue: enqueue as never });
-    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
-    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${PLAY_TEXT.workout.log} · `) })); // M12: the fixed bar
+    await render(withStore(store, <Quest questId={200} onBack={jest.fn()} onPain={jest.fn()} now={() => DAY_TWO_NOW} />));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${CAMP_TEXT.quest.doneWorkout} · `) })); // a simpler day: as planned, one tap
     const quest = server.today!.quests.find((q) => q.id === 200)!;
     if (quest.condition.kind !== 'session') throw new Error('expected a workout');
     const sent = (enqueue.mock.calls.at(-1)![0] as unknown as { payload: { sets: number[] } }).payload.sets;

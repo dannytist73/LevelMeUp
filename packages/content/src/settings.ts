@@ -93,7 +93,7 @@ export const SETTINGS_TEXT = {
       "phone. It can't be undone.",
     guest: 'Your guest sign-in is deleted with it.',
     google:
-      "Your Google sign-in itself isn't deleted, only your LevelMeUp data. Signing in with Google again later starts a " +
+      "Your Google sign-in itself isn't deleted, only your Grumble Camp data. Signing in with Google again later starts a " +
       'new character.',
     connection: 'Deleting needs a connection.',
     start: 'Delete everything',

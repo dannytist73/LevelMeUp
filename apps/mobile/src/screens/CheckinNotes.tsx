@@ -1,9 +1,9 @@
-// Today's part of the check-in (M7a, board F3 without the Pact's parts): a settled "I just didn't" once, the question while
-// a check-in waits (unless put off with "Later"), the held streak, and the lighter-plan offer. M12 (audit 1): its buttons are
-// quiet, so Up next keeps the screen's one bright button. M17: each note is one card, its answers inside it.
+// Camp's part of the check-in (M7a, board F3 without the Pact's parts): the held streak after "I just didn't", and the
+// lighter-plan offer. M12 (audit 1): its buttons are quiet, so the card keeps the screen's one bright button. M17: each
+// note is one card, its answers inside it. A simpler day: the question is asked at the fire (camp/CheckinAsk.tsx), and how
+// a settled miss ended is the app's note (Today).
 import { CHECKIN_TEXT, FEEDBACK_TEXT, LIGHTER_TEXT, PLAY_TEXT, SHADOW_TEXT, fillText } from '@levelmeup/content';
 import { useEffect, useState } from 'react';
-import { checkinLead, resultText } from '../game/checkin.ts';
 import { shadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
 import { useGame } from '../state/store.ts';
@@ -12,14 +12,10 @@ import { toast } from '../ui/toast.ts';
 
 const T = CHECKIN_TEXT;
 
-export type CheckinNotesProps = { view: Shown; onCheckin: () => void; now?: () => number };
+export type CheckinNotesProps = { view: Shown; now?: () => number };
 
-export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesProps) {
+export function CheckinNotes({ view, now = Date.now }: CheckinNotesProps) {
   const enqueue = useGame((s) => s.enqueue);
-  const later = useGame((s) => s.checkinLater);
-  const answerLater = useGame((s) => s.answerLater);
-  const seen = useGame((s) => s.checkinResultSeen);
-  const dismissResult = useGame((s) => s.dismissCheckinResult);
   // The offer goes at the first tap: a second accept would drop the minutes another step (review).
   const [answeredOffer, setAnsweredOffer] = useState(false);
   const answerOffer = (accept: boolean, to: number) => {
@@ -33,7 +29,7 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
       },
     );
   };
-  const { checkin, checkinResult: result, lighterPlan } = view;
+  const { checkin, lighterPlan } = view;
   // Once the answer is in the view the offer is quiet anyway; a later offer (after its 14 days) shows again.
   const offered = lighterPlan?.offered === true;
   // Once the recovery quest is cleared the streak is safe, and the note says so (emulator finding, M7b).
@@ -49,17 +45,6 @@ export function CheckinNotes({ view, onCheckin, now = Date.now }: CheckinNotesPr
   // M17: each note is one System card with its answers inside it.
   return (
     <>
-      {result !== null && result.id !== seen && (
-        <SystemCard text={resultText(result.outcome, view.character.streak.best)} actions={[{ label: T.done, onPress: () => void dismissResult(result.id) }]} />
-      )}
-      {checkin !== null && checkin.answer === null && checkin.id !== later && (
-        // M17 (design critique): the details are the check-in screen's own first line, so Today asks only the question;
-        // after a gap of several days it says so (review).
-        <SystemCard text={T.title} {...(checkin.gap ? { detail: checkinLead(checkin, view.today?.dayNumber ?? null) } : {})} actions={[
-          { label: T.open, onPress: onCheckin },
-          { label: T.openLater, onPress: () => answerLater(checkin.id) },
-        ]} />
-      )}
       {checkin !== null && checkin.answer === 'just_didnt' && (
         <SystemCard text={held} {...(view.answering ? { detail: T.waiting } : {})} />
       )}

@@ -390,14 +390,13 @@ describe('the reveal, the Shadow and the vow move (M10a decision 4)', () => {
 describe('Today and Me move only when something changes (M10a decision 7; Monster Week moved the XP bar to Me)', () => {
   const NOW = Date.UTC(2026, 9, 10, 13); // day 1 runs 12:00–20:00 UTC
   const today = (store: ReturnType<typeof testStore>) => render(withStore(store,
-    <Today onSettings={jest.fn()} onOpenQuest={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onVanish={jest.fn()} onTraining={jest.fn()}
-      onCheckin={jest.fn()} now={() => NOW} />));
+    <Today onOpenQuest={jest.fn()} onDay={jest.fn()} now={() => NOW} />));
 
-  it('the arena is still on opening; power that grows floats its gain up', async () => {
+  it('the camp is still on opening; power that grows floats its gain up from the visitor (a simpler day)', async () => {
     const view = project(serverState(), []);
     const store = testStore({ view });
     await today(store);
-    expect(screen.getByTestId('arena')).toBeTruthy();
+    expect(screen.getByTestId('camp-scene')).toBeTruthy();
     expect(screen.queryByTestId('power-gain', { includeHiddenElements: true })).toBeNull();
     const core = view.today!.quests.find((q) => q.slot === 'core')!;
     const cleared = { ...view, today: { ...view.today!, quests: view.today!.quests.map((q) => (q.id === core.id ? { ...q, completedAt: new Date(NOW).toISOString() } : q)) } };

@@ -6,6 +6,7 @@ import { Today } from '../../src/screens/Today.tsx';
 import { useGame } from '../../src/state/store.ts';
 export { ScreenCrashed as ErrorBoundary } from '../../src/screens/Crashed.tsx'; // premium pass A5: a failing screen keeps the app around it
 
+/** Camp, the home (a simpler day: Today and the Camp tab became one). */
 export default function TodayRoute() {
   // M7c decision 5: a consequence the phone hasn't shown opens the Shadow's scene, once, while Today is in front. It is
   // decided when Today comes into focus, at that moment's time, and never pushed twice for one check-in (review).
@@ -35,20 +36,11 @@ export default function TodayRoute() {
   );
   return (
     <Today
-      onSettings={() => router.push('/settings')}
       onOpenQuest={(id) => router.push(`/quest/${id}`)}
       onOpenReading={(id) => router.push(`/reading/${id}`)}
-      onSwap={() => router.push('/swap')}
-      onPain={(id) => router.push(`/pain/${id}`)}
-      onVanish={() => router.push('/vanish')}
-      onTraining={() => router.push('/training')}
-      onCheckin={() => router.push('/checkin')}
+      onDay={() => router.push('/day')}
       onShadow={() => router.push('/shadow')}
       onTrial={() => router.push('/trial')}
-      onGame={() => router.push('/game')}
-      onSlip={() => router.push('/slip')}
-      onVow={() => router.push('/vow')}
-      onPlus={() => router.push('/plus')}
       shown={shown}
     />
   );

@@ -1,6 +1,6 @@
 // M16, the weekly program (plan 2026-10-20-m16-weekly-program.md) on the phone: Settings → Training, the one-time offer,
 // a weekly workout on Today and on its quest screen, a pending change, and the offline day.
-import { ADJUST_TEXT, LIBRARY, PLAY_TEXT, programBlockLabel } from '@levelmeup/content';
+import { ADJUST_TEXT, CAMP_TEXT, LIBRARY, PLAY_TEXT, SETUP_TEXT, programBlockLabel } from '@levelmeup/content';
 import { planProgram, templateById } from '@levelmeup/rules';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { planAdvance } from '../../../supabase/functions/_shared/advance.ts';
@@ -11,7 +11,7 @@ import { project } from '../src/game/project.ts';
 import { programOffered } from '../src/game/setup.ts';
 import type { PhoneEvent, ServerState } from '../src/game/types.ts';
 import { Quest } from '../src/screens/Quest.tsx';
-import { Today } from '../src/screens/Today.tsx';
+import { Character } from '../src/screens/Character.tsx';
 import { Training } from '../src/screens/Training.tsx';
 import type { Offer } from '../src/state/store.ts';
 import { profileRow, serverState, weeklyState, workoutState } from './support/fixtures.ts';
@@ -72,10 +72,10 @@ describe('the offer (decision 9)', () => {
   const done = (s: ServerState, workoutsDone: number): ServerState => ({ ...s, workoutsDone });
   const offered = (s: ServerState, offers: Offer[] = []) => programOffered(project(s, []), offers);
 
-  it('once, after 3 workouts on the step-by-step plan, once the core quest is cleared, while strength work is possible', () => {
+  it('once, after 3 workouts on the step-by-step plan, while strength work is possible (a simpler day: on Me, any time)', () => {
     expect(offered(done(serverState(['core']), 3))).toBe(true);
     expect(offered(done(serverState(['core']), 2))).toBe(false);
-    expect(offered(done(serverState(), 3))).toBe(false); // the core quest first
+    expect(offered(done(serverState(), 3))).toBe(true); // Me's list never pushes the day's quest down
     expect(offered(done(serverState(['core']), 3), ['program'])).toBe(false);
     const weekly = serverState(['core']);
     expect(offered(done({ ...weekly, profile: { ...weekly.profile, trainingPlan: 'weekly' } }, 3))).toBe(false);
@@ -83,19 +83,19 @@ describe('the offer (decision 9)', () => {
     expect(offered(done({ ...weekly, profile: { ...weekly.profile, ownProgram: true } }, 3))).toBe(false);
   });
 
-  it('on Today: "See the weekly program" marks it and opens Training; "Not now" only marks it', async () => {
-    const store = testStore({ view: project(done(serverState(['core']), 3), []), offers: ['monster:intro'] });
-    const props = {
-      onSettings: jest.fn(), onOpenQuest: jest.fn(), onSwap: jest.fn(), onPain: jest.fn(), onVanish: jest.fn(), onTraining: jest.fn(),
-      onCheckin: jest.fn(), onGame: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(),
-    };
-    await render(withStore(store, <Today {...props} now={() => NOW} />));
-    expect(screen.getByLabelText(`System: ${T.offer}`)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: T.offerGo }));
+  it("on Me's Set up list: its row marks it and opens Training; Not now only marks it", async () => {
+    const store = testStore({ view: project(done(serverState(['core']), 3), []), offers: ['monster:intro', 'reminder'] });
+    const go = { onSettings: jest.fn(), onGame: jest.fn(), onTraining: jest.fn(), onSlip: jest.fn(), onVow: jest.fn(), onPlus: jest.fn() };
+    const view = await render(withStore(store, <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} setUp={go} now={() => NOW} />));
+    await fireEvent.press(screen.getByRole('button', { name: `${CAMP_TEXT.setUp.program}. ${T.offer}` }));
     expect(store.getState().markOffer).toHaveBeenCalledWith('program');
-    expect(props.onTraining).toHaveBeenCalled();
-    await fireEvent.press(screen.getByRole('button', { name: ADJUST_TEXT.day.notNow }));
-    expect(props.onTraining).toHaveBeenCalledTimes(1);
+    expect(go.onTraining).toHaveBeenCalled();
+    await view.unmount();
+    const later = testStore({ view: project(done(serverState(['core']), 3), []), offers: ['monster:intro', 'reminder'] });
+    await render(withStore(later, <Character onChangeClass={jest.fn()} onOpenBook={jest.fn()} setUp={go} now={() => NOW} />));
+    await fireEvent.press(screen.getByRole('button', { name: `${SETUP_TEXT.notNow}: ${CAMP_TEXT.setUp.program}` }));
+    expect(later.getState().markOffer).toHaveBeenCalledWith('program');
+    expect(go.onTraining).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -106,13 +106,14 @@ describe('a weekly workout (decision 6)', () => {
     if (core.condition.kind !== 'session') throw new Error('not a session');
     expect(core.condition.block).toEqual({ week: 1, day: 0 });
     await render(withStore(testStore({ view: project(server, []) }), (
-      <Quest questId={core.id} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} now={() => NOW} />
+      <Quest questId={core.id} onBack={jest.fn()} onPain={jest.fn()} now={() => NOW} />
     )));
     expect(screen.getByText(programBlockLabel({ week: 1, day: 0 }))).toBeTruthy();
     expect(screen.getByText('Week 1 of 6 · Workout A')).toBeTruthy();
     expect(screen.getByText(PLAY_TEXT.workout.weeks[0]!)).toBeTruthy();
     const moves = core.condition.moves.length;
     expect(moves).toBeGreaterThanOrEqual(5);
+    await fireEvent.press(screen.getByRole('button', { name: CAMP_TEXT.quest.different })); // a simpler day: the log on request
     expect(screen.getAllByText(/^Exercise \d of \d$/)).toHaveLength(moves);
   });
 

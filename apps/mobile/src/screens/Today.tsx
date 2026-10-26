@@ -1,127 +1,94 @@
-// Today (spec §1.2–1.4, D1 board), M4's read-only version (the tabs send a player with no character to the onboarding):
-// the day's header and every quest of the day, with the §1.4 loading, empty and offline states. Every quest opens its
-// quest screen (M6a); M6b adds the day's adjustments (DayActions.tsx); M7a the check-in (CheckinNotes.tsx). M8b: today's
-// reading and the Mage's Insight. M7c: after "I just didn't" under a pact, the Shadow's mark and box, the recovery quest
-// first, and at level 2 the Trial above the sealed side quests (board F3). M10b: the streak's flare ticks.
-// M12 (Round 3, boards R3-1 and R3-4; audit 1, 3, 11, 12): a tighter header, the notices in one strip, "Up next" with the
-// screen's only bright button, the other open quests as quiet rows (a check-off quest's circle clears it, with Undo),
-// the day done once its core quest and reading are, side quests then optional, and the cleared ones folded away.
+// Camp, the home (a simpler day, docs/2026-10-26-simpler-day.md; it was Today, spec §1.2–1.4, and the Camp tab). The day's
+// header, the camp scene with this week's Grumble at the edge holding out today's quest, the battle strip, then one card:
+// the check-in's question when one waits, the quest the Grumble brought, tonight's story, or "That's today". The
+// check-off extras ride on the same card. Under it, only what the day needs (the System's notices, a pact's Shadow, the
+// Trial, the Mage's Insight), what's done today, and the Grumble book. The day's options are one link away (DayOptions);
+// the set-up cards moved to Me's Set up list. Loading, offline and failed states are as on Today (audit 11).
 import {
-  ADJUST_TEXT, FEEDBACK_TEXT, MONSTER_TEXT, OFFLINE_TEXT, PLUS_TEXT, SETUP_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, shadowLine,
+  CAMP_TEXT, CLUSTER_NAMES, FEEDBACK_TEXT, GRUMBLES, OFFLINE_TEXT, PLAY_TEXT, SHADOW_TEXT, TODAY_TEXT, artKey, authoredTemplate, fillText, grumbleById,
+  shadowLine,
 } from '@levelmeup/content';
 import { questDayDate } from '@levelmeup/rules';
+import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { View } from 'react-native';
 import { LayoutAnimationConfig } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isExercise, isResting } from '../game/adjust.ts';
+import { storyPictureUrl } from '../art/stories.ts';
+import { isResting } from '../game/adjust.ts';
 import { battleShown, questHit } from '../game/battle.ts';
-import { trainingUnset } from '../game/character.ts';
+import { resultText } from '../game/checkin.ts';
 import { noticeText } from '../game/notices.ts';
 import { countsUntil } from '../game/offline.ts';
 import { marked, sealedQuest, shadowHold } from '../game/pact.ts';
-import { programOffered, setupCard } from '../game/setup.ts';
 import { weekRecap } from '../game/week.ts';
-import type { SetupCard } from '../game/setup.ts';
+import type { WeekRecap } from '../game/week.ts';
 import type { ShadowHold } from '../game/pact.ts';
 import type { Shown } from '../game/project.ts';
-import { dayCleared, dayOff, openQuests, quickClearable, upNext } from '../game/today.ts';
+import { dayCleared, dayOff, openQuests, quickClearable, shownStreak, upNext, xpToday } from '../game/today.ts';
 import type { QuestView, TodayView } from '../game/types.ts';
 import { clockTime, dateLine, dayLabel } from '../lib/dates.ts';
-import { plusCard, plusOf } from '../plus/plus.ts';
-import { manageUrl, purchasesSetUp } from '../plus/purchases.ts';
+import { asDeck, deckMinutes, isStory } from '../reading/deck.ts';
 import { useGame } from '../state/store.ts';
-import type { Status } from '../state/store.ts';
+import type { GameState, Status } from '../state/store.ts';
 import { colors, radius, space } from '../theme/tokens.ts';
 import { Appear, Glide } from '../ui/Appear.tsx';
 import { Button } from '../ui/Button.tsx';
+import { markJustCleared, useJustCleared } from '../ui/justCleared.ts';
 import { SystemCard } from '../ui/NarrationBox.tsx';
+import type { Power } from '../ui/PowerChip.tsx';
 import { RowLink } from '../ui/RowLink.tsx';
-import { ScreenHeader } from '../ui/ScreenHeader.tsx';
 import { ScreenScroll } from '../ui/ScreenScroll.tsx';
 import { SectionTitle } from '../ui/SectionTitle.tsx';
 import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { ShadowMark } from '../ui/ShadowMark.tsx';
 import { TodaySkeleton } from '../ui/Skeleton.tsx';
 import { StateNote } from '../ui/StateNote.tsx';
-import { SettingsButton } from '../ui/TabTop.tsx';
 import { Caption, Heading, Label, Small, Title } from '../ui/Text.tsx';
-import type { Power } from '../ui/PowerChip.tsx';
 import { dismissToast, toast, useToast } from '../ui/toast.ts';
 import { buzz } from '../ui/haptics.ts';
 import { play, warm } from '../ui/sound.ts';
+import { BattleStrip } from './camp/BattleStrip.tsx';
+import { CampScene } from './camp/CampScene.tsx';
+import { CheckinAsk } from './camp/CheckinAsk.tsx';
+import { GrumbleBook } from './camp/GrumbleBook.tsx';
+import { DayEnd, FeelRow, QuestScroll, StoryCard } from './camp/QuestScroll.tsx';
+import type { Extra } from './camp/QuestScroll.tsx';
 import { CheckinNotes } from './CheckinNotes.tsx';
-import { DayActions, DayBanners, PausedExercises } from './DayActions.tsx';
-import { QuestRow, UpNextCard, clearedQuestRow, questRowProps } from './QuestCard.tsx';
+import { DayBanners } from './DayActions.tsx';
+import { QuestRow, clearedQuestRow, questRowProps, questXp } from './QuestCard.tsx';
 import { usePullToSync } from './pull.ts';
 import { InsightPanel } from './reading/InsightPanel.tsx';
-import { ReadingHero, ReadingRow } from './reading/ReadingCard.tsx';
+import { readingLength } from './reading/ReadingCard.tsx';
 import { SignInLost } from './SignInLost.tsx';
 import { syncMark } from './syncLine.ts';
-import { Arena } from './today/Arena.tsx';
-import { DayDonePanel, ReminderOffer } from './today/DayDone.tsx';
+import { keptToday } from './today/DayDone.tsx';
 import { UpdateNeeded } from './UpdateNeeded.tsx';
 
 const S = TODAY_TEXT.states;
+const B = CAMP_TEXT.bubble;
+/** How long the visitor cheers after power lands. */
+export const CHEER_MS = 2500;
 
 export type TodayProps = {
-  onSettings: () => void;
   onOpenQuest: (questId: number) => void;
   /** M8b: a cleared reading's "Read again" opens the article itself (emulator check). */
   onOpenReading?: (articleId: string) => void;
-  onSwap: () => void;
-  onPain: (questId: number) => void;
-  onVanish: () => void;
-  /** Settings → Training, from the one-time training notice (M6d). */
-  onTraining: () => void;
-  /** The check-in screen (M7a). */
-  onCheckin: () => void;
+  /** The day's options: swap, hard day, rest, the class abilities, the paused exercises. */
+  onDay: () => void;
   /** The Shadow's scene, opened again from its box (M7c decision 5). */
   onShadow?: () => void;
   /** The Trial of Stillness's focus session (M7c decision 7). */
   onTrial?: () => void;
-  /** M12 decision 8, the set-up cards: Settings → Your game (the voice), the slip question, the vow. */
-  onGame?: () => void;
-  onSlip?: () => void;
-  onVow?: () => void;
-  /** M13: the Plus offer, from the one-time "a week in" card. */
-  onPlus?: () => void;
-  /** Whether Today is in front: the route passes its focus (M10b review). */
+  /** Whether Camp is in front: the route passes its focus (M10b review). */
   shown?: boolean;
   now?: () => number;
 };
 
-/** One item of the notice strip (M12 decision 4): its words and what it offers. */
+/** One of the System's notes (M12 decision 4): its words and what it offers. */
 type Notice = { key: string; text: string; actions: { label: string; onPress: () => void }[] };
 
-/** The notices, one at a time, in one strip (audit 3): "1 of 3" while more wait. M17: one card, its answers inside it. */
-function NoticeStrip({ items }: { items: readonly Notice[] }) {
-  const first = items[0];
-  if (first === undefined) return null;
-  return (
-    <SystemCard key={first.key} testID="notice-strip" text={first.text} actions={first.actions}
-      {...(items.length > 1 ? { count: fillText(TODAY_TEXT.notices, { n: 1, total: items.length }) } : {})} />
-  );
-}
-
-/** A set-up card's words and buttons; `answer` marks it offered, then goes where the button says. */
-function setupNotice(
-  card: SetupCard,
-  answer: (go?: () => void) => void,
-  go: { onSettings: () => void; onGame: () => void; onTraining: () => void; onSlip: () => void; onVow: () => void },
-): Notice {
-  const S = SETUP_TEXT;
-  const later = { label: S.notNow, onPress: () => answer() };
-  switch (card) {
-    case 'save': return { key: card, text: S.save.line, actions: [{ label: S.save.go, onPress: () => answer(go.onSettings) }, later] };
-    case 'voice': return { key: card, text: S.voice.line, actions: [{ label: S.voice.go, onPress: () => answer(go.onGame) }, { label: S.voice.keep, onPress: () => answer() }] };
-    case 'gear': return { key: card, text: S.gear.line, actions: [{ label: S.gear.go, onPress: () => answer(go.onTraining) }, later] };
-    case 'slip': return { key: card, text: S.slip.line, actions: [{ label: S.slip.go, onPress: () => answer(go.onSlip) }, later] };
-    case 'vow': return { key: card, text: S.vow.line, actions: [{ label: S.vow.go, onPress: () => answer(go.onVow) }, later] };
-  }
-}
-
-/** A day with quests that hasn't ended: Today shows it, not a state. */
+/** A day with quests that hasn't ended: Camp shows it, not a state. */
 const dayShown = (view: Shown | null, at: number): boolean =>
   view?.today != null && view.today.quests.length > 0 && Date.parse(view.today.endsAt!) > at;
 
@@ -148,16 +115,23 @@ function TrialPanel({ onTrial }: { onTrial: () => void }) {
   );
 }
 
-export function Today({
-  onSettings, onOpenQuest, onOpenReading, onSwap, onPain, onVanish, onTraining, onCheckin, onShadow = () => {}, onTrial = () => {},
-  onGame = () => {}, onSlip = () => {}, onVow = () => {}, onPlus = () => {}, shown = true, now = Date.now,
-}: TodayProps) {
+/** What the day stands at: what it needs, the one thing next, and what's open beside it. */
+function dayState(view: Shown, today: TodayView, hold: ShadowHold | null) {
+  const sealed = (q: QuestView) => sealedQuest(hold, q);
+  const resting = (q: QuestView) => q.completedAt === null && isResting(q, view.paused);
+  const cleared = dayCleared(today, resting);
+  const done = cleared || dayOff(today);
+  const next = done ? null : upNext(today, (q) => sealed(q) || resting(q));
+  const rest = openQuests(today).filter((q) => q.id !== next?.id);
+  return { sealed, resting, cleared, done, next, rest };
+}
+
+export function Today({ onOpenQuest, onOpenReading, onDay, onShadow = () => {}, onTrial = () => {}, shown = true, now = Date.now }: TodayProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
-  // Monster Week: the battle on top of Today (the streak and the XP bar moved to Me).
   const battle = view === null ? null : battleShown(view);
-  // M17: a sync starting or ending over a usable day changes nothing Today shows, so Today doesn't draw again for it
-  // (every tap starts one). Without a usable day the status shows: loading, offline, retrying.
+  // M17: a sync starting or ending over a usable day changes nothing Camp shows, so it doesn't draw again for it (every
+  // tap starts one). Without a usable day the status shows: loading, offline, retrying.
   const status = useGame((s): Status => (s.status === 'syncing' && dayShown(s.view, now()) ? 'idle' : s.status));
   const notices = useGame((s) => s.notices);
   const syncNow = useGame((s) => s.syncNow);
@@ -168,30 +142,81 @@ export function Today({
   const refused = useGame((s) => s.error !== null);
   const unsent = useGame((s) => s.pending.length);
   const updateRequired = useGame((s) => s.updateRequired);
-  const trainingNoticeSeen = useGame((s) => s.trainingNoticeSeen);
-  const dismissTrainingNotice = useGame((s) => s.dismissTrainingNotice);
   const offers = useGame((s) => s.offers);
   const markOffer = useGame((s) => s.markOffer);
-  const saved = useGame((s) => s.account.kind === 'saved');
-  // M17: the offers wait until the phone knows who is signed in, so a saved player never sees "save your character" flash.
+  // M17: the offers wait until the phone knows who is signed in.
   const accountKnown = useGame((s) => s.accountKnown);
-  const vow = useGame((s) => s.vow);
+  const articles = useGame((s) => s.articles);
+  const codex = useGame((s) => s.codex);
+  const checkinLater = useGame((s) => s.checkinLater);
+  const resultSeen = useGame((s) => s.checkinResultSeen);
+  const dismissResult = useGame((s) => s.dismissCheckinResult);
   /** Premium pass (review): a note shows at the bottom (the check circle's Undo among them), so the last row clears it. */
   const noting = useToast() !== null;
   /** Quests a check is on its way for: a quick second tap sends nothing (review). */
   const clearing = useRef(new Set<number>());
   const [showDone, setShowDone] = useState(false);
-  /** M17: a pull down on Today syncs now; the spinner stays until that sync is done. */
+  /** M17: a pull down syncs now; the spinner stays until that sync is done. */
   const pull = usePullToSync();
+  const justCleared = useJustCleared();
 
   const today = view?.today ?? null;
   const usable = today !== null && today.quests.length > 0 && Date.parse(today.endsAt!) > now();
-  // M17 (perf audit 2026-10-20): never "Syncing…" here: every tap starts a sync of about a second, and the line came and
-  // went in the header, moving everything below it twice. Offline and retrying still say so; a quest that waits says "will sync".
+  // M17 (perf audit 2026-10-20): never "Syncing…" here; offline and retrying still say so.
   const mark = status === 'syncing' ? null : syncMark(status);
   // M7c: what the Shadow holds today (the mark, the seal), from the state; none without a pact.
   const hold = view === null ? null : shadowHold(view, now());
   const open = (): boolean => today !== null && Date.parse(today.endsAt!) > now();
+  const asking = view?.checkin != null && view.checkin.answer === null && view.checkin.id !== checkinLater;
+  const day = usable && view !== null ? dayState(view, today, hold) : null;
+  const visitor = battle === null ? undefined : grumbleById(battle.grumble);
+
+  // The battle explained once, in the visitor's own words, on its first visit (it was the one-time System card). It counts
+  // as said once the player leaves Camp, so a decided battle's replay (which waits for it) never covers it.
+  const introNow = battle !== null && accountKnown && !offers.includes('monster:intro');
+  const [intro, setIntro] = useState(false);
+  /** The first power landed: the battle has shown itself, so the intro is said. */
+  const [introSaid, setIntroSaid] = useState(false);
+  useEffect(() => {
+    if (introNow) setIntro(true);
+  }, [introNow]);
+  useEffect(() => {
+    if (introNow && (introSaid || (intro && !shown))) void markOffer('monster:intro');
+  }, [intro, introSaid, introNow, shown, markOffer]);
+  // M17: the first open of a new week, how last week went: one line under the scene, kept while Camp stays.
+  const recapNow = view === null || !accountKnown || asking ? null : weekRecap(view.calendar, offers);
+  const [recap, setRecap] = useState<WeekRecap | null>(null);
+  useEffect(() => {
+    if (recapNow === null || recap !== null) return;
+    setRecap(recapNow);
+    void markOffer(recapNow.key);
+  }, [recapNow, recap, markOffer]);
+  // How a settled miss ended: the app's note says it once (it was a System card with its own Got it).
+  const result = view?.checkinResult ?? null;
+  const best = view?.character.streak.best ?? 0;
+  useEffect(() => {
+    if (result === null || result.id === resultSeen) return;
+    toast(resultText(result.outcome, best));
+    void dismissResult(result.id);
+  }, [result, resultSeen, best, dismissResult]);
+
+  // When power rises while Camp is in front, the visitor flinches and cheers (it was the Arena's).
+  const [gain, setGain] = useState({ key: 0, n: 0 });
+  const [cheering, setCheering] = useState(false);
+  const lastPower = useRef(battle?.power ?? 0);
+  const power = battle?.power ?? 0;
+  useEffect(() => {
+    const gained = power - lastPower.current;
+    lastPower.current = power;
+    if (gained <= 0 || !shown) return;
+    setGain((g) => ({ key: g.key + 1, n: gained }));
+    setCheering(true);
+    setIntro(false);
+    setIntroSaid(true);
+    buzz('stamp');
+    const t = setTimeout(() => setCheering(false), CHEER_MS);
+    return () => clearTimeout(t);
+  }, [power, shown]);
 
   const R = TODAY_TEXT.states;
   const strip: Notice[] = [
@@ -199,66 +224,15 @@ export function Today({
       ? [{ key: 'refused', text: unsent === 0 ? R.refused : unsent === 1 ? R.refusedOne : fillText(R.refusedSome, { n: unsent }),
           actions: [{ label: R.retry, onPress: () => void syncNow() }] }]
       : []),
-    ...(view !== null && !trainingNoticeSeen && trainingUnset(view.profile)
-      // Players from before M6c never chose a training setup: asked once (M6d decision 13).
-      ? [{ key: 'training', text: ADJUST_TEXT.training.notice, actions: [
-          { label: ADJUST_TEXT.training.setUp, onPress: () => { void dismissTrainingNotice(); onTraining(); } },
-          { label: ADJUST_TEXT.day.notNow, onPress: () => void dismissTrainingNotice() },
-        ] }]
-      : []),
     ...notices.map((n) => ({ key: n.eventId, text: noticeText(n.code), actions: [{ label: TODAY_TEXT.gotIt, onPress: () => void dismissNotice(n.eventId) }] })),
   ];
-  // Monster Week: what the battles are, once, before anything else is offered.
-  if (battle !== null && accountKnown && !offers.includes('monster:intro')) {
-    strip.push({ key: 'monster:intro', text: MONSTER_TEXT.intro.line, actions: [{ label: MONSTER_TEXT.intro.go, onPress: () => void markOffer('monster:intro') }] });
-  }
-  // M12 decision 8: one set-up card at a time, after the System's notices.
-  const card = view === null || !accountKnown ? null : setupCard({ view, offers, saved, vow });
-  if (card !== null) strip.push(setupNotice(card, (go) => { void markOffer(`setup:${card}`); go?.(); }, { onSettings, onGame, onTraining, onSlip, onVow }));
-  // M13: Plus's one-time cards (a week in; a free trial's last two days), never while a set-up card waits.
-  const plusNote = card !== null || view === null || !accountKnown ? null : plusCard(view, offers, now(), purchasesSetUp());
-  // M16 decision 9: the weekly program, offered once, never beside another card.
-  if (accountKnown && card === null && plusNote === null && view !== null && programOffered(view, offers)) {
-    const T = ADJUST_TEXT.training;
-    strip.push({ key: 'program', text: T.offer, actions: [
-      { label: T.offerGo, onPress: () => { void markOffer('program'); onTraining(); } },
-      { label: ADJUST_TEXT.day.notNow, onPress: () => void markOffer('program') },
-    ] });
-  }
-  // M17: the first open of a new week, how last week went (game/week.ts), after anything else waiting. It waits while a
-  // check-in asks its question: that matters more, and two cards would push Up next down.
-  const checkinLater = useGame((s) => s.checkinLater);
-  const asking = view?.checkin != null && ((view.checkin.answer === null && view.checkin.id !== checkinLater) || view.checkin.answer === 'just_didnt');
-  const recap = view === null || !accountKnown || asking ? null : weekRecap(view.calendar, offers);
-  if (recap !== null) {
-    const W = TODAY_TEXT.week;
-    const rest = recap.rested === 0 ? '' : recap.rested === 1 ? W.restOne : fillText(W.rest, { n: recap.rested });
-    const text = recap.cleared === 0 ? W.none : fillText(recap.cleared === 1 ? W.clearedOne : W.cleared, { n: recap.cleared, days: recap.days, rest });
-    strip.push({ key: recap.key, text, actions: [{ label: TODAY_TEXT.gotIt, onPress: () => void markOffer(recap.key) }] });
-  }
-  if (plusNote !== null && view !== null) {
-    const P = PLUS_TEXT;
-    const plus = plusOf(view);
-    const done = (go?: () => void) => { void markOffer(`plus:${plusNote}`); go?.(); };
-    strip.push(plusNote === 'day7'
-      ? { key: 'plus:day7', text: `${P.day7.title}. ${P.day7.line}`, actions: [{ label: P.day7.see, onPress: () => done(onPlus) }, { label: P.day7.later, onPress: () => done() }] }
-      : {
-          key: 'plus:trial',
-          text: `${fillText(P.trialCard.title, { date: dateLine(Date.parse(plus.endsAt!), view.profile.timeZone) })}. ${P.trialCard.line}`,
-          actions: [
-            { label: P.trialCard.manage, onPress: () => done(() => void Linking.openURL(manageUrl(plus.product)).catch(() => {})) },
-            { label: P.trialCard.later, onPress: () => done() },
-          ],
-        });
-  }
 
-  /** M12 decision 3: a check circle clears a check-off quest as the quest screen's Mark cleared does; Undo takes it back. */
+  /** M12 decision 3: a check circle clears a check-off quest as the quest screen's Done does; Undo takes it back. */
   const check = (q: QuestView, title: string) => {
     if (!open() || clearing.current.has(q.id)) return;
     clearing.current.add(q.id);
     play('claim');
     buzz('stamp'); // M17: a check you can feel, as a stamp landing
-    // The Undo note is the app's own (review: Today's and the app's notes stacked in one place).
     const note = toast(fillText(TODAY_TEXT.markedDone, { title }), { label: TODAY_TEXT.undo, onPress: () => undo(q.id) });
     enqueue({ type: 'complete', instanceId: q.id, completedAt: now(), rating: null, payload: {} }).catch(() => {
       // Premium pass A7: not saved, so never "cleared": the Undo note goes and the app says so.
@@ -273,139 +247,215 @@ export function Today({
     play('undo');
     void enqueue({ type: 'undo', instanceId: id });
   };
-  // M17 (perf audit 2026-10-20): once Today is drawn, the day's sounds get their players, so the first Claim sounds as it
-  // lands.
+  // M17 (perf audit 2026-10-20): once Camp is drawn, the day's sounds get their players.
   useEffect(() => {
     const t = setTimeout(() => warm(['claim', 'undo', 'streak', 'dayDone', 'cardTurn']), 1500);
     return () => clearTimeout(t);
   }, []);
-  // M12 decision 11: a warm chord the moment the day becomes done while Today is in front (never on opening).
-  const paused = view?.paused;
-  const doneNow = today !== null && usable && dayCleared(today, (q) => q.completedAt === null && isResting(q, paused ?? []));
+  // M12 decision 11: a warm chord the moment the day becomes done while Camp is in front (never on opening).
+  const doneNow = day?.cleared ?? false;
   const wasDone = useRef<boolean | null>(null);
   useEffect(() => {
     if (wasDone.current === false && doneNow && shown) play('dayDone');
     wasDone.current = doneNow;
   }, [doneNow, shown]);
 
+  const night = day?.done ?? false;
+  const ready = battle !== null && !battle.decided && !battle.waiting && battle.power >= battle.need;
+  const bubble = !usable || visitor === undefined ? null
+    : asking || battle?.waiting ? B.ask
+      : cheering ? B.cheer
+        : intro ? fillText(B.intro, { name: visitor.name, standsFor: visitor.standsFor })
+          : night ? B.asleep
+            : ready ? B.ready
+              : day?.next?.slot === 'article' ? B.story
+                : day?.next != null ? (day.next.slot === 'core' ? B.gift : B.more) : null;
+  const pose = asking || battle?.waiting || day === null ? 'idle' : night ? 'sleep' : day.next !== null ? 'gift' : 'idle';
+  const friends = view?.camp === undefined ? [] : GRUMBLES.filter((g) => (view.camp!.wins[g.id] ?? 0) > 0).map((g) => g.id).reverse();
+
   let body;
   if (signInLost) {
     // M4 re-review: the sign-in is gone for good; starting again is the player's choice, confirmed, never automatic.
     body = <SignInLost />;
-  } else if (!usable) {
+  } else if (!usable || day === null) {
     body = <NoDay view={view} status={status} ended={today !== null && Date.parse(today.endsAt!) <= now()} empty={today !== null && today.quests.length === 0}
       onRetry={() => void syncNow()} />;
   } else {
     body = (
-      <DayBody view={view!} today={today!} hold={hold} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onPain={onPain}
-        onShadow={onShadow} onTrial={onTrial} onSwap={onSwap} onVanish={onVanish} onCheck={check} showDone={showDone}
-        onToggleDone={() => setShowDone((s) => !s)} enqueue={enqueue}
-        power={battle === null || battle.decided ? null : (q) => questHit(q, battle.weakness)} />
+      <DayBody view={view!} today={today} hold={hold} day={day} asking={asking} visitorName={visitor?.name ?? null} articles={articles}
+        kept={keptToday(codex, today)} justCleared={justCleared} onOpenQuest={onOpenQuest} onOpenReading={onOpenReading} onDay={onDay}
+        onShadow={onShadow} onTrial={onTrial} onCheck={check} showDone={showDone} onToggleDone={() => setShowDone((s) => !s)}
+        onRate={(id, rating) => {
+          if (!open()) return;
+          void enqueue({ type: 'rate', instanceId: id, rating });
+          if (rating !== 'too_hard') markJustCleared(null);
+        }}
+        onStepDown={(id) => { if (open()) void enqueue({ type: 'step_down', instanceId: id }); }}
+        enqueue={enqueue}
+        power={battle === null || battle.decided ? null : (q) => questHit(q, battle.weakness)} now={now} />
     );
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <ScreenScroll contentContainerStyle={{ paddingBottom: noting ? 96 : 32 }} refresh={pull} tab="index">
-        {/* M17: a shorter header (about 50 dp less), so Up next's button stays above the fold with a note waiting: the date
-            beside "Day N", and the level on the XP bar's line (name and class live on Character). */}
-        <ScreenHeader style={{ paddingTop: insets.top + 12, paddingBottom: 16, gap: 12, marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <View style={{ flexShrink: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 12 }}>
-              <Title accessibilityRole="header">{today !== null ? `Day ${today.dayNumber}` : 'Today'}</Title>
-              {today !== null && (
-                <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
-              )}
-              {view !== null && <Label tone="accentText">{fillText(MONSTER_TEXT.arena.level, { level: view.character.level })}</Label>}
-            </View>
-            <SettingsButton onPress={onSettings} />
+        <View style={{ paddingTop: insets.top + 14, paddingHorizontal: space.gutter, paddingBottom: 4, gap: 6 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 12 }}>
+            <Title accessibilityRole="header">{today !== null ? `Day ${today.dayNumber}` : CAMP_TEXT.tabs.camp}</Title>
+            {today !== null && (
+              <Label>{dayLabel(questDayDate({ startsAt: Date.parse(today.startsAt!), endsAt: Date.parse(today.endsAt!), timeZone: today.timeZone }))}</Label>
+            )}
           </View>
-          {view !== null && (
-            <>
-              {marked(hold) && <ShadowMark label={SHADOW_TEXT.mark} accessibilityLabel={SHADOW_TEXT.markLabel} />}
-              {mark !== null && usable && <Caption>{mark}</Caption>}
-            </>
-          )}
-        </ScreenHeader>
-        <View style={{ paddingHorizontal: space.gutter, gap: 22 }}>
+          {marked(hold) && <ShadowMark label={SHADOW_TEXT.mark} accessibilityLabel={SHADOW_TEXT.markLabel} />}
+          {mark !== null && usable && <Caption>{mark}</Caption>}
+        </View>
+        {view !== null && (
+          <CampScene classId={view.profile.classId} level={view.character.level} friends={friends}
+            visitor={visitor === undefined || battle === null ? null : { id: visitor.id, weakness: visitor.weakness, pose }}
+            bubble={bubble} night={night} gain={gain} />
+        )}
+        <View style={{ paddingHorizontal: space.gutter, gap: 20 }}>
+          {battle !== null && usable && <BattleStrip battle={battle} timeZone={today!.timeZone} now={now} shown={shown} />}
+          {recap !== null && <Small testID="week-recap">{recapLine(recap)}</Small>}
           {updateRequired && <UpdateNeeded />}
-          {battle !== null && usable && <Arena battle={battle} timeZone={today!.timeZone} now={now} shown={shown} />}
-          {view !== null && <CheckinNotes view={view} onCheckin={onCheckin} now={now} />}
-          <NoticeStrip items={strip} />
+          {strip[0] !== undefined && (
+            <SystemCard key={strip[0].key} testID="notice-strip" text={strip[0].text} actions={strip[0].actions}
+              {...(strip.length > 1 ? { count: fillText(TODAY_TEXT.notices, { n: 1, total: strip.length }) } : {})} />
+          )}
           {body}
+          {view?.camp !== undefined && <GrumbleBook wins={view.camp.wins} here={battle?.grumble ?? null} />}
         </View>
       </ScreenScroll>
     </View>
   );
 }
 
+/** "Last week: 4 of 6 days cleared, 1 rested. A new week has begun." */
+function recapLine(recap: WeekRecap): string {
+  const W = TODAY_TEXT.week;
+  const rest = recap.rested === 0 ? '' : recap.rested === 1 ? W.restOne : fillText(W.rest, { n: recap.rested });
+  return recap.cleared === 0 ? W.none : fillText(recap.cleared === 1 ? W.clearedOne : W.cleared, { n: recap.cleared, days: recap.days, rest });
+}
+
 type DayBodyProps = {
   view: Shown;
   today: TodayView;
   hold: ShadowHold | null;
+  day: ReturnType<typeof dayState>;
+  asking: boolean;
+  visitorName: string | null;
+  articles: GameState['articles'];
+  kept: number;
+  justCleared: number | null;
   onOpenQuest: (questId: number) => void;
   onOpenReading?: (articleId: string) => void;
-  onPain: (questId: number) => void;
+  onDay: () => void;
   onShadow: () => void;
   onTrial: () => void;
-  onSwap: () => void;
-  onVanish: () => void;
   onCheck: (q: QuestView, title: string) => void;
   showDone: boolean;
   onToggleDone: () => void;
-  enqueue: Parameters<typeof DayActions>[0]['enqueue'];
+  onRate: (questId: number, rating: Rating) => void;
+  onStepDown: (questId: number) => void;
+  enqueue: GameState['enqueue'];
   /** Monster Week: the power each quest gives the battle, or null without one. */
   power: ((q: QuestView) => Power) | null;
+  now: () => number;
 };
 
-/** A usable day: Up next or the day done, the other open quests, the day's options, and what's cleared. */
+/** A usable day: the one card, what's beside it, what the day needs, and what's done. */
 function DayBody({
-  view, today, hold, onOpenQuest, onOpenReading, onPain, onShadow, onTrial, onSwap, onVanish, onCheck, showDone, onToggleDone, enqueue, power,
+  view, today, hold, day, asking, visitorName, articles, kept, justCleared, onOpenQuest, onOpenReading, onDay, onShadow, onTrial, onCheck, showDone,
+  onToggleDone, onRate, onStepDown, enqueue, power, now,
 }: DayBodyProps) {
   const voice = view.profile.voice;
   // Premium pass A6: on a day built offline, until when what is cleared still counts, said before it passes.
   const countsBy = useGame((s) => (s.cached === null || !view.offline ? null : countsUntil(s.cached.state, s.pending, view)));
-  const sealed = (q: QuestView) => sealedQuest(hold, q);
-  const resting = (q: QuestView) => q.completedAt === null && isResting(q, view.paused);
-  /** The day's must-dos are cleared (resting ones excused); or the rules protect the day, so nothing is asked of it. */
-  const cleared_ = dayCleared(today, resting);
-  const done = cleared_ || dayOff(today);
-  const next = done ? null : upNext(today, (q) => sealed(q) || resting(q));
-  const rest = openQuests(today).filter((q) => q.id !== next?.id);
-  /** Before the day is done, everything left is "Then"; after, the side quests are optional extras. */
-  const then = done ? [] : rest;
-  const extras = done ? rest : [];
+  const { sealed, resting, done, next, rest } = day;
   const cleared = today.quests.filter((q) => q.completedAt !== null);
   const anySealed = rest.some(sealed);
+  const article = today.article;
+  const titleOf = (q: QuestView) => (q.slot === 'article' && article !== null ? article.title : authoredTemplate(q.templateId).voice[voice].title);
 
   const openReading = (q: QuestView) => {
-    if (q.completedAt !== null && today.article !== null && onOpenReading !== undefined) onOpenReading(today.article.id);
+    if (q.completedAt !== null && article !== null && onOpenReading !== undefined) onOpenReading(article.id);
     else onOpenQuest(q.id);
   };
-  // M17: each row fades in and out, and the rows under it glide (Appear).
-  const row = (q: QuestView) => {
-    if (q.slot === 'article') {
-      return (
-        <Appear key={q.id}>
-          <ReadingRow quest={q} article={today.article} waiting={view.waiting.has(q.id)} onOpen={() => openReading(q)} {...(power === null ? {} : { power: power(q) })} />
-        </Appear>
-      );
+  const held = article === null ? null : (articles[article.id] ?? null);
+  const deck = held === null ? null : asDeck(held.deck);
+  const story = deck !== null && isStory(deck) ? deck : null;
+  const length = article === null ? '' : story !== null ? fillText(CAMP_TEXT.storyLength, { n: deckMinutes(story) }) : readingLength(article, held);
+  const extra = (q: QuestView): Extra => {
+    const title = titleOf(q);
+    // M8b: the reading has nothing to open until the day has its article.
+    if (q.slot === 'article' && article === null) return { id: q.id, title: PLAY_TEXT.quest.article, line: '', waiting: false };
+    if (q.slot === 'article' && article !== null) {
+      return { id: q.id, title, line: `${CLUSTER_NAMES[article.cluster]} · ${length}`, onOpen: () => openReading(q), waiting: view.waiting.has(q.id),
+        ...(power === null ? {} : { power: power(q) }) };
     }
     const isSealed = sealed(q);
-    const title = authoredTemplate(q.templateId).voice[voice].title;
-    const checkable = quickClearable(q, isSealed);
-    return (
-      <Appear key={q.id}>
-        <QuestRow {...questRowProps(q, voice, { resting: resting(q), sealed: isSealed, ...(checkable ? { onCheck: () => onCheck(q, title) } : {}), ...(power === null ? {} : { power: power(q) }) })}
-          waiting={view.waiting.has(q.id)} onOpen={isSealed ? onTrial : () => onOpenQuest(q.id)} />
-      </Appear>
-    );
+    const row = questRowProps(q, voice, { resting: resting(q), sealed: isSealed, ...(power === null ? {} : { power: power(q) }) });
+    return {
+      id: q.id, title, line: isSealed ? SHADOW_TEXT.trial.sealed : row.line, waiting: view.waiting.has(q.id), ...(row.note === undefined ? {} : { note: row.note }),
+      ...(row.accessibilityLabel === undefined ? {} : { label: row.accessibilityLabel }),
+      onOpen: isSealed ? onTrial : () => onOpenQuest(q.id),
+      ...(quickClearable(q, isSealed) ? { onCheck: () => onCheck(q, title) } : {}),
+      ...(power === null || isSealed ? {} : { power: power(q) }),
+    };
   };
+  // The quest screen just cleared one: how did it feel (optional; never the reading, which has no rung).
+  const felt = justCleared === null ? undefined : today.quests.find((q) => q.id === justCleared && q.completedAt !== null && q.slot !== 'article');
+  const picture = story?.picture !== undefined ? storyPictureUrl(story.picture) : null;
+  const kicker = (q: QuestView): string => {
+    if (visitorName === null) return TODAY_TEXT.upNext;
+    const said = q.slot === 'core' ? CAMP_TEXT.brought.core : q.slot === 'recovery' ? CAMP_TEXT.brought.recovery : CAMP_TEXT.brought.side;
+    return fillText(said, { name: visitorName });
+  };
+
+  let card = null;
+  if (asking) {
+    card = <CheckinAsk view={view} />;
+  } else if (done) {
+    card = (
+      <DayEnd
+        asleep={visitorName === null ? null : fillText(CAMP_TEXT.done.asleep, { name: visitorName })}
+        line={shownStreak(view).counts ? TODAY_TEXT.dayDone.holds : TODAY_TEXT.dayDone.rest}
+        facts={[
+          ...(xpToday(today) > 0 ? [fillText(TODAY_TEXT.earned, { xp: xpToday(today) })] : []),
+          ...(kept === 0 ? [] : [kept === 1 ? TODAY_TEXT.dayDone.kept : fillText(TODAY_TEXT.dayDone.keptMany, { n: kept })]),
+        ]}
+        next={fillText(CAMP_TEXT.done.next, { time: clockTime(today.endsAt!, today.timeZone) })}
+        onChange={onDay}
+        done={cleared.length === 0 ? null : (
+          <View style={{ gap: 8 }}>
+            <Label>{CAMP_TEXT.done.list}</Label>
+            {cleared.map((q) => (q.slot === 'article'
+              ? clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => openReading(q), article?.title)
+              : clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => onOpenQuest(q.id))))}
+          </View>
+        )}
+      />
+    );
+  } else if (next !== null && next.slot === 'article' && article !== null) {
+    card = (
+      <StoryCard title={article.title} length={length} xp={questXp(next)} picture={picture} waiting={view.waiting.has(next.id)}
+        onRead={() => openReading(next)} extras={rest.map(extra)} {...(power === null ? {} : { power: power(next) })} />
+    );
+  } else if (next !== null) {
+    const clears = quickClearable(next, false) && next.slot !== 'core' && next.slot !== 'recovery';
+    card = (
+      <QuestScroll kicker={kicker(next)} quest={next} voice={voice} waiting={view.waiting.has(next.id)}
+        onGo={clears ? () => onCheck(next, titleOf(next)) : () => onOpenQuest(next.id)} onChange={onDay} extras={rest.map(extra)}
+        art={{ classId: view.profile.classId, key: artKey(authoredTemplate(next.templateId), next.condition) }}
+        {...(power === null ? {} : { power: power(next) })} />
+    );
+  }
+  const extrasAfter = done ? rest : [];
 
   return (
     // M17: rows that arrive with the day don't fade in; those that come and go later do.
     <LayoutAnimationConfig skipEntering>
-    <View style={{ gap: 26 }}>
+    <View style={{ gap: 20 }}>
       {view.offline && (
         <StateNote kind="offline" title={OFFLINE_TEXT.built} line={countsBy === null ? undefined
           : fillText(OFFLINE_TEXT.countsBy, { when: `${dateLine(countsBy, today.timeZone)}, ${clockTime(new Date(countsBy).toISOString(), today.timeZone)}` })} />
@@ -417,70 +467,44 @@ function DayBody({
           <Button label={SHADOW_TEXT.reopen} variant="secondary" onPress={onShadow} style={{ alignSelf: 'flex-start' }} />
         </View>
       )}
-
-      {cleared_ && (
-        <View style={{ gap: 16 }}>
-          <DayDonePanel view={view} today={today} />
-          <ReminderOffer />
-        </View>
-      )}
-
-      {next !== null && (
-        <View style={{ gap: 12 }}>
-          {next.slot === 'article' && today.article !== null ? (
-            <ReadingHero quest={next} article={today.article} waiting={view.waiting.has(next.id)} onOpen={() => openReading(next)} lead={TODAY_TEXT.upNext}
-              {...(power === null ? {} : { power: power(next) })} />
-          ) : (
-            <UpNextCard
-              quest={next}
-              voice={voice}
-              waiting={view.waiting.has(next.id)}
-              // The core quest always opens its screen (steps, safety, Cleared); a check-off side quest clears here (review).
-              onGo={quickClearable(next, false) && next.slot !== 'core' ? () => onCheck(next, authoredTemplate(next.templateId).voice[voice].title) : () => onOpenQuest(next.id)}
-              resting={resting(next)}
-              {...(power === null ? {} : { power: power(next) })}
-              // Monster Buddy: the core quest's picture, your buddy doing it.
-              {...(next.slot === 'core' ? { art: { classId: view.profile.classId, key: artKey(authoredTemplate(next.templateId), next.condition) } } : {})}
-            />
-          )}
-          <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish}
-            onPain={next.slot === 'core' && isExercise(next) ? () => onPain(next.id) : undefined} />
-        </View>
-      )}
-
-      {then.length > 0 && (
-        <Appear style={{ gap: 10 }}>
-          <SectionTitle title={TODAY_TEXT.then} count={fillText(TODAY_TEXT.left, { n: then.length })} />
-          {anySealed && <TrialPanel onTrial={onTrial} />}
-          {then.map(row)}
+      {felt !== undefined && !asking && (
+        <Appear>
+          <FeelRow key={felt.id} title={titleOf(felt)} rating={felt.rating} canStepDown={felt.canStepDown}
+            onRate={(r) => onRate(felt.id, r)} onStepDown={() => onStepDown(felt.id)} />
         </Appear>
       )}
-
+      {card}
+      <CheckinNotes view={view} now={now} />
+      {anySealed && <TrialPanel onTrial={onTrial} />}
       {view.insight !== null && <InsightPanel insight={view.insight} onChoose={(cluster) => void enqueue({ type: 'insight', cluster })} />}
-
-      {extras.length > 0 && (
+      {extrasAfter.length > 0 && (
         <Appear style={{ gap: 10 }}>
           <SectionTitle title={TODAY_TEXT.extra} count={TODAY_TEXT.optional} />
-          {anySealed && <TrialPanel onTrial={onTrial} />}
-          {extras.map(row)}
+          {extrasAfter.map((q) => {
+            const e = extra(q);
+            return (
+              <Appear key={q.id}>
+                {e.onOpen === undefined ? <Small>{e.title}</Small> : (
+                  <QuestRow title={e.title} line={e.line} xp={questXp(q)} waiting={e.waiting} onOpen={e.onOpen}
+                    {...(e.onCheck === undefined ? {} : { onCheck: e.onCheck })} {...(e.power === undefined ? {} : { power: e.power })} />
+                )}
+              </Appear>
+            );
+          })}
         </Appear>
       )}
-
-      {next === null && <DayActions view={view} enqueue={enqueue} onSwap={onSwap} onVanish={onVanish} />}
-
-      {cleared.length > 0 && (
+      {!done && cleared.length > 0 && (
         <Glide style={{ gap: 10 }}>
           <RowLink label={fillText(TODAY_TEXT.doneToday, { n: cleared.length })} open={showDone} onPress={onToggleDone} />
           {showDone && cleared.map((q) => (
             <Appear key={q.id}>
               {q.slot === 'article'
-                ? clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => openReading(q), today.article?.title)
+                ? clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => openReading(q), article?.title)
                 : clearedQuestRow(q, voice, today.timeZone, view.waiting.has(q.id), () => onOpenQuest(q.id))}
             </Appear>
           ))}
         </Glide>
       )}
-      <PausedExercises view={view} enqueue={enqueue} />
     </View>
     </LayoutAnimationConfig>
   );

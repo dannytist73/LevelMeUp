@@ -4,13 +4,13 @@
 // (lmu-account-delete), Supabase Pro's 7-day logs (the auth audit table is empty), and the pilot report.
 export const ABOUT_TEXT = {
   // M13: Google Play's health apps rule asks for this in the app and the store listing (research §6).
-  notMedical: 'LevelMeUp is not a medical device or medical advice. Talk to a health professional before starting a new exercise routine.',
+  notMedical: 'Grumble Camp is not a medical device or medical advice. Talk to a health professional before starting a new exercise routine.',
 } as const;
 
 export const PRIVACY_TEXT = {
   open: 'Your data and privacy',
   title: 'Your data',
-  intro: "What LevelMeUp keeps, where it is kept, and who can see it. Nothing is sold, and nothing goes anywhere this page doesn't name.",
+  intro: "What Grumble Camp keeps, where it is kept, and who can see it. Nothing is sold, and nothing goes anywhere this page doesn't name.",
   sections: [
     {
       title: 'Kept by the System',
@@ -38,13 +38,13 @@ export const PRIVACY_TEXT = {
     },
     {
       title: 'Google',
-      lines: ['If you save your character with Google, Google shares your email, name and profile picture link with the sign-in, and the System keeps them with it. LevelMeUp shows the email and uses none of the rest.'],
+      lines: ['If you save your character with Google, Google shares your email, name and profile picture link with the sign-in, and the System keeps them with it. Grumble Camp shows the email and uses none of the rest.'],
     },
     {
       title: 'Plus purchases',
       lines: [
-        'If you buy LevelMeUp Plus, Google Play takes the payment; LevelMeUp never sees your card.',
-        "RevenueCat, the service that checks Google Play's receipts for LevelMeUp, keeps your purchase history under your player number, never your name or email. The System keeps whether you are on Plus, which plan, and until when.",
+        'If you buy Grumble Camp Plus, Google Play takes the payment; Grumble Camp never sees your card.',
+        "RevenueCat, the service that checks Google Play's receipts for Grumble Camp, keeps your purchase history under your player number, never your name or email. The System keeps whether you are on Plus, which plan, and until when.",
       ],
     },
     {
@@ -68,7 +68,7 @@ export const PRIVACY_TEXT = {
 
 export const UPDATE_TEXT = {
   line:
-    'This version of LevelMeUp is too old for the System. Install the newest one from the link you were sent. Your ' +
+    'This version of Grumble Camp is too old for the System. Install the newest one from the link you were sent. Your ' +
     'character is safe; what you log meanwhile waits on this phone, and the System accepts it for about a week.',
 } as const;
 

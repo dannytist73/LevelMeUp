@@ -105,12 +105,12 @@ export const ADJUST_TEXT = {
     title: 'Vanish',
     locked: "Vanish is the Rogue's level 10 ability.",
     lead:
-      'A planned phone-free block. The screen stays dark and awake, and the block counts while LevelMeUp stays open. ' +
+      'A planned phone-free block. The screen stays dark and awake, and the block counts while Grumble Camp stays open. ' +
       'Leaving the app pauses it; calls and other apps always work.',
     minutes: '{n} minutes',
     running: 'Vanished',
     backAt: 'Back at {at}.',
-    paused: 'You left LevelMeUp, so Vanish paused.',
+    paused: 'You left Grumble Camp, so Vanish paused.',
     resume: 'Resume',
     end: 'End Vanish',
     done: 'You vanished for {n} minutes.',

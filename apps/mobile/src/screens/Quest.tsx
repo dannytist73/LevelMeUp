@@ -4,11 +4,14 @@
 // equipment or program. M10c: a logged workout or rep log is remembered on this phone for next time (decision 7).
 // M12 (Round 3, board R3-2; audit 2, 9, 10, 12): one top bar; the title, then the log first, its button fixed at the
 // bottom; How and Why fold below, Safety stays open; Cleared leads on to the next quest; a half-written takeaway waits.
+// A simpler day (docs/2026-10-26-simpler-day.md, decisions 4, 6 and 10): the buddy doing it and the steps open at the top;
+// a rep log or a workout claims its target with one tap ("Did different numbers?" opens the log); a claim goes straight
+// back to Camp with the app's note and Undo (Camp asks how it felt), so Cleared shows only for a quest reopened later;
+// Change today is in the top bar; and today's story is one scroll that ends on three lines to take with you.
 import {
-  ADJUST_TEXT, BOOK_TEXT, BUDDIES, BUDDY_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES, artKey,
-  authoredTemplate, fillText, programBlockLabel, questSummary, renderWhy, shadowLine,
+  ADJUST_TEXT, BOOK_TEXT, BUDDIES, BUDDY_TEXT, CAMP_TEXT, CLUSTER_NAMES, EXERCISE_SAFETY_LINE, NOTIFY_TEXT, PLAY_TEXT, READING_TEXT, SHADOW_TEXT, STAT_NAMES,
+  TODAY_TEXT, artKey, authoredTemplate, fillText, programBlockLabel, questSummary, renderWhy, shadowLine, targetText,
 } from '@levelmeup/content';
-import { swapLimit } from '@levelmeup/rules';
 import type { Rating } from '@levelmeup/rules';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, View } from 'react-native';
@@ -20,6 +23,7 @@ import { sealedQuest, shadowHold } from '../game/pact.ts';
 import { upNext } from '../game/today.ts';
 import { clearedSummary } from '../quest/cleared.ts';
 import { questKey, sessionMemory } from '../quest/lastSets.ts';
+import { repsPayload, sessionPayload, startingSession, startingSets, textPayload } from '../quest/payload.ts';
 import type { Shot } from '../quest/cleared.ts';
 import { NEW_TIMER, pauseTimer } from '../quest/timer.ts';
 import type { TimerState } from '../quest/timer.ts';
@@ -37,7 +41,12 @@ import { ShadowBox } from '../ui/ShadowBox.tsx';
 import { Body, Caption, Label, Small, Title } from '../ui/Text.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
 import { questXp } from './QuestCard.tsx';
-import { ClaimBarHost } from './quest/ClaimBar.tsx';
+import { markJustCleared } from '../ui/justCleared.ts';
+import { LinkButton } from '../ui/LinkButton.tsx';
+import { toast } from '../ui/toast.ts';
+import { play } from '../ui/sound.ts';
+import { ClaimBarHost, ClaimButton } from './quest/ClaimBar.tsx';
+import { logDraft } from './quest/logDrafts.ts';
 import { Cleared } from './quest/Cleared.tsx';
 import { RepLog } from './quest/RepLog.tsx';
 import { SentenceLog } from './quest/SentenceLog.tsx';
@@ -45,12 +54,13 @@ import { TapClaim } from './quest/TapClaim.tsx';
 import { TimerPanel } from './quest/TimerPanel.tsx';
 import { WorkoutLog } from './quest/WorkoutLog.tsx';
 import { isKept } from '../reading/codex.ts';
-import { asDeck } from '../reading/deck.ts';
+import { asDeck, isStory, storyLines } from '../reading/deck.ts';
 import { keepDraft, takeawayDraft } from '../reading/drafts.ts';
 import { Deck } from './reading/Deck.tsx';
 import { openSource } from './reading/openSource.ts';
 import { readingLength } from './reading/ReadingCard.tsx';
 import { Reader } from './reading/Reader.tsx';
+import { StoryScroll, TakeLines } from './reading/StoryScroll.tsx';
 
 const T = PLAY_TEXT.quest;
 const A = ADJUST_TEXT;
@@ -59,7 +69,6 @@ const MAX_TIMEOUT_MS = 2_147_483_647;
 export type QuestProps = {
   questId: number;
   onBack: () => void;
-  onSwap: (questId: number) => void;
   onPain: (questId: number) => void;
   /** A workout: change the equipment or program (M6c). */
   onTraining?: () => void;
@@ -69,10 +78,14 @@ export type QuestProps = {
   onRead?: (articleId: string) => void;
   /** M12 decision 6: Cleared's "Next", in place of this screen. */
   onNext?: (questId: number) => void;
+  /** A simpler day: Change today, in the top bar. */
+  onDay?: () => void;
+  /** A simpler day: after a claim, back to Camp (which asks how it felt); without it, Cleared shows here as before. */
+  onCleared?: () => void;
   now?: () => number;
 };
 
-export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, onRead, onNext, now = Date.now }: QuestProps) {
+export function Quest({ questId, onBack, onPain, onTraining, onTrial, onRead, onNext, onDay, onCleared, now = Date.now }: QuestProps) {
   const insets = useSafeAreaInsets();
   const view = useGame((s) => s.view);
   const pending = useGame((s) => s.pending);
@@ -107,8 +120,9 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const [typedLine, setTypedLine] = useState<string | null>(null);
   /** Premium pass A4: what the last undo gave back, said above the log. */
   const [undone, setUndone] = useState<'log' | 'tap' | null>(null);
-  const [showHow, setShowHow] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
+  /** Claimed and on its way back to Camp: the screen keeps its look rather than flashing Cleared (a simpler day). */
+  const [leaving, setLeaving] = useState(false);
   const [, redraw] = useState(0);
   /** A claim on its way: a second tap before the screen redraws sends nothing (review). */
   const claiming = useRef(false);
@@ -131,6 +145,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const lineKey = `line:${logKey}`;
   const line = typedLine ?? readDraft<string>(lineKey) ?? '';
   const [pickedLine] = useState(() => quest !== null && restoredDraft(lineKey));
+  /** A simpler day: the full log instead of one-tap Done, once asked for, or when this log was already being changed. */
+  const [detailed, setDetailed] = useState(() => logDraft(logKey) !== undefined);
   const setLine = (text: string) => {
     setTypedLine(text);
     writeDraft(lineKey, text);
@@ -191,7 +207,7 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const slot = quest.slot === 'side1' || quest.slot === 'side2' ? T.slots.side : T.slots[quest.slot];
   const hold = shadowHold(view, now());
 
-  if (quest.completedAt !== null) {
+  if (quest.completedAt !== null && !leaving) {
     // M12 decision 6: what comes after this quest, so Cleared can lead straight on.
     const after = upNext(today, (q) => q.id === quest.id || sealedQuest(hold, q));
     const nextLabel = after === null ? null : after.slot === 'article' && today.article !== null
@@ -236,7 +252,12 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
     try {
       setBefore({ character: view.character, quests: today.quests });
       setUndone(null);
-      await enqueue({ type: 'complete', instanceId: quest.id, completedAt: now(), rating: null, payload });
+      // Before the claim lands, so the screen never flashes Cleared on its way back to Camp; a claim not saved stays here.
+      if (onCleared !== undefined) setLeaving(true);
+      await enqueue({ type: 'complete', instanceId: quest.id, completedAt: now(), rating: null, payload }).catch((error: unknown) => {
+        setLeaving(false);
+        throw error;
+      });
       // Premium pass A4: the takeaway, the line and the sets stay as drafts, and the timer stays, paused where it was
       // claimed: "Logged by mistake? Undo" gives them back instead of starting over.
       if (quest.completion === 'timer') {
@@ -248,6 +269,19 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
       const sets = Array.isArray(payload.sets) ? (payload.sets as number[]) : null;
       if (sets !== null && quest.condition.kind === 'session') await rememberSets(sessionMemory(quest.condition.moves, sets)).catch(() => {});
       else if (sets !== null && quest.completion === 'reps') await rememberSets({ [questKey(quest.templateId)]: sets }).catch(() => {});
+      // A simpler day (decision 6): straight back to Camp, which cheers; the app's note offers Undo, Camp asks how it felt.
+      if (onCleared !== undefined) {
+        const id = quest.id;
+        const title = todaysArticle !== null ? todaysArticle.title : authoredTemplate(quest.templateId).voice[view.profile.voice].title;
+        toast(fillText(TODAY_TEXT.markedDone, { title }), { label: TODAY_TEXT.undo, onPress: () => {
+          if (endsAt === null || endsAt <= now()) return;
+          play('undo');
+          markJustCleared(null);
+          void enqueue({ type: 'undo', instanceId: id });
+        } });
+        markJustCleared(quest.slot === 'article' ? null : id);
+        onCleared();
+      }
     } finally {
       claiming.current = false;
       setBusy(false);
@@ -315,14 +349,24 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
             <Small>{PLAY_TEXT.workout.weeks[block.week - 1]}</Small>
           </View>
         )}
-        <WorkoutLog key={JSON.stringify(quest.condition)} moves={quest.condition.moves} disabled={busy || replanning}
-          onClaim={(payload) => void claim(payload)} last={lastSets} now={now} draftKey={logKey} />
+        {detailed ? (
+          <WorkoutLog key={JSON.stringify(quest.condition)} moves={quest.condition.moves} disabled={busy || replanning}
+            onClaim={(payload) => void claim(payload)} last={lastSets} now={now} draftKey={logKey} />
+        ) : (
+          <QuickDone label={CAMP_TEXT.quest.doneWorkout} disabled={busy || replanning} onDifferent={() => setDetailed(true)}
+            onDone={() => quest.condition.kind === 'session' && void claim(sessionPayload(startingSession(quest.condition.moves)))} />
+        )}
       </View>
     );
   } else if (quest.completion === 'reps') {
     // Review: keyed by its target too, as the workout is, so a quest swapped in place starts from its own numbers.
-    panel = <RepLog key={JSON.stringify(quest.condition)} condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)}
-      last={lastSets[questKey(quest.templateId)] ?? null} now={now} draftKey={logKey} />;
+    panel = detailed ? (
+      <RepLog key={JSON.stringify(quest.condition)} condition={quest.condition} disabled={busy} onClaim={(payload) => void claim(payload)}
+        last={lastSets[questKey(quest.templateId)] ?? null} now={now} draftKey={logKey} />
+    ) : (
+      <QuickDone label={fillText(CAMP_TEXT.quest.done, { target: targetText(quest.condition) })} disabled={busy} onDifferent={() => setDetailed(true)}
+        onDone={() => void claim(repsPayload(startingSets(quest.condition)))} />
+    );
   } else if (quest.completion === 'text') {
     panel = <SentenceLog disabled={busy} onClaim={(payload) => void claim(payload)} value={line} onChangeText={setLine} />;
   } else {
@@ -331,6 +375,31 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
 
   if (reading !== null) {
     const xp = questXp(quest);
+    if (deck !== null && isStory(deck) && !(fullArticle ?? false)) {
+      // A simpler day (decision 10): today's story is one scroll; a line from it claims the reading, or your own words.
+      const own = (
+        <View style={{ gap: 10 }}>
+          <SentenceLog disabled={busy} label={READING_TEXT.takeawayLabel} note={READING_TEXT.takeawayNote} value={takeaway}
+            onChangeText={setTakeaway} claimLabel={fillText(READING_TEXT.claim, { xp })} onClaim={(payload) => void claim(payload)} />
+          {view.waiting.has(quest.id) && <Caption>{T.willSync}</Caption>}
+        </View>
+      );
+      return (
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.night }}>
+          <StoryScroll
+            article={{ ...reading, deck }}
+            label={READING_TEXT.label}
+            xp={xp}
+            onClose={onBack}
+            onFullArticle={() => setFullArticle(true)}
+            buddy={{ classId: view.profile.classId, level: view.character.level }}
+            kept={isKept(codex, reading.id)}
+            onKeep={() => void toggleKeep({ articleId: reading.id, title: reading.title, lesson: deck.lesson, keptAt: now() })}
+            end={<TakeLines lines={storyLines(deck)} disabled={busy} onPick={(line) => void claim(textPayload(line))} own={own} />}
+          />
+        </KeyboardAvoidingView>
+      );
+    }
     if (deck !== null && !(fullArticle ?? false)) {
       // M11: the reading opens on its Story Deck; Your turn is the takeaway that clears the quest.
       return (
@@ -360,7 +429,8 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
       <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: space.gutter, gap: 20 }}>
         <TopBar onBack={onBack} />
         {deck !== null && (
-          <Button label={READING_TEXT.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)} style={{ alignSelf: 'flex-start' }} />
+          <Button label={isStory(deck) ? CAMP_TEXT.story.back : READING_TEXT.deck.backToCards} variant="secondary" onPress={() => setFullArticle(false)}
+            style={{ alignSelf: 'flex-start' }} />
         )}
         <Reader
           article={reading}
@@ -390,10 +460,14 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
   const hasHow = template.steps.length > 0;
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.night }}>
-      <ClaimBarHost suffix={fillText(PLAY_TEXT.claim.xp, { xp })} note={logsSets ? T.kept : undefined}>
+      <ClaimBarHost suffix={fillText(PLAY_TEXT.claim.xp, { xp })} note={logsSets && detailed ? T.kept : undefined}>
         {(barSpace) => (
-        <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + barSpace + 24, paddingHorizontal: space.gutter, gap: 20 }}>
-          <TopBar onBack={onBack} />
+        <ScreenScroll contentContainerStyle={{ paddingBottom: insets.bottom + barSpace + 24, paddingHorizontal: space.gutter, gap: 18 }}>
+          <TopBar onBack={onBack} backLabel={CAMP_TEXT.quest.back}
+            {...(onDay === undefined || quest.completedAt !== null ? {} : { end: <LinkButton label={TODAY_TEXT.change} tone="accentText" onPress={onDay} /> })} />
+          {/* A simpler day: your buddy doing it, at the top (it was folded under How). */}
+          <QuestArt classId={view.profile.classId} artKey={artKey(template, quest.condition)}
+            label={fillText(BUDDY_TEXT.questPicture, { name: BUDDIES[view.profile.classId].name, stat: STAT_NAMES[quest.stat] })} />
           <View style={{ gap: 6 }}>
             <Label tone="accentText">{`${slot} · ${STAT_NAMES[quest.stat]} · +${xp} XP`}</Label>
             <Title accessibilityRole="header">{words.title}</Title>
@@ -406,10 +480,15 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
             <View accessibilityLiveRegion="polite"><Small tone="chalk">{undone === 'log' ? T.undoneLog : T.undone}</Small></View>
           )}
           {undone === null && pickedLine && quest.completion === 'text' && <Small tone="chalk">{T.picked}</Small>}
-          {/* M12 (audit 2): the log first, where the thumb is; its button sits in the bar at the bottom. */}
+          {/* A simpler day: the steps are open, so the one-tap Done below has nothing hidden behind it. */}
+          {hasHow && (
+            <View style={{ gap: 8 }}>
+              <Label>{T.steps}</Label>
+              {template.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
+            </View>
+          )}
           {panel}
-          {/* Safety stays open (CLAUDE.md: exercise safety is never folded away), with "I felt pain" in reach. M17 (design
-              critique): right after the log and before the folds, as a filled card, so it reads as more than an aside. */}
+          {/* Safety stays open (CLAUDE.md: exercise safety is never folded away), with "I felt pain" in reach. */}
           {(template.exercise !== null || template.safety.length > 0) && (
             <View style={{ gap: 6, padding: 14, borderRadius: radius.card, borderWidth: space.border, borderColor: colors.lineStrong, backgroundColor: colors.panel }}>
               <Label>{T.safety}</Label>
@@ -421,15 +500,6 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
             </View>
           )}
           <View style={{ gap: 10 }}>
-            <RowLink label={T.steps} open={showHow} onPress={() => setShowHow((s) => !s)} />
-            {showHow && (
-              <Appear style={{ gap: 10, paddingHorizontal: 4 }}>
-                {/* Monster Buddy: your buddy doing this kind of quest. */}
-                <QuestArt classId={view.profile.classId} artKey={artKey(template, quest.condition)}
-                  label={fillText(BUDDY_TEXT.questPicture, { name: BUDDIES[view.profile.classId].name, stat: STAT_NAMES[quest.stat] })} />
-                {hasHow && template.steps.map((step, i) => <Body key={i}>{`${i + 1}. ${step}`}</Body>)}
-              </Appear>
-            )}
             <RowLink label={T.why} open={showWhy} onPress={() => setShowWhy((s) => !s)} />
             {showWhy && (
               <Appear style={{ gap: 8, paddingHorizontal: 4 }}>
@@ -439,10 +509,6 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
               </Appear>
             )}
           </View>
-          {today.swapsLeft > 0 && quest.swaps.length > 0 && (
-            <Button label={fillText(A.swap.open, { left: today.swapsLeft, total: swapLimit(view.profile.classId, view.character.level) })}
-              variant="secondary" onPress={() => onSwap(quest.id)} />
-          )}
           {quest.condition.kind === 'session' && onTraining !== undefined && (
             <Button label={PLAY_TEXT.workout.change} variant="secondary" onPress={onTraining} />
           )}
@@ -451,5 +517,15 @@ export function Quest({ questId, onBack, onSwap, onPain, onTraining, onTrial, on
         )}
       </ClaimBarHost>
     </KeyboardAvoidingView>
+  );
+}
+
+/** A simpler day (decision 4): the target in one tap ("Done · 3 sets of 8"), or the full log for different numbers. */
+function QuickDone({ label, disabled, onDone, onDifferent }: { label: string; disabled: boolean; onDone: () => void; onDifferent: () => void }) {
+  return (
+    <View testID="quick-done" style={{ gap: 4 }}>
+      <ClaimButton label={label} disabled={disabled} onPress={onDone} />
+      <LinkButton label={CAMP_TEXT.quest.different} onPress={onDifferent} style={{ alignSelf: 'flex-start' }} />
+    </View>
   );
 }

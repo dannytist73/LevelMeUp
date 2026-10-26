@@ -9,7 +9,7 @@ export const WIDGET_TEXT = {
   dayCleared: 'Day cleared',
   progress: '{done} of {total} cleared',
   newDay: 'A new day is ready.',
-  open: 'Tap to open LevelMeUp',
-  none: 'Open LevelMeUp to begin.',
-  label: "Today's quest and your streak. Tap to open LevelMeUp.",
+  open: 'Tap to open Grumble Camp',
+  none: 'Open Grumble Camp to begin.',
+  label: "Today's quest and your streak. Tap to open Grumble Camp.",
 } as const;

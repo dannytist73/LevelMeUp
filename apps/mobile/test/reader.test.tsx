@@ -28,7 +28,7 @@ async function renderReading(server: ServerState, held: boolean, article: Articl
   });
   store.setState({ enqueue: enqueue as never });
   const onRead = jest.fn();
-  await render(withStore(store, <Quest questId={articleId} onBack={jest.fn()} onSwap={jest.fn()} onPain={jest.fn()} onRead={onRead} now={() => NOW} />));
+  await render(withStore(store, <Quest questId={articleId} onBack={jest.fn()} onPain={jest.fn()} onRead={onRead} now={() => NOW} />));
   return { store, enqueue, onRead };
 }
 

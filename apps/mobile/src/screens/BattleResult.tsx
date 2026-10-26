@@ -103,12 +103,8 @@ export function BattleResult({ onDone, onCamp }: { onDone: () => void; onCamp: (
   const lines = (Object.entries(result.byStat) as [Stat, number][]).sort((a, b) => b[1] - a[1]);
 
   const bar = over ? (
-    result.won ? (
-      <>
-        <Button label={R.camp} onPress={onCamp} />
-        <Button label={R.back} variant="secondary" onPress={onDone} />
-      </>
-    ) : <Button label={R.rematch} onPress={onDone} />
+    // A simpler day: the camp is home, so "See your camp" is the way back (it had "Back to today" beside it).
+    result.won ? <Button label={R.camp} onPress={onCamp} /> : <Button label={R.rematch} onPress={onDone} />
   ) : <Button label={R.skip} variant="secondary" onPress={() => setOver(true)} />;
 
   return (

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "LevelMeUp",
+    "name": "Grumble Camp",
     "slug": "levelmeup",
-    "version": "0.13.0",
+    "version": "0.14.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "levelmeup",
@@ -50,7 +50,7 @@
           "widgets": [
             {
               "name": "Today",
-              "label": "LevelMeUp",
+              "label": "Grumble Camp",
               "description": "Today's quest and your streak",
               "minWidth": "250dp",
               "minHeight": "110dp",
@@ -73,7 +73,7 @@
     ],
     "android": {
       "package": "com.dannytist.levelmeup",
-      "versionCode": 15,
+      "versionCode": 16,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",

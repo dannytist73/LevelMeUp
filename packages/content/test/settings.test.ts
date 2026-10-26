@@ -19,7 +19,7 @@ describe('the Settings words (M7b)', () => {
   it('say what deleting does, and that a Google sign-in stays (M3 owner decision)', () => {
     expect(SETTINGS_TEXT.delete.what).toMatch(/can't be undone/);
     expect(SETTINGS_TEXT.delete.google).toMatch(/Google sign-in/);
-    expect(SETTINGS_TEXT.delete.google).toMatch(/only your LevelMeUp data/);
+    expect(SETTINGS_TEXT.delete.google).toMatch(/only your Grumble Camp data/);
   });
 
   it('never blame the player for a phone that cannot keep a sign-in', () => {

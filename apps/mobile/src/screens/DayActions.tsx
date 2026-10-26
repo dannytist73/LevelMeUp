@@ -4,7 +4,7 @@
 // so nothing here asks for a change it would refuse, except a rest today after a rest tomorrow still waiting to sync,
 // which the server may refuse over the limit (its notice says so). M7b: Rest tomorrow, and its banner. M10c: the options
 // fold into one "Change today" row (decision 3), and a day that already counts is offered only a rest tomorrow (decision 4).
-import { ABILITY_NAMES, ADJUST_TEXT, LIGHTER_TEXT, OFFLINE_TEXT, TODAY_TEXT, fillText, pausedName } from '@levelmeup/content';
+import { ABILITY_NAMES, ADJUST_TEXT, CAMP_TEXT, LIGHTER_TEXT, OFFLINE_TEXT, TODAY_TEXT, fillText, pausedName } from '@levelmeup/content';
 import { DAY_MS, abilityUnlocked, questDayDate, swapLimit } from '@levelmeup/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -100,6 +100,8 @@ export type DayActionsProps = {
    * It shows even when the day has nothing to change: pain always offers a rest (CLAUDE.md).
    */
   onPain?: () => void;
+  /** A simpler day: on the Change today screen the options are all shown, with no fold. */
+  unfolded?: boolean;
 };
 
 /** Change today's toggle: a pill with a chevron that turns, the same height as the pain button beside it. */
@@ -116,7 +118,7 @@ function FoldButton({ label, open, onPress }: { label: string; open: boolean; on
   );
 }
 
-export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActionsProps) {
+export function DayActions({ view, enqueue, onSwap, onVanish, onPain, unfolded = false }: DayActionsProps) {
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [folded, setFolded] = useState(true);
   const today = view.today!;
@@ -154,7 +156,8 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
     );
   }
   if (!canSwap && !swapsOut && !canHardDay && !canRest && today.abilities.length === 0 && resting.length === 0 && !canVanish) {
-    return pain === null ? later : <View style={{ gap: 12 }}>{later}<View style={{ flexDirection: 'row' }}>{pain}</View></View>;
+    if (pain === null) return later ?? (unfolded ? <NarrationBox>{CAMP_TEXT.dayNothing}</NarrationBox> : null);
+    return <View style={{ gap: 12 }}>{later}<View style={{ flexDirection: 'row' }}>{pain}</View></View>;
   }
   const buttons = (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -173,6 +176,15 @@ export function DayActions({ view, enqueue, onSwap, onVanish, onPain }: DayActio
       {swapsOut && <Small tone="chalk" style={{ flexBasis: '100%' }}>{fillText(T.day.swapsOut, { time: clockTime(today.endsAt!, today.timeZone) })}</Small>}
     </View>
   );
+  if (unfolded) {
+    return (
+      <View style={{ gap: 12 }}>
+        {later}
+        {pain !== null && <View style={{ flexDirection: 'row' }}>{pain}</View>}
+        {buttons}
+      </View>
+    );
+  }
   const options = (
     <View style={{ gap: 12 }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>

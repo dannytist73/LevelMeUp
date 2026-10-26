@@ -12,7 +12,6 @@ import { project } from '../../game/project.ts';
 import type { Shown } from '../../game/project.ts';
 import type { ServerState } from '../../game/types.ts';
 import { BattleResult } from '../../screens/BattleResult.tsx';
-import { Camp } from '../../screens/Camp.tsx';
 import { Today } from '../../screens/Today.tsx';
 import { GameProvider, useGame } from '../../state/store.ts';
 import type { GameState, NewEvent } from '../../state/store.ts';
@@ -91,9 +90,7 @@ export default function MonsterPreview() {
         <GameProvider key={mode} store={store}>
           {mode === 'won' || mode === 'lost'
             ? <BattleResult onDone={() => setMode('today')} onCamp={() => setMode('camp')} />
-            : mode === 'camp'
-              ? <Camp />
-              : <Today onSettings={() => {}} onOpenQuest={() => {}} onSwap={() => {}} onPain={() => {}} onVanish={() => {}} onTraining={() => {}} onCheckin={() => {}} />}
+            : <Today onOpenQuest={() => {}} onDay={() => {}} />}
         </GameProvider>
       )}
     </View>

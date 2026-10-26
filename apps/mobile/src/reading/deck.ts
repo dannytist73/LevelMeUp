@@ -6,6 +6,7 @@ import { GRUMBLES, castMember } from '@levelmeup/content';
 import type { CastMember } from '@levelmeup/content';
 import type { ArticleDeck, LegacyDeck, StoryDeck } from '../../../../supabase/functions/_shared/articles/deck.ts';
 import { STORY_PICTURE, STORY_SCENE } from '../art/stories.ts';
+import { sentenceValid } from '../quest/payload.ts';
 
 export type { ArticleDeck, LegacyDeck, StoryDeck };
 
@@ -124,4 +125,12 @@ export function deckMinutes(deck: ArticleDeck): number {
     : [...deck.story.map((c) => c.text), deck.systemNote ?? '', deck.lesson, deck.tryToday];
   const words = parts.join(' ').split(/\s+/).filter((w) => w !== '').length;
   return Math.ceil(words / 150) + 1;
+}
+
+/**
+ * A simpler day (docs/2026-10-26-simpler-day.md, decision 10): the lines a story offers as your takeaway, each one the
+ * story just said: why it works, the lesson, and what to try today. Any the server wouldn't take as a sentence are left out.
+ */
+export function storyLines(deck: StoryDeck): string[] {
+  return [...new Set([deck.why.head, deck.lesson, deck.tryToday].map((line) => line.trim()))].filter(sentenceValid);
 }
