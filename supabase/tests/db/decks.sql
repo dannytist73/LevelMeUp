@@ -120,7 +120,7 @@ begin
   return next ok((select not deck ? 'grumble' from levelmeup.articles where id = a), 'and takes the Grumble away');
   return next ok(not levelmeup.article_set_scenes(a, jsonb_build_array(null), null), 'a story of another number of cards gets none');
   return next ok(not levelmeup.article_set_scenes(old, jsonb_build_array(null), null), 'nor does a deck from before the stories');
-  return next ok(not levelmeup.article_set_scenes(b, two, null), 'nor an article without a deck');
+  return next ok(not levelmeup.article_set_scenes(b, jsonb_build_array('story-clay/' || b || '-1.webp', null), null), 'nor an article without a deck');
   return next is((select deck from levelmeup.articles where id = b), null::jsonb, 'which stays without one');
   return next throws_ok(format($q$ select levelmeup.article_set_scenes(%L, %L, null) $q$, a, jsonb_build_array(null, 'story-clay/' || a || '-1.webp')), '22023', null,
     'only each card''s own path');
