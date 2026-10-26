@@ -75,7 +75,7 @@ STORY_GRUMBLES: dict[str, str | None] = {
     "article-30": "scrollo", "article-31": "skimmy", "article-32": "zonkle", "article-33": None, "article-34": "tabbit",
     "article-35": "shyling", "article-36": "rushkin", "article-37": "fizzbit", "article-55": "excusaurus", "article-56": "blurb",
     "article-122": "liftle", "article-140": "snoozle", "article-141": "pingle", "article-142": "comfortoise",
-    "article-143": "juggles", "article-144": "excusaurus",
+    "article-143": "juggles", "article-144": "excusaurus", "article-167": "rushkin",
 }
 
 # One scene per story lesson: the regular in the story's turning moment (the decks stored 2026-10-19; the studio's since,
@@ -107,6 +107,7 @@ SCENES = {
     "article-142": ("priya", "sitting at her desk on a quiet Sunday afternoon in soft window light, laying a sheet of hand-drawn icons beside a printed icon set she admires, a fine-liner pen in her hand, an open notebook and a small kitchen timer nearby, wearing an oversized cardigan"),
     "article-143": ("tomas", "sitting on a sofa late at night under a warm lamp, jotting faint pencil scribbles on the back of an envelope resting on his knee, a baby monitor and empty bottle on the side table, a leaning hall shelf beyond, wearing a soft grey t-shirt"),
     "article-144": ("jonah", "sitting at a kitchen table at night with a pen, writing one line at the bottom of a running plan sheet, a bus driver's jacket over the chair, a phone beside the sheet, wearing a navy uniform shirt"),
+    "article-167": ("jonah", "jogging calmly up a small grassy park hill in soft evening light, shoulders relaxed and breathing steady, a plain fitness watch on his wrist, wearing a running t-shirt and shorts"),
 }
 FRAME = "medium wide shot, one person, the face clearly visible, quiet everyday moment"
 
@@ -280,6 +281,12 @@ BEATS: dict[str, list[str | None]] = {
         None,
         "sitting at a kitchen table typing on his phone with a small smile",
         "stretching beside a lamppost on a quiet street at dusk, wearing running clothes"],
+    "article-167": [
+        "in a small kitchen on a sunny morning pinning a plain flyer with nothing written on it to the fridge with a magnet, hopeful, wearing a plain t-shirt",
+        "running up a windy park hill with heavy legs, frowning at the plain fitness watch on his wrist, leaves blowing",
+        "in a kitchen in the evening writing a short line on a sheet of paper stuck to the fridge, thoughtful and calm, wearing a plain t-shirt",
+        None,
+        "walking home along a quiet tree-lined street after a run with a calm small smile, a towel over his shoulder"],
 }
 
 # Filled in after picking from the sheets: article -> seed.
@@ -287,7 +294,7 @@ PICKS: dict[str, int] = {
     "article-9": 22, "article-20": 11, "article-21": 11, "article-22": 11, "article-23": 22, "article-24": 22, "article-25": 11,
     "article-27": 22, "article-28": 11, "article-29": 11, "article-30": 11, "article-31": 11, "article-32": 22, "article-33": 11,
     "article-34": 22, "article-35": 11, "article-36": 11, "article-37": 11, "article-55": 11, "article-56": 11, "article-122": 11,
-    "article-140": 11, "article-141": 11, "article-142": 11, "article-143": 22, "article-144": 11,
+    "article-140": 11, "article-141": 11, "article-142": 11, "article-143": 22, "article-144": 11, "article-167": 22,
 }  # picked 2026-10-26 from the sheets: the regular clear, the little monster whole and apart from them
 
 # Filled in after picking from the card sheets: article -> the seed for each card (0 for the cover's card, or none usable).
@@ -300,7 +307,7 @@ BEAT_PICKS: dict[str, list[int]] = {
     "article-35": [22, 22, 11, 0, 11, 22], "article-36": [11, 33, 33, 33, 0, 22], "article-37": [11, 22, 11, 0, 22, 44],
     "article-55": [22, 22, 22, 11, 0, 11], "article-56": [11, 11, 22, 0, 11], "article-122": [11, 22, 22, 0, 22],
     "article-140": [22, 11, 0, 11, 11], "article-141": [22, 11, 11, 0, 22], "article-142": [22, 22, 0, 22, 11],
-    "article-143": [11, 22, 0, 22, 22], "article-144": [11, 11, 0, 11, 22],
+    "article-143": [11, 22, 0, 22, 22], "article-144": [11, 11, 0, 11, 22], "article-167": [22, 22, 11, 0, 22],
 }  # picked 2026-10-26 from the card sheets: the regular as on the cover, the little monster whole and apart, no text,
 #    numbers or emblems (a calendar's dates, a nurse's red cross and a phone in the wrong hands were painted again)
 
@@ -513,8 +520,9 @@ def pick() -> None:
     if missing:  # check before clearing anything: the committed set must survive a machine without the renders
         sys.exit(f"missing renders: {', '.join(missing)}")
     OUT.mkdir(parents=True, exist_ok=True)
-    for old in OUT.glob("*.webp"):
-        old.unlink()
+    for old in OUT.glob("article-*.webp"):
+        if old.stem.count("-") == 1:  # the covers; the cards' (article-9-1) are beatpick's
+            old.unlink()
     for article, src in sources.items():
         webp(src, OUT / f"{article}.webp")
     print(f"{len(sources)} pictures in {OUT}")
