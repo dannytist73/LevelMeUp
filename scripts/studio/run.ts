@@ -248,8 +248,11 @@ async function comfy(): Promise<{ started: number | null } | null> {
   return null;
 }
 
+/** ComfyUI's own Python: the Grumble swap needs numpy, scipy and Pillow (scripts/art/grumble-art.py), which it has. */
+const PYTHON = existsSync(join(COMFY_DIR, 'venv', 'Scripts', 'python.exe')) ? join(COMFY_DIR, 'venv', 'Scripts', 'python.exe') : 'python';
+
 function python(args: string[]): string {
-  const run = spawnSync('python', [join(ROOT, 'scripts', 'art', 'story-art.py'), ...args], { encoding: 'utf8', timeout: 20 * 60_000, windowsHide: true });
+  const run = spawnSync(PYTHON, [join(ROOT, 'scripts', 'art', 'story-art.py'), ...args], { encoding: 'utf8', timeout: 20 * 60_000, windowsHide: true });
   if (run.status !== 0) throw new Error(`story-art.py ${args[0]}: ${(run.stderr || run.stdout).slice(0, 300)}`);
   return run.stdout.trim();
 }
