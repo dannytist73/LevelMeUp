@@ -151,6 +151,8 @@ async function verify(r: Research): Promise<{ brief: Brief; dropped: string[] }>
 
 /** Tries at the article and at the story: free on the PC, so one more than the tick's two. */
 const DRAFTS = 3;
+/** The story's plain words (2026-10-26) are often fixed on the second try (a sentence over 20 words): one try to spare. */
+const STORY_DRAFTS = DRAFTS + 1;
 
 /**
  * The article from the brief with the tick's own prompt, warned up front about the wording its facts share with the
@@ -180,7 +182,7 @@ function deck(env: Env, job: StudioJob, article: unknown, brief: Brief): unknown
   const draft = parseArticle(article)!;
   const params = deckParams(draft) as { system: string; messages: { content: string }[]; output_config: { format: { schema: object } } };
   const refused: string[] = [];
-  for (let attempt = 1; attempt <= DRAFTS; attempt++) {
+  for (let attempt = 1; attempt <= STORY_DRAFTS; attempt++) {
     const fix = refused.length === 0 ? '' : `\n\nYour earlier story lessons for this article failed these checks, so write it again and fix every one: ${refused.join('; ')}`;
     const value = claude(env, { system: params.system, prompt: params.messages[0]!.content + fix, schema: params.output_config.format.schema, cwd: HERE, effort: 'low', minutes: 10 });
     const d = parseDeck(value);

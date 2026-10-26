@@ -105,6 +105,19 @@ describe('the story lesson (M14)', () => {
     expect(checkDeck(copied, ARTICLE, BRIEF.excerpts).some((p) => p.startsWith('repeats 8 or more words'))).toBe(true);
   });
 
+  it('tells the story in plain words: short sentences, no similes, no jargon, an easy grade (2026-10-26)', () => {
+    expect(checkDeck(deck(), ARTICLE, [])).toEqual([]);
+    const simile = withCard(0, 'Jonah checks his watch after work. The goal sits on the screen like a wall he cannot climb.');
+    expect(checkDeck(simile, ARTICLE, []).some((p) => p.startsWith('say it plainly, without the comparison "like a"'))).toBe(true);
+    const jargon = deck({ lesson: 'Raise your count slowly from your baseline.' });
+    expect(checkDeck(jargon, ARTICLE, [])).toContain('"baseline" is jargon: say what it means in everyday words');
+    const long = withCard(1, 'He decides to push harder and runs again on Sunday evening, and halfway up the long hill near the depot he has to stop.');
+    expect(checkDeck(long, ARTICLE, []).some((p) => p.startsWith('a sentence has 24 words (at most 20)'))).toBe(true);
+    const dense = deck({ why: { head: 'Rest is part of the work.', text: 'Physiological adaptation to progressive overload predominantly materialises during subsequent recovery intervals. Consequently, insufficient recuperation compromises accumulated performance improvements.' } });
+    expect(checkDeck(dense, ARTICLE, []).some((p) => p.startsWith('the why card reads at school grade'))).toBe(true);
+    expect(DECK_SYSTEM).toContain('Plain words come first');
+  });
+
   it('asks for structured output from the stored article, with the regulars to choose from', () => {
     const params = deckParams(ARTICLE) as { model: string; output_config: { format: { schema: typeof DECK_SCHEMA } }; messages: { content: string }[] };
     expect(params.model).toBe('claude-opus-5-5');

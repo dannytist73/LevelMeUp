@@ -7,7 +7,7 @@ export const HOUSE_STYLE = `House style for LevelMeUp articles
 Who reads them: players of a self-improvement game with an anime and manhwa feel. They are adults building habits and training body and mind. They read one article a day, in 5 to 7 minutes, often on a phone.
 
 Voice:
-- Plain words and short sentences. Explain like a well-read friend, not like a textbook or an advert.
+- Plain words and short sentences: a high-school student follows every sentence the first time. Explain like a friend, not like a textbook or an advert. Say things straight, without figures of speech, and explain any technical term in everyday words the first time it appears.
 - A strong opening: a concrete scene, a surprising finding or a sharp question. Never open with a definition. Vary it: don't begin with Picture or Imagine, and don't begin the summary with Here is.
 - Memorable examples: a specific study, a moment from history, an everyday situation. Numbers where the brief gives them.
 - A light manhwa flavour: the reader is someone levelling up, training is a quest, habits are stats that grow. Use it in a few phrases, never in every paragraph, and never let it bend a fact.
@@ -29,7 +29,7 @@ Originality:
 - No quotations: never put more than three words inside quotation marks, and never attribute words to a real person. Describe ideas instead (Seneca argued that time is the one thing we can't earn back).
 - No links, no markdown, no reference numbers in the text. The app lists the sources separately.
 
-Shape: a title under 70 characters; a summary of one or two sentences; 4 to 6 sections with short headings; 800 to 1,200 words in the sections' paragraphs and System notes together; 2 to 4 takeaways of one sentence each; one reflection question that ends with a question mark.
+Shape: a plain title under 70 characters that says what the reader will learn, with no colon and no wordplay; a summary of one or two sentences; 4 to 6 sections with short headings; 800 to 1,200 words in the sections' paragraphs and System notes together; 2 to 4 takeaways of one sentence each; one reflection question that ends with a question mark.
 
 Never use these phrases: ${ROBOTIC_PHRASES.join(', ')}.
 Never use these words about anyone: ${ARTICLE_SHAMING.join(', ')}.

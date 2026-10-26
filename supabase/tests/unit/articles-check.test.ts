@@ -106,6 +106,8 @@ describe('checkArticle (spec §4.1 step 3)', () => {
 
   it('runs the article lint on every piece', () => {
     expect(checkArticle(draft({ title: 'Delve into the science of rest' }), BRIEF)).toContain('robotic phrase "delve"');
+    expect(checkArticle(draft({ title: 'Rest Days: The Hidden Engine of Strength' }), BRIEF))
+      .toContain('the title has no colon: say what the reader will learn in one plain line');
     expect(checkArticle(draft({ takeaways: ['Only the lazy skip rest days.', 'Sleep is part of training.'] }), BRIEF)).toContain('shaming word "lazy"');
   });
 
