@@ -88,6 +88,8 @@ export const GAME_WORDS = /\b(quests?|missions?|xp|rewards?|achievements?|unlock
 export function checkArticle(a: ArticleDraft, brief: Brief): string[] {
   const problems: string[] = [];
   if (!between(a.title, 10, 80)) problems.push('the title must be 10–80 characters');
+  // Plain words (2026-10-26): one plain line, not a headline with a clever half before a colon.
+  if (a.title.includes(':')) problems.push('the title has no colon: say what the reader will learn in one plain line');
   if (!between(a.summary, 40, 300)) problems.push('the summary must be 40–300 characters');
   if (a.sections.length < 4 || a.sections.length > 7) problems.push('an article has 4–7 sections');
   for (const s of a.sections) {

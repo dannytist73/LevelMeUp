@@ -3,7 +3,8 @@
 // quick check, the lesson and one thing to try today. Written by one direct Claude call from the stored article (never
 // from new research), then checked by code like the article: lengths, the lint, no copied run from a source, no
 // research in the story (it is fiction, and the phone says so), and no number on the other cards that the article
-// doesn't print. "Your turn" (the article's question) comes from the article itself.
+// doesn't print. "Your turn" (the article's question) comes from the article itself. Since 2026-10-26 it is told in plain
+// words (plain.ts): a high-school student follows every line the first time.
 import { CAST, CAST_IDS } from '../../../../packages/content/src/index.ts';
 import type { CastId } from '../../../../packages/content/src/index.ts';
 import { isObject } from '../http.ts';
@@ -11,6 +12,7 @@ import { ARTICLE_MODEL } from '../prompts/articles.ts';
 import { HOUSE_STYLE } from '../prompts/style.ts';
 import type { ArticleDraft } from './check.ts';
 import { articleTexts, copyProblems, textProblems } from './check.ts';
+import { PLAIN, gradeProblem, plainProblems } from './plain.ts';
 import { clip } from './text.ts';
 
 /** M11's deck: still stored for an article until its story is written, and still shown by the phone. */
@@ -60,19 +62,19 @@ const text = (description: string) => ({ type: 'string', description }) as const
 export const DECK_SCHEMA = {
   type: 'object',
   properties: {
-    title: text('The lesson\'s short title in sentence case, 1 to 4 words: the idea, not the article\'s headline (for example: Small wins).'),
-    subtitle: text('One line under the title saying what the reader will take away, 4 to 12 words.'),
+    title: text('The lesson\'s short title in sentence case, 1 to 5 plain words saying what it is about, never a figure of speech (for example: Walk a little more).'),
+    subtitle: text('One plain sentence under the title saying what the reader will learn, 4 to 12 words.'),
     cast: { type: 'string', enum: [...CAST_IDS], description: 'Who the story is about: the regular whose life fits the article best.' },
     story: {
       type: 'array',
       description: '4 to 6 story cards, in the order the reader swipes them.',
-      items: text('1 to 3 short sentences of the story, 12 to 45 words.'),
+      items: text('1 to 3 short, plain sentences of the story, 12 to 45 words, no sentence over 20 words.'),
     },
     why: {
       type: 'object',
       properties: {
-        head: text('The idea in a few words, under 10 words, ending with a full stop.'),
-        text: text('What the article\'s research found, in 2 or 3 plain sentences, 20 to 60 words.'),
+        head: text('The idea in a few plain words, under 10 words, ending with a full stop.'),
+        text: text('What the article\'s research found, in 2 or 3 short, plain sentences a high-school student follows, 20 to 60 words.'),
       },
       required: ['head', 'text'],
       additionalProperties: false,
@@ -88,7 +90,7 @@ export const DECK_SCHEMA = {
       required: ['question', 'options', 'answer', 'why'],
       additionalProperties: false,
     },
-    lesson: text('The article\'s main idea as one sentence, under 20 words.'),
+    lesson: text('The article\'s main idea as one plain sentence, under 20 words.'),
     try_today: text('One small, safe thing the reader can try today, taken from the article\'s practical advice, under 30 words.'),
   },
   required: ['title', 'subtitle', 'cast', 'story', 'why', 'check', 'lesson', 'try_today'],
@@ -99,21 +101,28 @@ const REGULARS = CAST.map((c) => `- ${c.id}: ${c.name}, ${c.line}. Stories about
 
 export const DECK_SYSTEM = `You turn one finished LevelMeUp article into its story lesson: a short story the reader swipes through on a phone, then why it works, a quick check and the lesson. About three minutes in all.
 
+Plain words come first. Write so a high-school student understands every line the first time, with nothing to decode:
+- Say what happens, what the person feels and why. The reader never has to guess what a line means or what happened between two cards.
+- No figures of speech anywhere: no metaphors, similes, idioms or wordplay. Not "the goal blinks at him like a wall he can't climb", but "Ten thousand steps a day feels too far for him."
+- Short, complete sentences of at most ${PLAIN.sentenceWords} words, one idea each.
+- Everyday words. When the article uses a technical term, say what it means instead: your usual number, not your baseline; dream sleep, not REM sleep; studies that followed people for years, not cohort studies.
+- The title and subtitle say what the story is about in plain words, never a riddle or a clever phrase.
+
 The story:
 - It stars one of the regulars listed below: the one whose life fits the article best. Keep their name, age and life as given. Small everyday details are welcome (a place, a time of day, a friend, a colleague), but never a new job or family that contradicts their line.
 - 4 to 6 cards, in order: the moment (a scene the reader can picture, with a problem they would recognise), what goes wrong or what they try first, the turn (they try the article's idea in a small, concrete way), and how it goes. End on a quiet, honest result, never a miracle.
-- Present tense, third person, short sentences, everyday words. Show, don't tell: actions, objects, a few words said aloud. Short lines of dialogue from the regulars are fine, and are the one exception to the house style's rule on quotation marks.
+- Present tense, third person. Show what they do and say, and say plainly what they think and feel. Short lines of dialogue from the regulars are fine, and are the one exception to the house style's rule on quotation marks.
 - The story is fiction and carries no research: no numbers written as digits, no studies, research, researchers, scientists, experiments, surveys, percentages or participants, and no real people. Counts written as words are fine when they belong to the scene (three weeks, the fifth Sunday).
 - The story shows the article's idea working the way the article says it works, and no stronger. When the article says an effect is modest or depends on something, the story's result is modest too.
 
 Why it works:
-- The head is the idea in a few words. The text says what the article's research found, in 2 or 3 plain sentences: who looked at what, and what they found. Use only what the article says, keep every number with the study and the outcome it belongs to, and keep the article's cautions about how strong the evidence is.
+- The head is the idea in a few plain words. The text says what the article's research found, in 2 or 3 short sentences, the way you would explain it to a friend: who was studied and what happened. One main finding is enough. Use only what the article says, keep every number with the study and the outcome it belongs to, and say plainly how sure the evidence is (for example: this shows a link, not proof).
 
 The quick check:
 - One question about using the idea, ideally about the story's person in a new moment. Three short answers: exactly one is right by the article; the other two are tempting but wrong, never silly. Put the right answer first, second or third as fits. The why is one line saying why the right answer is right.
 
 The lesson and try today:
-- The lesson is the article's main idea in one sentence. "Try today" is one small, safe action from the article's practical advice, sized for a beginner.
+- The lesson is the article's main idea in one plain sentence. "Try today" is one small, safe action from the article's practical advice, sized for a beginner.
 
 Never: facts, numbers, names, studies or examples that are not in the article (the story's fiction aside); anything announced in the game (no quest added or active, no XP, rewards or achievements); a claim to have detected something about the reader; a System note (the lesson has none).
 
@@ -260,6 +269,10 @@ export function checkDeck(d: StoryDeck, article: ArticleDraft, excerpts: readonl
   const facts = factTexts(d);
   for (const t of facts) problems.push(...textProblems(t));
   problems.push(...copyProblems(deckTexts(d), excerpts));
+  // Plain words (2026-10-26): short sentences, no similes, no jargon, and a grade a high-school student reads easily.
+  for (const t of deckTexts(d)) problems.push(...plainProblems(t));
+  problems.push(...gradeProblem(d.story.join(' '), PLAIN.storyGrade, 'the story'));
+  problems.push(...gradeProblem(d.why.text, PLAIN.whyGrade, 'the why card'));
   // No invented statistics: every number off the story's cards is one the article prints. The story's counts are its own.
   const known = new Set(articleTexts(article).flatMap(numbersIn));
   for (const n of new Set(facts.flatMap(numbersIn))) if (!known.has(n)) problems.push(`the number ${n} is not in the article`);
