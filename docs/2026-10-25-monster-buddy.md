@@ -43,7 +43,10 @@ clay, quest pictures where your buddy does the quest, and the daily studio paint
    (two takes each, Claude's pick), and sends them with the story. After the story, the cards are no longer painted:
    the story's Grumble shrinks and cheers up on why it works, your buddy thinks over the quick check (a sixth still,
    `think`) and cheers when you're right (a miss leaves it calm), and it is happy on the lesson. Older apps ignore the
-   new fields.
+   new fields. Live 2026-10-26 08:22 Manila (owner: "Go ahead with 0.13.0"), before that day's 9:00 run so it painted
+   its own story in clay with its cards: 0021 and 0022 applied (decks.sql 52 assertions), lmu-articles-studio v7, the
+   studio worktree fast-forwarded, the 26 stored stories' clay covers and 139 card pictures uploaded and named (165
+   public links checked). The studio runs story-art.py with ComfyUI's Python, which has the swap's scipy.
 
 ## Order
 

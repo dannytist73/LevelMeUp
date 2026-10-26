@@ -878,6 +878,10 @@ Vera was only looked at (tabs switched, Today scrolled). The level-up, a decided
 change aren't reachable that way; app tests cover them (portraits, buddyScreens, livingShadow). The Find X9 column is the
 owner's, on `apps/mobile/dist/levelmeup-0.12.0-preview.apk`.
 
+Rows 11–13 (a picture on every story card) are on 0.13.0: version code 15, built on this PC 2026-10-26 08:33 Manila from
+c92c4b8, `apps/mobile/dist/levelmeup-0.13.0-preview.apk` (174 MB, sha256 40c8bd9f23cd4960…, 26/26 arm64 libraries 16 KB
+aligned), installed over 0.12.0 on the emulator with Vera kept and looked at only.
+
 | # | Check | Result |
 |---|---|---|
 | 1 | Every Grumble is a painted clay monster (arena, battle, camp, Grumble book), breathing and blinking; the book's unmet ones are dark silhouettes; no green fringe or holes on the pale ones (Cloudle, Blurb, Tabbit). **Pass** 2026-10-26, emulator (Snoozle painted in the arena and at camp; the book's unmet ones are dark silhouettes of their paintings). Find X9: |
@@ -890,6 +894,6 @@ owner's, on `apps/mobile/dist/levelmeup-0.12.0-preview.apk`.
 | 8 | The Shadow's scene: the clay Shadow, its eyes glowing and pulsing, embers rising; with Remove animations, still. | Find X9: |
 | 9 | A Plus frame and the Shadow's mark still draw over the portrait. | Find X9: |
 | 10 | Change class (Me → Change class): each class names its buddy; after the change, Me shows the new class's buddy. | Find X9: |
-| 11 | A story lesson (Today's reading, or a past one from Me): each story card shows its own clay picture of that moment above the text, the same person as the cover, with the story's Grumble beside them; the card the cover shows repeats the cover; turning cards never waits on a picture. | Find X9: |
-| 12 | Why it works: the story's Grumble at the bottom right shrinks a little and cheers up; a story without a Grumble shows none. With Remove animations, it is already small and happy. | Find X9: |
-| 13 | The quick check: your buddy thinks it over (paw on its chin); a right answer makes it jump and cheer; a miss leaves it calm. The lesson card: your buddy happy. TalkBack reads none of the pictures. | Find X9: |
+| 11 | A story lesson (Today's reading, or a past one from Me): each story card shows its own clay picture of that moment above the text, the same person as the cover, with the story's Grumble beside them; the card the cover shows repeats the cover; turning cards never waits on a picture. **Pass** 2026-10-26, emulator (0.13.0 over 0.12.0, Vera: today's reading article-122, held from before, was fetched again and came with its clay cover and Jonah with Liftle on each story card). Find X9: |
+| 12 | Why it works: the story's Grumble at the bottom right shrinks a little and cheers up; a story without a Grumble shows none. With Remove animations, it is already small and happy. **Pass** 2026-10-26, emulator (Liftle small and happy at the bottom right). Find X9: |
+| 13 | The quick check: your buddy thinks it over (paw on its chin); a right answer makes it jump and cheer; a miss leaves it calm. The lesson card: your buddy happy. TalkBack reads none of the pictures. Emulator 2026-10-26: Pummel thinking on the check and happy on the lesson (the check was left unanswered and Keep untapped: Vera is look-only; the cheer and TalkBack are covered by app tests). Find X9: |
