@@ -29,8 +29,9 @@ export const CAMP_TEXT = {
     cheer: 'Hey! That one tickled.',
     ready: 'Fine, fine. I might stay.',
     asleep: 'Zzz…',
-    ask: 'Yesterday slipped by. What happened?',
-    askGap: 'A few days slipped by. What happened?',
+    // 2026-10-27: a welcome, not the question again (the card under the camp asks it).
+    ask: 'Welcome back! Yesterday slipped by.',
+    askGap: 'Welcome back! A few days slipped by.',
   },
   /** The check-in, asked at the fire: one tap answers. */
   ask: {
