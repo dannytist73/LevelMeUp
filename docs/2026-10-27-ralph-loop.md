@@ -14,7 +14,7 @@ packages.
 
 - [x] 1. Research (below, with sources)
 - [x] 2. Bug check and two fixes, committed and pushed
-- [ ] 3. APK 0.14.1 built, installed on the emulator, checked (see APK below)
+- [x] 3. APK 0.14.1 built (17:15, about 2 h 25 min late), installed on the emulator, checked (see APK below)
 
 ## Bugs found and fixed
 
@@ -101,4 +101,11 @@ Large:
 
 ## APK
 
-(building; filled in when checked)
+- `apps/mobile/dist/grumble-camp-0.14.1-preview.apk` (gitignored), version 0.14.1, versionCode 17, built from `90effb7`
+  with `eas build --local` (preview profile, EAS key, so it installs over every earlier build).
+- sha256 `3e6bc070f76c14618d7b882e821788fcf768deda3c976452733b41dfef6e166a`, 175,439,627 bytes.
+- 16 KB pages: 26 arm64 libraries, 0 below 16 KB.
+- Emulator: installed over 0.14.0 (Success), opens, syncs (Day 14, Snoozle's battle), the bubble reads "Welcome back!
+  Yesterday slipped by." above the check-in card, Stories shows today's reading and past readings. Vera untouched.
+- Emulator powered off, WSL `lmu-build` terminated.
+- Same server as 0.14.0 (no server change), so it works against today's live functions.
