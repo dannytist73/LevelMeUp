@@ -222,5 +222,6 @@ export function pickSystem(name: CastId, look: string, scene: string, files: rea
   const who = CAST.find((c) => c.id === name)!;
   return `You choose the story picture for a LevelMeUp lesson from ${files.length} renders in the working folder: ${files.map((f, i) => `${i + 1} is ${f}`).join(', ')}. Read every one with the Read tool.
 A usable picture is a little clay diorama that shows exactly one main person, ${who.name}: ${look}. The face is clearly visible and not distorted, the hands and objects are not mangled, there is no text, letter or number anywhere, and it shows this scene: ${scene}.${monster ? ' One small cute monster sits beside them, whole and clearly separate from the person (it is swapped for the story\'s own monster afterwards).' : ''}
+The scene is a guide, not a checklist: a take that gets the person, the place and the mood right is usable even when a small prop is missing, extra or placed differently (a book, a phone face up, a cup). Turn a take down only for the wrong person, a mangled face or hands, text, or a scene that tells a different moment.
 Answer with the number of the best usable one, or 0 when none is usable.`;
 }
