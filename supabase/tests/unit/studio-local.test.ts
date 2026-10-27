@@ -108,4 +108,10 @@ describe('the studio\'s prompts (M15)', () => {
     expect(system).toContain('Priya: an Indian woman of 24');
     expect(system).toContain('this scene: at a desk at night');
   });
+
+  it('do not turn a take down for a small prop (2026-10-27: two stories in five lost their picture over a textbook or a sheet)', () => {
+    const system = pickSystem('priya', 'an Indian woman of 24', 'at a desk at night', ['5701.png']);
+    expect(system).toContain('a guide, not a checklist');
+    expect(system).toContain('Turn a take down only for the wrong person, a mangled face or hands, text, or a scene that tells a different moment.');
+  });
 });
