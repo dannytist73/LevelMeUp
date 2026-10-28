@@ -16,6 +16,7 @@ export const BASE_TEXT = {
         { title: 'Eat', text: 'Write down what you eat and see it against your daily targets.' },
       ],
       start: 'Make my plan',
+      tester: 'Grumble Camp is now LevelMeUp, a simpler app. Your camp is paused, not deleted.',
     },
     builder: {
       title: 'Which plan fits you?',

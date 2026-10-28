@@ -19,7 +19,7 @@ type Step = 'welcome' | 'builder' | 'experience' | 'plan' | 'equipment' | 'safet
 
 const formatDate = (ms: number): string => new Date(ms).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
-export function Setup({ now = Date.now }: { now?: () => number }) {
+export function Setup({ now = Date.now, tester = false }: { now?: () => number; tester?: boolean }) {
   const api = useBaseApi();
   // Changing a plan (from Me) starts from the current answers and skips the welcome.
   const [was] = useState(() => ({ plan: api.getState().plan, book: api.getState().reading.book }));
@@ -65,6 +65,7 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
       return (
         <Screen footer={next(true, () => go(1), TX.welcome.start)}>
           <T v="title" accessibilityRole="header" style={{ marginTop: 24 }}>{TX.welcome.title}</T>
+          {tester && <T v="small" color={G.accentText}>{TX.welcome.tester}</T>}
           <T color={G.muted}>{TX.welcome.body}</T>
           {TX.welcome.points.map((p) => (
             <Card key={p.title}>
