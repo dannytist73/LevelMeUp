@@ -3,7 +3,8 @@
 import { BASE_TEXT, baseMove, book as findBook, chapter, chapterMinutes, workoutName } from '@levelmeup/content';
 import { baseMinutes } from '@levelmeup/rules';
 import { router } from 'expo-router';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
+import { STORY_ART } from '../storyArt.ts';
 import { currentBook, dayKey, defaultPlace, doneThisWeek, foodTotals, place, planWeeks, plannedDay, readDaysThisWeek, restarted } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
@@ -82,8 +83,16 @@ export function Today({ now = Date.now() }: { now?: number }) {
           <T v="small" color={G.muted}>{TX.bookDone}</T>
         ) : (
           <>
-            <T v="bodyStrong">{chap.title}</T>
-            <T v="small" color={G.muted}>{TX.chapter(next + 1, book.chapters.length, chapterMinutes(chap))}</T>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              {STORY_ART[book.chapters[next]!]?.cover != null && (
+                <Image source={STORY_ART[book.chapters[next]!]!.cover!} accessibilityElementsHidden importantForAccessibility="no" resizeMode="cover"
+                  style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: G.raised }} />
+              )}
+              <View style={{ flex: 1, gap: 2 }}>
+                <T v="bodyStrong">{chap.title}</T>
+                <T v="small" color={G.muted}>{TX.chapter(next + 1, book.chapters.length, chapterMinutes(chap))}</T>
+              </View>
+            </View>
           </>
         )}
         {TX.readDays(readDaysThisWeek(s, now)) !== null && <T v="small" color={G.muted}>{TX.readDays(readDaysThisWeek(s, now))}</T>}

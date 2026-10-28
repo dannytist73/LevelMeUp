@@ -4,7 +4,8 @@ import { BASE_TEXT, baseMove, formatSet, workoutName } from '@levelmeup/content'
 import { volume } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { View } from 'react-native';
-import { best, doneThisWeek, place, planWeeks, restarted } from '../logic.ts';
+import { useState } from 'react';
+import { best, defaultPlace, doneThisWeek, place, planWeeks, plannedDay, restarted } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
 import { toast } from '../../ui/toast.ts';
@@ -15,6 +16,7 @@ const TX = BASE_TEXT.train;
 
 export function Train({ now = Date.now() }: { now?: number }) {
   const api = useBaseApi();
+  const [peek, setPeek] = useState<number | null>(null);
   const s = useBase((x) => x);
   if (s.plan === null) return null;
   const p = place(s, now)!;
@@ -39,16 +41,27 @@ export function Train({ now = Date.now() }: { now?: number }) {
           {Array.from({ length: s.plan.days }, (_, i) => {
             const isDone = i < done;
             const isNext = i === done;
+            const name = BASE_TEXT.today.workout(workoutName(i));
+            // A tap shows what that workout holds this week (and hides it again).
             return (
-              <View key={i} accessibilityLabel={`${BASE_TEXT.today.workout(workoutName(i))}: ${isDone ? TX.done : isNext ? TX.next : ''}`}
-                style={{ minWidth: 64, flexGrow: 1, minHeight: 56, borderRadius: 12, borderWidth: isNext ? 2 : 1.5, borderColor: isNext ? G.accent : G.line,
+              <Press key={i} label={`${name}${isDone ? `, ${TX.done}` : isNext ? `, ${TX.next}` : ''}. ${TX.showPreview(name)}`} selected={peek === i}
+                onPress={() => setPeek(peek === i ? null : i)}
+                style={{ minWidth: 64, flexGrow: 1, minHeight: 56, borderRadius: 12, borderWidth: isNext || peek === i ? 2 : 1.5, borderColor: isNext || peek === i ? G.accent : G.line,
                   backgroundColor: isDone ? G.doneBg : 'transparent', alignItems: 'center', justifyContent: 'center', padding: 6 }}>
                 <T v="bodyStrong" color={isDone ? G.accentText : G.text}>{workoutName(i)}</T>
                 <T v="label" color={G.muted}>{isDone ? TX.done : isNext ? TX.next : ' '}</T>
-              </View>
+              </Press>
             );
           })}
         </View>
+        {peek !== null && !p.finished && (
+          <View accessibilityLiveRegion="polite" style={{ gap: 4 }}>
+            <T v="label" color={G.muted}>{TX.preview(BASE_TEXT.today.workout(workoutName(peek)))}</T>
+            {plannedDay(s.plan, s.kept, peek, p.blockWeek, defaultPlace(s.plan)).map((e, i) => (
+              <T key={`${i}-${e.move}`} v="small">{`${baseMove(e.move).name} · ${TX.sets(e.sets)}`}</T>
+            ))}
+          </View>
+        )}
         {p.finished && s.active === null ? (
           <>
             <T v="bodyStrong">{BASE_TEXT.today.planDone}</T>

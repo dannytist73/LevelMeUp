@@ -12,6 +12,7 @@ import type { PlanSetup } from '../src/base/logic.ts';
 import { Setup } from '../src/base/screens/Setup.tsx';
 import { FoodAdd } from '../src/base/screens/Eat.tsx';
 import { Today } from '../src/base/screens/Today.tsx';
+import { Train } from '../src/base/screens/Train.tsx';
 import { Workout } from '../src/base/screens/Workout.tsx';
 import { Exercise } from '../src/base/screens/Exercise.tsx';
 import { ExercisePain } from '../src/base/screens/SwapPain.tsx';
@@ -383,6 +384,14 @@ describe('the base screens', () => {
     await act(async () => fireEvent.press(screen.getByTestId('today-start')));
     expect(router.push).toHaveBeenCalledWith('/workout');
     expect(screen.queryByText(/^Done today/)).toBeNull();
+  });
+
+  it('Train shows a workout tile\'s exercises when tapped', async () => {
+    const { store } = setup();
+    store.getState().setPlan(PLAN);
+    await render(<BaseProvider store={store}><Train now={T0} /></BaseProvider>);
+    await act(async () => fireEvent.press(screen.getByLabelText(/^Workout C\. Show what's in Workout C$/)));
+    expect(screen.getByText('Workout C this week')).toBeTruthy();
   });
 
   it('Today says a workout was done today, and the next one waits', async () => {

@@ -103,6 +103,8 @@ export const BASE_TEXT = {
     block: (blockWeek: number) => (blockWeek === 1 ? 'Easier first week' : blockWeek === 6 ? 'Easy week: 2 sets, half the reps' : `Building up, week ${blockWeek} of 5`),
     days: (n: number) => `${n} days a week`,
     workouts: 'This week',
+    preview: (name: string) => `${name} this week`,
+    showPreview: (name: string) => `Show what's in ${name}`,
     done: 'Done',
     next: 'Next',
     history: 'History',
