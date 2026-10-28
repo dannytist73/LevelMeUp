@@ -5,13 +5,14 @@ import { volume } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { best, doneThisWeek, place, planWeeks } from '../logic.ts';
-import { useBase } from '../store.ts';
+import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
 import { Button, Card, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.train;
 
 export function Train({ now = Date.now() }: { now?: number }) {
+  const api = useBaseApi();
   const s = useBase((x) => x);
   if (s.plan === null) return null;
   const p = place(s, now)!;
@@ -23,8 +24,8 @@ export function Train({ now = Date.now() }: { now?: number }) {
       <T v="title" accessibilityRole="header">{TX.title}</T>
       <Card hero>
         <T v="label" color={G.accentText}>{TX.plan}</T>
-        <T v="heading">{BASE_TEXT.today.weekOf(p.week, planWeeks(s.plan))}</T>
-        <T v="small" color={G.muted}>{`${TX.block(p.blockWeek)} · ${TX.days(s.plan.days)}`}</T>
+        {!p.finished && <T v="heading">{BASE_TEXT.today.weekOf(p.week, planWeeks(s.plan))}</T>}
+        {!p.finished && <T v="small" color={G.muted}>{`${TX.block(p.blockWeek)} · ${TX.days(s.plan.days)}`}</T>}
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 40 }}>
           {[1, 2, 3, 4, 5, 6].map((w) => (
             <View key={w} style={{ flex: 1, height: w === 1 || w === 6 ? 18 : w < 4 ? 28 : 38, borderRadius: 4,
@@ -46,7 +47,17 @@ export function Train({ now = Date.now() }: { now?: number }) {
             );
           })}
         </View>
-        <Button label={s.active === null ? BASE_TEXT.today.start : BASE_TEXT.today.resume} icon="train" onPress={() => router.push('/workout')} disabled={p.finished && s.active === null} />
+        {p.finished && s.active === null ? (
+          <>
+            <T v="bodyStrong">{BASE_TEXT.today.planDone}</T>
+            <Button label={TX.newPlan} onPress={() => router.push('/start')} />
+          </>
+        ) : (
+          <Button label={s.active === null ? BASE_TEXT.today.start : BASE_TEXT.today.resume} icon="train" onPress={() => {
+            api.getState().startWorkout();
+            router.push('/workout');
+          }} />
+        )}
         <Button label={TX.change} kind="quiet" onPress={() => router.push('/start')} />
       </Card>
 

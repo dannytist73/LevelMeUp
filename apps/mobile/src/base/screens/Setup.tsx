@@ -25,6 +25,7 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
   const [was] = useState(() => ({ plan: api.getState().plan, book: api.getState().reading.book }));
   const prev = was.plan;
   const [wasFinished] = useState(() => place(api.getState(), now())?.finished ?? false);
+  const [wasWeek] = useState(() => place(api.getState(), now())?.week ?? 1);
   const prevWeeks = prev?.length.kind === 'weeks' ? prev.length.weeks : null;
   const [step, setStep] = useState<Step>(prev === null ? 'welcome' : 'builder');
   const [style, setStyle] = useState<BaseStyle | null>(prev?.style ?? null);
@@ -43,8 +44,12 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
   const weeks = lengthPick === 'six' ? 6 : lengthPick === 'twelve' ? 12 : lengthPick === 'custom' ? custom : null;
   const plan = (): PlanSetup => ({
     style: style ?? 'men', experience: experience ?? 'new', days, where, home: where === 'gym' ? [] : home, limitations: hurts,
-    // A changed plan keeps its place; a finished one (or the first) starts at week 1.
-    length: weeks === null ? { kind: 'open' } : { kind: 'weeks', weeks }, startedAt: prev !== null && !wasFinished ? prev.startedAt : now(),
+    // A changed plan keeps its place (a new number of days starts its count at the week you were on); a finished one,
+    // or the first, starts at week 1.
+    length: weeks === null ? { kind: 'open' } : { kind: 'weeks', weeks },
+    ...(prev === null || wasFinished ? { startedAt: now() }
+      : prev.days !== days ? { startedAt: now(), weekOffset: wasWeek - 1 }
+        : { startedAt: prev.startedAt, ...(prev.weekOffset !== undefined ? { weekOffset: prev.weekOffset } : {}) }),
   });
 
   const header = index > 0 ? (
@@ -168,7 +173,7 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
     case 'book':
       return (
         <Screen footer={next(true, () => {
-          api.getState().setPlan(plan());
+          api.getState().setPlan(plan(), prev === null || wasFinished);
           api.getState().chooseBook(book);
           // From Me ("Change plan") the app is underneath: go back to it; on first launch there is nothing below.
           if (router.canDismiss()) router.dismissAll();

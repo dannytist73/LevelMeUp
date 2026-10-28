@@ -24,7 +24,8 @@ export type BaseState = BaseData & {
   restUntil: number | null;
   restTotal: number;
   load: () => Promise<void>;
-  setPlan: (plan: PlanSetup) => void;
+  /** A new plan (`fresh`) clears kept swaps; an edited one keeps them. */
+  setPlan: (plan: PlanSetup, fresh?: boolean) => void;
   setUnits: (units: Units) => void;
   setLook: (look: LookChoice) => void;
   setReminder: (reminder: Reminder) => void;
@@ -62,9 +63,11 @@ const DATA_KEYS = Object.keys(EMPTY) as (keyof BaseData)[];
 
 export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseState> {
   let saving: Promise<void> = Promise.resolve();
+  let blocked = false;
   const store = createStore<BaseState>()((set, get) => {
     /** Saves the data part after a change, one write at a time, in order. */
     const save = (): void => {
+      if (blocked) return;
       const s = get();
       const data = Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as BaseData;
       saving = saving.then(() => blobs.setItem(BASE_KEY, JSON.stringify(data))).catch(() => undefined);
@@ -86,16 +89,45 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       restUntil: null,
       restTotal: 0,
       load: async () => {
+        let raw: string | null;
         try {
-          const raw = await blobs.getItem(BASE_KEY);
-          const parsed = raw === null ? null : (JSON.parse(raw) as Partial<BaseData>);
-          set({ ...EMPTY, ...(parsed?.v === 1 ? parsed : {}), ready: true });
+          raw = await blobs.getItem(BASE_KEY);
         } catch {
+          // The record couldn't be read: nothing is saved over it this session (review 2026-10-28).
+          blocked = true;
           set({ ready: true });
+          return;
         }
+        let parsed: Partial<BaseData> | null = null;
+        try {
+          parsed = raw === null ? null : (JSON.parse(raw) as Partial<BaseData>);
+        } catch {
+          parsed = null;
+        }
+        if (raw !== null && parsed?.v !== 1) {
+          // A record this version can't read is kept aside before anything new is saved.
+          await blobs.setItem(`${BASE_KEY}.unread-${now()}`, raw).catch(() => {
+            blocked = true;
+          });
+        }
+        set({ ...EMPTY, ...(parsed?.v === 1 ? parsed : {}), ready: true });
       },
-      setPlan: (plan) => change({ plan, kept: {} }),
-      setUnits: (units) => change({ units }),
+      setPlan: (plan, fresh = false) => change(fresh ? { plan, kept: {} } : { plan }),
+      setUnits: (units) => {
+        const s = get();
+        if (s.units === units) return;
+        // Stored weights change unit too: 0.5 steps in the new one.
+        const factor = units === 'lb' ? 2.20462 : 0.453592;
+        const conv = (w: number | null): number | null => (w === null ? null : Math.round(w * factor * 2) / 2);
+        const sets = (xs: LoggedSet[]): LoggedSet[] => xs.map((x) => ({ ...x, weight: conv(x.weight) }));
+        const workout = (w: Workout): Workout => ({ ...w, exercises: w.exercises.map((e) => ({ ...e, sets: sets(e.sets) })) });
+        change({
+          units,
+          workouts: s.workouts.map(workout),
+          active: s.active === null ? null : workout(s.active),
+          targets: s.targets === null ? null : { ...s.targets, weight: conv(s.targets.weight) ?? s.targets.weight },
+        });
+      },
       setLook: (look) => change({ look }),
       setReminder: (reminder) => change({ reminder }),
       setRestAlerts: (restAlerts) => change({ restAlerts }),
@@ -136,11 +168,14 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         if (w === null || s.plan === null || w.place === to) return;
         // Exercises with a done set stay; the rest are picked again for the new place, in the same slots.
         const fresh = newExercises(s, plannedDay(s.plan, s.kept, w.day, w.blockWeek, to), w.blockWeek);
+        const doneMoves = new Set(w.exercises.filter((e) => e.sets.some((x) => x.done)).map((e) => e.move));
         const exercises = w.exercises.map((e) => {
           if (e.sets.some((x) => x.done)) return e;
-          return fresh.find((f) => f.slot === e.slot) ?? e;
+          const f = fresh.find((x) => x.slot === e.slot);
+          // Never the same exercise twice (a swap with done sets keeps the old card).
+          return f !== undefined && !doneMoves.has(f.move) ? f : e;
         });
-        for (const f of fresh) if (!exercises.some((e) => e.slot === f.slot)) exercises.push(f);
+        for (const f of fresh) if (!exercises.some((e) => e.slot === f.slot) && !doneMoves.has(f.move)) exercises.push(f);
         change({ active: { ...w, place: to, exercises: exercises.filter((e) => e.sets.some((x) => x.done) || fresh.some((f) => f.slot === e.slot)) } });
       },
       swap: (ex, move, keep) => {

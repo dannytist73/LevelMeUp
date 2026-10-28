@@ -18,11 +18,16 @@ function useChoices(ex: number, gentler = false) {
   const current = w?.exercises[ex];
   if (w === null || current === undefined || s.plan === null) return { current: null, choices: [] as string[] };
   const inWorkout = new Set(w.exercises.map((e) => e.move));
+  const level = baseMove(current.move).level;
+  if (gentler) {
+    // Pain: only the same movement, an easier version (closest first), never a neighbouring slot's move.
+    const easier = slotChoices(BASE_MOVES, current.slot, w.place, s.plan.home, s.plan.limitations, 'regular')
+      .filter((m) => m.level < level && !inWorkout.has(m.id)).map((m) => m.id);
+    return { current, choices: easier };
+  }
   const slots = [current.slot, ...(FALLBACK[current.slot] ?? [])];
   const all = slots.flatMap((slot) => slotChoices(BASE_MOVES, slot, w.place, s.plan!.home, s.plan!.limitations, 'regular'));
-  const ids = [...new Set(all.map((m) => m.id))].filter((id) => !inWorkout.has(id));
-  const level = baseMove(current.move).level;
-  return { current, choices: gentler ? ids.filter((id) => baseMove(id).level < level || baseMove(id).needs.length === 0) : ids };
+  return { current, choices: [...new Set(all.map((m) => m.id))].filter((id) => !inWorkout.has(id)) };
 }
 
 export function SwapExercise({ ex }: { ex: number }) {
@@ -79,7 +84,7 @@ export function ExercisePain({ ex }: { ex: number }) {
       }} />
       {choices.length > 0 && (
         <Button label={TX.gentler} kind="secondary" onPress={() => {
-          api.getState().swap(ex, choices[choices.length - 1]!, false);
+          api.getState().swap(ex, choices[0]!, false);
           router.back();
         }} />
       )}

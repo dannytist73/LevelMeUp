@@ -123,6 +123,24 @@ describe('the base store', () => {
     expect(curl!.sets[0]).toEqual({ weight: 12.5, reps: 10, done: false });
   });
 
+  it('switching kg and lb converts stored weights; an unreadable record is kept aside, not overwritten', async () => {
+    const { store, blobs } = setup();
+    store.getState().setPlan(PLAN);
+    store.getState().startWorkout();
+    store.getState().setSet(0, 0, { weight: 60 });
+    store.getState().setTargets({ kcal: 2500, protein: 140, weight: 80, goal: 'keep' });
+    store.getState().setUnits('lb');
+    expect(store.getState().active!.exercises[0]!.sets[0]!.weight).toBe(132.5);
+    expect(store.getState().targets!.weight).toBe(176.5);
+    store.getState().setUnits('kg');
+    expect(store.getState().active!.exercises[0]!.sets[0]!.weight).toBe(60);
+    blobs.data.set(BASE_KEY, '{"v":2,"plan":"future"}');
+    const again = createBaseStore({ blobs, now: () => 5, newId: () => 'x' });
+    await again.getState().load();
+    expect(blobs.data.get(`${BASE_KEY}.unread-5`)).toBe('{"v":2,"plan":"future"}');
+    expect(again.getState().plan).toBeNull();
+  });
+
   it('a workout with nothing done is not saved', () => {
     const { store } = setup();
     store.getState().setPlan(PLAN);
@@ -326,6 +344,7 @@ describe('the base screens', () => {
   it('the workout log: ticking a set starts the rest, finishing shows the summary', async () => {
     const { store } = setup(() => Date.now());
     store.getState().setPlan(PLAN);
+    store.getState().startWorkout();
     await render(<BaseProvider store={store}><Workout /></BaseProvider>);
     await act(async () => fireEvent.changeText(screen.getByTestId('w-0-0'), '..'));
     expect(store.getState().active!.exercises[0]!.sets[0]!.weight).toBeNull();

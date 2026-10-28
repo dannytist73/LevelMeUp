@@ -5,7 +5,7 @@ import { baseMinutes } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { currentBook, dayKey, defaultPlace, doneThisWeek, foodTotals, place, planWeeks, plannedDay, readDaysThisWeek, restarted } from '../logic.ts';
-import { useBase } from '../store.ts';
+import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
 import { Icon } from '../icons.tsx';
 import { Bar, Button, Card, IconButton, Screen, T } from '../ui.tsx';
@@ -13,6 +13,7 @@ import { Bar, Button, Card, IconButton, Screen, T } from '../ui.tsx';
 const TX = BASE_TEXT.today;
 
 export function Today({ now = Date.now() }: { now?: number }) {
+  const api = useBaseApi();
   const s = useBase((x) => x);
   if (s.plan === null) return null;
   const p = place(s, now)!;
@@ -60,12 +61,13 @@ export function Today({ now = Date.now() }: { now?: number }) {
             )}
             {day === null && trainedToday !== undefined && <T v="label" color={G.muted}>{TX.nextUp}</T>}
             <T v="heading">{TX.workout(workoutName(day?.day ?? p.day))}</T>
-            {(day?.exercises ?? exercises ?? []).map((e) => (
-              <T key={e.slot} v="small" color={G.muted}>{baseMove(e.move).name}</T>
+            {(day?.exercises ?? exercises ?? []).map((e, i) => (
+              <T key={`${i}-${e.move}`} v="small" color={G.muted}>{baseMove(e.move).name}</T>
             ))}
             {exercises !== null && <T v="small" color={G.muted}>{TX.exercises(exercises.length, baseMinutes(exercises))}</T>}
             <Button label={day === null ? TX.start : TX.resume} icon="train" testID="today-start" kind={day === null && trainedToday !== undefined ? 'secondary' : 'primary'}
               onPress={() => {
+                api.getState().startWorkout();
                 router.push('/workout');
               }} />
             <T v="small" color={G.muted}>{TX.thisWeek(doneThisWeek(s, now), s.plan.days)}</T>

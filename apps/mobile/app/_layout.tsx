@@ -69,6 +69,8 @@ export default function RootLayout() {
     if (!loaded) return;
     let planned = '';
     let away = false;
+    // One plan at a time: a later call waits for the one before (review: fast app switches raced).
+    let queue: Promise<void> = Promise.resolve();
     const plan = (): void => {
       const s = store.getState();
       // The rest's end, only while the app is in the background (in front, the workout screen says it itself).
@@ -78,14 +80,14 @@ export default function RootLayout() {
       const key = JSON.stringify(notes);
       if (key === planned) return;
       planned = key;
-      void (async () => {
+      queue = queue.then(async () => {
         if (notes.length === 0) {
           if (s.reminder === 'off') await expoNotes.cancelAll();
           return;
         }
         if ((await expoNotes.permission()) !== 'granted') return;
         await expoNotes.replace(notes.map((n) => ({ ...n, kind: n.id === 'rest' ? 'timer' as const : 'briefing' as const, url: '/' })));
-      })().catch(() => undefined);
+      }).catch(() => undefined);
     };
     plan();
     // The home-screen widget follows the same changes (it only redraws when its lines change).

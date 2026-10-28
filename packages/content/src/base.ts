@@ -127,6 +127,9 @@ export const BASE_TEXT = {
     reps: 'Reps',
     seconds: 'Sec',
     addSet: 'Add set',
+    allSets: 'All sets',
+    lighter: (step: string) => `${step} lighter on every set left`,
+    heavier: (step: string) => `${step} heavier on every set left`,
     setDone: (n: number) => `Set ${n} done`,
     setNotDone: (n: number) => `Mark set ${n} done`,
     resting: 'Rest',
@@ -146,6 +149,7 @@ export const BASE_TEXT = {
       easy: 'Easy week: same weight as last week, half the reps.',
     },
     finishTitle: 'Workout done',
+    noneOpen: 'No workout is open.',
     nextTime: (tip: string) => `Next time: ${tip}`,
     nextTips: {
       up: (w: string) => `go up to ${w}.`,
@@ -185,7 +189,7 @@ export const BASE_TEXT = {
     last: (s: string) => `Last: ${s}`,
     never: 'Not done yet',
     today: 'Just today',
-    keep: 'Keep it for this block',
+    keep: 'Keep it in my plan',
     current: 'In your workout',
   },
   pain: {

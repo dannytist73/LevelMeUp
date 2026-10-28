@@ -34,21 +34,23 @@ function Total({ label, eaten, target, unit }: { label: string; eaten: number; t
   );
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 export function Eat({ now: clock = Date.now() }: { now?: number }) {
   const api = useBaseApi();
   const food = useBase((s) => s.food);
   const targets = useBase((s) => s.targets);
   // Any earlier day can be opened and added to (research 2026-10-28 #11), with no "missed" mark.
   const [back, setBack] = useState(0);
-  const now = clock - back * DAY_MS;
+  const shown = new Date(clock);
+  shown.setDate(shown.getDate() - back);
+  const now = shown.getTime();
   const shownDay = dayKey(now);
   const dayLabel = back === 0 ? TX.today : back === 1 ? TX.yesterday : new Date(now).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   const today = food.filter((f) => f.day === shownDay);
   const t = foodTotals(today);
   const recent = recentFoods(food);
-  const yesterday = food.filter((f) => f.day === dayKey(now - 24 * 60 * 60 * 1000));
+  const before = new Date(now);
+  before.setDate(before.getDate() - 1);
+  const yesterday = food.filter((f) => f.day === dayKey(before.getTime()));
   const copyMeal = (m: Meal) => {
     for (const f of yesterday.filter((x) => x.meal === m)) {
       api.getState().addFood({ meal: m, name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat, day: shownDay });

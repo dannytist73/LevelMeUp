@@ -175,9 +175,9 @@ function RestBar() {
   const left = until - now;
   return (
     <View accessibilityLiveRegion="polite" style={{ gap: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
         <Icon name="clock" size={20} color={G.accentText} />
-        <T v="heading" style={{ flex: 1 }}>{`${TX.resting} ${formatClock(left)}`}</T>
+        <T v="heading" style={{ flexGrow: 1, minWidth: 120 }}>{`${TX.resting} ${formatClock(left)}`}</T>
         <Button label={TX.less} kind="secondary" style={{ minHeight: 48, paddingHorizontal: 10 }} onPress={() => api.getState().moveRest(-15)} />
         <Button label={TX.more} kind="secondary" style={{ minHeight: 48, paddingHorizontal: 10 }} onPress={() => api.getState().moveRest(15)} />
         <Button label={TX.skip} kind="quiet" style={{ minHeight: 48, paddingHorizontal: 10 }} onPress={() => api.getState().endRest()} />
@@ -207,11 +207,11 @@ function Summary({ w, onClose }: { w: WorkoutData; onClose: () => void }) {
       <T v="bodyStrong">{TX.finishLines(sets.length, minutes)}</T>
       {kg > 0 && <T color={G.muted}>{TX.volume(`${Math.round(kg).toLocaleString('en-US')} ${units}`)}</T>}
       {bests.map((b) => <T key={b} v="bodyStrong" color={G.accentText}>{b}</T>)}
-      {w.exercises.map((e) => {
+      {w.exercises.map((e, i) => {
         const a = advise(baseMove(e.move), e.target, e.sets, units);
         const tip = a.kind === 'up' || a.kind === 'down' || a.kind === 'same' ? TX.nextTips[a.kind](formatWeight(a.weight, units)) : TX.nextTips[a.kind];
         return (
-          <Card key={e.slot}>
+          <Card key={`${i}-${e.move}`}>
             <T v="bodyStrong">{baseMove(e.move).name}</T>
             <T v="small" color={G.muted}>{e.sets.map((x) => formatSet(x.weight, x.reps ?? 0, units, e.target.kind === 'range' ? e.target.unit : 'reps')).join(', ')}</T>
             {w.blockWeek !== 6 && <T v="small" color={G.accentText}>{TX.nextTime(tip)}</T>}
@@ -230,12 +230,17 @@ export function Workout() {
   const [finished, setFinished] = useState<WorkoutData | null>(null);
   const [confirm, setConfirm] = useState(false);
 
-  useEffect(() => {
-    if (api.getState().active === null && finished === null) api.getState().startWorkout();
-  }, [api, finished]);
-
+  // The workout is started by the Start buttons, never by this screen (review: a redraw after finishing started a new
+  // one).
   if (finished !== null) return <Summary w={finished} onClose={() => router.back()} />;
-  if (active === null || plan === null) return <Screen><Header onBack={() => router.back()} backIcon="close" /></Screen>;
+  if (active === null || plan === null) {
+    return (
+      <Screen>
+        <Header onBack={() => router.back()} backIcon="close" />
+        <T color={G.muted}>{TX.noneOpen}</T>
+      </Screen>
+    );
+  }
 
   const undone = active.exercises.some((e) => e.sets.some((x) => !x.done));
   const finish = () => {
@@ -266,7 +271,7 @@ export function Workout() {
       <Options label={TX.places.gym} columns={2} value={active.place} onChange={(p) => api.getState().switchPlace(p)}
         options={[{ key: 'gym', label: TX.places.gym }, { key: 'home', label: TX.places.home }]} />
       {active.exercises.length === 0 && <T color={G.muted}>{TX.empty}</T>}
-      {active.exercises.map((ex, i) => (ex.skipped && ex.sets.length === 0 ? null : <ExerciseCard key={`${ex.slot}-${ex.move}`} ex={ex} index={i} workout={active} />))}
+      {active.exercises.map((ex, i) => (ex.skipped && ex.sets.length === 0 ? null : <ExerciseCard key={`${i}-${ex.move}`} ex={ex} index={i} workout={active} />))}
       <View style={{ height: S.gap }} />
     </Screen>
   );
