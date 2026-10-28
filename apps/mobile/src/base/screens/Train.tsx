@@ -7,6 +7,8 @@ import { View } from 'react-native';
 import { best, doneThisWeek, place, planWeeks } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
+import { toast } from '../../ui/toast.ts';
+import { Icon } from '../icons.tsx';
 import { Button, Card, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.train;
@@ -67,13 +69,21 @@ export function Train({ now = Date.now() }: { now?: number }) {
         const kg = volume(sets);
         return (
           <Card key={w.id}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
-              <T v="bodyStrong">{BASE_TEXT.today.workout(workoutName(w.day))}</T>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+              <T v="bodyStrong" style={{ flex: 1 }}>{BASE_TEXT.today.workout(workoutName(w.day))}</T>
               <T v="small" color={G.muted}>{new Date(w.finishedAt ?? w.startedAt).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</T>
+              <Press label={TX.remove(BASE_TEXT.today.workout(workoutName(w.day)), new Date(w.finishedAt ?? w.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }))}
+                onPress={() => {
+                  const gone = api.getState().removeWorkout(w.id);
+                  if (gone !== null) toast(TX.removed(BASE_TEXT.today.workout(workoutName(w.day))), { label: TX.undo, onPress: () => api.getState().restoreWorkout(gone) });
+                }}
+                style={{ width: 44, height: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="trash" size={18} color={G.muted} />
+              </Press>
             </View>
             <T v="small" color={G.muted}>{`${BASE_TEXT.today.weekOf(w.week, null)} · ${TX.sets(sets.length)}${kg > 0 ? ` · ${Math.round(kg).toLocaleString('en-US')} ${s.units}` : ''}`}</T>
             {w.exercises.map((e) => (
-              <T key={`${w.id}-${e.slot}`} v="small">{`${baseMove(e.move).name}: ${e.sets.map((x) => formatSet(x.weight, x.reps ?? 0, s.units, e.target.kind === 'range' ? e.target.unit : 'reps')).join(', ')}`}</T>
+              <T key={`${w.id}-${e.slot}-${e.move}`} v="small">{`${baseMove(e.move).name}: ${e.sets.map((x) => formatSet(x.weight, x.reps ?? 0, s.units, e.target.kind === 'range' ? e.target.unit : 'reps')).join(', ')}`}</T>
             ))}
           </Card>
         );

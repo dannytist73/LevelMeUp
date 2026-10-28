@@ -52,6 +52,9 @@ export type BaseState = BaseData & {
   /** Logs a food today, or on `day` (a past day's key, "2026-10-27") when it was forgotten. */
   addFood: (entry: Omit<FoodEntry, 'id' | 'day' | 'at'> & { day?: string }) => FoodEntry;
   removeFood: (id: string) => FoodEntry | null;
+  /** Removes a finished workout logged by mistake; `restoreWorkout` puts it back (Undo). */
+  removeWorkout: (id: string) => Workout | null;
+  restoreWorkout: (w: Workout) => void;
   restoreFood: (entry: FoodEntry) => void;
   setTargets: (targets: Targets) => void;
   resetAll: () => void;
@@ -248,6 +251,12 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         if (found !== null) change({ food: get().food.filter((f) => f.id !== id) });
         return found;
       },
+      removeWorkout: (id) => {
+        const found = get().workouts.find((w) => w.id === id) ?? null;
+        if (found !== null) change({ workouts: get().workouts.filter((w) => w.id !== id) });
+        return found;
+      },
+      restoreWorkout: (w) => change({ workouts: [...get().workouts, w].sort((a, b) => (a.finishedAt ?? 0) - (b.finishedAt ?? 0)) }),
       restoreFood: (entry) => change({ food: [...get().food, entry].sort((a, b) => a.at - b.at) }),
       setTargets: (targets) => change({ targets }),
       resetAll: () => change({ ...EMPTY, look: get().look }),

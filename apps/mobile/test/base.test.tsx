@@ -142,6 +142,21 @@ describe('the base store', () => {
     expect(again.getState().plan).toBeNull();
   });
 
+  it('a finished workout can be removed and put back', () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
+    store.getState().startWorkout();
+    store.getState().toggleSet(0, 0);
+    now += 60_000;
+    const w = store.getState().finishWorkout()!;
+    const gone = store.getState().removeWorkout(w.id)!;
+    expect(store.getState().workouts).toHaveLength(0);
+    expect(place(store.getState(), now)).toMatchObject({ day: 0 });
+    store.getState().restoreWorkout(gone);
+    expect(store.getState().workouts).toEqual([w]);
+  });
+
   it('a workout with nothing done is not saved', () => {
     const { store } = setup();
     store.getState().setPlan(PLAN);
