@@ -259,7 +259,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       restoreWorkout: (w) => change({ workouts: [...get().workouts, w].sort((a, b) => (a.finishedAt ?? 0) - (b.finishedAt ?? 0)) }),
       restoreFood: (entry) => change({ food: [...get().food, entry].sort((a, b) => a.at - b.at) }),
       setTargets: (targets) => change({ targets }),
-      resetAll: () => change({ ...EMPTY, look: get().look }),
+      resetAll: () => change({ ...EMPTY, look: get().look, restUntil: null }),
     };
   });
   return store;
