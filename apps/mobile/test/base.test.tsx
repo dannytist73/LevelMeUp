@@ -255,6 +255,18 @@ describe('the base screens', () => {
     expect(router.replace).toHaveBeenCalledWith('/');
   });
 
+  it('changing the plan starts from the current answers, past the welcome', async () => {
+    const { store } = setup();
+    store.getState().setPlan({ ...PLAN, length: { kind: 'weeks', weeks: 9 }, days: 4 });
+    await render(<BaseProvider store={store}><Setup now={() => T0} /></BaseProvider>);
+    expect(screen.getByText('Which plan fits you?')).toBeTruthy();
+    expect(screen.getByLabelText(/^Men's plan/)).toBeSelected();
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    expect(screen.getByTestId('custom-weeks')).toHaveTextContent('9 weeks');
+    expect(screen.getByLabelText('4')).toBeSelected();
+  });
+
   it('Today shows the next workout, the chapter and asks for food targets', async () => {
     const { store } = setup();
     store.getState().setPlan(PLAN);

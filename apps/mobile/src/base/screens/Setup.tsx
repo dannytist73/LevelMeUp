@@ -21,16 +21,20 @@ const formatDate = (ms: number): string => new Date(ms).toLocaleDateString('en-G
 
 export function Setup({ now = Date.now }: { now?: () => number }) {
   const api = useBaseApi();
-  const [step, setStep] = useState<Step>('welcome');
-  const [style, setStyle] = useState<BaseStyle | null>(null);
-  const [experience, setExperience] = useState<Experience | null>(null);
-  const [lengthPick, setLengthPick] = useState<LengthPick>('six');
-  const [custom, setCustom] = useState(10);
-  const [days, setDays] = useState<BaseDays>(3);
-  const [where, setWhere] = useState<Where>('gym');
-  const [home, setHome] = useState<Equipment[]>([]);
-  const [hurts, setHurts] = useState<Limitation[]>([]);
-  const [book, setBook] = useState<string>(BOOKS[0]!.id);
+  // Changing a plan (from Me) starts from the current answers and skips the welcome.
+  const [was] = useState(() => ({ plan: api.getState().plan, book: api.getState().reading.book }));
+  const prev = was.plan;
+  const prevWeeks = prev?.length.kind === 'weeks' ? prev.length.weeks : null;
+  const [step, setStep] = useState<Step>(prev === null ? 'welcome' : 'builder');
+  const [style, setStyle] = useState<BaseStyle | null>(prev?.style ?? null);
+  const [experience, setExperience] = useState<Experience | null>(prev?.experience ?? null);
+  const [lengthPick, setLengthPick] = useState<LengthPick>(prev === null ? 'six' : prevWeeks === null ? 'open' : prevWeeks === 6 ? 'six' : prevWeeks === 12 ? 'twelve' : 'custom');
+  const [custom, setCustom] = useState(prevWeeks !== null && prevWeeks !== 6 && prevWeeks !== 12 ? prevWeeks : 10);
+  const [days, setDays] = useState<BaseDays>(prev?.days ?? 3);
+  const [where, setWhere] = useState<Where>(prev?.where ?? 'gym');
+  const [home, setHome] = useState<Equipment[]>(prev?.home ?? []);
+  const [hurts, setHurts] = useState<Limitation[]>(prev?.limitations ?? []);
+  const [book, setBook] = useState<string>(was.book ?? BOOKS[0]!.id);
 
   const steps: Step[] = ['welcome', 'builder', 'experience', 'plan', ...(where === 'gym' ? [] : ['equipment' as const]), 'safety', 'summary', 'book'];
   const index = steps.indexOf(step);
@@ -43,7 +47,7 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
 
   const header = index > 0 ? (
     <View style={{ gap: 8 }}>
-      <Header onBack={() => go(-1)} right={<T v="label" color={G.muted}>{TX.step(index, steps.length - 1)}</T>} />
+      <Header onBack={() => (prev !== null && step === 'builder' ? router.back() : go(-1))} right={<T v="label" color={G.muted}>{TX.step(index, steps.length - 1)}</T>} />
     </View>
   ) : null;
 
