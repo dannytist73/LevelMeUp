@@ -117,7 +117,7 @@ export function Eat({ now: clock = Date.now() }: { now?: number }) {
           <Card key={m}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
               <T v="bodyStrong">{TX.meals[m]}</T>
-              <T v="small" color={G.muted}>{`${Math.round(mt.kcal)} ${TX.kcal}`}</T>
+              <T v="small" color={G.muted}>{`${Math.round(mt.kcal).toLocaleString('en-US')} ${TX.kcal}`}</T>
             </View>
             {items.map((f) => (
               <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

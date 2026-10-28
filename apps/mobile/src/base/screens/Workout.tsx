@@ -7,7 +7,7 @@ import type { LoggedSet } from '@levelmeup/rules';
 import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput, View, useWindowDimensions } from 'react-native';
 import { buzz } from '../../ui/haptics.ts';
 import { toast } from '../../ui/toast.ts';
 import { Icon } from '../icons.tsx';
@@ -79,6 +79,8 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
   const api = useBaseApi();
   const units = useBase((s) => s.units);
   const workouts = useBase((s) => s.workouts);
+  // The set column grows with the phone's text size, so "Set" never breaks (seen at 2x, 2026-10-28).
+  const setCol = Math.max(34, Math.round(30 * Math.min(2, useWindowDimensions().fontScale)));
   const last = lastSets({ workouts }, ex.move);
   const before = best({ workouts }, ex.move);
   const move = baseMove(ex.move);
@@ -115,7 +117,7 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
       <T v="small" color={G.accentText}>{tipFor(ex, last, workout.blockWeek, units)}</T>
       {warm.length > 0 && <T v="small" color={G.muted}>{BASE_TEXT.exercise.warmup(warm.map((w) => formatSet(w.weight, w.reps, units)).join(', '))}</T>}
       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <T v="label" color={G.muted} style={{ width: 34 }}>{TX.set}</T>
+        <T v="label" color={G.muted} style={{ width: setCol }}>{TX.set}</T>
         <T v="label" color={G.muted} style={{ flex: 1.3 }}>{TX.last}</T>
         {weighted && <T v="label" color={G.muted} style={{ flex: 1, textAlign: 'center' }}>{TX.weight(units)}</T>}
         <T v="label" color={G.muted} style={{ flex: 1, textAlign: 'center' }}>{seconds ? TX.seconds : TX.reps}</T>
@@ -125,7 +127,7 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
         const prev = last[Math.min(i, last.length - 1)];
         return (
           <View key={i} style={{ flexDirection: 'row', gap: 6, alignItems: 'center', borderRadius: 10, backgroundColor: set.done ? G.doneBg : 'transparent', paddingVertical: 2 }}>
-            <T v="bodyStrong" style={{ width: 34, textAlign: 'center' }}>{String(i + 1)}</T>
+            <T v="bodyStrong" style={{ width: setCol, textAlign: 'center' }}>{String(i + 1)}</T>
             <T v="small" color={G.muted} style={{ flex: 1.3 }}>{prev === undefined ? '-' : formatSet(prev.weight, prev.reps ?? 0, units, seconds ? 'seconds' : 'reps')}</T>
             {weighted && (
               <NumberCell value={set.weight} decimal label={`${TX.set} ${i + 1} ${TX.weight(units)}`} testID={`w-${index}-${i}`}
