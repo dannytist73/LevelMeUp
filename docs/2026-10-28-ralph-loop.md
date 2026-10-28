@@ -179,7 +179,7 @@ targets screen says Save waits for body weight.
 
 - **Merge `base-app` into `main`** (the APKs are built from `base-app`).
 - **B1 deploy:** server tables and sync for plans, workouts, reading and food, so data survives a new phone; then
-  copying testers' workout history and reading progress. Today everything lives on the phone only, and "Start over" or
+  copying testers' workout history and reading progress. Proposal: `docs/2026-10-28-base-sync-design.md`. Today everything lives on the phone only, and "Start over" or
   uninstalling removes it.
 - **B2:** book downloads from the 9 AM studio (needs `expo-file-system`); today the 5 books ship inside the app.
 - **B3:** AI food logging for Plus (photo, voice, sentence): model, cost per log and Plus price.
