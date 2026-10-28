@@ -1,7 +1,7 @@
 // The base app's state and the plain facts screens read from it (docs/2026-10-28-base-app.md). Everything lives on
 // the phone today; sending it to the server waits for the owner's yes (B1 deploy).
 import { BASE_LAYOUTS, BASE_MOVES, BASE_TEXT, BOOKS, baseMove, chapter, workoutName } from '@levelmeup/content';
-import { advise, baseDays, bestSet, planDay, planPlace, programRun } from '@levelmeup/rules';
+import { advise, baseDays, bestSet, placeAt, planDay, planIndex, programRun } from '@levelmeup/rules';
 import type {
   BaseDays, BaseExercise, BaseStyle, Equipment, Experience, KeptSwaps, Limitation, LoggedSet, MoveSlot, Place, PlanLength, PlanPlace, Target, Units, Where,
 } from '@levelmeup/rules';
@@ -15,6 +15,8 @@ export type PlanSetup = {
   home: Equipment[];
   limitations: Limitation[];
   startedAt: number;
+  /** Weeks carried over from before `startedAt` (a days-a-week change keeps the week you were on). */
+  weekOffset?: number;
 };
 
 export type WorkoutExercise = { slot: MoveSlot; move: string; target: Target; restSeconds: number; sets: LoggedSet[]; skipped?: boolean };
@@ -65,18 +67,25 @@ export const defaultPlace = (plan: PlanSetup): Place => (plan.where === 'home' ?
  * after 14 days away the plan starts again from its easy first week.
  */
 export function doneInRun(data: BaseData, now: number): number {
-  const since = data.plan?.startedAt ?? 0;
-  return programRun(data.workouts.filter((w) => w.finishedAt !== null && w.finishedAt > since).map((w) => w.finishedAt!), now);
+  return programRun(planTimes(data), now);
 }
+
+/** When this plan's workouts were finished. */
+const planTimes = (data: BaseData): number[] => {
+  const since = data.plan?.startedAt ?? 0;
+  return data.workouts.filter((w) => w.finishedAt !== null && w.finishedAt > since).map((w) => w.finishedAt!);
+};
 
 /** The plan started again after 14 days away: workouts were done in this plan, none count in the current run. */
 export function restarted(data: BaseData, now: number): boolean {
-  const since = data.plan?.startedAt ?? 0;
-  return data.workouts.some((w) => w.finishedAt !== null && w.finishedAt > since) && doneInRun(data, now) === 0;
+  return planTimes(data).length > 0 && doneInRun(data, now) === 0 && !(place(data, now)?.finished ?? false);
 }
 
 export function place(data: BaseData, now: number): PlanPlace | null {
-  return data.plan === null ? null : planPlace(doneInRun(data, now), data.plan.days, data.plan.length);
+  if (data.plan === null) return null;
+  const run = doneInRun(data, now);
+  const before = planTimes(data).length - run;
+  return placeAt(planIndex(data.plan.weekOffset ?? 0, before, run, data.plan.days), run % data.plan.days, data.plan.length);
 }
 
 /** The total weeks of a plan with an end (null for no end date). */
@@ -89,12 +98,15 @@ export function plannedDay(plan: PlanSetup, kept: KeptSwaps, day: number, blockW
 }
 
 /** The sets you did last time for a move: the newest finished workout that has it with a done set. */
-export function lastSets(data: Pick<BaseData, 'workouts'>, move: string): LoggedSet[] {
+export function lastSets(data: Pick<BaseData, 'workouts'>, move: string, skipEasy = false): LoggedSet[] {
   for (let i = data.workouts.length - 1; i >= 0; i--) {
-    const ex = data.workouts[i]!.exercises.find((e) => e.move === move && e.sets.some((s) => s.done));
+    const w = data.workouts[i]!;
+    // An easy week's half-rep sets say nothing about what to lift next (review 2026-10-28): advice looks past them.
+    if (skipEasy && w.blockWeek === 6) continue;
+    const ex = w.exercises.find((e) => e.move === move && e.sets.some((s) => s.done));
     if (ex !== undefined) return ex.sets.filter((s) => s.done);
   }
-  return [];
+  return skipEasy ? lastSets(data, move, false) : [];
 }
 
 /** A move's best set over every finished workout. */
@@ -108,12 +120,14 @@ export function best(data: Pick<BaseData, 'workouts'>, move: string): LoggedSet 
  */
 export function newExercises(data: BaseData, planned: readonly BaseExercise[], blockWeek = 1): WorkoutExercise[] {
   return planned.map((e) => {
-    const last = lastSets(data, e.move);
+    const last = lastSets(data, e.move, true);
     const a = blockWeek === 6 ? null : advise(baseMove(e.move), e.target, last, data.units);
     const weight = a !== null && (a.kind === 'up' || a.kind === 'down' || a.kind === 'same') ? a.weight : null;
+    // A new weight starts at the bottom of the range: the shown reps are what a tick saves.
+    const fresh = a !== null && (a.kind === 'up' || a.kind === 'down');
     const sets: LoggedSet[] = Array.from({ length: e.sets }, (_, i) => {
       const prev = last[Math.min(i, last.length - 1)];
-      const reps = e.target.kind === 'fixed' ? e.target.reps : blockWeek === 6 ? e.target.max : prev?.reps ?? e.target.min;
+      const reps = e.target.kind === 'fixed' ? e.target.reps : blockWeek === 6 || fresh ? e.target.min : prev?.reps ?? e.target.min;
       return { weight: weight ?? prev?.weight ?? null, reps, done: false };
     });
     return { slot: e.slot, move: e.move, target: e.target, restSeconds: e.restSeconds, sets };
@@ -134,15 +148,17 @@ export function warmupSets(weight: number, units: 'kg' | 'lb'): { weight: number
 
 /** Days with a chapter read in the 7 days to `now` (weeks, not streaks: nothing is lost). */
 export function readDaysThisWeek(data: Pick<BaseData, 'reading'>, now: number): number {
-  const since = now - 7 * 24 * 60 * 60 * 1000;
-  return new Set(Object.values(data.reading.done).filter((t) => t > since && t <= now).map(dayKey)).size;
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - 6);
+  return new Set(Object.values(data.reading.done).filter((t) => t >= start.getTime() && t <= now).map(dayKey)).size;
 }
 
 /** Workouts finished in the current plan week. */
 export function doneThisWeek(data: BaseData, now: number): number {
   const p = place(data, now);
   if (p === null || data.plan === null) return 0;
-  return doneInRun(data, now) % data.plan.days;
+  return p.day;
 }
 
 /** A local calendar day's key, "2026-10-28". */

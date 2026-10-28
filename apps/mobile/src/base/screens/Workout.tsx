@@ -2,7 +2,7 @@
 // logs it; ticking starts the rest (−15 s, +15 s, Skip); Gym or Home re-picks what isn't started; Swap and Pain on every
 // exercise; next week's weight as a tip; a finish summary with new bests. The screen stays awake while it's open.
 import { BASE_TEXT, baseMove, formatClock, formatSet, formatWeight, workoutName } from '@levelmeup/content';
-import { advise, bestSet, volume } from '@levelmeup/rules';
+import { advise, bestSet, volume, weightStep } from '@levelmeup/rules';
 import type { LoggedSet } from '@levelmeup/rules';
 import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
@@ -15,7 +15,7 @@ import { best, lastSets, planWeeks, warmupSets } from '../logic.ts';
 import type { Workout as WorkoutData, WorkoutExercise } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { F, G, S } from '../theme.ts';
-import { Bar, Button, Card, Header, Options, Press, Screen, T } from '../ui.tsx';
+import { Bar, Button, Card, Header, IconButton, Options, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.workout;
 
@@ -82,10 +82,12 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
   // The set column grows with the phone's text size, so "Set" never breaks (seen at 2x, 2026-10-28).
   const setCol = Math.max(34, Math.round(30 * Math.min(2, useWindowDimensions().fontScale)));
   const last = lastSets({ workouts }, ex.move);
+  const lastHard = lastSets({ workouts }, ex.move, true);
   const before = best({ workouts }, ex.move);
   const move = baseMove(ex.move);
   const seconds = ex.target.kind === 'range' && ex.target.unit === 'seconds';
   const weighted = move.needs.some((n) => n === 'gym' || n === 'dumbbells');
+  const step = weightStep(move, units === 'lb' ? 'lb' : 'kg');
   const target = ex.target.kind === 'fixed' ? TX.fixed(ex.target.reps) : TX.range(ex.target.min, ex.target.max, ex.target.unit);
   // Ramp-up sets for the big lifts (2 to 3 minutes' rest), from the first set's weight.
   const first = ex.sets[0]?.weight ?? null;
@@ -114,7 +116,7 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
         <Button label={TX.swap} icon="swap" kind="secondary" style={{ flex: 1, minHeight: 48 }} onPress={() => router.push({ pathname: '/exercise-swap', params: { ex: String(index) } })} />
         <Button label={TX.pain} icon="alert" kind="secondary" style={{ flex: 1, minHeight: 48 }} onPress={() => router.push({ pathname: '/exercise-pain', params: { ex: String(index) } })} />
       </View>
-      <T v="small" color={G.accentText}>{tipFor(ex, last, workout.blockWeek, units)}</T>
+      <T v="small" color={G.accentText}>{tipFor(ex, lastHard, workout.blockWeek, units)}</T>
       {warm.length > 0 && <T v="small" color={G.muted}>{BASE_TEXT.exercise.warmup(warm.map((w) => formatSet(w.weight, w.reps, units)).join(', '))}</T>}
       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <T v="label" color={G.muted} style={{ width: setCol }}>{TX.set}</T>
@@ -142,6 +144,14 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
           </View>
         );
       })}
+      {weighted && ex.sets.some((x) => !x.done) && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <T v="small" color={G.muted} style={{ flex: 1 }}>{TX.allSets}</T>
+          <IconButton icon="minus" size={44} label={TX.lighter(formatWeight(step, units))} onPress={() => api.getState().shiftWeight(index, -step)} />
+          <T v="bodyStrong" style={{ minWidth: 72, textAlign: 'center' }}>{formatWeight(ex.sets.find((x) => !x.done)?.weight ?? 0, units)}</T>
+          <IconButton icon="plus" size={44} label={TX.heavier(formatWeight(step, units))} onPress={() => api.getState().shiftWeight(index, step)} />
+        </View>
+      )}
       <Button label={TX.addSet} icon="plus" kind="quiet" onPress={() => api.getState().addSet(index)} />
     </Card>
   );

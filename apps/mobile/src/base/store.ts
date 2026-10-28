@@ -33,6 +33,8 @@ export type BaseState = BaseData & {
   setSet: (ex: number, set: number, patch: Partial<LoggedSet>) => void;
   toggleSet: (ex: number, set: number) => boolean;
   addSet: (ex: number) => void;
+  /** Moves the weight of every set not done yet by `delta` (one plate step), never below zero. */
+  shiftWeight: (ex: number, delta: number) => void;
   removeSet: (ex: number, set: number) => void;
   switchPlace: (to: Place) => void;
   swap: (ex: number, move: string, keep: boolean) => void;
@@ -123,6 +125,10 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         const last = e.sets[e.sets.length - 1];
         return { ...e, skipped: false, sets: [...e.sets, { weight: last?.weight ?? null, reps: last?.reps ?? null, done: false }] };
       }),
+      shiftWeight: (ex, delta) => editExercise(ex, (e) => ({
+        ...e,
+        sets: e.sets.map((x) => (x.done ? x : { ...x, weight: Math.max(0, Math.round(((x.weight ?? 0) + delta) * 100) / 100) })),
+      })),
       removeSet: (ex, i) => editExercise(ex, (e) => ({ ...e, sets: e.sets.filter((_, j) => j !== i) })),
       switchPlace: (to) => {
         const s = get();

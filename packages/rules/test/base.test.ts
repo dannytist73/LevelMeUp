@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  advise, baseDays, baseMinutes, bestSet, clampWeeks, planDay, planPlace, slotChoices, targetFor, volume, weeksUntil,
+  advise, baseDays, baseMinutes, bestSet, clampWeeks, placeAt, planDay, planIndex, planPlace, slotChoices, targetFor, volume, weeksUntil,
 } from '../src/base.ts';
 import type { BaseDayLayouts } from '../src/base.ts';
 import type { BlockDay, Move } from '../src/workout.ts';
@@ -47,6 +47,15 @@ describe('planPlace', () => {
     expect(planPlace(17, 3, { kind: 'weeks', weeks: 6 }).finished).toBe(false);
     expect(planPlace(300, 5, { kind: 'open' }).finished).toBe(false);
   });
+  it('carries weeks over and restarts the block after a break', () => {
+    expect(planIndex(0, 0, 7, 3)).toBe(2);
+    expect(planIndex(2, 0, 0, 4)).toBe(2);
+    expect(planIndex(0, 25, 0, 3)).toBe(6);
+    expect(planIndex(0, 25, 4, 3)).toBe(7);
+    expect(planIndex(0, 13, 0, 3)).toBe(0);
+    expect(placeAt(6, 0, { kind: 'weeks', weeks: 6 }).finished).toBe(true);
+  });
+
   it('refuses a broken count', () => {
     expect(() => planPlace(-1, 3, { kind: 'open' })).toThrow(RangeError);
   });

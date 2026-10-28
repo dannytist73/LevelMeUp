@@ -59,14 +59,30 @@ export type PlanPlace = { week: number; blockWeek: number; round: number; day: n
  */
 export function planPlace(done: number, days: BaseDays, length: PlanLength): PlanPlace {
   if (!Number.isInteger(done) || done < 0) throw new RangeError(`done must be a whole number, got ${done}`);
-  const index = Math.floor(done / days);
+  return placeAt(Math.floor(done / days), done % days, length);
+}
+
+/** The place at a week index (0 is week 1) and a day of that week. */
+export function placeAt(index: number, day: number, length: PlanLength): PlanPlace {
+  if (!Number.isInteger(index) || index < 0) throw new RangeError(`week index must be a whole number, got ${index}`);
   return {
     week: index + 1,
     blockWeek: (index % BASE_BLOCK_WEEKS) + 1,
     round: Math.floor(index / BASE_BLOCK_WEEKS) + 1,
-    day: done % days,
+    day,
     finished: length.kind === 'weeks' && index >= length.weeks,
   };
+}
+
+/**
+ * The plan's week index from its workouts: `offset` weeks carried over (a days-a-week change keeps the week you were
+ * on), then a week per `days` workouts. After a long break (`before` workouts came before it, `run` since) the plan
+ * goes back to the first, easy week of the block you were in; a finished plan stays finished.
+ */
+export function planIndex(offset: number, before: number, run: number, days: BaseDays): number {
+  if (before === 0) return offset + Math.floor(run / days);
+  const reached = offset + Math.floor(before / days);
+  return Math.floor(reached / BASE_BLOCK_WEEKS) * BASE_BLOCK_WEEKS + Math.floor(run / days);
 }
 
 /** The highest exercise level for where you are now: new and coming-back lifters start on the easier versions. */

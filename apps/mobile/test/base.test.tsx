@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { BASE_KEY, BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { Blobs } from '../src/base/store.ts';
 import { warmupSets } from '../src/base/logic.ts';
-import { readBase, restarted, widgetLines } from '../src/base/logic.ts';
+import { newExercises, readBase, restarted, widgetLines } from '../src/base/logic.ts';
 import { currentBook, dailyNotes, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
 import { baseMove } from '@levelmeup/content';
 
@@ -97,6 +97,30 @@ describe('the base store', () => {
     expect(place(store.getState(), now + 15 * 24 * 60 * 60_000)).toMatchObject({ week: 1, day: 0 });
     store.getState().setPlan({ ...PLAN, startedAt: now });
     expect(place(store.getState(), now)).toMatchObject({ week: 1, day: 0, finished: false });
+  });
+
+  it('All sets -/+ moves every set not done yet by a plate step', () => {
+    const { store } = setup();
+    store.getState().setPlan(PLAN);
+    store.getState().startWorkout();
+    store.getState().setSet(0, 0, { weight: 40 });
+    store.getState().setSet(0, 1, { weight: 40 });
+    store.getState().toggleSet(0, 0);
+    store.getState().shiftWeight(0, 2.5);
+    expect(store.getState().active!.exercises[0]!.sets.map((x) => x.weight)).toEqual([40, 42.5]);
+    store.getState().shiftWeight(0, -50);
+    expect(store.getState().active!.exercises[0]!.sets[1]!.weight).toBe(0);
+  });
+
+  it('after an easy week, advice looks past its half-rep sets; a new weight starts at the bottom of the range', () => {
+    const { store } = setup();
+    const ex = (blockWeek: number, weight: number, reps: number) => ({
+      id: `w${blockWeek}`, startedAt: blockWeek, finishedAt: blockWeek + 1, day: 0, week: blockWeek, blockWeek, place: 'gym' as const,
+      exercises: [{ slot: 'biceps' as const, move: 'db-curl', target: { kind: 'range' as const, min: 10, max: 15, unit: 'reps' as const }, restSeconds: 90, sets: [{ weight, reps, done: true }, { weight, reps, done: true }] }],
+    });
+    store.setState({ workouts: [ex(5, 10, 15), ex(6, 10, 8)] });
+    const [curl] = newExercises(store.getState(), [{ slot: 'biceps', move: 'db-curl', sets: 3, target: { kind: 'range', min: 10, max: 15, unit: 'reps' }, restSeconds: 90 }], 1);
+    expect(curl!.sets[0]).toEqual({ weight: 12.5, reps: 10, done: false });
   });
 
   it('a workout with nothing done is not saved', () => {
