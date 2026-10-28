@@ -90,7 +90,11 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   16 KB aligned. Installed over APK 9 (data kept). Checked: the status-bar band on a scrolled Today, a history row
   opening its exercise page, finishing "A Calm Mind" offering "Start Habits That Hold"
 - [x] Third review: 8 findings fixed (22531e3, eed6ad0)
-- [ ] Last APK 11 (13:03 from eed6ad0) built, installed, checked
+- [x] **APK 11 (13:03 to 13:13 from eed6ad0), the final one:** `apps/mobile/dist/levelmeup-0.15.0-preview.apk`,
+  178,264,158 bytes, sha256 `913ea785d1ac82d6f2ea591d40afb9fc52784b5e1350b1600f3ce60c9c15c082`, 26 arm64 libraries all
+  16 KB aligned, bundle scan clean, tests green (rules 520, content 1216, app 1364). Installed over APK 10 (data kept).
+  Checked: "3 of 4 done in week 1", Train's "Week 1", Android Back stepping back through setup, Discard with Undo, a
+  read chapter labelled "read". Emulator powered off and WSL stopped afterwards (13:17)
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
 
@@ -190,6 +194,7 @@ targets screen says Save waits for body weight.
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
 - 12:28 a second cut of the ad with the male Chatterbox voice (`levelmeup-ad-male.mp4`, 31.6 s, Whisper-checked).
+- 13:13 APK 11 built; 13:16 checked; emulator off, WSL stopped.
 - 13:03 third review fixed; last APK 11 started.
 - 12:52 APK 10 built and checked.
 - 12:40 APK 9 checked; 12:42 final APK 10 started with the book-finished moment, history links and the status-bar band.
