@@ -194,6 +194,9 @@ targets screen says Save waits for body weight.
 
   Voice would first become a sentence through the phone's own speech-to-text (not checked yet). A real test of the
   accuracy and cost on 20 meal photos would cost well under $1, and it waits for a yes (API spend).
+  Research: `docs/research/2026-10-28-ai-food-logging.md` (8 competitors all put AI logging inside their normal paid
+  tier; photo estimates run about a third low; recommends keeping Plus at $4.99 a month / $29.99 a year, a review
+  screen before anything saves, and 10 AI logs a day; lifetime Plus is the owner's call).
 - **The ad:** play it once before posting; the voice was checked by transcript only.
 - **Disk:** the ad folder's `tools/` holds 22 GB of local voice models; delete it when the voice is final.
 - **Clean-up (B4):** Grumble Camp's screens and server code are still in the repo, unreachable.
