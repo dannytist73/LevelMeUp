@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { BASE_KEY, BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { Blobs } from '../src/base/store.ts';
 import { warmupSets } from '../src/base/logic.ts';
-import { restarted } from '../src/base/logic.ts';
+import { readBase, restarted, widgetLines } from '../src/base/logic.ts';
 import { currentBook, dailyNotes, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
 import { baseMove } from '@levelmeup/content';
 
@@ -202,6 +202,18 @@ describe('the base store', () => {
     expect(warmupSets(60, 'kg')).toEqual([{ weight: 30, reps: 6 }, { weight: 45, reps: 4 }, { weight: 52.5, reps: 2 }]);
     expect(warmupSets(135, 'lb')).toEqual([{ weight: 65, reps: 6 }, { weight: 100, reps: 4 }, { weight: 120, reps: 2 }]);
     expect(warmupSets(12.5, 'kg')).toEqual([]);
+  });
+
+  it('the widget lines: next workout and week, next chapter, food against the target; none without a plan', () => {
+    const { store } = setup();
+    expect(widgetLines(store.getState(), T0)).toBeNull();
+    store.getState().setPlan(PLAN);
+    store.getState().chooseBook('train-smart');
+    store.getState().setTargets({ kcal: 2500, protein: 140, weight: 80, goal: 'keep' });
+    store.getState().addFood({ meal: 'lunch', name: 'Rice', amount: '', kcal: 1200, protein: 20, carbs: null, fat: null });
+    expect(widgetLines(store.getState(), T0)).toEqual({ train: 'Workout A next · Week 1 of 6', read: 'Steady, not heroic', eat: '1,200 of 2,500 kcal' });
+    expect(readBase(JSON.stringify({ v: 1, plan: PLAN }))!.plan).toEqual(PLAN);
+    expect(readBase('nope')).toBeNull();
   });
 
   it('the rest timer moves and ends', () => {

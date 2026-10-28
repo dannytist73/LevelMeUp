@@ -302,6 +302,15 @@ export const BASE_TEXT = {
     },
   },
   restNote: { title: 'Rest is over', body: 'Time for your next set.' },
+  widget: {
+    label: 'Your next workout, chapter and food today. Tap to open LevelMeUp.',
+    noPlan: 'Open LevelMeUp to make your plan.',
+    inProgress: (name: string) => `${name} in progress`,
+    next: (name: string, week: string) => `${name} next · ${week}`,
+    planDone: 'Plan complete',
+    bookDone: 'Book finished: pick the next',
+    kcal: (eaten: number, target: number | null) => (target === null ? `${eaten.toLocaleString('en-US')} kcal today` : `${eaten.toLocaleString('en-US')} of ${target.toLocaleString('en-US')} kcal`),
+  },
   note: {
     title: 'LevelMeUp',
     body: (workout: string | null, chapter: string | null) =>

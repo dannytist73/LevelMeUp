@@ -184,6 +184,30 @@ export function currentBook(data: BaseData) {
 
 export const moveName = (id: string): string => baseMove(id).name;
 
+/** The home-screen widget's three lines: the next workout, the next chapter, today's food. Null without a plan. */
+export function widgetLines(data: BaseData, now: number): { train: string; read: string; eat: string } | null {
+  if (data.plan === null) return null;
+  const W = BASE_TEXT.widget;
+  const p = place(data, now)!;
+  const train = data.active !== null ? W.inProgress(BASE_TEXT.today.workout(workoutName(data.active.day)))
+    : p.finished ? W.planDone : W.next(BASE_TEXT.today.workout(workoutName(p.day)), BASE_TEXT.today.weekOf(p.week, planWeeks(data.plan)));
+  const { book, next } = currentBook(data);
+  const read = next === null ? W.bookDone : chapter(book.chapters[next]!).title;
+  const eat = W.kcal(Math.round(foodTotals(data.food.filter((f) => f.day === dayKey(now))).kcal), data.targets?.kcal ?? null);
+  return { train, read, eat };
+}
+
+/** Reads the saved record (the widget's task runs without the app). */
+export function readBase(raw: string | null): BaseData | null {
+  if (raw === null) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<BaseData> | null;
+    return parsed !== null && typeof parsed === 'object' && parsed.v === 1 ? { ...EMPTY, ...parsed } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** A daily note's slot: its id, when it shows and what it says. */
 export type DailyNote = { id: string; at: number; title: string; body: string };
 

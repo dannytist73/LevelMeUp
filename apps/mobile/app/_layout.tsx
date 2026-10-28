@@ -11,7 +11,8 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BASE_TEXT } from '@levelmeup/content';
-import { dailyNotes } from '../src/base/logic.ts';
+import { dailyNotes, widgetLines } from '../src/base/logic.ts';
+import { publishBaseWidget } from '../src/widget/publishBase.tsx';
 import type { StoreApi } from 'zustand/vanilla';
 import { BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { BaseState } from '../src/base/store.ts';
@@ -71,6 +72,10 @@ export default function RootLayout() {
       })().catch(() => undefined);
     };
     plan();
+    // The home-screen widget follows the same changes (it only redraws when its lines change).
+    const widget = (): void => void publishBaseWidget(widgetLines(store.getState(), Date.now()));
+    widget();
+    const unsubWidget = store.subscribe(widget);
     const unsub = store.subscribe(plan);
     const active = AppState.addEventListener('change', (state) => {
       away = state !== 'active';
@@ -79,6 +84,7 @@ export default function RootLayout() {
     });
     return () => {
       unsub();
+      unsubWidget();
       active.remove();
     };
   }, [loaded, store]);

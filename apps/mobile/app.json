@@ -45,13 +45,15 @@
           "fonts": [
             "./assets/fonts/MPlusRounded1c-ExtraBold-Latin.ttf",
             "./assets/fonts/MPlusRounded1c-Regular-Latin.ttf",
-            "./assets/fonts/MPlusRounded1c-Bold-Latin.ttf"
+            "./assets/fonts/MPlusRounded1c-Bold-Latin.ttf",
+            "./assets/fonts/Geist-SemiBold-Latin.ttf",
+            "./assets/fonts/Geist-Regular-Latin.ttf"
           ],
           "widgets": [
             {
               "name": "Today",
               "label": "LevelMeUp",
-              "description": "Today's quest and your streak",
+              "description": "Your next workout, chapter and food today",
               "minWidth": "250dp",
               "minHeight": "110dp",
               "targetCellWidth": 4,
