@@ -148,7 +148,17 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         change({ active: workout });
         return workout;
       },
-      setSet: (ex, i, patch) => editExercise(ex, (e) => ({ ...e, sets: e.sets.map((s, j) => (j === i ? { ...s, ...patch } : s)) })),
+      setSet: (ex, i, patch) => editExercise(ex, (e) => ({
+        ...e,
+        sets: e.sets.map((s, j) => {
+          if (j === i) return { ...s, ...patch };
+          // A weight typed into a set carries to the later sets not done yet that were empty or the same as it, so
+          // straight sets need one entry (and typing "62.5" key by key never leaves a "6" behind).
+          const was = e.sets[i]?.weight ?? null;
+          if (j > i && !s.done && patch.weight !== undefined && patch.weight !== null && (s.weight === null || s.weight === was)) return { ...s, weight: patch.weight };
+          return s;
+        }),
+      })),
       toggleSet: (ex, i) => {
         const before = get().active?.exercises[ex]?.sets[i];
         if (before === undefined) return false;

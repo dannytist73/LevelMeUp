@@ -100,6 +100,20 @@ describe('the base store', () => {
     expect(place(store.getState(), now)).toMatchObject({ week: 1, day: 0, finished: false });
   });
 
+  it('a weight typed into a set carries to later sets that were empty or the same, key by key', () => {
+    const { store } = setup();
+    store.getState().setPlan(PLAN);
+    store.getState().startWorkout();
+    for (const w of [6, 62, 62.5]) store.getState().setSet(0, 0, { weight: w });
+    expect(store.getState().active!.exercises[0]!.sets.map((x) => x.weight)).toEqual([62.5, 62.5]);
+    store.getState().setSet(0, 1, { weight: 30 });
+    store.getState().setSet(0, 0, { weight: 20 });
+    expect(store.getState().active!.exercises[0]!.sets.map((x) => x.weight)).toEqual([20, 30]);
+    store.getState().startWorkout();
+    store.getState().setSet(1, 0, { weight: 15 });
+    expect(store.getState().active!.exercises[1]!.sets.every((x) => x.weight === 15)).toBe(true);
+  });
+
   it('All sets -/+ moves every set not done yet by a plate step', () => {
     const { store } = setup();
     store.getState().setPlan(PLAN);
