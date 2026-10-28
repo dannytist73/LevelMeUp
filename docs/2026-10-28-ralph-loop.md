@@ -130,6 +130,14 @@ Twelve findings, all fixed in 82172d8 and 85e8445 with tests:
 Also: read days are the last 7 calendar days; Eat steps back by the calendar (daylight-saving safe). Pain now also
 asks where it hurts and leaves exercises that load that area out of future workouts (a867077).
 
+## Second review (12:02, a fresh agent on everything after 85e8445)
+
+Five findings plus one note, all fixed in 0012556 with tests: clearing a weight left an old digit in the sets that
+followed it; "All sets" showed 0 kg and gave empty sets a weight; a double Undo could restore a workout twice; the first
+quiz answer might not be announced (now spoken via `announceForAccessibility`); removing a workout that leaves a 14-day
+gap restarts the plan (the note now says so). The note: a phone's scheduled dark/light switch redrew the app mid-use and
+lost screen-only state; the phone's switch is now taken when the app comes to the front.
+
 ## Decisions made in the loop
 
 - **Local-first, no account:** the base app keeps everything on the phone and Grumble Camp's game store no longer
@@ -159,6 +167,7 @@ asks where it hurts and leaves exercises that load that area out of future worko
 - 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
+- 12:08 second review fixed (0012556); final APK build started; bundle scan clean again.
 - 11:56 APK 7 built and checked (light look); after it: workout removal with Undo, All sets only with a weight, Start over stops the rest timer.
 - 11:43 APK 6 built and checked.
 - 11:34 APK 5 built (widget, light look, done-today, plan changes); light look checked; APK 6 started with the review fixes.
