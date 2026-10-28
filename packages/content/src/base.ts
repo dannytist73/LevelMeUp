@@ -294,6 +294,7 @@ export const BASE_TEXT = {
       kcal: 'Calories a day',
       protein: 'Protein a day (g)',
       save: 'Save targets',
+      needWeight: 'Add your body weight to save.',
       edit: 'Targets',
     },
   },

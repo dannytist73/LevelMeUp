@@ -229,6 +229,7 @@ export function FoodTargets() {
         <View style={{ flex: 1 }}><Field label={TT.kcal} value={kcal} onChange={setKcal} keyboard="number-pad" /></View>
         <View style={{ flex: 1 }}><Field label={TT.protein} value={protein} onChange={setProtein} keyboard="number-pad" /></View>
       </View>
+      {toNumber(weight) === null && <T v="small" color={G.muted}>{TT.needWeight}</T>}
     </Screen>
   );
 }
