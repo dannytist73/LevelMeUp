@@ -201,6 +201,16 @@ targets screen says Save waits for body weight.
 - **Disk:** the ad folder's `tools/` holds 22 GB of local voice models; delete it when the voice is final.
 - **Clean-up (B4):** Grumble Camp's screens and server code are still in the repo, unreachable.
 
+## After the loop: new story pictures (owner, 13:50: "the clay and monster images don't fit the app")
+
+- Five styles tried on the same three covers (pencil, gouache, ink, risograph, photo); **flat gouache** picked and all
+  171 story pictures redrawn without monsters (935786e; `docs/2026-10-28-base-app.md`, Read).
+- **APK 0.15.1 (15:36 to 15:47 from 935786e):** `apps/mobile/dist/levelmeup-0.15.1-preview.apk`, 176,523,626 bytes,
+  sha256 `6206c731fee728dffb4858059a829688f4fca53f991cee374cc76f0ad7efbe18`, 26 arm64 libraries all 16 KB aligned,
+  bundle scan clean, app tests 1364 and typecheck green. Installed over 0.15.0 (data kept). Checked in dark and light:
+  Read's book covers, a chapter's story cards, Today's chapter picture, a chapter reopening where it was left.
+  Emulator powered off, WSL stopped, ComfyUI stopped (15:51).
+
 ## Log
 
 - 08:50 loop planned; research and ad agents started.
