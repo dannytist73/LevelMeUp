@@ -9,7 +9,7 @@ import { View } from 'react-native';
 import { lastSets } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
-import { Button, Card, Header, Options, Screen, T } from '../ui.tsx';
+import { Button, Card, Checks, Header, Options, Screen, T } from '../ui.tsx';
 
 /** The moves that can stand in for an exercise at its place, easiest last; none already in the workout. */
 function useChoices(ex: number, gentler = false) {
@@ -67,9 +67,12 @@ export function SwapExercise({ ex }: { ex: number }) {
   );
 }
 
+const NONE: readonly never[] = [];
+
 export function ExercisePain({ ex }: { ex: number }) {
   const api = useBaseApi();
   const { current, choices } = useChoices(ex, true);
+  const hurts = useBase((s) => s.plan?.limitations ?? NONE);
   const TX = BASE_TEXT.pain;
   if (current === null) return <Screen><Header onBack={() => router.back()} backIcon="close" /></Screen>;
   return (
@@ -94,6 +97,12 @@ export function ExercisePain({ ex }: { ex: number }) {
         router.dismissAll();
       }} />
       <Button label={TX.cancel} kind="quiet" onPress={() => router.back()} />
+      <T v="bodyStrong">{TX.area}</T>
+      <Checks value={hurts} onChange={(limitations) => {
+        const p = api.getState().plan;
+        if (p !== null) api.getState().setPlan({ ...p, limitations });
+      }} options={(['knee', 'back', 'shoulder', 'wrist'] as const).map((k) => ({ key: k, label: BASE_TEXT.setup.safety.items[k] }))} />
+      <T v="small" color={G.muted}>{TX.areaHelp}</T>
       <T v="small" color={G.warn}>{TX.help}</T>
     </Screen>
   );

@@ -14,6 +14,7 @@ import { FoodAdd } from '../src/base/screens/Eat.tsx';
 import { Today } from '../src/base/screens/Today.tsx';
 import { Workout } from '../src/base/screens/Workout.tsx';
 import { Exercise } from '../src/base/screens/Exercise.tsx';
+import { ExercisePain } from '../src/base/screens/SwapPain.tsx';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => false) } }));
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }));
@@ -371,6 +372,16 @@ describe('the base screens', () => {
     expect(screen.getByText('How to do it')).toBeTruthy();
     expect(screen.getByText('Best set: 22.5 kg × 9')).toBeTruthy();
     expect(screen.getByLabelText('Your top set over the last 2 workouts, best 22.5 kg × 9')).toBeTruthy();
+  });
+
+  it('Pain offers rest first and can leave an area out from now on', async () => {
+    const { store } = setup();
+    store.getState().setPlan(PLAN);
+    store.getState().startWorkout();
+    await render(<BaseProvider store={store}><ExercisePain ex={0} /></BaseProvider>);
+    expect(screen.getByTestId('pain-skip')).toBeTruthy();
+    await act(async () => fireEvent.press(screen.getByLabelText('Knees')));
+    expect(store.getState().plan!.limitations).toEqual(['knee']);
   });
 
   it('logging food asks for a number, names a nameless one Quick add, then saves', async () => {

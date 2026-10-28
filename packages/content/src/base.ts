@@ -200,6 +200,8 @@ export const BASE_TEXT = {
     stop: 'End the workout here',
     help: 'Sharp pain, swelling or pain that stays: see a doctor or physio.',
     cancel: 'It was nothing, carry on',
+    area: 'Where does it hurt?',
+    areaHelp: 'From now on, exercises that load this area are left out. You can change it in Me.',
   },
   read: {
     title: 'Read',
