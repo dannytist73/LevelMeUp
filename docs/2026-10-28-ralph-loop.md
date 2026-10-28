@@ -130,6 +130,18 @@ Also: read days are the last 7 calendar days; Eat steps back by the calendar (da
 - **Gym picks favour loaded lifts** (barbell, machine, dumbbells) over bodyweight versions; at home with nothing,
   push-up variations stand in for arms and shoulders.
 
+## Needs the owner (nothing here was done without a yes)
+
+- **Merge `base-app` into `main`** (the APKs are built from `base-app`).
+- **B1 deploy:** server tables and sync for plans, workouts, reading and food, so data survives a new phone; then
+  copying testers' workout history and reading progress. Today everything lives on the phone only, and "Start over" or
+  uninstalling removes it.
+- **B2:** book downloads from the 9 AM studio (needs `expo-file-system`); today the 5 books ship inside the app.
+- **B3:** AI food logging for Plus (photo, voice, sentence): model, cost per log and Plus price.
+- **The ad:** play it once before posting; the voice was checked by transcript only.
+- **Disk:** the ad folder's `tools/` holds 22 GB of local voice models; delete it when the voice is final.
+- **Clean-up (B4):** Grumble Camp's screens and server code are still in the repo, unreachable.
+
 ## Log
 
 - 08:50 loop planned; research and ad agents started.
