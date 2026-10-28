@@ -45,7 +45,8 @@ export type BaseData = {
   workouts: Workout[];
   active: Workout | null;
   kept: KeptSwaps;
-  reading: { book: string | null; done: Record<string, number> };
+  /** The book you're on, the chapters read (when), and the card each unfinished chapter was left on. */
+  reading: { book: string | null; done: Record<string, number>; at?: Record<string, number> };
   food: FoodEntry[];
   targets: Targets | null;
 };

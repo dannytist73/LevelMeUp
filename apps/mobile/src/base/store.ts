@@ -39,6 +39,8 @@ export type BaseState = BaseData & {
   endRest: () => void;
   chooseBook: (id: string) => void;
   readChapter: (id: string) => void;
+  /** Where an unfinished chapter was left, so reopening it resumes there (research 2026-10-28 #12). */
+  leaveChapter: (id: string, card: number) => void;
   /** Logs a food today, or on `day` (a past day's key, "2026-10-27") when it was forgotten. */
   addFood: (entry: Omit<FoodEntry, 'id' | 'day' | 'at'> & { day?: string }) => FoodEntry;
   removeFood: (id: string) => FoodEntry | null;
@@ -165,8 +167,17 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       chooseBook: (id) => change({ reading: { ...get().reading, book: id } }),
       readChapter: (id) => {
         const r = get().reading;
-        if (r.done[id] !== undefined) return;
-        change({ reading: { ...r, done: { ...r.done, [id]: now() } } });
+        const { [id]: _left, ...at } = r.at ?? {};
+        if (r.done[id] !== undefined) {
+          if (_left !== undefined) change({ reading: { ...r, at } });
+          return;
+        }
+        change({ reading: { ...r, at, done: { ...r.done, [id]: now() } } });
+      },
+      leaveChapter: (id, card) => {
+        const r = get().reading;
+        if ((r.at ?? {})[id] === card) return;
+        change({ reading: { ...r, at: { ...(r.at ?? {}), [id]: card } } });
       },
       addFood: (entry) => {
         const at = now();

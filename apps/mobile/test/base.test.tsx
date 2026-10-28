@@ -160,6 +160,10 @@ describe('the base store', () => {
     store.getState().readChapter('article-36');
     expect(currentBook(store.getState())).toMatchObject({ book: { id: 'train-smart' }, next: 1 });
     expect(readDaysThisWeek(store.getState(), T0)).toBe(1);
+    store.getState().leaveChapter('article-20', 3);
+    expect(store.getState().reading.at).toEqual({ 'article-20': 3 });
+    store.getState().readChapter('article-20');
+    expect(store.getState().reading.at).toEqual({});
   });
 
   it('the daily reminder: off by default, then 7 notes at the chosen hour naming what is next', () => {

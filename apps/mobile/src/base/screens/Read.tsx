@@ -100,7 +100,12 @@ type Card = { kind: 'story'; text: string } | { kind: 'why' } | { kind: 'check' 
 
 export function ChapterScreen({ id }: { id: string }) {
   const api = useBaseApi();
-  const [index, setIndex] = useState(0);
+  const left = useBase((s) => s.reading.at?.[id] ?? 0);
+  const [index, setShown] = useState(left);
+  const setIndex = (i: number) => {
+    setShown(i);
+    api.getState().leaveChapter(id, i);
+  };
   const [answer, setAnswer] = useState<number | null>(null);
   const b = BOOKS.find((x) => x.chapters.includes(id));
   if (b === undefined) return <Screen><Header onBack={() => router.back()} /></Screen>;
