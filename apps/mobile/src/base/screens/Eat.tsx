@@ -76,6 +76,7 @@ export function Eat({ now = Date.now() }: { now?: number }) {
           <T v="small" color={G.muted}>{`${TX.fat} ${Math.round(t.fat)} g`}</T>
         </View>
         <Button label={TX.add} icon="plus" onPress={() => router.push('/food-add')} testID="eat-add" />
+        {targets === null && <Button label={BASE_TEXT.today.setTargets} kind="quiet" onPress={() => router.push('/food-targets')} />}
       </Card>
 
       {recent.length > 0 && (

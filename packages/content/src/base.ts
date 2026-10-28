@@ -86,7 +86,7 @@ export const BASE_TEXT = {
     planDone: 'Your plan is complete. Start a new one in Train.',
     chapter: (n: number, of: number, minutes: number) => `Chapter ${n} of ${of} · ${minutes} min`,
     readNow: 'Read',
-    readDays: (n: number) => (n === 0 ? 'A chapter takes about 3 minutes.' : n === 1 ? 'Read on 1 day this week.' : `Read on ${n} days this week.`),
+    readDays: (n: number) => (n === 0 ? null : n === 1 ? 'Read on 1 day this week.' : `Read on ${n} days this week.`),
     bookDone: 'You finished this book. Pick the next one.',
     kcal: (eaten: number, target: number) => `${eaten.toLocaleString('en-US')} of ${target.toLocaleString('en-US')} kcal`,
     protein: (eaten: number, target: number) => `${eaten} of ${target} g protein`,

@@ -73,7 +73,7 @@ export function Today({ now = Date.now() }: { now?: number }) {
             <T v="small" color={G.muted}>{TX.chapter(next + 1, book.chapters.length, chapterMinutes(chap))}</T>
           </>
         )}
-        <T v="small" color={G.muted}>{TX.readDays(readDaysThisWeek(s, now))}</T>
+        {TX.readDays(readDaysThisWeek(s, now)) !== null && <T v="small" color={G.muted}>{TX.readDays(readDaysThisWeek(s, now))}</T>}
         <Button label={chap === null ? BASE_TEXT.read.title : TX.readNow} kind="secondary" icon="read"
           onPress={() => router.push(chap === null ? '/read' : `/chapter/${book.chapters[next!]}`)} />
       </Card>

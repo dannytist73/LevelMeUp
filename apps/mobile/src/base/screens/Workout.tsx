@@ -29,6 +29,12 @@ function useNow(): number {
   return now;
 }
 
+/** The workout's clock: only this line redraws each second, not the whole log. */
+function Elapsed({ week, of, since }: { week: number; of: number | null; since: number }) {
+  const now = useNow();
+  return <T v="small" color={G.muted}>{TX.elapsed(week, of, formatClock(now - since))}</T>;
+}
+
 function KeepAwake() {
   useKeepAwake();
   return null;
@@ -127,7 +133,8 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
   );
 }
 
-function RestBar({ now }: { now: number }) {
+function RestBar() {
+  const now = useNow();
   const api = useBaseApi();
   const until = useBase((s) => s.restUntil);
   const total = useBase((s) => s.restTotal);
@@ -196,7 +203,6 @@ export function Workout() {
   const active = useBase((s) => s.active);
   const plan = useBase((s) => s.plan);
   const resting = useBase((s) => s.restUntil !== null);
-  const now = useNow();
   const [finished, setFinished] = useState<WorkoutData | null>(null);
   const [confirm, setConfirm] = useState(false);
 
@@ -216,11 +222,11 @@ export function Workout() {
   };
 
   return (
-    <Screen footer={resting ? <RestBar now={now} /> : undefined}>
+    <Screen footer={resting ? <RestBar /> : undefined}>
       <KeepAwake />
       <Header onBack={() => router.back()} backIcon="close" title={BASE_TEXT.today.workout(workoutName(active.day))}
         right={<Button label={TX.finish} onPress={() => (undone ? setConfirm(true) : finish())} style={{ minHeight: 48 }} testID="finish" />} />
-      <T v="small" color={G.muted}>{TX.elapsed(active.week, planWeeks(plan), formatClock(now - active.startedAt))}</T>
+      <Elapsed week={active.week} of={planWeeks(plan)} since={active.startedAt} />
       {confirm && (
         <Card hero>
           <T v="bodyStrong">{TX.leaveTitle}</T>

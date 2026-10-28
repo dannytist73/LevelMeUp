@@ -4,12 +4,12 @@
 import { BASE_TEXT, BOOKS, book as findBook, chapter, chapterMinutes } from '@levelmeup/content';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, View } from 'react-native';
+import { Image, View, useWindowDimensions } from 'react-native';
 import { buzz } from '../../ui/haptics.ts';
 import { currentBook } from '../logic.ts';
 import { STORY_ART } from '../storyArt.ts';
 import { useBase, useBaseApi } from '../store.ts';
-import { G } from '../theme.ts';
+import { G, S } from '../theme.ts';
 import { Bar, Button, Card, Header, Options, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.read;
@@ -22,6 +22,7 @@ export function Read() {
     <Screen>
       <T v="title" accessibilityRole="header">{TX.title}</T>
       <Card hero>
+        {STORY_ART[book.chapters[0]!]?.cover != null && <Picture source={STORY_ART[book.chapters[0]!]!.cover!} inset={32} />}
         <T v="label" color={G.accentText}>{TX.current}</T>
         <T v="heading">{book.title}</T>
         <T v="small" color={G.muted}>{book.blurb}</T>
@@ -33,10 +34,16 @@ export function Read() {
       <T v="heading" accessibilityRole="header">{TX.shelf}</T>
       {BOOKS.map((b) => (
         <Press key={b.id} label={`${b.title}. ${TX.progress(read(b.id), b.chapters.length)}`} onPress={() => router.push(`/books/${b.id}`)}
-          style={{ backgroundColor: G.surface, borderRadius: 16, padding: 16, gap: 6 }}>
-          <T v="bodyStrong">{b.title}</T>
-          <T v="small" color={G.muted}>{b.blurb}</T>
-          <T v="label" color={G.muted}>{`${TX.chapters(b.chapters.length)} · ${TX.progress(read(b.id), b.chapters.length)}`}</T>
+          style={{ backgroundColor: G.surface, borderRadius: 16, padding: 14, flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+          {STORY_ART[b.chapters[0]!]?.cover != null && (
+            <Image source={STORY_ART[b.chapters[0]!]!.cover!} accessibilityElementsHidden importantForAccessibility="no" resizeMode="cover"
+              style={{ width: 72, height: 72, borderRadius: 12, backgroundColor: G.raised }} />
+          )}
+          <View style={{ flex: 1, gap: 4 }}>
+            <T v="bodyStrong">{b.title}</T>
+            <T v="small" color={G.muted}>{b.blurb}</T>
+            <T v="label" color={G.muted}>{`${TX.chapters(b.chapters.length)} · ${TX.progress(read(b.id), b.chapters.length)}`}</T>
+          </View>
         </Press>
       ))}
       <Card style={{ backgroundColor: 'transparent', borderWidth: 1.5, borderColor: G.line }}>
@@ -79,6 +86,16 @@ export function BookScreen({ id }: { id: string }) {
   );
 }
 
+/** A story picture (960 × 540) across the screen's width; decorative, the words tell the story. */
+function Picture({ source, inset = 0 }: { source: number; inset?: number }) {
+  const { width } = useWindowDimensions();
+  const w = width - 2 * S.gutter - inset;
+  return (
+    <Image source={source} accessibilityElementsHidden importantForAccessibility="no" resizeMode="cover"
+      style={{ width: w, height: Math.round(w * 9 / 16), borderRadius: 16, backgroundColor: G.surface }} />
+  );
+}
+
 type Card = { kind: 'story'; text: string } | { kind: 'why' } | { kind: 'check' } | { kind: 'lesson' };
 
 export function ChapterScreen({ id }: { id: string }) {
@@ -118,10 +135,7 @@ export function ChapterScreen({ id }: { id: string }) {
       <T v="label" color={G.muted}>{`${b.title} · ${position + 1}`}</T>
       <T v="title" accessibilityRole="header">{ch.title}</T>
       <Bar value={index + 1} max={cards.length} height={4} />
-      {card.kind === 'story' && STORY_ART[id]?.cards[index] != null && (
-        <Image source={STORY_ART[id]!.cards[index]!} accessibilityElementsHidden importantForAccessibility="no"
-          style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: G.surface }} resizeMode="cover" />
-      )}
+      {card.kind === 'story' && STORY_ART[id]?.cards[index] != null && <Picture source={STORY_ART[id]!.cards[index]!} />}
       {card.kind === 'story' && <T style={{ fontSize: 19, lineHeight: 30 }}>{card.text}</T>}
       {card.kind === 'why' && (
         <Card>
