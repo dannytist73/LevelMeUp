@@ -23,6 +23,7 @@ export type BaseState = BaseData & {
   setPlan: (plan: PlanSetup) => void;
   setUnits: (units: Units) => void;
   setReminder: (reminder: Reminder) => void;
+  setRestAlerts: (on: boolean) => void;
   startWorkout: () => Workout | null;
   setSet: (ex: number, set: number, patch: Partial<LoggedSet>) => void;
   toggleSet: (ex: number, set: number) => boolean;
@@ -86,6 +87,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       setPlan: (plan) => change({ plan, kept: {} }),
       setUnits: (units) => change({ units }),
       setReminder: (reminder) => change({ reminder }),
+      setRestAlerts: (restAlerts) => change({ restAlerts }),
       startWorkout: () => {
         const s = get();
         if (s.active !== null) return s.active;

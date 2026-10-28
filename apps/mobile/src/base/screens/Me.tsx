@@ -18,6 +18,15 @@ export function Me() {
   const units = useBase((s) => s.units);
   const plan = useBase((s) => s.plan);
   const reminder = useBase((s) => s.reminder);
+  const restAlerts = useBase((s) => s.restAlerts);
+  const pickRestAlerts = async (on: boolean) => {
+    if (on && (await expoNotes.ask()) !== 'granted') {
+      setDenied(true);
+      return;
+    }
+    setDenied(false);
+    api.getState().setRestAlerts(on);
+  };
   const [confirm, setConfirm] = useState(false);
   const [denied, setDenied] = useState(false);
   const pickReminder = async (r: Reminder) => {
@@ -41,6 +50,8 @@ export function Me() {
       <Options label={TX.reminder.title} columns={1} value={reminder} onChange={(r) => void pickReminder(r)}
         options={[{ key: 'off', label: TX.reminder.off }, { key: 'morning', label: TX.reminder.morning }, { key: 'evening', label: TX.reminder.evening }]} />
       <T v="small" color={G.muted}>{TX.reminder.help}</T>
+      <Checks value={restAlerts ? ['on'] : []} onChange={(v) => void pickRestAlerts(v.includes('on'))} options={[{ key: 'on', label: TX.restAlert.title }]} />
+      <T v="small" color={G.muted}>{TX.restAlert.text}</T>
       {denied && (
         <Card>
           <T v="small">{TX.reminder.denied}</T>

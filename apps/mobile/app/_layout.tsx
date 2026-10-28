@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BASE_TEXT } from '@levelmeup/content';
 import { dailyNotes } from '../src/base/logic.ts';
 import type { StoreApi } from 'zustand/vanilla';
 import { BaseProvider, createBaseStore } from '../src/base/store.ts';
@@ -50,27 +51,31 @@ export default function RootLayout() {
   useEffect(() => {
     if (!loaded) return;
     let planned = '';
+    let away = false;
     const plan = (): void => {
-      const notes = dailyNotes(store.getState(), Date.now());
+      const s = store.getState();
+      // The rest's end, only while the app is in the background (in front, the workout screen says it itself).
+      const rest = away && s.restAlerts && s.restUntil !== null && s.restUntil > Date.now()
+        ? [{ id: 'rest', at: s.restUntil, title: BASE_TEXT.restNote.title, body: BASE_TEXT.restNote.body, channel: 'timers' as const }] : [];
+      const notes = [...dailyNotes(s, Date.now()).map((n) => ({ ...n, channel: 'reminders' as const })), ...rest];
       const key = JSON.stringify(notes);
       if (key === planned) return;
       planned = key;
       void (async () => {
         if (notes.length === 0) {
-          if (store.getState().reminder === 'off') await expoNotes.cancelAll();
+          if (s.reminder === 'off') await expoNotes.cancelAll();
           return;
         }
         if ((await expoNotes.permission()) !== 'granted') return;
-        await expoNotes.replace(notes.map((n) => ({ ...n, kind: 'briefing' as const, url: '/', channel: 'reminders' as const })));
+        await expoNotes.replace(notes.map((n) => ({ ...n, kind: n.id === 'rest' ? 'timer' as const : 'briefing' as const, url: '/' })));
       })().catch(() => undefined);
     };
     plan();
     const unsub = store.subscribe(plan);
-    const active = AppState.addEventListener('change', (s) => {
-      if (s === 'active') {
-        planned = '';
-        plan();
-      }
+    const active = AppState.addEventListener('change', (state) => {
+      away = state !== 'active';
+      planned = '';
+      plan();
     });
     return () => {
       unsub();

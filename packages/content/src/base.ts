@@ -283,6 +283,10 @@ export const BASE_TEXT = {
     resetBody: 'This removes your plan, workouts, reading and food log from this phone.',
     resetYes: 'Remove everything',
     resetNo: 'Keep it',
+    restAlert: {
+      title: 'Rest timer alert',
+      text: 'A note when your rest is over while the phone is locked or in your pocket.',
+    },
     reminder: {
       title: 'Daily reminder',
       off: 'Off',
@@ -293,6 +297,7 @@ export const BASE_TEXT = {
       open: 'Open settings',
     },
   },
+  restNote: { title: 'Rest is over', body: 'Time for your next set.' },
   note: {
     title: 'LevelMeUp',
     body: (workout: string | null, chapter: string | null) =>

@@ -38,6 +38,8 @@ export type Reminder = 'off' | 'morning' | 'evening';
 export type BaseData = {
   v: 1;
   reminder: Reminder;
+  /** A notification when the rest ends while the app is in the background. */
+  restAlerts: boolean;
   plan: PlanSetup | null;
   units: Units;
   workouts: Workout[];
@@ -48,7 +50,7 @@ export type BaseData = {
   targets: Targets | null;
 };
 
-export const EMPTY: BaseData = { v: 1, reminder: 'off', plan: null, units: 'kg', workouts: [], active: null, kept: {}, reading: { book: null, done: {} }, food: [], targets: null };
+export const EMPTY: BaseData = { v: 1, reminder: 'off', restAlerts: false, plan: null, units: 'kg', workouts: [], active: null, kept: {}, reading: { book: null, done: {} }, food: [], targets: null };
 
 /** The place a workout starts at: the gym unless you train only at home. */
 export const defaultPlace = (plan: PlanSetup): Place => (plan.where === 'home' ? 'home' : 'gym');
