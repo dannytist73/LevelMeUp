@@ -79,19 +79,22 @@ const fits = (move: Move, have: readonly Equipment[], limitations: readonly Limi
   move.level <= cap && move.needs.every((n) => have.includes(n)) && !move.contraindications.some((c) => limitations.includes(c));
 
 /**
- * The exercises that can fill a slot at a place, best first: those made for the slot, then the harder ones you're
- * ready for, then (at the gym) the machine and barbell versions, then the library's order.
+ * The exercises that can fill a slot at a place, best first: those made for the slot, then (at the gym) the loaded
+ * ones, then the harder ones you're ready for, then those that use equipment you have, then the library's order.
  */
 export function slotChoices(moves: readonly Move[], slot: MoveSlot, place: Place, home: readonly Equipment[], limitations: readonly Limitation[], experience: Experience): Move[] {
   const have = equipmentAt(place, home);
   const cap = levelCap(experience);
   const order = new Map(moves.map((m, i) => [m.id, i]));
+  // Loaded: a barbell, machine or dumbbells (bands and a bar don't count).
+  const loaded = (m: Move): number => Number(m.needs.some((n) => n === 'gym' || n === 'dumbbells'));
   return moves
     .filter((m) => m.slots.includes(slot) && fits(m, have, limitations, cap))
     .sort((a, b) =>
       Number(b.slots[0] === slot) - Number(a.slots[0] === slot)
+      || (place === 'gym' ? loaded(b) - loaded(a) : 0)
       || b.level - a.level
-      || (place === 'gym' ? Number(b.needs.includes('gym')) - Number(a.needs.includes('gym')) : 0)
+      || Number(b.needs.length > 0) - Number(a.needs.length > 0)
       || order.get(a.id)! - order.get(b.id)!);
 }
 

@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react-native';
 import { router, useIsFocused } from 'expo-router';
-import TodayRoute from '../app/(tabs)/index.tsx';
+import TodayRoute from '../src/screens/CampRoute.tsx';
 import { project } from '../src/game/project.ts';
 import { buzz } from '../src/ui/haptics.ts';
 import { DAY_TWO_NOW, claimedState, serverState } from './support/fixtures.ts';
