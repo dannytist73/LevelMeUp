@@ -316,6 +316,26 @@ describe('the base screens', () => {
     expect(store.getState().plan).toMatchObject({ days: 4, startedAt: PLAN.startedAt, length: { kind: 'weeks', weeks: 9 } });
   });
 
+  it('changing days a week keeps the week you were on', async () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
+    for (let i = 0; i < 7; i++) {
+      store.getState().startWorkout();
+      store.getState().toggleSet(0, 0);
+      now += 24 * 60 * 60_000;
+      store.getState().finishWorkout();
+    }
+    expect(place(store.getState(), now)).toMatchObject({ week: 3, day: 1 });
+    await render(<BaseProvider store={store}><Setup now={() => now} /></BaseProvider>);
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    await act(async () => fireEvent.press(screen.getByLabelText('4')));
+    for (let i = 0; i < 5; i++) await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    expect(store.getState().plan).toMatchObject({ days: 4, weekOffset: 2, startedAt: now });
+    expect(place(store.getState(), now + 1)).toMatchObject({ week: 3, day: 0 });
+  });
+
   it('Today shows the next workout, the chapter and asks for food targets', async () => {
     const { store } = setup();
     store.getState().setPlan(PLAN);
