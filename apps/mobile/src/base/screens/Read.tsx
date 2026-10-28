@@ -8,6 +8,7 @@ import { AccessibilityInfo, Image, View, useWindowDimensions } from 'react-nativ
 import { buzz } from '../../ui/haptics.ts';
 import { currentBook } from '../logic.ts';
 import { STORY_ART } from '../storyArt.ts';
+import { Icon } from '../icons.tsx';
 import { useBase, useBaseApi } from '../store.ts';
 import { G, S } from '../theme.ts';
 import { Bar, Button, Card, Header, Options, Press, Screen, T } from '../ui.tsx';
@@ -68,12 +69,12 @@ export function BookScreen({ id }: { id: string }) {
         const ch = chapter(c);
         const done = data.reading.done[c] !== undefined;
         return (
-          <Press key={c} label={`${i + 1}. ${ch.title}`} onPress={() => {
+          <Press key={c} label={`${i + 1}. ${ch.title}${done ? `, ${TX.readMark}` : ''}`} onPress={() => {
             api.getState().chooseBook(b.id);
             router.push(`/chapter/${c}`);
           }} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: G.surface, borderRadius: 14, padding: 14 }}>
             <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: done ? G.accent : G.raised }}>
-              <T v="label" color={done ? G.onAccent : G.text}>{String(i + 1)}</T>
+              {done ? <Icon name="check" size={18} color={G.onAccent} /> : <T v="label" color={G.text}>{String(i + 1)}</T>}
             </View>
             <View style={{ flex: 1 }}>
               <T v="bodyStrong">{ch.title}</T>

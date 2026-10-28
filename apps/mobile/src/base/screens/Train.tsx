@@ -5,6 +5,7 @@ import { volume } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { useState } from 'react';
+import { useClock } from '../clock.ts';
 import { best, defaultPlace, doneThisWeek, place, planWeeks, plannedDay, restarted } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
@@ -14,7 +15,8 @@ import { Button, Card, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.train;
 
-export function Train({ now = Date.now() }: { now?: number }) {
+export function Train({ now: fixed }: { now?: number }) {
+  const now = useClock(fixed);
   const api = useBaseApi();
   const [peek, setPeek] = useState<number | null>(null);
   const s = useBase((x) => x);
@@ -36,7 +38,7 @@ export function Train({ now = Date.now() }: { now?: number }) {
               backgroundColor: w < p.blockWeek ? G.accent : w === p.blockWeek ? G.accentText : G.raised }} />
           ))}
         </View>
-        <T v="bodyStrong">{TX.workouts}</T>
+        <T v="bodyStrong">{TX.workouts(p.week)}</T>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {Array.from({ length: s.plan.days }, (_, i) => {
             const isDone = i < done;

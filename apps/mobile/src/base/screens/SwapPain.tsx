@@ -57,6 +57,7 @@ export function SwapExercise({ ex }: { ex: number }) {
         <T v="label" color={G.muted}>{TX.current}</T>
         <T v="bodyStrong">{baseMove(current.move).name}</T>
       </Card>
+      {choices.length === 0 && <T color={G.muted}>{TX.none}</T>}
       <Options label={TX.title} columns={1} value={pick} onChange={setPick}
         options={choices.map((id) => {
           const last = lastSets(data, id);

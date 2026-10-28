@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { buzz } from '../../ui/haptics.ts';
+import { useClock } from '../clock.ts';
 import { toast } from '../../ui/toast.ts';
 import { Icon } from '../icons.tsx';
 import { dayKey, foodTotals, recentFoods, suggestTargets } from '../logic.ts';
@@ -34,7 +35,8 @@ function Total({ label, eaten, target, unit }: { label: string; eaten: number; t
   );
 }
 
-export function Eat({ now: clock = Date.now() }: { now?: number }) {
+export function Eat({ now: fixed }: { now?: number }) {
+  const clock = useClock(fixed);
   const api = useBaseApi();
   const food = useBase((s) => s.food);
   const targets = useBase((s) => s.targets);

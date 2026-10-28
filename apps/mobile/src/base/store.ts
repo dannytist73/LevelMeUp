@@ -41,7 +41,9 @@ export type BaseState = BaseData & {
   swap: (ex: number, move: string, keep: boolean) => void;
   skipExercise: (ex: number) => void;
   finishWorkout: () => Workout | null;
-  discardWorkout: () => void;
+  /** Drops the open workout; returns it so Undo can bring it back (restoreActive). */
+  discardWorkout: () => Workout | null;
+  restoreActive: (w: Workout) => void;
   startRest: (seconds: number) => void;
   moveRest: (seconds: number) => void;
   endRest: () => void;
@@ -164,6 +166,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         if (before === undefined) return false;
         const done = !before.done;
         editExercise(ex, (e) => ({ ...e, sets: e.sets.map((s, j) => (j === i ? { ...s, done } : s)) }));
+        if (done) editActive((w) => ({ ...w, lastAt: now() }));
         return done;
       },
       addSet: (ex) => editExercise(ex, (e) => {
@@ -217,7 +220,9 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       finishWorkout: () => {
         const w = get().active;
         if (w === null) return null;
-        const done: Workout = { ...w, finishedAt: now(), exercises: w.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => x.done) })).filter((e) => e.sets.length > 0) };
+        // Finished hours after the last set (Finish forgotten until the next day): dated by that set.
+        const end = w.lastAt !== undefined && now() - w.startedAt > 3 * 60 * 60 * 1000 ? w.lastAt : now();
+        const done: Workout = { ...w, finishedAt: end, exercises: w.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => x.done) })).filter((e) => e.sets.length > 0) };
         if (done.exercises.length === 0) {
           change({ active: null, restUntil: null });
           return null;
@@ -225,7 +230,14 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         change({ active: null, workouts: [...get().workouts, done], restUntil: null });
         return done;
       },
-      discardWorkout: () => change({ active: null, restUntil: null }),
+      discardWorkout: () => {
+        const w = get().active;
+        change({ active: null, restUntil: null });
+        return w;
+      },
+      restoreActive: (w) => {
+        if (get().active === null) change({ active: w });
+      },
       startRest: (seconds) => set({ restUntil: now() + seconds * 1000, restTotal: seconds }),
       moveRest: (seconds) => {
         const until = get().restUntil;

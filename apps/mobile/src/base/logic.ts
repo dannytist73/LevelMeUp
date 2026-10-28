@@ -29,6 +29,8 @@ export type Workout = {
   blockWeek: number;
   place: Place;
   exercises: WorkoutExercise[];
+  /** When the last set was ticked (a workout finished hours later is dated by it). */
+  lastAt?: number;
 };
 
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack';

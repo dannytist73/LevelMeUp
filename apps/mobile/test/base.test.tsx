@@ -181,6 +181,22 @@ describe('the base store', () => {
     expect(store.getState().workouts).toEqual([w]);
   });
 
+  it('a workout finished hours after its last set is dated by that set; a discard can be undone', () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
+    store.getState().startWorkout();
+    now += 40 * 60_000;
+    store.getState().toggleSet(0, 0);
+    now += 14 * 60 * 60_000;
+    expect(store.getState().finishWorkout()!.finishedAt).toBe(T0 + 40 * 60_000);
+    store.getState().startWorkout();
+    const gone = store.getState().discardWorkout()!;
+    expect(store.getState().active).toBeNull();
+    store.getState().restoreActive(gone);
+    expect(store.getState().active).toEqual(gone);
+  });
+
   it('a workout with nothing done is not saved', () => {
     const { store } = setup();
     store.getState().setPlan(PLAN);
@@ -380,7 +396,7 @@ describe('the base screens', () => {
     store.getState().setPlan(PLAN);
     await render(<BaseProvider store={store}><Today now={T0} /></BaseProvider>);
     expect(screen.getByText('Workout A')).toBeTruthy();
-    expect(screen.getByText('0 of 3 workouts this week')).toBeTruthy();
+    expect(screen.getByText('0 of 3 done in week 1')).toBeTruthy();
     expect(screen.getByText('Set your daily targets')).toBeTruthy();
     await act(async () => fireEvent.press(screen.getByTestId('today-start')));
     expect(router.push).toHaveBeenCalledWith('/workout');

@@ -83,7 +83,7 @@ export const BASE_TEXT = {
     exercises: (n: number, minutes: number) => `${n} ${n === 1 ? 'exercise' : 'exercises'}, about ${minutes} min`,
     start: 'Start workout',
     resume: 'Back to your workout',
-    thisWeek: (done: number, of: number) => `${done} of ${of} workouts this week`,
+    thisWeek: (done: number, of: number, week: number) => `${done} of ${of} done in week ${week}`,
     planDone: 'Your plan is complete. Start a new one in Train.',
     doneToday: (name: string, sets: number) => `Done today: ${name}, ${sets} ${sets === 1 ? 'set' : 'sets'}. Rest well.`,
     nextUp: 'Next time',
@@ -100,9 +100,9 @@ export const BASE_TEXT = {
   train: {
     title: 'Train',
     plan: 'Your plan',
-    block: (blockWeek: number) => (blockWeek === 1 ? 'Easier first week' : blockWeek === 6 ? 'Easy week: 2 sets, half the reps' : `Building up, week ${blockWeek} of 5`),
+    block: (blockWeek: number) => (blockWeek === 1 ? 'Easier first week' : blockWeek === 6 ? 'Easy week: 2 sets, half the reps' : `Building up, week ${blockWeek - 1} of 4`),
     days: (n: number) => `${n} days a week`,
-    workouts: 'This week',
+    workouts: (week: number) => `Week ${week}`,
     preview: (name: string) => `${name} this week`,
     showPreview: (name: string) => `Show what's in ${name}`,
     done: 'Done',
@@ -177,6 +177,8 @@ export const BASE_TEXT = {
     leaveYes: 'Finish workout',
     leaveNo: 'Keep going',
     discard: 'Discard workout',
+    discarded: 'Workout discarded',
+    undo: 'Undo',
     empty: 'Nothing fits here yet. Switch to Gym, or add equipment in Me.',
   },
   exercise: {
@@ -198,6 +200,7 @@ export const BASE_TEXT = {
     today: 'Just today',
     keep: 'Keep it in my plan',
     current: 'In your workout',
+    none: 'Nothing else fits here. Add equipment in Me, or switch to Gym.',
   },
   pain: {
     title: 'Something hurts?',
@@ -240,6 +243,7 @@ export const BASE_TEXT = {
     backToBooks: 'Back to your books',
     allRead: 'You have read every book here. More are on the way.',
     cardOf: (n: number, of: number) => `${n} of ${of}`,
+    readMark: 'read',
   },
   eat: {
     title: 'Eat',

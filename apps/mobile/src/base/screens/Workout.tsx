@@ -271,7 +271,8 @@ export function Workout() {
           <Button label={TX.leaveYes} onPress={finish} testID="finish-yes" />
           <Button label={TX.leaveNo} kind="secondary" onPress={() => setConfirm(false)} />
           <Button label={TX.discard} kind="quiet" onPress={() => {
-            api.getState().discardWorkout();
+            const gone = api.getState().discardWorkout();
+            if (gone !== null) toast(TX.discarded, { label: TX.undo, onPress: () => api.getState().restoreActive(gone) });
             router.back();
           }} />
         </Card>

@@ -5,8 +5,8 @@ import { BASE_TEXT, BOOKS } from '@levelmeup/content';
 import { baseMinutes, clampWeeks, planEnd } from '@levelmeup/rules';
 import type { BaseDays, BaseStyle, Equipment, Experience, Limitation, Where } from '@levelmeup/rules';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { BackHandler, View } from 'react-native';
 import { moveName, place, plannedDay } from '../logic.ts';
 import type { PlanSetup } from '../logic.ts';
 import { useBaseApi } from '../store.ts';
@@ -50,6 +50,16 @@ export function Setup({ now = Date.now, tester = false }: { now?: () => number; 
     ...(prev === null || wasFinished ? { startedAt: now() }
       : prev.days !== days ? { startedAt: now(), weekOffset: wasWeek - 1 }
         : { startedAt: prev.startedAt, ...(prev.weekOffset !== undefined ? { weekOffset: prev.weekOffset } : {}) }),
+  });
+
+  // Android's back button steps back through the setup (on the first step it leaves, as usual).
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (index === 0 || (prev !== null && step === 'builder')) return false;
+      setStep(steps[index - 1]!);
+      return true;
+    });
+    return () => sub.remove();
   });
 
   const header = index > 0 ? (

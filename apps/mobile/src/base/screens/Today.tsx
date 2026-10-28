@@ -5,6 +5,7 @@ import { baseMinutes } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { Image, View } from 'react-native';
 import { STORY_ART } from '../storyArt.ts';
+import { useClock } from '../clock.ts';
 import { currentBook, dayKey, defaultPlace, doneThisWeek, foodTotals, place, planWeeks, plannedDay, readDaysThisWeek, restarted } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
@@ -13,7 +14,8 @@ import { Bar, Button, Card, IconButton, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.today;
 
-export function Today({ now = Date.now() }: { now?: number }) {
+export function Today({ now: fixed }: { now?: number }) {
+  const now = useClock(fixed);
   const api = useBaseApi();
   const s = useBase((x) => x);
   if (s.plan === null) return null;
@@ -71,7 +73,7 @@ export function Today({ now = Date.now() }: { now?: number }) {
                 api.getState().startWorkout();
                 router.push('/workout');
               }} />
-            <T v="small" color={G.muted}>{TX.thisWeek(doneThisWeek(s, now), s.plan.days)}</T>
+            <T v="small" color={G.muted}>{TX.thisWeek(doneThisWeek(s, now), s.plan.days, p.week)}</T>
           </>
         )}
       </Card>
