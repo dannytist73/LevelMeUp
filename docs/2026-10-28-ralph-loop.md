@@ -83,7 +83,10 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   16 KB aligned, bundle scan clean. Installed over APK 7. Checked in the dark look: "Done today" on Today, a typed 40 kg
   carrying to set 2, All sets + to 42.5 on both, the summary's next-time line, Remove with Undo in Train's history,
   Eat's yesterday. Found: "1 sets in 1 min." (fixed after, 5902361)
-- [ ] Last APK (12:30 from ab80ee0: "1 set" copy, Train's workout preview, Today's chapter picture) built, installed, checked
+- [x] APK 9 (12:30 to 12:40 from ab80ee0): checked "Done today", Today's chapter picture, Train's workout preview, "1 set
+  in 1 min.". Found: scrolled text ran under the transparent status bar (fixed, 049af95)
+- [ ] Final APK 10 (12:42 from 049af95: + book-finished moment, history rows open the exercise page, the status-bar band)
+  built, installed, checked
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
 
@@ -173,7 +176,8 @@ lost screen-only state; the phone's switch is now taken when the app comes to th
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
 - 12:28 a second cut of the ad with the male Chatterbox voice (`levelmeup-ad-male.mp4`, 31.6 s, Whisper-checked).
-- 12:30 last APK build started (Train preview, Today picture, "1 set").
+- 12:40 APK 9 checked; 12:42 final APK 10 started with the book-finished moment, history links and the status-bar band.
+- 12:30 APK 9 build started (Train preview, Today picture, "1 set").
 - 12:18 APK 8 built and checked (dark look); "1 set" copy fixed after.
 - 12:08 second review fixed (0012556); final APK build started; bundle scan clean again.
 - 11:56 APK 7 built and checked (light look); after it: workout removal with Undo, All sets only with a weight, Start over stops the rest timer.
