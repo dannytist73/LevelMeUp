@@ -96,5 +96,7 @@ describe('the base words', () => {
     expect(formatClock(3_909_000)).toBe('1:05:09');
     expect(workoutName(1)).toBe('B');
     expect(BASE_TEXT.today.weekOf(2, 6)).toBe('Week 2 of 6');
+    expect(BASE_TEXT.workout.finishLines(1, 1)).toBe('1 set in 1 min.');
+    expect(BASE_TEXT.today.exercises(1, 5)).toBe('1 exercise, about 5 min');
   });
 });
