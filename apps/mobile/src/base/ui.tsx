@@ -41,16 +41,19 @@ export function Button({ label, onPress, kind = 'primary', icon, disabled, style
   label: string; onPress: () => void; kind?: 'primary' | 'secondary' | 'quiet'; icon?: BaseIcon; disabled?: boolean; style?: StyleProp<ViewStyle>; testID?: string;
 }) {
   const fg = disabled ? G.muted : kind === 'primary' ? G.onAccent : kind === 'secondary' ? G.text : G.accentText;
-  const box: ViewStyle = kind === 'primary' && !disabled
-    ? { backgroundColor: G.accent }
-    : kind === 'secondary' || disabled ? { borderWidth: 1.5, borderColor: disabled ? G.line : G.edge } : {};
+  // Every kind keeps the same border width (only its colour changes): on Android, a rounded, clipped view whose border
+  // went away when the button turned on lost its label (2026-10-28, the setup's Next and Save targets). The button is
+  // also drawn afresh when it turns on or off.
+  const box: ViewStyle = {
+    borderWidth: 1.5,
+    borderColor: disabled ? G.line : kind === 'primary' ? G.accent : kind === 'secondary' ? G.edge : 'transparent',
+    backgroundColor: kind === 'primary' && !disabled ? G.accent : 'transparent',
+  };
   return (
-    <Press label={label} onPress={onPress} disabled={disabled} testID={testID}
+    <Press key={disabled ? 'off' : 'on'} label={label} onPress={onPress} disabled={disabled} testID={testID}
       style={[{ minHeight: 52, borderRadius: S.control, paddingHorizontal: 18, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, box, style]}>
       {icon !== undefined && <Icon name={icon} size={20} color={fg} />}
-      {/* Android reuses a text view across a disabled -> enabled change and can lose its words (seen 2026-10-28, and
-          "Add a set" in 2026-10-15): a new view per state, and without an icon the label fills the button. */}
-      <T key={disabled ? 'off' : 'on'} v="bodyStrong" color={fg} style={{ textAlign: 'center', flexShrink: 1, flexGrow: icon === undefined ? 1 : 0 }}>{label}</T>
+      <T v="bodyStrong" color={fg} style={{ textAlign: 'center', flexShrink: 1 }}>{label}</T>
     </Press>
   );
 }
