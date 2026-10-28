@@ -76,8 +76,8 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 | 8 | Swap sheet with each option's last numbers | Done |
 | 9 | "Same as yesterday" per meal | Done |
 | 10 | Neutral numbers on Eat ("left" / "over", no red) | Done |
-| 11 | Log any day | Not yet |
-| 12 | Chapter time and resume at the exact card | Chapter time done; resume not yet |
+| 11 | Log any day | Done (Eat: earlier days, no missed mark) |
+| 12 | Chapter time and resume at the exact card | Done |
 | 13 | End of chapter: next chapter or done | Done |
 | 14 | A daily nudge that steps back after a week away, permission asked when switched on | Done (Me > Daily reminder) |
 | 15 | Weeks, not streaks ("2 of 3 workouts this week", "Read on 4 days this week") | Done |
