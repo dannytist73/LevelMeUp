@@ -100,7 +100,10 @@ export function Train({ now = Date.now() }: { now?: number }) {
             </View>
             <T v="small" color={G.muted}>{`${BASE_TEXT.today.weekOf(w.week, null)} · ${TX.sets(sets.length)}${kg > 0 ? ` · ${Math.round(kg).toLocaleString('en-US')} ${s.units}` : ''}`}</T>
             {w.exercises.map((e) => (
-              <T key={`${w.id}-${e.slot}-${e.move}`} v="small">{`${baseMove(e.move).name}: ${e.sets.map((x) => formatSet(x.weight, x.reps ?? 0, s.units, e.target.kind === 'range' ? e.target.unit : 'reps')).join(', ')}`}</T>
+              <Press key={`${w.id}-${e.slot}-${e.move}`} label={BASE_TEXT.exercise.open(baseMove(e.move).name)} onPress={() => router.push(`/exercise/${e.move}`)}
+                style={{ minHeight: 44, justifyContent: 'center' }}>
+                <T v="small">{`${baseMove(e.move).name}: ${e.sets.map((x) => formatSet(x.weight, x.reps ?? 0, s.units, e.target.kind === 'range' ? e.target.unit : 'reps')).join(', ')}`}</T>
+              </Press>
             ))}
           </Card>
         );
