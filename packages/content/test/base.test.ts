@@ -60,7 +60,34 @@ describe('the base training', () => {
   });
 });
 
+/** Every string in a copy object, with functions called on sample arguments. */
+function strings(value: unknown, out: string[] = []): string[] {
+  if (typeof value === 'string') out.push(value);
+  else if (typeof value === 'function') {
+    const fn = value as (...a: unknown[]) => unknown;
+    let r: unknown;
+    try {
+      r = fn(3, 6, 'kg');
+    } catch {
+      r = fn('Lunch', 'Workout A', 6);
+    }
+    if (typeof r === 'string') out.push(r);
+    else if (Array.isArray(r)) out.push(...r.filter((x): x is string => typeof x === 'string'));
+  } else if (Array.isArray(value)) value.forEach((v) => strings(v, out));
+  else if (value !== null && typeof value === 'object') Object.values(value).forEach((v) => strings(v, out));
+  return out;
+}
+
 describe('the base words', () => {
+  it('pass the lint: no robotic phrases, no shaming words, no emoji, no streak talk', () => {
+    const all = strings(BASE_TEXT);
+    expect(all.length).toBeGreaterThan(200);
+    for (const text of all) {
+      expect(lintText(text), text).toEqual([]);
+      expect(text.toLowerCase(), text).not.toMatch(/streak|missed|behind|you failed/);
+    }
+  });
+
   it('format sets, clocks and workout names', () => {
     expect(formatSet(62.5, 6, 'kg')).toBe('62.5 kg × 6');
     expect(formatSet(null, 12, 'kg')).toBe('12 reps');
