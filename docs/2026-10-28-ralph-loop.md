@@ -34,8 +34,7 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 ## Status
 
 - [x] Research: simple, interactive workout / reading / food logging (agent): `docs/research/2026-10-28-simple-logging-ux.md`
-- [x] Ad research: natural local voice, free footage and music (agent; `D:\App Projects\LevelMeUp ad 2026-10-28
-esearchoice.md`): Chatterbox (Resemble AI, MIT) picked over Kokoro; 14 Pexels/Mixkit clips; 3 Mixkit tracks; every licence recorded
+- [x] Ad research: natural local voice, free footage and music (agent; `D:\App Projects\LevelMeUp ad 2026-10-28/research/voice.md`): Chatterbox (Resemble AI, MIT) picked over Kokoro; 14 Pexels/Mixkit clips; 3 Mixkit tracks; every licence recorded
 - [x] Graphite palette + Geist font (subset from the local copy, `scripts/subset-geist.mts`), new icon (rising bars), name
   "LevelMeUp", 0.15.0 / versionCode 18
 - [x] Base store (local, `expo-sqlite/kv-store` key `base.v1`) + plan engine (`packages/rules/src/base.ts`: lengths
