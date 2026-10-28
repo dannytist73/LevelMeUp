@@ -1,7 +1,9 @@
 // Graphite (the owner's pick from the ten looks, 2026-10-28; docs/2026-10-28-base-app.md "Look"): charcoal with one
-// cobalt accent and Geist. Dark only for now; every text pair here is 4.5:1 or better (test/base/theme.test.ts).
+// cobalt accent and Geist, and its light partner. Every text pair is 4.5:1 or better and every control edge 3:1, in both
+// (test/baseTheme.test.ts). `G` holds the look in use: screens read it while they draw, and the root redraws the app
+// when the look changes (applyLook).
 
-export const G = {
+export const GRAPHITE_DARK = {
   bg: '#111315',
   surface: '#1A1D21',
   /** Inputs and the pressed or selected surface. */
@@ -22,7 +24,39 @@ export const G = {
   /** Pain and warnings: words only, never a fill. */
   warn: '#FFB4A8',
   ripple: '#FFFFFF1F',
-} as const;
+};
+
+export type Look = typeof GRAPHITE_DARK;
+
+export const GRAPHITE_LIGHT: Look = {
+  bg: '#F4F5F7',
+  surface: '#FFFFFF',
+  raised: '#ECEEF1',
+  line: '#DEE1E6',
+  edge: '#868E99',
+  text: '#111315',
+  muted: '#59616C',
+  accent: '#2F5BDB',
+  onAccent: '#FFFFFF',
+  accentText: '#2A4FC0',
+  doneBg: '#E3EAFC',
+  tabBar: '#FFFFFF',
+  warn: '#B3261E',
+  ripple: '#0000001A',
+};
+
+/** The look in use (dark until applyLook says otherwise). */
+export const G: Look = { ...GRAPHITE_DARK };
+
+export type Scheme = 'dark' | 'light';
+let applied: Scheme = 'dark';
+
+/** Switches the look in use; the caller redraws the app. */
+export function applyLook(scheme: Scheme): void {
+  if (scheme === applied) return;
+  Object.assign(G, scheme === 'light' ? GRAPHITE_LIGHT : GRAPHITE_DARK);
+  applied = scheme;
+}
 
 export const F = {
   regular: 'Geist-Regular',

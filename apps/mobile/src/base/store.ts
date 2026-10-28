@@ -11,7 +11,7 @@ import { restFor, targetFor } from '@levelmeup/rules';
 import { EMPTY, dayKey, defaultPlace, newExercises, place, plannedDay } from './logic.ts';
 
 const blockWeek6 = (w: { blockWeek: number }): boolean => w.blockWeek === 6;
-import type { BaseData, FoodEntry, PlanSetup, Reminder, Targets, Workout } from './logic.ts';
+import type { BaseData, FoodEntry, LookChoice, PlanSetup, Reminder, Targets, Workout } from './logic.ts';
 
 export const BASE_KEY = 'base.v1';
 
@@ -26,6 +26,7 @@ export type BaseState = BaseData & {
   load: () => Promise<void>;
   setPlan: (plan: PlanSetup) => void;
   setUnits: (units: Units) => void;
+  setLook: (look: LookChoice) => void;
   setReminder: (reminder: Reminder) => void;
   setRestAlerts: (on: boolean) => void;
   startWorkout: () => Workout | null;
@@ -93,6 +94,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       },
       setPlan: (plan) => change({ plan, kept: {} }),
       setUnits: (units) => change({ units }),
+      setLook: (look) => change({ look }),
       setReminder: (reminder) => change({ reminder }),
       setRestAlerts: (restAlerts) => change({ restAlerts }),
       startWorkout: () => {
@@ -207,7 +209,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       },
       restoreFood: (entry) => change({ food: [...get().food, entry].sort((a, b) => a.at - b.at) }),
       setTargets: (targets) => change({ targets }),
-      resetAll: () => change({ ...EMPTY }),
+      resetAll: () => change({ ...EMPTY, look: get().look }),
     };
   });
   return store;

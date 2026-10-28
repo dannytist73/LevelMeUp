@@ -35,8 +35,12 @@ export type Targets = { kcal: number; protein: number; weight: number; goal: 'lo
 
 export type Reminder = 'off' | 'morning' | 'evening';
 
+export type LookChoice = 'system' | 'dark' | 'light';
+
 export type BaseData = {
   v: 1;
+  /** Graphite dark or light, or as the phone is set. */
+  look: LookChoice;
   reminder: Reminder;
   /** A notification when the rest ends while the app is in the background. */
   restAlerts: boolean;
@@ -51,7 +55,7 @@ export type BaseData = {
   targets: Targets | null;
 };
 
-export const EMPTY: BaseData = { v: 1, reminder: 'off', restAlerts: false, plan: null, units: 'kg', workouts: [], active: null, kept: {}, reading: { book: null, done: {} }, food: [], targets: null };
+export const EMPTY: BaseData = { v: 1, look: 'system', reminder: 'off', restAlerts: false, plan: null, units: 'kg', workouts: [], active: null, kept: {}, reading: { book: null, done: {} }, food: [], targets: null };
 
 /** The place a workout starts at: the gym unless you train only at home. */
 export const defaultPlace = (plan: PlanSetup): Place => (plan.where === 'home' ? 'home' : 'gym');

@@ -18,6 +18,7 @@ export function Me() {
   const units = useBase((s) => s.units);
   const plan = useBase((s) => s.plan);
   const reminder = useBase((s) => s.reminder);
+  const look = useBase((s) => s.look);
   const restAlerts = useBase((s) => s.restAlerts);
   const pickRestAlerts = async (on: boolean) => {
     if (on && (await expoNotes.ask()) !== 'granted') {
@@ -44,6 +45,9 @@ export function Me() {
   return (
     <Screen>
       <Header onBack={() => router.back()} title={TX.title} />
+      <T v="bodyStrong">{TX.look}</T>
+      <Options label={TX.look} columns={3} value={look} onChange={(l) => api.getState().setLook(l)}
+        options={(['system', 'dark', 'light'] as const).map((k) => ({ key: k, label: TX.looks[k] }))} />
       <T v="bodyStrong">{TX.units}</T>
       <Options label={TX.units} value={units} onChange={(u) => api.getState().setUnits(u)} options={[{ key: 'kg', label: TX.kg }, { key: 'lb', label: TX.lb }]} />
       <T v="bodyStrong">{TX.reminder.title}</T>

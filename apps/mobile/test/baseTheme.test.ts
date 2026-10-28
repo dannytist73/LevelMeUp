@@ -1,7 +1,7 @@
 import { contrast } from '../src/theme/contrast.ts';
-import { G } from '../src/base/theme.ts';
+import { GRAPHITE_DARK, GRAPHITE_LIGHT } from '../src/base/theme.ts';
 
-describe('Graphite (the base app look)', () => {
+describe.each([['dark', GRAPHITE_DARK], ['light', GRAPHITE_LIGHT]])('Graphite %s (the base app look)', (_name, G) => {
   it('every text pair is 4.5:1 or better', () => {
     const pairs: [string, string, string][] = [
       ['text on bg', G.text, G.bg], ['text on surface', G.text, G.surface], ['text on raised', G.text, G.raised],

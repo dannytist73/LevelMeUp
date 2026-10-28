@@ -8,7 +8,7 @@ import kvStore from 'expo-sqlite/kv-store';
 import * as Crypto from 'expo-crypto';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BASE_TEXT } from '@levelmeup/content';
 import { dailyNotes, widgetLines } from '../src/base/logic.ts';
@@ -16,7 +16,9 @@ import { publishBaseWidget } from '../src/widget/publishBase.tsx';
 import type { StoreApi } from 'zustand/vanilla';
 import { BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { BaseState } from '../src/base/store.ts';
-import { G } from '../src/base/theme.ts';
+import { G, applyLook } from '../src/base/theme.ts';
+import { useBase } from '../src/base/store.ts';
+import type { ReactNode } from 'react';
 import { expoNotes } from '../src/notify/os.ts';
 import { Crashed } from '../src/screens/Crashed.tsx';
 import { Toasts } from '../src/ui/Toasts.tsx';
@@ -27,6 +29,20 @@ export const ErrorBoundary = Crashed;
 
 /** Grumble Camp's planned reminders are cleared once, so a tester's phone stops nudging about quests that are gone. */
 const GAME_NOTES_CLEARED = 'base.gameNotesCleared';
+
+/** The look in use: the choice in Me, or the phone's. A new look redraws the whole app (screens read G as they draw). */
+function Looked({ children }: { children: ReactNode }) {
+  const choice = useBase((s) => s.look);
+  const phone = useColorScheme();
+  const scheme = choice === 'system' ? (phone === 'light' ? 'light' : 'dark') : choice;
+  applyLook(scheme);
+  return (
+    <View key={scheme} style={{ flex: 1, backgroundColor: G.bg }}>
+      <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
+      {children}
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -97,8 +113,8 @@ export default function RootLayout() {
   if (!ready) return null;
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
       <BaseProvider store={store}>
+        <Looked>
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: G.bg } }}>
           <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
           <Stack.Screen name="exercise-swap" options={{ animation: 'slide_from_bottom' }} />
@@ -106,6 +122,7 @@ export default function RootLayout() {
           <Stack.Screen name="food-add" options={{ animation: 'slide_from_bottom' }} />
         </Stack>
         <Toasts />
+        </Looked>
       </BaseProvider>
     </SafeAreaProvider>
   );

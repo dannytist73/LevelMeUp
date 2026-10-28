@@ -275,6 +275,8 @@ export const BASE_TEXT = {
   me: {
     title: 'Me',
     units: 'Units',
+    look: 'Look',
+    looks: { system: 'As the phone', dark: 'Dark', light: 'Light' },
     kg: 'Kilograms',
     lb: 'Pounds',
     plan: 'Plan',
