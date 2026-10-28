@@ -34,7 +34,7 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 ## Status
 
 - [x] Research: simple, interactive workout / reading / food logging (agent): `docs/research/2026-10-28-simple-logging-ux.md`
-- [ ] Ad research: natural local voice, free footage and music (agent, running)
+- [x] Ad research: natural local voice, free footage and music (agent; `D:\App Projects\LevelMeUp ad 2026-10-28esearchoice.md`): Chatterbox (Resemble AI, MIT) picked over Kokoro; 14 Pexels/Mixkit clips; 3 Mixkit tracks; every licence recorded
 - [x] Graphite palette + Geist font (subset from the local copy, `scripts/subset-geist.mts`), new icon (rising bars), name
   "LevelMeUp", 0.15.0 / versionCode 18
 - [x] Base store (local, `expo-sqlite/kv-store` key `base.v1`) + plan engine (`packages/rules/src/base.ts`: lengths
@@ -54,12 +54,20 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   for the ad) and landed on Today; Read, Eat, Train, the chapter reader and the workout log open. Found on the emulator:
   story pictures overflowed the screen (fixed: sized from the window), the workout clock redrew the whole log every
   second (fixed: the clock and rest bar redraw alone), "A chapter takes about 3 minutes" under "2 min" (fixed)
-- [ ] Ad: recordings, voice, footage, music, cut
+- [x] Ad (11:12): `D:\App Projects\LevelMeUp ad 2026-10-28\levelmeup-ad.mp4`, 32.7 s, 1080 × 1920, -14.4 LUFS, plus
+  a voice-only cut and a cover. The real app (0.15.0 on the emulator) on a phone held in a hand (green screen keyed with
+  perspective) and in a floating phone; captions in Geist; Chatterbox-Turbo voice; "Raising Me Higher" (Mixkit).
+  Whisper heard every line over the music. Faceless shots only (Pexels' endorsement rule).
 - [x] APK 2 (09:48 to 10:00 from a348c3a): 178,179,837 bytes, sha256 `8d0cfcf5…f636`, 16 KB ok. Installed over APK 1
   (data kept). Me > Start over works. Found: the label fix did not hold; a button that turns from disabled to enabled
   still drew no label (setup's Next, Save targets). Reproduced on the emulator.
-- [ ] APK 3 (10:08 from 45191ab: one border width for every button, the button redrawn when it turns on or off; plus
-  the exercise page, warm-up sets, rest alert) built, installed, checked
+- [x] APK 3 (10:08 to 10:20 from 45191ab): 178,186,873 bytes, 16 KB ok. Buttons keep their labels (checked on Save
+  targets and the setup's Next). Recorded the ad's footage on it. Found while recording: Swap did nothing for the
+  neighbouring-slot picks it offers, and a weight cell could show "..". Both fixed.
+- [x] **APK 4 (10:50 to 11:02 from 94960e4), the current one:** `apps/mobile/dist/levelmeup-0.15.0-preview.apk`,
+  178,189,861 bytes, sha256 `08bc128c5cda4272d13903821f2d6cbce8b7938b7440adbbc8eeb48daef447cf`, 26 arm64 libraries all
+  16 KB aligned. Installed over APK 3 (data kept). Checked on the emulator: Swap replaces the exercise (barbell back
+  squat to dumbbell split squats), the exercise page, Eat's earlier day, a chapter reopening at its card, warm-up sets.
 - [x] `npm run check:bundle`: 539 files, no secrets, no developer code (09:48)
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
@@ -102,6 +110,9 @@ the form cue, best set and a top-set chart.
 - 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
+- 11:12 ad cut v2 rendered and checked; sent to the owner. 11:05 APK 4 installed and checked.
+- 10:50 APK 4 build started (swap fix, number cells, day switcher, chapter resume, welcome back).
+- 10:22 to 10:48 footage recorded on APK 3 (setup, three warm-up workouts, workout, reading, food, tabs).
 - 10:00 APK 2 built; 10:05 the label bug reproduced; 10:08 APK 3 started.
 - 09:46 APK 2 build started; 09:48 stopped and restarted from a348c3a after the setup recording's contact sheet
   showed a real bug: a button that turned from disabled to enabled lost its label on Android (the same text-view reuse
