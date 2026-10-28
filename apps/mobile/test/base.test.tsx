@@ -119,15 +119,29 @@ describe('the base store', () => {
     expect(after.exercises.slice(1).some((e, i) => e.move !== w.exercises[i + 1]?.move)).toBe(true);
   });
 
-  it('a kept swap stays for the block; just today does not', () => {
+  it('a swap replaces the exercise (even from a neighbouring slot); kept, it stays for the block', () => {
     const { store } = setup();
-    store.getState().setPlan({ ...PLAN, experience: 'new' });
+    store.getState().setPlan(PLAN);
     const w = store.getState().startWorkout()!;
     const slot = w.exercises[0]!.slot;
-    store.getState().swap(0, 'goblet-squat', false);
-    store.getState().discardWorkout();
+    store.getState().swap(0, 'barbell-bench-press', false);
+    expect(store.getState().active!.exercises[0]).toMatchObject({ slot, move: 'barbell-bench-press', target: { kind: 'fixed', reps: 6 } });
     expect(store.getState().kept).toEqual({});
-    expect(slot).toBeTruthy();
+    store.getState().swap(0, 'push-up', true);
+    expect(store.getState().active!.exercises[0]!.move).toBe('push-up');
+    expect(store.getState().kept).toEqual({ gym: { [slot]: 'push-up' } });
+  });
+
+  it('a swap after sets are done keeps them and adds the new exercise after', () => {
+    const { store } = setup();
+    store.getState().setPlan(PLAN);
+    const w = store.getState().startWorkout()!;
+    store.getState().toggleSet(0, 0);
+    store.getState().swap(0, 'barbell-bench-press', false);
+    const ex = store.getState().active!.exercises;
+    expect(ex[0]).toMatchObject({ move: w.exercises[0]!.move, sets: [{ done: true }] });
+    expect(ex[1]!.move).toBe('barbell-bench-press');
+    expect(ex).toHaveLength(w.exercises.length + 1);
   });
 
   it('saves to the phone and loads back', async () => {

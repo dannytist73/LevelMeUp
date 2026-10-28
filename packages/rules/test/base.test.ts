@@ -78,6 +78,15 @@ describe('slotChoices and planDay', () => {
     const home = planDay({ moves: MOVES, day: DAY, blockWeek: 1, place: 'home', home: [], limitations: [], experience: 'regular', kept });
     expect(home.map((e) => e.move)).toEqual(['bodyweight-squat']);
   });
+  it('keeps a swap from a neighbouring slot while it fits the place', () => {
+    const day: BlockDay = [{ slot: 'quads', sets: UP }];
+    expect(planDay({ moves: MOVES, day, blockWeek: 2, place: 'home', home: ['dumbbells'], limitations: [], experience: 'new' })[0]!.move).toBe('goblet-squat');
+    const kept = { home: { quads: 'bodyweight-squat' } };
+    expect(planDay({ moves: MOVES, day, blockWeek: 2, place: 'home', home: ['dumbbells'], limitations: [], experience: 'new', kept })[0]!.move).toBe('bodyweight-squat');
+    const gone = { home: { quads: 'goblet-squat' } };
+    expect(planDay({ moves: MOVES, day, blockWeek: 2, place: 'home', home: [], limitations: [], experience: 'new', kept: gone })[0]!.move).toBe('bodyweight-squat');
+  });
+
   it('estimates minutes in steps of 5', () => {
     expect(baseMinutes([{ sets: 3, restSeconds: 150 }, { sets: 3, restSeconds: 90 }])).toBe(20);
   });

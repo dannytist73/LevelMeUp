@@ -6,7 +6,11 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 import type { LoggedSet, Place, Units } from '@levelmeup/rules';
+import { baseMove } from '@levelmeup/content';
+import { restFor, targetFor } from '@levelmeup/rules';
 import { EMPTY, dayKey, defaultPlace, newExercises, place, plannedDay } from './logic.ts';
+
+const blockWeek6 = (w: { blockWeek: number }): boolean => w.blockWeek === 6;
 import type { BaseData, FoodEntry, PlanSetup, Reminder, Targets, Workout } from './logic.ts';
 
 export const BASE_KEY = 'base.v1';
@@ -136,12 +140,22 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         const w = s.active;
         const old = w?.exercises[ex];
         if (w === null || old === undefined || s.plan === null) return;
+        let next;
+        try {
+          next = baseMove(move);
+        } catch {
+          return;
+        }
         const kept = keep ? { ...s.kept, [w.place]: { ...(s.kept[w.place] ?? {}), [old.slot]: move } } : s.kept;
-        const planned = plannedDay(s.plan, { [w.place]: { [old.slot]: move } }, w.day, w.blockWeek, w.place).find((e) => e.slot === old.slot);
-        const replacement = planned !== undefined && planned.move === move ? newExercises(s, [planned], w.blockWeek)[0]! : null;
-        if (replacement === null) return;
-        set({ kept });
-        editExercise(ex, () => replacement);
+        const count = blockWeek6(w) ? 2 : old.sets.length;
+        const planned = { slot: old.slot, move, sets: count, target: targetFor(next, old.slot, ex === 0, w.blockWeek), restSeconds: restFor(next) };
+        const replacement = newExercises(s, [planned], w.blockWeek)[0]!;
+        const done = old.sets.filter((x) => x.done);
+        // Sets already done stay with the exercise they were done on; the new one comes after it.
+        const exercises = done.length > 0
+          ? [...w.exercises.slice(0, ex), { ...old, sets: done }, replacement, ...w.exercises.slice(ex + 1)]
+          : w.exercises.map((e, i) => (i === ex ? replacement : e));
+        change({ kept, active: { ...w, exercises } });
       },
       skipExercise: (ex) => editExercise(ex, (e) => ({ ...e, skipped: true, sets: e.sets.filter((x) => x.done) })),
       finishWorkout: () => {

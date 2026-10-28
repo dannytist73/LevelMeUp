@@ -158,8 +158,10 @@ export function planDay({ moves, day, blockWeek, place, home, limitations, exper
   day.forEach(({ slot, sets }, i) => {
     const choices = slotChoices(moves, slot, place, home, limitations, experience).filter((m) => !used.has(m.id));
     const keptId = kept?.[place]?.[slot];
+    // A kept swap may come from a neighbouring slot (the swap list offers those too): used while it fits the place.
+    const keptMove = moves.find((m) => m.id === keptId && !used.has(m.id) && fits(m, equipmentAt(place, home), limitations, 3));
     const stand = (FALLBACK[slot] ?? []).flatMap((s) => slotChoices(moves, s, place, home, limitations, experience)).filter((m) => !used.has(m.id));
-    const move = choices.find((m) => m.id === keptId) ?? choices[0] ?? stand[0];
+    const move = keptMove ?? choices[0] ?? stand[0];
     if (move === undefined) return;
     used.add(move.id);
     const count = blockWeek === BASE_BLOCK_WEEKS ? 2 : (sets[blockWeek - 1] ?? sets[sets.length - 1] ?? 3);
