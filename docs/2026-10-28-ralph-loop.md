@@ -75,6 +75,9 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   (60 kg to 132.5 lb) and back
 - [x] Research pass 2: `docs/research/2026-10-28-micro-interactions.md`. Applied: a ticked set fills in 200 ms, the
   calorie and protein bars grow to new values (both still with reduced motion), and haptics follow one map
+- [x] APK 7 (11:46 to 11:56 from 09f0c83): 178,255,014 bytes, sha256 `b000b72c…5605`, 16 KB ok. Checked in the light
+  look (the emulator's own setting): the tester note on the welcome after Start over, a new 4-day plan, a ticked set's
+  fill caught mid-animation, haptics in the vibrator log, Pain saving "Knees" as an area that hurts, history and bests
 - [ ] Final APK built by 14:00 with everything after APK 6, installed, checked; doc and memory current
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
@@ -156,6 +159,8 @@ asks where it hurts and leaves exercises that load that area out of future worko
 - 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
+- 11:56 APK 7 built and checked (light look); after it: workout removal with Undo, All sets only with a weight, Start over stops the rest timer.
+- 11:43 APK 6 built and checked.
 - 11:34 APK 5 built (widget, light look, done-today, plan changes); light look checked; APK 6 started with the review fixes.
 - 11:21 to 11:30 review (12 findings) fixed.
 - 11:12 ad cut v2 rendered and checked; sent to the owner. 11:05 APK 4 installed and checked.
