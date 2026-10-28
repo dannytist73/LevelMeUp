@@ -1,7 +1,10 @@
 // The base app's few building blocks in Graphite: text, buttons, cards, option groups, a stepper, a field, a bar and
 // the screen frame. 48 dp targets, labels that wrap instead of cutting, Android's ripple on every press.
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useReduce } from '../ui/useMotion.ts';
 import type { KeyboardTypeOptions, StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from './icons.tsx';
@@ -141,11 +144,30 @@ export function Field({ label, value, onChange, placeholder, keyboard = 'default
 /** A filled bar for progress (decorative: the numbers beside it say the same). */
 export function Bar({ value, max, height = 8 }: { value: number; max: number; height?: number }) {
   const share = max <= 0 ? 0 : Math.min(1, Math.max(0, value / max));
+  // It grows to a new value in 250 ms (research 2026-10-28, micro-interactions #3); still with reduced motion. The first
+  // drawing is already in place.
+  const reduce = useReduce();
+  const width = useSharedValue(share);
+  useEffect(() => {
+    width.value = reduce ? share : withTiming(share, { duration: 250, easing: Easing.out(Easing.cubic) });
+  }, [reduce, share, width]);
+  const grow = useAnimatedStyle(() => ({ width: `${width.value * 100}%` }));
   return (
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ height, borderRadius: height, backgroundColor: G.raised, overflow: 'hidden' }}>
-      <View style={{ width: `${share * 100}%`, height: '100%', backgroundColor: G.accent, borderRadius: height }} />
+      <Animated.View style={[{ height: '100%', backgroundColor: G.accent, borderRadius: height }, grow]} />
     </View>
   );
+}
+
+/** A done mark's fill: 200 ms in (research 2026-10-28, micro-interactions #1); at once with reduced motion. */
+export function DoneFill({ done, radius }: { done: boolean; radius: number }) {
+  const reduce = useReduce();
+  const shown = useSharedValue(done ? 1 : 0);
+  useEffect(() => {
+    shown.value = reduce ? (done ? 1 : 0) : withTiming(done ? 1 : 0, { duration: 200, easing: Easing.out(Easing.cubic) });
+  }, [done, reduce, shown]);
+  const fade = useAnimatedStyle(() => ({ opacity: shown.value }));
+  return <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: G.accent, borderRadius: radius }, fade]} />;
 }
 
 /** A screen: safe area, a scroll, the side gutter; an optional bar fixed at the bottom. */

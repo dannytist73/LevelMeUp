@@ -15,7 +15,7 @@ import { best, lastSets, planWeeks, warmupSets } from '../logic.ts';
 import type { Workout as WorkoutData, WorkoutExercise } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { F, G, S } from '../theme.ts';
-import { Bar, Button, Card, Header, IconButton, Options, Press, Screen, T } from '../ui.tsx';
+import { Bar, Button, Card, DoneFill, Header, IconButton, Options, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.workout;
 
@@ -138,7 +138,8 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
             <NumberCell value={set.reps} decimal={false} label={`${TX.set} ${i + 1} ${seconds ? TX.seconds : TX.reps}`} testID={`r-${index}-${i}`}
               onChange={(n) => api.getState().setSet(index, i, { reps: n })} />
             <Press label={set.done ? TX.setDone(i + 1) : TX.setNotDone(i + 1)} selected={set.done} onPress={() => tick(i)} testID={`done-${index}-${i}`}
-              style={{ width: 48, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: set.done ? G.accent : G.raised }}>
+              style={{ width: 48, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: G.raised }}>
+              <DoneFill done={set.done} radius={10} />
               <Icon name="check" size={22} color={set.done ? G.onAccent : G.muted} />
             </Press>
           </View>
