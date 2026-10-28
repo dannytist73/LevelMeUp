@@ -145,7 +145,8 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
           </View>
         );
       })}
-      {weighted && ex.sets.some((x) => !x.done) && (
+      {/* Shown once there is a weight to move (a first time starts empty). */}
+      {weighted && ex.sets.some((x) => !x.done && x.weight !== null) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <T v="small" color={G.muted} style={{ flex: 1 }}>{TX.allSets}</T>
           <IconButton icon="minus" size={44} label={TX.lighter(formatWeight(step, units))} onPress={() => {
