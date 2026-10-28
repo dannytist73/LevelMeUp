@@ -109,6 +109,13 @@ describe('the base store', () => {
     store.getState().setSet(0, 1, { weight: 30 });
     store.getState().setSet(0, 0, { weight: 20 });
     expect(store.getState().active!.exercises[0]!.sets.map((x) => x.weight)).toEqual([20, 30]);
+    store.getState().setSet(2, 0, { weight: 8 });
+    store.getState().setSet(2, 0, { weight: null });
+    store.getState().setSet(2, 0, { weight: 60 });
+    expect(store.getState().active!.exercises[2]!.sets.map((x) => x.weight)).toEqual([60, 60]);
+    store.getState().setSet(3, 1, { weight: 40 });
+    store.getState().shiftWeight(3, 2.5);
+    expect(store.getState().active!.exercises[3]!.sets.map((x) => x.weight)).toEqual([null, 42.5]);
     store.getState().startWorkout();
     store.getState().setSet(1, 0, { weight: 15 });
     expect(store.getState().active!.exercises[1]!.sets.every((x) => x.weight === 15)).toBe(true);
@@ -167,6 +174,7 @@ describe('the base store', () => {
     const gone = store.getState().removeWorkout(w.id)!;
     expect(store.getState().workouts).toHaveLength(0);
     expect(place(store.getState(), now)).toMatchObject({ day: 0 });
+    store.getState().restoreWorkout(gone);
     store.getState().restoreWorkout(gone);
     expect(store.getState().workouts).toEqual([w]);
   });

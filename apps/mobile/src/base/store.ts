@@ -155,7 +155,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
           // A weight typed into a set carries to the later sets not done yet that were empty or the same as it, so
           // straight sets need one entry (and typing "62.5" key by key never leaves a "6" behind).
           const was = e.sets[i]?.weight ?? null;
-          if (j > i && !s.done && patch.weight !== undefined && patch.weight !== null && (s.weight === null || s.weight === was)) return { ...s, weight: patch.weight };
+          if (j > i && !s.done && patch.weight !== undefined && (s.weight === null || s.weight === was)) return { ...s, weight: patch.weight };
           return s;
         }),
       })),
@@ -172,7 +172,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       }),
       shiftWeight: (ex, delta) => editExercise(ex, (e) => ({
         ...e,
-        sets: e.sets.map((x) => (x.done ? x : { ...x, weight: Math.max(0, Math.round(((x.weight ?? 0) + delta) * 100) / 100) })),
+        sets: e.sets.map((x) => (x.done || x.weight === null ? x : { ...x, weight: Math.max(0, Math.round((x.weight + delta) * 100) / 100) })),
       })),
       removeSet: (ex, i) => editExercise(ex, (e) => ({ ...e, sets: e.sets.filter((_, j) => j !== i) })),
       switchPlace: (to) => {
@@ -266,8 +266,8 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         if (found !== null) change({ workouts: get().workouts.filter((w) => w.id !== id) });
         return found;
       },
-      restoreWorkout: (w) => change({ workouts: [...get().workouts, w].sort((a, b) => (a.finishedAt ?? 0) - (b.finishedAt ?? 0)) }),
-      restoreFood: (entry) => change({ food: [...get().food, entry].sort((a, b) => a.at - b.at) }),
+      restoreWorkout: (w) => get().workouts.some((x) => x.id === w.id) ? undefined : change({ workouts: [...get().workouts, w].sort((a, b) => (a.finishedAt ?? 0) - (b.finishedAt ?? 0)) }),
+      restoreFood: (entry) => get().food.some((x) => x.id === entry.id) ? undefined : change({ food: [...get().food, entry].sort((a, b) => a.at - b.at) }),
       setTargets: (targets) => change({ targets }),
       resetAll: () => change({ ...EMPTY, look: get().look, restUntil: null }),
     };

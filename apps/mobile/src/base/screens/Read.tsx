@@ -4,7 +4,7 @@
 import { BASE_TEXT, BOOKS, book as findBook, chapter, chapterMinutes } from '@levelmeup/content';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Image, View, useWindowDimensions } from 'react-native';
 import { buzz } from '../../ui/haptics.ts';
 import { currentBook } from '../logic.ts';
 import { STORY_ART } from '../storyArt.ts';
@@ -157,6 +157,8 @@ export function ChapterScreen({ id }: { id: string }) {
             setAnswer(k);
             // A right answer confirms; a wrong one stays quiet (research 2026-10-28, haptic map).
             if (k === ch.check.answer) buzz('stamp');
+            // Screen readers hear the answer's feedback at once (a live region that only just appeared may stay silent).
+            AccessibilityInfo.announceForAccessibility(`${k === ch.check.answer ? TX.right : TX.notQuite} ${ch.check.why}`);
           }} options={ch.check.options.map((o, i) => ({ key: i, label: o }))} />
           {answer !== null && (
             <T accessibilityLiveRegion="polite" color={answer === ch.check.answer ? G.accentText : G.text}>{`${answer === ch.check.answer ? TX.right : TX.notQuite} ${ch.check.why}`}</T>

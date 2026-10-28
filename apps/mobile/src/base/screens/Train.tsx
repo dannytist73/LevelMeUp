@@ -4,7 +4,7 @@ import { BASE_TEXT, baseMove, formatSet, workoutName } from '@levelmeup/content'
 import { volume } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { View } from 'react-native';
-import { best, doneThisWeek, place, planWeeks } from '../logic.ts';
+import { best, doneThisWeek, place, planWeeks, restarted } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
 import { toast } from '../../ui/toast.ts';
@@ -74,8 +74,12 @@ export function Train({ now = Date.now() }: { now?: number }) {
               <T v="small" color={G.muted}>{new Date(w.finishedAt ?? w.startedAt).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</T>
               <Press label={TX.remove(BASE_TEXT.today.workout(workoutName(w.day)), new Date(w.finishedAt ?? w.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }))}
                 onPress={() => {
+                  const was = restarted(api.getState(), Date.now());
                   const gone = api.getState().removeWorkout(w.id);
-                  if (gone !== null) toast(TX.removed(BASE_TEXT.today.workout(workoutName(w.day))), { label: TX.undo, onPress: () => api.getState().restoreWorkout(gone) });
+                  const name = BASE_TEXT.today.workout(workoutName(w.day));
+                  // A removal that leaves a gap of over 14 days restarts the plan: the note says so.
+                  const now = !was && restarted(api.getState(), Date.now());
+                  if (gone !== null) toast(now ? TX.removedRestart(name) : TX.removed(name), { label: TX.undo, onPress: () => api.getState().restoreWorkout(gone) });
                 }}
                 style={{ width: 44, height: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="trash" size={18} color={G.muted} />

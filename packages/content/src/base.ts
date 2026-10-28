@@ -109,6 +109,7 @@ export const BASE_TEXT = {
     noHistory: 'Your finished workouts show up here.',
     remove: (name: string, date: string) => `Remove ${name} from ${date}`,
     removed: (name: string) => `${name} removed`,
+    removedRestart: (name: string) => `${name} removed. With that gap, your plan starts again at its easy week.`,
     undo: 'Undo',
     bests: 'Best sets',
     change: 'Change plan',

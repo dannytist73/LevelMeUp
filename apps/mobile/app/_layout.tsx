@@ -8,7 +8,7 @@ import kvStore from 'expo-sqlite/kv-store';
 import * as Crypto from 'expo-crypto';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { AppState, View, useColorScheme } from 'react-native';
+import { AppState, Appearance, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BASE_TEXT } from '@levelmeup/content';
 import { dailyNotes, widgetLines } from '../src/base/logic.ts';
@@ -33,7 +33,15 @@ const GAME_NOTES_CLEARED = 'base.gameNotesCleared';
 /** The look in use: the choice in Me, or the phone's. A new look redraws the whole app (screens read G as they draw). */
 function Looked({ children }: { children: ReactNode }) {
   const choice = useBase((s) => s.look);
-  const phone = useColorScheme();
+  // The phone's own switch (e.g. scheduled dark mode) is taken when the app comes to the front, never while it is in
+  // use: the redraw would lose what a screen holds (review 2026-10-28). A choice in Me applies at once.
+  const [phone, setPhone] = useState(Appearance.getColorScheme());
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setPhone(Appearance.getColorScheme());
+    });
+    return () => sub.remove();
+  }, []);
   const scheme = choice === 'system' ? (phone === 'light' ? 'light' : 'dark') : choice;
   applyLook(scheme);
   return (

@@ -153,7 +153,7 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
             buzz('tick');
             api.getState().shiftWeight(index, -step);
           }} />
-          <T v="bodyStrong" style={{ minWidth: 72, textAlign: 'center' }}>{formatWeight(ex.sets.find((x) => !x.done)?.weight ?? 0, units)}</T>
+          <T v="bodyStrong" style={{ minWidth: 72, textAlign: 'center' }}>{formatWeight(ex.sets.find((x) => !x.done && x.weight !== null)?.weight ?? 0, units)}</T>
           <IconButton icon="plus" size={44} label={TX.heavier(formatWeight(step, units))} onPress={() => {
             buzz('tick');
             api.getState().shiftWeight(index, step);
