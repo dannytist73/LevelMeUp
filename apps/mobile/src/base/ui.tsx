@@ -177,6 +177,8 @@ export function Screen({ children, footer, scroll = true }: { children: ReactNod
   return (
     <View style={{ flex: 1, backgroundColor: G.bg }}>
       {scroll ? <ScrollView keyboardShouldPersistTaps="handled">{body}</ScrollView> : body}
+      {/* A band behind the status bar, so scrolled words never run under its icons. */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: G.bg }} />
       {footer !== undefined && (
         <View style={{ paddingHorizontal: S.gutter, paddingTop: 10, paddingBottom: insets.bottom + 12, backgroundColor: G.bg, borderTopWidth: 1, borderTopColor: G.line, gap: 8 }}>
           {footer}
