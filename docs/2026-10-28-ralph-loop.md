@@ -78,7 +78,12 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 - [x] APK 7 (11:46 to 11:56 from 09f0c83): 178,255,014 bytes, sha256 `b000b72c…5605`, 16 KB ok. Checked in the light
   look (the emulator's own setting): the tester note on the welcome after Start over, a new 4-day plan, a ticked set's
   fill caught mid-animation, haptics in the vibrator log, Pain saving "Knees" as an area that hurts, history and bests
-- [ ] Final APK built by 14:00 with everything after APK 6, installed, checked; doc and memory current
+- [x] **APK 8 (12:08 to 12:18 from 0012556), the current one:** `apps/mobile/dist/levelmeup-0.15.0-preview.apk`,
+  178,258,514 bytes, sha256 `963a0ce352fadf4113fbdc2cc78ae4fb01b14969ea624c71d46e320e8f11f88d`, 26 arm64 libraries all
+  16 KB aligned, bundle scan clean. Installed over APK 7. Checked in the dark look: "Done today" on Today, a typed 40 kg
+  carrying to set 2, All sets + to 42.5 on both, the summary's next-time line, Remove with Undo in Train's history,
+  Eat's yesterday. Found: "1 sets in 1 min." (fixed after, 5902361)
+- [ ] A last APK by 14:00 if more fixes land (so far only the "1 set" copy)
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
 
@@ -167,6 +172,7 @@ lost screen-only state; the phone's switch is now taken when the app comes to th
 - 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
+- 12:18 APK 8 built and checked (dark look); "1 set" copy fixed after.
 - 12:08 second review fixed (0012556); final APK build started; bundle scan clean again.
 - 11:56 APK 7 built and checked (light look); after it: workout removal with Undo, All sets only with a weight, Start over stops the rest timer.
 - 11:43 APK 6 built and checked.
