@@ -84,6 +84,8 @@ export const BASE_TEXT = {
     resume: 'Back to your workout',
     thisWeek: (done: number, of: number) => `${done} of ${of} workouts this week`,
     planDone: 'Your plan is complete. Start a new one in Train.',
+    doneToday: (name: string, sets: number) => `Done today: ${name}, ${sets} ${sets === 1 ? 'set' : 'sets'}. Rest well.`,
+    nextUp: 'Next time',
     welcomeBack: 'Welcome back. Your plan starts again with its easy first week.',
     chapter: (n: number, of: number, minutes: number) => `Chapter ${n} of ${of} · ${minutes} min`,
     readNow: 'Read',

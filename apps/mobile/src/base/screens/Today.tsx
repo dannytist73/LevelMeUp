@@ -7,6 +7,7 @@ import { View } from 'react-native';
 import { currentBook, dayKey, defaultPlace, doneThisWeek, foodTotals, place, planWeeks, plannedDay, readDaysThisWeek, restarted } from '../logic.ts';
 import { useBase } from '../store.ts';
 import { G } from '../theme.ts';
+import { Icon } from '../icons.tsx';
 import { Bar, Button, Card, IconButton, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.today;
@@ -23,6 +24,8 @@ export function Today({ now = Date.now() }: { now?: number }) {
   const { book, next } = currentBook(s);
   const chap = next === null ? null : chapter(book.chapters[next]!);
   const today = s.food.filter((f) => f.day === dayKey(now));
+  // A workout finished today: Today says so, and the next one waits quietly.
+  const trainedToday = [...s.workouts].reverse().find((w) => w.finishedAt !== null && dayKey(w.finishedAt) === dayKey(now));
   const totals = foodTotals(today);
   const date = new Date(now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -49,12 +52,19 @@ export function Today({ now = Date.now() }: { now?: number }) {
         ) : (
           <>
             {day === null && restarted(s, now) && <T v="small" color={G.accentText}>{TX.welcomeBack}</T>}
+            {day === null && trainedToday !== undefined && (
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+                <Icon name="check" size={18} color={G.accentText} />
+                <T v="small" color={G.accentText} style={{ flex: 1 }}>{TX.doneToday(TX.workout(workoutName(trainedToday.day)), trainedToday.exercises.reduce((n, e) => n + e.sets.length, 0))}</T>
+              </View>
+            )}
+            {day === null && trainedToday !== undefined && <T v="label" color={G.muted}>{TX.nextUp}</T>}
             <T v="heading">{TX.workout(workoutName(day?.day ?? p.day))}</T>
             {(day?.exercises ?? exercises ?? []).map((e) => (
               <T key={e.slot} v="small" color={G.muted}>{baseMove(e.move).name}</T>
             ))}
             {exercises !== null && <T v="small" color={G.muted}>{TX.exercises(exercises.length, baseMinutes(exercises))}</T>}
-            <Button label={day === null ? TX.start : TX.resume} icon="train" testID="today-start"
+            <Button label={day === null ? TX.start : TX.resume} icon="train" testID="today-start" kind={day === null && trainedToday !== undefined ? 'secondary' : 'primary'}
               onPress={() => {
                 router.push('/workout');
               }} />

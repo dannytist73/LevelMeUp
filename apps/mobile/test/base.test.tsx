@@ -264,6 +264,21 @@ describe('the base screens', () => {
     expect(screen.getByText('Set your daily targets')).toBeTruthy();
     await act(async () => fireEvent.press(screen.getByTestId('today-start')));
     expect(router.push).toHaveBeenCalledWith('/workout');
+    expect(screen.queryByText(/^Done today/)).toBeNull();
+  });
+
+  it('Today says a workout was done today, and the next one waits', async () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
+    store.getState().startWorkout();
+    store.getState().toggleSet(0, 0);
+    store.getState().toggleSet(0, 1);
+    now += 60 * 60_000;
+    store.getState().finishWorkout();
+    await render(<BaseProvider store={store}><Today now={now} /></BaseProvider>);
+    expect(screen.getByText('Done today: Workout A, 2 sets. Rest well.')).toBeTruthy();
+    expect(screen.getByText('Workout B')).toBeTruthy();
   });
 
   it('the workout log: ticking a set starts the rest, finishing shows the summary', async () => {
