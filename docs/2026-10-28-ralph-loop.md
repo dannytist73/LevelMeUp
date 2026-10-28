@@ -62,6 +62,29 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   the exercise page, warm-up sets, rest alert) built, installed, checked
 - [x] `npm run check:bundle`: 539 files, no secrets, no developer code (09:48)
 
+## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
+
+| # | Idea | Status |
+|---|---|---|
+| 1 | Tick = done at the shown numbers (advised weight and last reps prefilled) | Done |
+| 2 | Quick add on Eat (calories or protein is enough; no name needed) | Done |
+| 3 | Rest bar with −15 s / +15 s / Skip, started by the tick, timed per exercise | Done (plus an opt-in alert while the phone is locked) |
+| 4 | Recent foods as one-tap chips | Done |
+| 5 | Finish screen: sets, time, total, new bests, next time per exercise | Done (no Keep/Change yet) |
+| 6 | Weight − / + steppers | Not yet (the number pad opens on tap) |
+| 7 | Quiet "new best" with one haptic | Done (a note, no confetti) |
+| 8 | Swap sheet with each option's last numbers | Done |
+| 9 | "Same as yesterday" per meal | Done |
+| 10 | Neutral numbers on Eat ("left" / "over", no red) | Done |
+| 11 | Log any day | Not yet |
+| 12 | Chapter time and resume at the exact card | Chapter time done; resume not yet |
+| 13 | End of chapter: next chapter or done | Done |
+| 14 | A daily nudge that steps back after a week away, permission asked when switched on | Done (Me > Daily reminder) |
+| 15 | Weeks, not streaks ("2 of 3 workouts this week", "Read on 4 days this week") | Done |
+
+Also from the Kaizen research: warm-up sets for the big lifts (50/75/90%) and an exercise page with how-to steps,
+the form cue, best set and a top-set chart.
+
 ## Decisions made in the loop
 
 - **Local-first, no account:** the base app keeps everything on the phone and Grumble Camp's game store no longer
