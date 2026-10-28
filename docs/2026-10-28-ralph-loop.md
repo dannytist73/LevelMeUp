@@ -92,6 +92,8 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 
 Also checked at the largest text size (2x): nothing truncates; the workout's "Set" header broke mid-word (fixed).
 The home-screen widget now shows the base app (next workout, next chapter, today's food) in Graphite.
+Graphite now has its light partner (follows the phone; Me > Look: As the phone, Dark, Light); both pass the contrast
+test. Changing the look redraws the app from Today.
 
 Also from the Kaizen research: warm-up sets for the big lifts (50/75/90%) and an exercise page with how-to steps,
 the form cue, best set and a top-set chart.
