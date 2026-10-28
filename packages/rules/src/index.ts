@@ -20,3 +20,4 @@ export * from './achievements.ts';
 export * from './campaign.ts';
 export * from './onboarding.ts';
 export * from './battle.ts';
+export * from './base.ts';

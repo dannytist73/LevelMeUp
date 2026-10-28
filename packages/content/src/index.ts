@@ -31,3 +31,7 @@ export * from './training/programs.ts';
 export * from './grumbles.ts';
 export * from './buddies.ts';
 export * from './camp.ts';
+export * from './base.ts';
+export * from './training/base.ts';
+export * from './books/books.ts';
+export type { Chapter } from './books/chapters.ts';
