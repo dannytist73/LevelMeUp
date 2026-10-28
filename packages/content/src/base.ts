@@ -222,6 +222,9 @@ export const BASE_TEXT = {
   eat: {
     title: 'Eat',
     today: 'Today',
+    yesterday: 'Yesterday',
+    earlier: 'Earlier day',
+    later: 'Later day',
     kcal: 'kcal',
     protein: 'Protein',
     carbs: 'Carbs',

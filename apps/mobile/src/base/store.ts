@@ -39,7 +39,8 @@ export type BaseState = BaseData & {
   endRest: () => void;
   chooseBook: (id: string) => void;
   readChapter: (id: string) => void;
-  addFood: (entry: Omit<FoodEntry, 'id' | 'day' | 'at'>) => FoodEntry;
+  /** Logs a food today, or on `day` (a past day's key, "2026-10-27") when it was forgotten. */
+  addFood: (entry: Omit<FoodEntry, 'id' | 'day' | 'at'> & { day?: string }) => FoodEntry;
   removeFood: (id: string) => FoodEntry | null;
   restoreFood: (entry: FoodEntry) => void;
   setTargets: (targets: Targets) => void;
@@ -169,7 +170,8 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       },
       addFood: (entry) => {
         const at = now();
-        const full: FoodEntry = { ...entry, id: newId(), day: dayKey(at), at };
+        const { day, ...rest } = entry;
+        const full: FoodEntry = { ...rest, id: newId(), day: day ?? dayKey(at), at };
         change({ food: [...get().food, full] });
         return full;
       },

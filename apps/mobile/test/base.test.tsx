@@ -148,6 +148,8 @@ describe('the base store', () => {
     expect(store.getState().food).toHaveLength(1);
     store.getState().restoreFood(gone);
     expect(store.getState().food.map((f) => f.id)).toContain(a.id);
+    const past = store.getState().addFood({ meal: 'dinner', name: 'Soup', amount: '', kcal: 300, protein: 12, carbs: null, fat: null, day: '2026-10-27' });
+    expect(past.day).toBe('2026-10-27');
     expect(suggestTargets(80, 'kg', 'keep')).toEqual({ kcal: 2500, protein: 145, weight: 80, goal: 'keep' });
     expect(suggestTargets(80, 'kg', 'lose').kcal).toBe(2000);
   });

@@ -11,7 +11,7 @@ import { dayKey, foodTotals, recentFoods, suggestTargets } from '../logic.ts';
 import type { FoodEntry, Meal, Targets } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
-import { Bar, Button, Card, Field, Header, Options, Press, Screen, T } from '../ui.tsx';
+import { Bar, Button, Card, Field, Header, IconButton, Options, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.eat;
 const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -34,24 +34,31 @@ function Total({ label, eaten, target, unit }: { label: string; eaten: number; t
   );
 }
 
-export function Eat({ now = Date.now() }: { now?: number }) {
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function Eat({ now: clock = Date.now() }: { now?: number }) {
   const api = useBaseApi();
   const food = useBase((s) => s.food);
   const targets = useBase((s) => s.targets);
-  const today = food.filter((f) => f.day === dayKey(now));
+  // Any earlier day can be opened and added to (research 2026-10-28 #11), with no "missed" mark.
+  const [back, setBack] = useState(0);
+  const now = clock - back * DAY_MS;
+  const shownDay = dayKey(now);
+  const dayLabel = back === 0 ? TX.today : back === 1 ? TX.yesterday : new Date(now).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const today = food.filter((f) => f.day === shownDay);
   const t = foodTotals(today);
   const recent = recentFoods(food);
   const yesterday = food.filter((f) => f.day === dayKey(now - 24 * 60 * 60 * 1000));
   const copyMeal = (m: Meal) => {
     for (const f of yesterday.filter((x) => x.meal === m)) {
-      api.getState().addFood({ meal: m, name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat });
+      api.getState().addFood({ meal: m, name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat, day: shownDay });
     }
     buzz('tick');
     toast(TX.form.saved(TX.meals[m]));
   };
   const copyable = MEALS.filter((m) => yesterday.some((f) => f.meal === m) && !today.some((f) => f.meal === m));
   const again = (f: FoodEntry) => {
-    api.getState().addFood({ meal: mealNow(Date.now()), name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat });
+    api.getState().addFood({ meal: back === 0 ? mealNow(Date.now()) : f.meal, name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat, day: shownDay });
     buzz('tick');
     toast(TX.form.saved(f.name));
   };
@@ -66,7 +73,11 @@ export function Eat({ now = Date.now() }: { now?: number }) {
         <Button label={TX.targets.edit} kind="quiet" onPress={() => router.push('/food-targets')} />
       </View>
       <Card hero>
-        <T v="label" color={G.accentText}>{TX.today}</T>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <IconButton icon="back" label={TX.earlier} onPress={() => setBack(back + 1)} size={44} />
+          <T v="label" color={G.accentText} style={{ flex: 1, textAlign: 'center' }}>{dayLabel}</T>
+          {back > 0 ? <IconButton icon="next" label={TX.later} onPress={() => setBack(back - 1)} size={44} /> : <View style={{ width: 44 }} />}
+        </View>
         <T v="big">{`${Math.round(t.kcal).toLocaleString('en-US')} ${TX.kcal}`}</T>
         {targets !== null && <T v="small" color={G.muted}>{t.kcal <= targets.kcal ? TX.left(targets.kcal - Math.round(t.kcal)) : TX.over(Math.round(t.kcal) - targets.kcal)}</T>}
         {targets !== null && <Bar value={t.kcal} max={targets.kcal} />}
@@ -75,7 +86,7 @@ export function Eat({ now = Date.now() }: { now?: number }) {
           <T v="small" color={G.muted}>{`${TX.carbs} ${Math.round(t.carbs)} g`}</T>
           <T v="small" color={G.muted}>{`${TX.fat} ${Math.round(t.fat)} g`}</T>
         </View>
-        <Button label={TX.add} icon="plus" onPress={() => router.push('/food-add')} testID="eat-add" />
+        <Button label={TX.add} icon="plus" onPress={() => router.push(back === 0 ? '/food-add' : { pathname: '/food-add', params: { day: shownDay } })} testID="eat-add" />
         {targets === null && <Button label={BASE_TEXT.today.setTargets} kind="quiet" onPress={() => router.push('/food-targets')} />}
       </Card>
 
@@ -136,7 +147,7 @@ const toNumber = (s: string): number | null => {
   return s.trim() === '' || Number.isNaN(n) || n < 0 ? null : n;
 };
 
-export function FoodAdd() {
+export function FoodAdd({ day }: { day?: string }) {
   const api = useBaseApi();
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
@@ -152,7 +163,7 @@ export function FoodAdd() {
     setTried(true);
     if (toNumber(kcal) === null && toNumber(protein) === null) return;
     const label = name.trim() === '' ? F.quickName : name.trim();
-    api.getState().addFood({ meal, name: label, amount: amount.trim(), kcal: Math.round(toNumber(kcal) ?? 0), protein: Math.round(toNumber(protein) ?? 0), carbs: toNumber(carbs), fat: toNumber(fat) });
+    api.getState().addFood({ meal, name: label, amount: amount.trim(), kcal: Math.round(toNumber(kcal) ?? 0), protein: Math.round(toNumber(protein) ?? 0), carbs: toNumber(carbs), fat: toNumber(fat), ...(day !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(day) ? { day } : {}) });
     buzz('tick');
     toast(F.saved(label));
     router.back();
