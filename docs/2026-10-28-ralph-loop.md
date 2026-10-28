@@ -49,9 +49,14 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 - [x] Eat: quick add (calories or protein is enough), meals, recent foods one tap, "same as yesterday" per meal, targets
   from weight and goal, Plus card (coming soon)
 - [x] Tests + typecheck: rules 518, content 1215, app 1343 + base tests, all green
-- [ ] APK 1 built (started 09:22 from 667cc99), installed, checked
+- [x] APK 1 built (09:22 to 09:35 from 667cc99): 178,173,581 bytes, sha256 `a2d7c1cd…3a39`, 16 KB pages ok (26 arm64
+  libraries). Installed over 0.14.1 on the emulator (Success, 0.15.0 / vc18). The whole plan setup ran through (recorded
+  for the ad) and landed on Today; Read, Eat, Train, the chapter reader and the workout log open. Found on the emulator:
+  story pictures overflowed the screen (fixed: sized from the window), the workout clock redrew the whole log every
+  second (fixed: the clock and rest bar redraw alone), "A chapter takes about 3 minutes" under "2 min" (fixed)
 - [ ] Ad: recordings, voice, footage, music, cut
-- [ ] APK 2 built, installed, checked
+- [ ] APK 2 (started 09:46 from 993db5a) built, installed, checked
+- [x] `npm run check:bundle`: 539 files, no secrets, no developer code (09:48)
 
 ## Decisions made in the loop
 
@@ -69,3 +74,5 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 - 08:50 loop planned; research and ad agents started.
 - 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
+- 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
+- 09:46 APK 2 build started.
