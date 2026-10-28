@@ -85,8 +85,11 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   Eat's yesterday. Found: "1 sets in 1 min." (fixed after, 5902361)
 - [x] APK 9 (12:30 to 12:40 from ab80ee0): checked "Done today", Today's chapter picture, Train's workout preview, "1 set
   in 1 min.". Found: scrolled text ran under the transparent status bar (fixed, 049af95)
-- [ ] Final APK 10 (12:42 from 049af95: + book-finished moment, history rows open the exercise page, the status-bar band)
-  built, installed, checked
+- [x] **APK 10 (12:42 to 12:52 from 049af95), the current one:** `apps/mobile/dist/levelmeup-0.15.0-preview.apk`,
+  178,261,518 bytes, sha256 `f56fd66d6c8fa0231b17ddaf9a9796926d339e22dc29b522fa8366f4ca9d0cc9`, 26 arm64 libraries all
+  16 KB aligned. Installed over APK 9 (data kept). Checked: the status-bar band on a scrolled Today, a history row
+  opening its exercise page, finishing "A Calm Mind" offering "Start Habits That Hold"
+- [ ] Third review (whole base app, fresh eyes) and, if it finds anything, a last build by 14:00
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
 
@@ -176,6 +179,7 @@ lost screen-only state; the phone's switch is now taken when the app comes to th
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
 - 12:28 a second cut of the ad with the male Chatterbox voice (`levelmeup-ad-male.mp4`, 31.6 s, Whisper-checked).
+- 12:52 APK 10 built and checked.
 - 12:40 APK 9 checked; 12:42 final APK 10 started with the book-finished moment, history links and the status-bar band.
 - 12:30 APK 9 build started (Train preview, Today picture, "1 set").
 - 12:18 APK 8 built and checked (dark look); "1 set" copy fixed after.
