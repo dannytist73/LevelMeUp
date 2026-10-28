@@ -65,6 +65,12 @@ export function doneInRun(data: BaseData, now: number): number {
   return programRun(data.workouts.filter((w) => w.finishedAt !== null && w.finishedAt > since).map((w) => w.finishedAt!), now);
 }
 
+/** The plan started again after 14 days away: workouts were done in this plan, none count in the current run. */
+export function restarted(data: BaseData, now: number): boolean {
+  const since = data.plan?.startedAt ?? 0;
+  return data.workouts.some((w) => w.finishedAt !== null && w.finishedAt > since) && doneInRun(data, now) === 0;
+}
+
 export function place(data: BaseData, now: number): PlanPlace | null {
   return data.plan === null ? null : planPlace(doneInRun(data, now), data.plan.days, data.plan.length);
 }

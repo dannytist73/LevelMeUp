@@ -84,6 +84,7 @@ export const BASE_TEXT = {
     resume: 'Back to your workout',
     thisWeek: (done: number, of: number) => `${done} of ${of} workouts this week`,
     planDone: 'Your plan is complete. Start a new one in Train.',
+    welcomeBack: 'Welcome back. Your plan starts again with its easy first week.',
     chapter: (n: number, of: number, minutes: number) => `Chapter ${n} of ${of} · ${minutes} min`,
     readNow: 'Read',
     readDays: (n: number) => (n === 0 ? null : n === 1 ? 'Read on 1 day this week.' : `Read on ${n} days this week.`),

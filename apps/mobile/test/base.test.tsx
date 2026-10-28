@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { BASE_KEY, BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { Blobs } from '../src/base/store.ts';
 import { warmupSets } from '../src/base/logic.ts';
+import { restarted } from '../src/base/logic.ts';
 import { currentBook, dailyNotes, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
 import { baseMove } from '@levelmeup/content';
 
@@ -91,6 +92,9 @@ describe('the base store', () => {
       store.getState().finishWorkout();
     }
     expect(place(store.getState(), now)).toMatchObject({ week: 2 });
+    expect(restarted(store.getState(), now)).toBe(false);
+    expect(restarted(store.getState(), now + 15 * 24 * 60 * 60_000)).toBe(true);
+    expect(place(store.getState(), now + 15 * 24 * 60 * 60_000)).toMatchObject({ week: 1, day: 0 });
     store.getState().setPlan({ ...PLAN, startedAt: now });
     expect(place(store.getState(), now)).toMatchObject({ week: 1, day: 0, finished: false });
   });

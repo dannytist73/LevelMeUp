@@ -4,7 +4,7 @@ import { BASE_TEXT, baseMove, book as findBook, chapter, chapterMinutes, workout
 import { baseMinutes } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { View } from 'react-native';
-import { currentBook, dayKey, defaultPlace, doneThisWeek, foodTotals, place, planWeeks, plannedDay, readDaysThisWeek } from '../logic.ts';
+import { currentBook, dayKey, defaultPlace, doneThisWeek, foodTotals, place, planWeeks, plannedDay, readDaysThisWeek, restarted } from '../logic.ts';
 import { useBase } from '../store.ts';
 import { G } from '../theme.ts';
 import { Bar, Button, Card, IconButton, Screen, T } from '../ui.tsx';
@@ -48,6 +48,7 @@ export function Today({ now = Date.now() }: { now?: number }) {
           </>
         ) : (
           <>
+            {day === null && restarted(s, now) && <T v="small" color={G.accentText}>{TX.welcomeBack}</T>}
             <T v="heading">{TX.workout(workoutName(day?.day ?? p.day))}</T>
             {(day?.exercises ?? exercises ?? []).map((e) => (
               <T key={e.slot} v="small" color={G.muted}>{baseMove(e.move).name}</T>
