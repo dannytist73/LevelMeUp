@@ -33,20 +33,39 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 
 ## Status
 
-- [ ] Research: simple, interactive workout / reading / food logging (agent)
-- [ ] Ad research: natural local voice, free footage and music (agent)
-- [ ] Graphite palette + Geist font
-- [ ] Base store (local) + plan engine (Custom, No end date, 4x/5x)
-- [ ] Plan setup (onboarding)
-- [ ] Today
-- [ ] Train: workout log with weight × reps, Gym/Home, swap, rest timer, progression tip, history
-- [ ] Read: first books from our 27 stories, bundled for offline
-- [ ] Eat: manual food log, targets
-- [ ] Tests + typecheck
-- [ ] APK 1 built, installed, checked
+- [x] Research: simple, interactive workout / reading / food logging (agent): `docs/research/2026-10-28-simple-logging-ux.md`
+- [ ] Ad research: natural local voice, free footage and music (agent, running)
+- [x] Graphite palette + Geist font (subset from the local copy, `scripts/subset-geist.mts`), new icon (rising bars), name
+  "LevelMeUp", 0.15.0 / versionCode 18
+- [x] Base store (local, `expo-sqlite/kv-store` key `base.v1`) + plan engine (`packages/rules/src/base.ts`: lengths
+  incl. Custom and No end date, 2x to 5x days, gym/home picks with fallbacks, Kaizen fixed targets, advice, bests)
+- [x] Plan setup (welcome, Men's/Women's, experience, plan length/days/place, home equipment, what hurts, summary,
+  first book)
+- [x] Today (next workout, chapter, food against targets; "read on N days this week", no streaks)
+- [x] Train: workout log with weight × reps, advised weight prefilled so a tick logs it, rest bar (−15 s / +15 s /
+  Skip), Gym/Home switch, swap (just today / keep for this block), pain (skip, gentler, stop), next-time tips, finish
+  summary with next-time lines, history, best sets, screen kept awake
+- [x] Read: 5 books from our 27 stories, bundled with their clay pictures (4.1 MB), chapter cards with the quick check
+- [x] Eat: quick add (calories or protein is enough), meals, recent foods one tap, "same as yesterday" per meal, targets
+  from weight and goal, Plus card (coming soon)
+- [x] Tests + typecheck: rules 518, content 1215, app 1343 + base tests, all green
+- [ ] APK 1 built (started 09:22 from 667cc99), installed, checked
 - [ ] Ad: recordings, voice, footage, music, cut
 - [ ] APK 2 built, installed, checked
 
+## Decisions made in the loop
+
+- **Local-first, no account:** the base app keeps everything on the phone and Grumble Camp's game store no longer
+  starts (no sync, no game notifications; planned game reminders are cleared once). Testers' server data is untouched.
+  Server sync for the new data waits for the owner's yes (B1 deploy).
+- **Books ship inside the app** (27 stories in 5 books, with pictures), so Read works offline with no account. New
+  books from the studio need the download step (B2).
+- **The home-screen widget** still shows Grumble Camp's last snapshot (B4 clean-up).
+- **Gym picks favour loaded lifts** (barbell, machine, dumbbells) over bodyweight versions; at home with nothing,
+  push-up variations stand in for arms and shoulders.
+
 ## Log
 
-- 08:50 loop planned.
+- 08:50 loop planned; research and ad agents started.
+- 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
+- 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
