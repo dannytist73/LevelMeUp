@@ -158,14 +158,24 @@ function RestBar({ now }: { now: number }) {
 
 function Summary({ w, onClose }: { w: WorkoutData; onClose: () => void }) {
   const units = useBase((s) => s.units);
+  const workouts = useBase((s) => s.workouts);
   const sets = w.exercises.flatMap((e) => e.sets);
   const minutes = Math.max(1, Math.round(((w.finishedAt ?? w.startedAt) - w.startedAt) / 60000));
   const kg = volume(sets);
+  // New bests: this workout's best set beats every earlier one (a first time is not a best yet).
+  const earlier = { workouts: workouts.filter((x) => x.id !== w.id) };
+  const bests = w.exercises.flatMap((e) => {
+    const now = bestSet(e.sets);
+    const before = best(earlier, e.move);
+    return now !== null && before !== null && bestSet([before, now]) === now && (now.weight !== before.weight || now.reps !== before.reps)
+      ? [TX.best(baseMove(e.move).name, formatSet(now.weight, now.reps ?? 0, units))] : [];
+  });
   return (
     <Screen footer={<Button label={TX.close} onPress={onClose} />}>
       <T v="title" accessibilityRole="header" style={{ marginTop: 24 }}>{TX.finishTitle}</T>
       <T v="bodyStrong">{TX.finishLines(sets.length, minutes)}</T>
       {kg > 0 && <T color={G.muted}>{TX.volume(`${Math.round(kg).toLocaleString('en-US')} ${units}`)}</T>}
+      {bests.map((b) => <T key={b} v="bodyStrong" color={G.accentText}>{b}</T>)}
       {w.exercises.map((e) => {
         const a = advise(baseMove(e.move), e.target, e.sets, units);
         const tip = a.kind === 'up' || a.kind === 'down' || a.kind === 'same' ? TX.nextTips[a.kind](formatWeight(a.weight, units)) : TX.nextTips[a.kind];
