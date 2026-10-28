@@ -15,6 +15,7 @@ import { Today } from '../src/base/screens/Today.tsx';
 import { Train } from '../src/base/screens/Train.tsx';
 import { Workout } from '../src/base/screens/Workout.tsx';
 import { Exercise } from '../src/base/screens/Exercise.tsx';
+import { ChapterScreen } from '../src/base/screens/Read.tsx';
 import { ExercisePain } from '../src/base/screens/SwapPain.tsx';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => false) } }));
@@ -448,6 +449,25 @@ describe('the base screens', () => {
     expect(screen.getByTestId('pain-skip')).toBeTruthy();
     await act(async () => fireEvent.press(screen.getByLabelText('Knees')));
     expect(store.getState().plan!.limitations).toEqual(['knee']);
+  });
+
+  it('finishing a book offers the next one', async () => {
+    const { store } = setup();
+    store.getState().chooseBook('a-calm-mind');
+    for (const c of ['article-24', 'article-35', 'article-32']) store.getState().readChapter(c);
+    await render(<BaseProvider store={store}><ChapterScreen id="article-25" /></BaseProvider>);
+    for (let i = 0; i < 8; i++) {
+      if (screen.queryByTestId('card-next') === null) break;
+      if (screen.queryByText('Quick check') !== null && screen.getByTestId('card-next').props.accessibilityState?.disabled) {
+        await act(async () => fireEvent.press(screen.getAllByRole('button').find((b) => /^[A-Z]/.test(String(b.props.accessibilityLabel)) && b.props.accessibilityState?.selected === false)!));
+      }
+      await act(async () => fireEvent.press(screen.getByTestId('card-next')));
+    }
+    await act(async () => fireEvent.press(screen.getByTestId('chapter-finish')));
+    expect(screen.getByText('You finished A Calm Mind')).toBeTruthy();
+    await act(async () => fireEvent.press(screen.getByTestId('next-book')));
+    expect(store.getState().reading.book).toBe('habits-that-hold');
+    expect(router.replace).toHaveBeenCalledWith('/chapter/article-9');
   });
 
   it('logging food asks for a number, names a nameless one Quick add, then saves', async () => {

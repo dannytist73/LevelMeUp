@@ -107,6 +107,7 @@ export function ChapterScreen({ id }: { id: string }) {
     api.getState().leaveChapter(id, i);
   };
   const [answer, setAnswer] = useState<number | null>(null);
+  const [bookDone, setBookDone] = useState(false);
   const b = BOOKS.find((x) => x.chapters.includes(id));
   if (b === undefined) return <Screen><Header onBack={() => router.back()} /></Screen>;
   const ch = chapter(id);
@@ -120,8 +121,38 @@ export function ChapterScreen({ id }: { id: string }) {
     buzz('stamp');
     if (go === 'next' && nextId !== undefined) {
       router.replace(`/chapter/${nextId}`);
+    } else if (nextId === undefined) {
+      setBookDone(true); // the book's last chapter: a quiet moment, and the next book
     } else router.back();
   };
+  if (bookDone) {
+    const done = api.getState().reading.done;
+    const nextBook = BOOKS.find((x) => x.id !== b.id && x.chapters.some((c) => done[c] === undefined));
+    return (
+      <Screen footer={
+        <View style={{ gap: 8 }}>
+          {nextBook !== undefined && (
+            <Button label={TX.startBook(nextBook.title)} testID="next-book" onPress={() => {
+              api.getState().chooseBook(nextBook.id);
+              const first = nextBook.chapters.find((c) => done[c] === undefined) ?? nextBook.chapters[0]!;
+              router.replace(`/chapter/${first}`);
+            }} />
+          )}
+          <Button label={TX.backToBooks} kind="secondary" onPress={() => router.back()} />
+        </View>
+      }>
+        <T v="title" accessibilityRole="header" style={{ marginTop: 24 }}>{TX.finishedTitle(b.title)}</T>
+        <T color={G.muted}>{TX.finishedBody}</T>
+        {nextBook === undefined ? <T>{TX.allRead}</T> : (
+          <Card>
+            <T v="label" color={G.accentText}>{TX.upNext}</T>
+            <T v="heading">{nextBook.title}</T>
+            <T v="small" color={G.muted}>{nextBook.blurb}</T>
+          </Card>
+        )}
+      </Screen>
+    );
+  }
   return (
     <Screen footer={
       last ? (

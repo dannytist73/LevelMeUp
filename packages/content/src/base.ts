@@ -233,6 +233,12 @@ export const BASE_TEXT = {
     finish: 'Finish chapter',
     nextChapter: 'Next chapter',
     bookDone: 'Book finished',
+    finishedTitle: (title: string) => `You finished ${title}`,
+    finishedBody: 'One idea, told a chapter at a time. Take what helped with you.',
+    upNext: 'Up next',
+    startBook: (title: string) => `Start ${title}`,
+    backToBooks: 'Back to your books',
+    allRead: 'You have read every book here. More are on the way.',
     cardOf: (n: number, of: number) => `${n} of ${of}`,
   },
   eat: {
