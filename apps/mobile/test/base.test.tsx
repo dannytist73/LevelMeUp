@@ -12,7 +12,7 @@ import { FoodAdd } from '../src/base/screens/Eat.tsx';
 import { Today } from '../src/base/screens/Today.tsx';
 import { Workout } from '../src/base/screens/Workout.tsx';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissAll: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => false) } }));
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }));
 
 const memory = (): Blobs & { data: Map<string, string> } => {
@@ -59,7 +59,7 @@ describe('the base store', () => {
   it('the next time a move comes round, its sets start at the advised weight', () => {
     let now = T0;
     const { store } = setup(() => now);
-    store.getState().setPlan({ ...PLAN, days: 2 });
+    store.getState().setPlan({ ...PLAN, days: 2, startedAt: T0 - 1 });
     const first = store.getState().startWorkout()!;
     const ex = first.exercises.findIndex((e) => e.target.kind === 'range' && loaded(e.move));
     const max = (first.exercises[ex]!.target as { max: number }).max;
@@ -76,6 +76,21 @@ describe('the base store', () => {
     const again = store.getState().startWorkout()!;
     const same = again.exercises.find((e) => e.move === first.exercises[ex]!.move);
     expect(same?.sets[0]?.weight).toBeGreaterThan(20);
+  });
+
+  it('a new plan starts at week 1 whatever came before', () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, days: 2 });
+    for (let i = 0; i < 3; i++) {
+      store.getState().startWorkout();
+      store.getState().toggleSet(0, 0);
+      now += 24 * 60 * 60_000;
+      store.getState().finishWorkout();
+    }
+    expect(place(store.getState(), now)).toMatchObject({ week: 2 });
+    store.getState().setPlan({ ...PLAN, startedAt: now });
+    expect(place(store.getState(), now)).toMatchObject({ week: 1, day: 0, finished: false });
   });
 
   it('a workout with nothing done is not saved', () => {

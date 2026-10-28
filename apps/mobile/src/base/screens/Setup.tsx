@@ -164,7 +164,9 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
         <Screen footer={next(true, () => {
           api.getState().setPlan(plan());
           api.getState().chooseBook(book);
-          router.replace('/');
+          // From Me ("Change plan") the app is underneath: go back to it; on first launch there is nothing below.
+          if (router.canDismiss()) router.dismissAll();
+          else router.replace('/');
         }, TX.book.done)}>
           {header}
           <T v="title" accessibilityRole="header">{TX.book.title}</T>

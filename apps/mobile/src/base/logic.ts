@@ -50,9 +50,13 @@ export const EMPTY: BaseData = { v: 1, plan: null, units: 'kg', workouts: [], ac
 /** The place a workout starts at: the gym unless you train only at home. */
 export const defaultPlace = (plan: PlanSetup): Place => (plan.where === 'home' ? 'home' : 'gym');
 
-/** Workouts that count in the current run: after 14 days away the plan starts again from its easy first week. */
+/**
+ * Workouts that count in the current run: only those since the plan was set up (a new plan starts at week 1), and
+ * after 14 days away the plan starts again from its easy first week.
+ */
 export function doneInRun(data: BaseData, now: number): number {
-  return programRun(data.workouts.filter((w) => w.finishedAt !== null).map((w) => w.finishedAt!), now);
+  const since = data.plan?.startedAt ?? 0;
+  return programRun(data.workouts.filter((w) => w.finishedAt !== null && w.finishedAt > since).map((w) => w.finishedAt!), now);
 }
 
 export function place(data: BaseData, now: number): PlanPlace | null {
