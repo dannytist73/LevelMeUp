@@ -55,7 +55,11 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   story pictures overflowed the screen (fixed: sized from the window), the workout clock redrew the whole log every
   second (fixed: the clock and rest bar redraw alone), "A chapter takes about 3 minutes" under "2 min" (fixed)
 - [ ] Ad: recordings, voice, footage, music, cut
-- [ ] APK 2 (restarted 09:48 from a348c3a) built, installed, checked
+- [x] APK 2 (09:48 to 10:00 from a348c3a): 178,179,837 bytes, sha256 `8d0cfcf5…f636`, 16 KB ok. Installed over APK 1
+  (data kept). Me > Start over works. Found: the label fix did not hold; a button that turns from disabled to enabled
+  still drew no label (setup's Next, Save targets). Reproduced on the emulator.
+- [ ] APK 3 (10:08 from 45191ab: one border width for every button, the button redrawn when it turns on or off; plus
+  the exercise page, warm-up sets, rest alert) built, installed, checked
 - [x] `npm run check:bundle`: 539 files, no secrets, no developer code (09:48)
 
 ## Decisions made in the loop
@@ -75,6 +79,7 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 - 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
+- 10:00 APK 2 built; 10:05 the label bug reproduced; 10:08 APK 3 started.
 - 09:46 APK 2 build started; 09:48 stopped and restarted from a348c3a after the setup recording's contact sheet
   showed a real bug: a button that turned from disabled to enabled lost its label on Android (the same text-view reuse
   bug as "Add a set" on 2026-10-15). The label now gets a fresh view per state and fills the button.
