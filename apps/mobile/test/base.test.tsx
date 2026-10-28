@@ -265,6 +265,12 @@ describe('the base screens', () => {
     await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
     expect(screen.getByTestId('custom-weeks')).toHaveTextContent('9 weeks');
     expect(screen.getByLabelText('4')).toBeSelected();
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
+    expect(store.getState().plan).toMatchObject({ days: 4, startedAt: PLAN.startedAt, length: { kind: 'weeks', weeks: 9 } });
   });
 
   it('Today shows the next workout, the chapter and asks for food targets', async () => {

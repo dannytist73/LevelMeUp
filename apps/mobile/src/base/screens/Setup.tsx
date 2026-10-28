@@ -7,7 +7,7 @@ import type { BaseDays, BaseStyle, Equipment, Experience, Limitation, Where } fr
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { moveName, plannedDay } from '../logic.ts';
+import { moveName, place, plannedDay } from '../logic.ts';
 import type { PlanSetup } from '../logic.ts';
 import { useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
@@ -24,6 +24,7 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
   // Changing a plan (from Me) starts from the current answers and skips the welcome.
   const [was] = useState(() => ({ plan: api.getState().plan, book: api.getState().reading.book }));
   const prev = was.plan;
+  const [wasFinished] = useState(() => place(api.getState(), now())?.finished ?? false);
   const prevWeeks = prev?.length.kind === 'weeks' ? prev.length.weeks : null;
   const [step, setStep] = useState<Step>(prev === null ? 'welcome' : 'builder');
   const [style, setStyle] = useState<BaseStyle | null>(prev?.style ?? null);
@@ -42,7 +43,8 @@ export function Setup({ now = Date.now }: { now?: () => number }) {
   const weeks = lengthPick === 'six' ? 6 : lengthPick === 'twelve' ? 12 : lengthPick === 'custom' ? custom : null;
   const plan = (): PlanSetup => ({
     style: style ?? 'men', experience: experience ?? 'new', days, where, home: where === 'gym' ? [] : home, limitations: hurts,
-    length: weeks === null ? { kind: 'open' } : { kind: 'weeks', weeks }, startedAt: now(),
+    // A changed plan keeps its place; a finished one (or the first) starts at week 1.
+    length: weeks === null ? { kind: 'open' } : { kind: 'weeks', weeks }, startedAt: prev !== null && !wasFinished ? prev.startedAt : now(),
   });
 
   const header = index > 0 ? (
