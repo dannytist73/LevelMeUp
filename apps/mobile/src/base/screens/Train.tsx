@@ -47,7 +47,7 @@ export function Train({ now = Date.now() }: { now?: number }) {
           })}
         </View>
         <Button label={s.active === null ? BASE_TEXT.today.start : BASE_TEXT.today.resume} icon="train" onPress={() => router.push('/workout')} disabled={p.finished && s.active === null} />
-        <Button label={TX.change} kind="quiet" onPress={() => router.push('/me')} />
+        <Button label={TX.change} kind="quiet" onPress={() => router.push('/start')} />
       </Card>
 
       <T v="heading" accessibilityRole="header">{TX.history}</T>
