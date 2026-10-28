@@ -11,6 +11,8 @@ import type { TypeName } from './theme.ts';
 
 export function T({ v = 'body', color = G.text, style, children, ...rest }: {
   v?: TypeName; color?: string; style?: StyleProp<TextStyle>; children: ReactNode; accessibilityRole?: 'header' | 'text'; testID?: string;
+  /** Announced by screen readers when it appears or changes (feedback after an answer). */
+  accessibilityLiveRegion?: 'polite' | 'none';
 }) {
   const { maxScale, ...font } = TYPE[v];
   return (

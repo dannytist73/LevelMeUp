@@ -158,7 +158,7 @@ export function ChapterScreen({ id }: { id: string }) {
             buzz('tick');
           }} options={ch.check.options.map((o, i) => ({ key: i, label: o }))} />
           {answer !== null && (
-            <T color={answer === ch.check.answer ? G.accentText : G.text}>{`${answer === ch.check.answer ? TX.right : TX.notQuite} ${ch.check.why}`}</T>
+            <T accessibilityLiveRegion="polite" color={answer === ch.check.answer ? G.accentText : G.text}>{`${answer === ch.check.answer ? TX.right : TX.notQuite} ${ch.check.why}`}</T>
           )}
         </Card>
       )}
