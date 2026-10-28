@@ -68,7 +68,11 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   178,189,861 bytes, sha256 `08bc128c5cda4272d13903821f2d6cbce8b7938b7440adbbc8eeb48daef447cf`, 26 arm64 libraries all
   16 KB aligned. Installed over APK 3 (data kept). Checked on the emulator: Swap replaces the exercise (barbell back
   squat to dumbbell split squats), the exercise page, Eat's earlier day, a chapter reopening at its card, warm-up sets.
-- [x] `npm run check:bundle`: 539 files, no secrets, no developer code (09:48)
+- [x] `npm run check:bundle`: 539 files, no secrets, no developer code (09:48, again 11:32)
+- [x] APK 5 (11:22 to 11:33 from 6367e84): 178,249,570 bytes, 16 KB ok; light look checked (it keeps you on Me)
+- [ ] APK 6 (11:34 from 85e8445: the review fixes) built, installed, checked
+- [ ] Research pass 2: purposeful micro-interactions (agent), apply the top ones
+- [ ] Final APK built by 14:00 with everything after APK 6, installed, checked; doc and memory current
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
 
