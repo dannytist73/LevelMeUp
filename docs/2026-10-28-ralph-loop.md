@@ -183,6 +183,17 @@ targets screen says Save waits for body weight.
   uninstalling removes it.
 - **B2:** book downloads from the 9 AM studio (needs `expo-file-system`); today the 5 books ship inside the app.
 - **B3:** AI food logging for Plus (photo, voice, sentence): model, cost per log and Plus price.
+  Rough cost per log, worked out from Anthropic's price list (dated 2026-10-06), not measured: a phone photo is about
+  1,400 tokens, plus about 600 for our instructions, and about 800 back (the answer plus the model's thinking).
+
+  | Model | Photo | Sentence | 5 photos a day, a month |
+  |---|---|---|---|
+  | Haiku 5.5 ($0.10 / $0.50 per million tokens) | ~$0.0006 | ~$0.0005 | ~$0.09 |
+  | Sonnet 5.5 ($2 / $10) | ~$0.012 | ~$0.009 | ~$1.80 |
+  | Opus 5.5 ($4 / $20) | ~$0.024 | ~$0.019 | ~$3.60 |
+
+  Voice would first become a sentence through the phone's own speech-to-text (not checked yet). A real test of the
+  accuracy and cost on 20 meal photos would cost well under $1, and it waits for a yes (API spend).
 - **The ad:** play it once before posting; the voice was checked by transcript only.
 - **Disk:** the ad folder's `tools/` holds 22 GB of local voice models; delete it when the voice is final.
 - **Clean-up (B4):** Grumble Camp's screens and server code are still in the repo, unreachable.
