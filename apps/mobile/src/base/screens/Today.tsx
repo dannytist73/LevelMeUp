@@ -4,7 +4,7 @@ import { BASE_TEXT, baseMove, book as findBook, chapter, chapterMinutes, workout
 import { baseMinutes } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { View } from 'react-native';
-import { currentBook, dayKey, doneThisWeek, foodTotals, place, planWeeks, plannedDay, defaultPlace } from '../logic.ts';
+import { currentBook, dayKey, defaultPlace, doneThisWeek, foodTotals, place, planWeeks, plannedDay, readDaysThisWeek } from '../logic.ts';
 import { useBase } from '../store.ts';
 import { G } from '../theme.ts';
 import { Bar, Button, Card, IconButton, Screen, T } from '../ui.tsx';
@@ -73,6 +73,7 @@ export function Today({ now = Date.now() }: { now?: number }) {
             <T v="small" color={G.muted}>{TX.chapter(next + 1, book.chapters.length, chapterMinutes(chap))}</T>
           </>
         )}
+        <T v="small" color={G.muted}>{TX.readDays(readDaysThisWeek(s, now))}</T>
         <Button label={chap === null ? BASE_TEXT.read.title : TX.readNow} kind="secondary" icon="read"
           onPress={() => router.push(chap === null ? '/read' : `/chapter/${book.chapters[next!]}`)} />
       </Card>

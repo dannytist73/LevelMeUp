@@ -2,7 +2,10 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { BASE_KEY, BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { Blobs } from '../src/base/store.ts';
-import { currentBook, doneThisWeek, place, recentFoods, suggestTargets } from '../src/base/logic.ts';
+import { currentBook, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
+import { baseMove } from '@levelmeup/content';
+
+const loaded = (id: string) => baseMove(id).needs.some((n) => n === 'gym' || n === 'dumbbells');
 import type { PlanSetup } from '../src/base/logic.ts';
 import { Setup } from '../src/base/screens/Setup.tsx';
 import { FoodAdd } from '../src/base/screens/Eat.tsx';
@@ -51,6 +54,28 @@ describe('the base store', () => {
     expect(done.exercises[0]!.sets).toEqual([{ weight: 40, reps: 8, done: true }]);
     expect(place(store.getState(), now)).toMatchObject({ day: 1, week: 1 });
     expect(doneThisWeek(store.getState(), now)).toBe(1);
+  });
+
+  it('the next time a move comes round, its sets start at the advised weight', () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, days: 2 });
+    const first = store.getState().startWorkout()!;
+    const ex = first.exercises.findIndex((e) => e.target.kind === 'range' && loaded(e.move));
+    const max = (first.exercises[ex]!.target as { max: number }).max;
+    first.exercises[ex]!.sets.forEach((_, i) => {
+      store.getState().setSet(ex, i, { weight: 20, reps: max });
+      store.getState().toggleSet(ex, i);
+    });
+    store.getState().finishWorkout();
+    now += 2 * 24 * 60 * 60_000;
+    store.getState().startWorkout();
+    store.getState().toggleSet(0, 0);
+    store.getState().finishWorkout();
+    now += 2 * 24 * 60 * 60_000;
+    const again = store.getState().startWorkout()!;
+    const same = again.exercises.find((e) => e.move === first.exercises[ex]!.move);
+    expect(same?.sets[0]?.weight).toBeGreaterThan(20);
   });
 
   it('a workout with nothing done is not saved', () => {
@@ -115,6 +140,7 @@ describe('the base store', () => {
     store.getState().chooseBook('train-smart');
     store.getState().readChapter('article-36');
     expect(currentBook(store.getState())).toMatchObject({ book: { id: 'train-smart' }, next: 1 });
+    expect(readDaysThisWeek(store.getState(), T0)).toBe(1);
   });
 
   it('the rest timer moves and ends', () => {
@@ -182,15 +208,18 @@ describe('the base screens', () => {
     expect(store.getState().workouts).toHaveLength(1);
   });
 
-  it('logging food asks for a name and a number, then saves', async () => {
+  it('logging food asks for a number, names a nameless one Quick add, then saves', async () => {
     const { store } = setup();
     await render(<BaseProvider store={store}><FoodAdd /></BaseProvider>);
     await act(async () => fireEvent.press(screen.getByTestId('food-save')));
-    expect(screen.getByText('Add a name for the food.')).toBeTruthy();
+    expect(screen.getByText('Add the calories, or the protein.')).toBeTruthy();
+    await act(async () => fireEvent.changeText(screen.getByTestId('food-kcal'), '250'));
+    await act(async () => fireEvent.press(screen.getByTestId('food-save')));
+    expect(store.getState().food[0]).toMatchObject({ name: 'Quick add', kcal: 250 });
     await act(async () => fireEvent.changeText(screen.getByTestId('food-name'), 'Two eggs'));
     await act(async () => fireEvent.changeText(screen.getByTestId('food-protein'), '12'));
     await act(async () => fireEvent.press(screen.getByTestId('food-save')));
-    expect(store.getState().food[0]).toMatchObject({ name: 'Two eggs', protein: 12, kcal: 0 });
+    expect(store.getState().food[1]).toMatchObject({ name: 'Two eggs', protein: 12, kcal: 250 });
     expect(router.back).toHaveBeenCalled();
   });
 });

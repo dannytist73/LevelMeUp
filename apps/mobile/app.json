@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Grumble Camp",
+    "name": "LevelMeUp",
     "slug": "levelmeup",
-    "version": "0.14.1",
+    "version": "0.15.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "levelmeup",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#171A2B",
+    "backgroundColor": "#111315",
     "plugins": [
       "expo-router",
       [
@@ -16,7 +16,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#171A2B"
+          "backgroundColor": "#111315"
         }
       ],
       "expo-sqlite",
@@ -36,7 +36,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#A9B4FF"
+          "color": "#3463E8"
         }
       ],
       [
@@ -50,7 +50,7 @@
           "widgets": [
             {
               "name": "Today",
-              "label": "Grumble Camp",
+              "label": "LevelMeUp",
               "description": "Today's quest and your streak",
               "minWidth": "250dp",
               "minHeight": "110dp",
@@ -73,7 +73,7 @@
     ],
     "android": {
       "package": "com.dannytist.levelmeup",
-      "versionCode": 17,
+      "versionCode": 18,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -83,7 +83,7 @@
       ],
       "allowBackup": false,
       "adaptiveIcon": {
-        "backgroundColor": "#171A2B",
+        "backgroundColor": "#111315",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

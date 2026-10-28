@@ -1,7 +1,7 @@
 // The base app's state and the plain facts screens read from it (docs/2026-10-28-base-app.md). Everything lives on
 // the phone today; sending it to the server waits for the owner's yes (B1 deploy).
 import { BASE_LAYOUTS, BASE_MOVES, BOOKS, baseMove } from '@levelmeup/content';
-import { baseDays, bestSet, planDay, planPlace, programRun } from '@levelmeup/rules';
+import { advise, baseDays, bestSet, planDay, planPlace, programRun } from '@levelmeup/rules';
 import type {
   BaseDays, BaseExercise, BaseStyle, Equipment, Experience, KeptSwaps, Limitation, LoggedSet, MoveSlot, Place, PlanLength, PlanPlace, Target, Units, Where,
 } from '@levelmeup/rules';
@@ -82,17 +82,28 @@ export function best(data: Pick<BaseData, 'workouts'>, move: string): LoggedSet 
   return bestSet(data.workouts.flatMap((w) => w.exercises.filter((e) => e.move === move).flatMap((e) => e.sets)));
 }
 
-/** A new workout's exercises: each set starts at last time's numbers (weight and reps), ready to tick. */
-export function newExercises(data: BaseData, planned: readonly BaseExercise[]): WorkoutExercise[] {
+/**
+ * A new workout's exercises, ready to tick (research 2026-10-28 #1): each set starts at the advised weight (last time's,
+ * a step up or down by the progression rules; the same in the easy week) and last time's reps, or the target.
+ */
+export function newExercises(data: BaseData, planned: readonly BaseExercise[], blockWeek = 1): WorkoutExercise[] {
   return planned.map((e) => {
     const last = lastSets(data, e.move);
+    const a = blockWeek === 6 ? null : advise(baseMove(e.move), e.target, last, data.units);
+    const weight = a !== null && (a.kind === 'up' || a.kind === 'down' || a.kind === 'same') ? a.weight : null;
     const sets: LoggedSet[] = Array.from({ length: e.sets }, (_, i) => {
       const prev = last[Math.min(i, last.length - 1)];
-      const reps = e.target.kind === 'fixed' ? e.target.reps : prev?.reps ?? e.target.min;
-      return { weight: prev?.weight ?? null, reps, done: false };
+      const reps = e.target.kind === 'fixed' ? e.target.reps : blockWeek === 6 ? e.target.max : prev?.reps ?? e.target.min;
+      return { weight: weight ?? prev?.weight ?? null, reps, done: false };
     });
     return { slot: e.slot, move: e.move, target: e.target, restSeconds: e.restSeconds, sets };
   });
+}
+
+/** Days with a chapter read in the 7 days to `now` (weeks, not streaks: nothing is lost). */
+export function readDaysThisWeek(data: Pick<BaseData, 'reading'>, now: number): number {
+  const since = now - 7 * 24 * 60 * 60 * 1000;
+  return new Set(Object.values(data.reading.done).filter((t) => t > since && t <= now).map(dayKey)).size;
 }
 
 /** Workouts finished in the current plan week. */

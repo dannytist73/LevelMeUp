@@ -41,6 +41,15 @@ export function Eat({ now = Date.now() }: { now?: number }) {
   const today = food.filter((f) => f.day === dayKey(now));
   const t = foodTotals(today);
   const recent = recentFoods(food);
+  const yesterday = food.filter((f) => f.day === dayKey(now - 24 * 60 * 60 * 1000));
+  const copyMeal = (m: Meal) => {
+    for (const f of yesterday.filter((x) => x.meal === m)) {
+      api.getState().addFood({ meal: m, name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat });
+    }
+    buzz('tick');
+    toast(TX.form.saved(TX.meals[m]));
+  };
+  const copyable = MEALS.filter((m) => yesterday.some((f) => f.meal === m) && !today.some((f) => f.meal === m));
   const again = (f: FoodEntry) => {
     api.getState().addFood({ meal: mealNow(Date.now()), name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat });
     buzz('tick');
@@ -84,6 +93,9 @@ export function Eat({ now = Date.now() }: { now?: number }) {
         </View>
       )}
 
+      {copyable.map((m) => (
+        <Button key={m} label={TX.sameAs(TX.meals[m])} icon="plus" kind="secondary" onPress={() => copyMeal(m)} />
+      ))}
       {today.length === 0 && <T color={G.muted}>{TX.empty}</T>}
       {MEALS.map((m) => {
         const items = today.filter((f) => f.meal === m);
@@ -134,20 +146,20 @@ export function FoodAdd() {
   const [meal, setMeal] = useState<Meal>(mealNow(Date.now()));
   const [tried, setTried] = useState(false);
   const F = TX.form;
-  const nameError = tried && name.trim() === '' ? F.needName : null;
   const numberError = tried && toNumber(kcal) === null && toNumber(protein) === null ? F.needNumber : null;
   const save = () => {
     setTried(true);
-    if (name.trim() === '' || (toNumber(kcal) === null && toNumber(protein) === null)) return;
-    api.getState().addFood({ meal, name: name.trim(), amount: amount.trim(), kcal: Math.round(toNumber(kcal) ?? 0), protein: Math.round(toNumber(protein) ?? 0), carbs: toNumber(carbs), fat: toNumber(fat) });
+    if (toNumber(kcal) === null && toNumber(protein) === null) return;
+    const label = name.trim() === '' ? F.quickName : name.trim();
+    api.getState().addFood({ meal, name: label, amount: amount.trim(), kcal: Math.round(toNumber(kcal) ?? 0), protein: Math.round(toNumber(protein) ?? 0), carbs: toNumber(carbs), fat: toNumber(fat) });
     buzz('tick');
-    toast(F.saved(name.trim()));
+    toast(F.saved(label));
     router.back();
   };
   return (
     <Screen footer={<Button label={F.save} onPress={save} testID="food-save" />}>
       <Header onBack={() => router.back()} backIcon="close" title={F.title} />
-      <Field label={F.name} value={name} onChange={setName} placeholder={F.namePlaceholder} testID="food-name" error={nameError} />
+      <Field label={F.name} value={name} onChange={setName} placeholder={F.namePlaceholder} testID="food-name" />
       <Field label={F.amount} value={amount} onChange={setAmount} placeholder={F.amountPlaceholder} />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1 }}><Field label={F.kcal} value={kcal} onChange={setKcal} keyboard="number-pad" testID="food-kcal" /></View>

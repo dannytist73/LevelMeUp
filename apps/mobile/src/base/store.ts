@@ -93,7 +93,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         const at = defaultPlace(s.plan);
         const workout: Workout = {
           id: newId(), startedAt: now(), finishedAt: null, day: p.day, week: p.week, blockWeek: p.blockWeek, place: at,
-          exercises: newExercises(s, plannedDay(s.plan, s.kept, p.day, p.blockWeek, at)),
+          exercises: newExercises(s, plannedDay(s.plan, s.kept, p.day, p.blockWeek, at), p.blockWeek),
         };
         change({ active: workout });
         return workout;
@@ -116,7 +116,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         const w = s.active;
         if (w === null || s.plan === null || w.place === to) return;
         // Exercises with a done set stay; the rest are picked again for the new place, in the same slots.
-        const fresh = newExercises(s, plannedDay(s.plan, s.kept, w.day, w.blockWeek, to));
+        const fresh = newExercises(s, plannedDay(s.plan, s.kept, w.day, w.blockWeek, to), w.blockWeek);
         const exercises = w.exercises.map((e) => {
           if (e.sets.some((x) => x.done)) return e;
           return fresh.find((f) => f.slot === e.slot) ?? e;
@@ -131,7 +131,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
         if (w === null || old === undefined || s.plan === null) return;
         const kept = keep ? { ...s.kept, [w.place]: { ...(s.kept[w.place] ?? {}), [old.slot]: move } } : s.kept;
         const planned = plannedDay(s.plan, { [w.place]: { [old.slot]: move } }, w.day, w.blockWeek, w.place).find((e) => e.slot === old.slot);
-        const replacement = planned !== undefined && planned.move === move ? newExercises(s, [planned])[0]! : null;
+        const replacement = planned !== undefined && planned.move === move ? newExercises(s, [planned], w.blockWeek)[0]! : null;
         if (replacement === null) return;
         set({ kept });
         editExercise(ex, () => replacement);

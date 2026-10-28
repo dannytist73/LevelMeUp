@@ -166,12 +166,17 @@ function Summary({ w, onClose }: { w: WorkoutData; onClose: () => void }) {
       <T v="title" accessibilityRole="header" style={{ marginTop: 24 }}>{TX.finishTitle}</T>
       <T v="bodyStrong">{TX.finishLines(sets.length, minutes)}</T>
       {kg > 0 && <T color={G.muted}>{TX.volume(`${Math.round(kg).toLocaleString('en-US')} ${units}`)}</T>}
-      {w.exercises.map((e) => (
-        <Card key={e.slot}>
-          <T v="bodyStrong">{baseMove(e.move).name}</T>
-          <T v="small" color={G.muted}>{e.sets.map((x) => formatSet(x.weight, x.reps ?? 0, units, e.target.kind === 'range' ? e.target.unit : 'reps')).join(', ')}</T>
-        </Card>
-      ))}
+      {w.exercises.map((e) => {
+        const a = advise(baseMove(e.move), e.target, e.sets, units);
+        const tip = a.kind === 'up' || a.kind === 'down' || a.kind === 'same' ? TX.nextTips[a.kind](formatWeight(a.weight, units)) : TX.nextTips[a.kind];
+        return (
+          <Card key={e.slot}>
+            <T v="bodyStrong">{baseMove(e.move).name}</T>
+            <T v="small" color={G.muted}>{e.sets.map((x) => formatSet(x.weight, x.reps ?? 0, units, e.target.kind === 'range' ? e.target.unit : 'reps')).join(', ')}</T>
+            {w.blockWeek !== 6 && <T v="small" color={G.accentText}>{TX.nextTime(tip)}</T>}
+          </Card>
+        );
+      })}
     </Screen>
   );
 }

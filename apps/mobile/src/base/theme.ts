@@ -9,7 +9,7 @@ export const G = {
   /** Decorative lines inside cards. */
   line: '#2C3138',
   /** The edge of anything you can press or type in: 3:1 on the background and on a card. */
-  edge: '#5E6773',
+  edge: '#66707D',
   text: '#F2F4F7',
   muted: '#A3ABB6',
   accent: '#3463E8',
