@@ -117,7 +117,8 @@ Twelve findings, all fixed in 82172d8 and 85e8445 with tests:
 11. Notification plans could race on fast app switches: they run one at a time.
 12. The rest bar could squeeze at large text: it wraps.
 
-Also: read days are the last 7 calendar days; Eat steps back by the calendar (daylight-saving safe).
+Also: read days are the last 7 calendar days; Eat steps back by the calendar (daylight-saving safe). Pain now also
+asks where it hurts and leaves exercises that load that area out of future workouts (a867077).
 
 ## Decisions made in the loop
 
@@ -148,6 +149,8 @@ Also: read days are the last 7 calendar days; Eat steps back by the calendar (da
 - 09:07 rules + content committed (2a41216); 09:13 app B1 (96ac973); 09:21 polish (667cc99); 09:24 plan fix (5ae4f40).
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
+- 11:34 APK 5 built (widget, light look, done-today, plan changes); light look checked; APK 6 started with the review fixes.
+- 11:21 to 11:30 review (12 findings) fixed.
 - 11:12 ad cut v2 rendered and checked; sent to the owner. 11:05 APK 4 installed and checked.
 - 10:50 APK 4 build started (swap fix, number cells, day switcher, chapter resume, welcome back).
 - 10:22 to 10:48 footage recorded on APK 3 (setup, three warm-up workouts, workout, reading, food, tabs).
