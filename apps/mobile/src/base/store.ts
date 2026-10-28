@@ -7,7 +7,7 @@ import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 import type { LoggedSet, Place, Units } from '@levelmeup/rules';
 import { EMPTY, dayKey, defaultPlace, newExercises, place, plannedDay } from './logic.ts';
-import type { BaseData, FoodEntry, PlanSetup, Targets, Workout } from './logic.ts';
+import type { BaseData, FoodEntry, PlanSetup, Reminder, Targets, Workout } from './logic.ts';
 
 export const BASE_KEY = 'base.v1';
 
@@ -22,6 +22,7 @@ export type BaseState = BaseData & {
   load: () => Promise<void>;
   setPlan: (plan: PlanSetup) => void;
   setUnits: (units: Units) => void;
+  setReminder: (reminder: Reminder) => void;
   startWorkout: () => Workout | null;
   setSet: (ex: number, set: number, patch: Partial<LoggedSet>) => void;
   toggleSet: (ex: number, set: number) => boolean;
@@ -84,6 +85,7 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       },
       setPlan: (plan) => change({ plan, kept: {} }),
       setUnits: (units) => change({ units }),
+      setReminder: (reminder) => change({ reminder }),
       startWorkout: () => {
         const s = get();
         if (s.active !== null) return s.active;

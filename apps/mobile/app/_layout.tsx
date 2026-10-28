@@ -8,7 +8,9 @@ import kvStore from 'expo-sqlite/kv-store';
 import * as Crypto from 'expo-crypto';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { dailyNotes } from '../src/base/logic.ts';
 import type { StoreApi } from 'zustand/vanilla';
 import { BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { BaseState } from '../src/base/store.ts';
@@ -42,6 +44,39 @@ export default function RootLayout() {
       await kvStore.setItem(GAME_NOTES_CLEARED, '1');
     })().catch(() => undefined);
   }, [store]);
+
+  // The daily reminder: planned for the next 7 days at launch, on every return to the app and when a choice changes;
+  // a week away and it stops by itself. Only with the phone's permission (asked in Me).
+  useEffect(() => {
+    if (!loaded) return;
+    let planned = '';
+    const plan = (): void => {
+      const notes = dailyNotes(store.getState(), Date.now());
+      const key = JSON.stringify(notes);
+      if (key === planned) return;
+      planned = key;
+      void (async () => {
+        if (notes.length === 0) {
+          if (store.getState().reminder === 'off') await expoNotes.cancelAll();
+          return;
+        }
+        if ((await expoNotes.permission()) !== 'granted') return;
+        await expoNotes.replace(notes.map((n) => ({ ...n, kind: 'briefing' as const, url: '/', channel: 'reminders' as const })));
+      })().catch(() => undefined);
+    };
+    plan();
+    const unsub = store.subscribe(plan);
+    const active = AppState.addEventListener('change', (s) => {
+      if (s === 'active') {
+        planned = '';
+        plan();
+      }
+    });
+    return () => {
+      unsub();
+      active.remove();
+    };
+  }, [loaded, store]);
 
   const ready = (fontsLoaded || fontError !== null) && loaded;
   useEffect(() => {

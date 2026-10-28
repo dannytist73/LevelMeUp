@@ -272,6 +272,22 @@ export const BASE_TEXT = {
     resetBody: 'This removes your plan, workouts, reading and food log from this phone.',
     resetYes: 'Remove everything',
     resetNo: 'Keep it',
+    reminder: {
+      title: 'Daily reminder',
+      off: 'Off',
+      morning: 'Morning, 8:00',
+      evening: 'Evening, 19:00',
+      help: "One quiet note a day with what's next. It stops by itself if you don't open the app for a week.",
+      denied: 'Notifications are off for LevelMeUp. You can turn them on in your phone settings.',
+      open: 'Open settings',
+    },
+  },
+  note: {
+    title: 'LevelMeUp',
+    body: (workout: string | null, chapter: string | null) =>
+      workout !== null && chapter !== null ? `${workout} is next, and "${chapter}" is waiting to be read.`
+        : workout !== null ? `${workout} is next when you're ready.`
+          : chapter !== null ? `"${chapter}" is waiting to be read.` : 'A good day for a small step.',
   },
 } as const;
 

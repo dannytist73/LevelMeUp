@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { BASE_KEY, BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { Blobs } from '../src/base/store.ts';
-import { currentBook, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
+import { currentBook, dailyNotes, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
 import { baseMove } from '@levelmeup/content';
 
 const loaded = (id: string) => baseMove(id).needs.some((n) => n === 'gym' || n === 'dumbbells');
@@ -156,6 +156,20 @@ describe('the base store', () => {
     store.getState().readChapter('article-36');
     expect(currentBook(store.getState())).toMatchObject({ book: { id: 'train-smart' }, next: 1 });
     expect(readDaysThisWeek(store.getState(), T0)).toBe(1);
+  });
+
+  it('the daily reminder: off by default, then 7 notes at the chosen hour naming what is next', () => {
+    const { store } = setup();
+    store.getState().setPlan(PLAN);
+    expect(dailyNotes(store.getState(), T0)).toEqual([]);
+    store.getState().setReminder('evening');
+    const notes = dailyNotes(store.getState(), T0);
+    expect(notes).toHaveLength(7);
+    expect(new Date(notes[0]!.at).getHours()).toBe(19);
+    expect(new Date(notes[0]!.at).getDate()).toBe(28);
+    expect(notes[0]!.body).toMatch(/^Workout A is next, and ".+" is waiting to be read\.$/);
+    store.getState().setReminder('morning');
+    expect(new Date(dailyNotes(store.getState(), T0)[0]!.at).getDate()).toBe(29);
   });
 
   it('the rest timer moves and ends', () => {

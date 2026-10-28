@@ -1,6 +1,6 @@
 // The base app's state and the plain facts screens read from it (docs/2026-10-28-base-app.md). Everything lives on
 // the phone today; sending it to the server waits for the owner's yes (B1 deploy).
-import { BASE_LAYOUTS, BASE_MOVES, BOOKS, baseMove } from '@levelmeup/content';
+import { BASE_LAYOUTS, BASE_MOVES, BASE_TEXT, BOOKS, baseMove, chapter, workoutName } from '@levelmeup/content';
 import { advise, baseDays, bestSet, planDay, planPlace, programRun } from '@levelmeup/rules';
 import type {
   BaseDays, BaseExercise, BaseStyle, Equipment, Experience, KeptSwaps, Limitation, LoggedSet, MoveSlot, Place, PlanLength, PlanPlace, Target, Units, Where,
@@ -33,8 +33,11 @@ export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type FoodEntry = { id: string; day: string; at: number; meal: Meal; name: string; amount: string; kcal: number; protein: number; carbs: number | null; fat: number | null };
 export type Targets = { kcal: number; protein: number; weight: number; goal: 'lose' | 'keep' | 'gain' };
 
+export type Reminder = 'off' | 'morning' | 'evening';
+
 export type BaseData = {
   v: 1;
+  reminder: Reminder;
   plan: PlanSetup | null;
   units: Units;
   workouts: Workout[];
@@ -45,7 +48,7 @@ export type BaseData = {
   targets: Targets | null;
 };
 
-export const EMPTY: BaseData = { v: 1, plan: null, units: 'kg', workouts: [], active: null, kept: {}, reading: { book: null, done: {} }, food: [], targets: null };
+export const EMPTY: BaseData = { v: 1, reminder: 'off', plan: null, units: 'kg', workouts: [], active: null, kept: {}, reading: { book: null, done: {} }, food: [], targets: null };
 
 /** The place a workout starts at: the gym unless you train only at home. */
 export const defaultPlace = (plan: PlanSetup): Place => (plan.where === 'home' ? 'home' : 'gym');
@@ -159,3 +162,28 @@ export function currentBook(data: BaseData) {
 }
 
 export const moveName = (id: string): string => baseMove(id).name;
+
+/** A daily note's slot: its id, when it shows and what it says. */
+export type DailyNote = { id: string; at: number; title: string; body: string };
+
+/**
+ * The daily reminder for the next 7 days at 8:00 or 19:00 (research 2026-10-28 #14): one quiet note naming the next
+ * workout and chapter. Planned again each time the app opens, so it stops by itself after a week away.
+ */
+export function dailyNotes(data: BaseData, now: number): DailyNote[] {
+  if (data.reminder === 'off') return [];
+  const hour = data.reminder === 'morning' ? 8 : 19;
+  const p = place(data, now);
+  const workout = p === null || p.finished ? null : BASE_TEXT.today.workout(workoutName(p.day));
+  const { book, next } = currentBook(data);
+  const chapterTitle = next === null ? null : chapter(book.chapters[next]!).title;
+  const notes: DailyNote[] = [];
+  for (let i = 0; i < 8 && notes.length < 7; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    d.setHours(hour, 0, 0, 0);
+    if (d.getTime() <= now) continue;
+    notes.push({ id: `base:${i}`, at: d.getTime(), title: BASE_TEXT.note.title, body: BASE_TEXT.note.body(workout, chapterTitle) });
+  }
+  return notes;
+}

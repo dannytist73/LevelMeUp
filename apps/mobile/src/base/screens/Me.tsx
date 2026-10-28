@@ -5,6 +5,8 @@ import type { Equipment, Limitation } from '@levelmeup/rules';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { APP_VERSION } from '../../appVersion.ts';
+import { expoNotes } from '../../notify/os.ts';
+import type { Reminder } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
 import { Button, Card, Checks, Header, Options, Screen, T } from '../ui.tsx';
@@ -15,7 +17,17 @@ export function Me() {
   const api = useBaseApi();
   const units = useBase((s) => s.units);
   const plan = useBase((s) => s.plan);
+  const reminder = useBase((s) => s.reminder);
   const [confirm, setConfirm] = useState(false);
+  const [denied, setDenied] = useState(false);
+  const pickReminder = async (r: Reminder) => {
+    if (r !== 'off' && (await expoNotes.ask()) !== 'granted') {
+      setDenied(true);
+      return;
+    }
+    setDenied(false);
+    api.getState().setReminder(r);
+  };
   const edit = (patch: { home?: Equipment[]; limitations?: Limitation[] }) => {
     const p = api.getState().plan;
     if (p !== null) api.getState().setPlan({ ...p, ...patch });
@@ -25,6 +37,16 @@ export function Me() {
       <Header onBack={() => router.back()} title={TX.title} />
       <T v="bodyStrong">{TX.units}</T>
       <Options label={TX.units} value={units} onChange={(u) => api.getState().setUnits(u)} options={[{ key: 'kg', label: TX.kg }, { key: 'lb', label: TX.lb }]} />
+      <T v="bodyStrong">{TX.reminder.title}</T>
+      <Options label={TX.reminder.title} columns={1} value={reminder} onChange={(r) => void pickReminder(r)}
+        options={[{ key: 'off', label: TX.reminder.off }, { key: 'morning', label: TX.reminder.morning }, { key: 'evening', label: TX.reminder.evening }]} />
+      <T v="small" color={G.muted}>{TX.reminder.help}</T>
+      {denied && (
+        <Card>
+          <T v="small">{TX.reminder.denied}</T>
+          <Button label={TX.reminder.open} kind="secondary" onPress={() => void expoNotes.openSettings()} />
+        </Card>
+      )}
       <T v="bodyStrong">{TX.plan}</T>
       <Button label={BASE_TEXT.train.change} kind="secondary" onPress={() => router.push('/start')} />
       {plan !== null && (
