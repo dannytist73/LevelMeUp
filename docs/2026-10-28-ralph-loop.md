@@ -89,7 +89,8 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   178,261,518 bytes, sha256 `f56fd66d6c8fa0231b17ddaf9a9796926d339e22dc29b522fa8366f4ca9d0cc9`, 26 arm64 libraries all
   16 KB aligned. Installed over APK 9 (data kept). Checked: the status-bar band on a scrolled Today, a history row
   opening its exercise page, finishing "A Calm Mind" offering "Start Habits That Hold"
-- [ ] Third review (whole base app, fresh eyes) and, if it finds anything, a last build by 14:00
+- [x] Third review: 8 findings fixed (22531e3, eed6ad0)
+- [ ] Last APK 11 (13:03 from eed6ad0) built, installed, checked
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
 
@@ -149,6 +150,16 @@ quiz answer might not be announced (now spoken via `announceForAccessibility`); 
 gap restarts the plan (the note now says so). The note: a phone's scheduled dark/light switch redrew the app mid-use and
 lost screen-only state; the phone's switch is now taken when the app comes to the front.
 
+## Third review (12:55, a fresh agent on the whole base app, as a user meets it)
+
+Eight findings, all fixed in 22531e3 and eed6ad0 with tests: screens kept yesterday after a night in the background
+(and "Again" could log into yesterday) - a clock now follows the app coming to the front and midnight; "0 of 3 this
+week" right after "Done today" - the count names its plan week; a workout finished the next morning was dated then -
+it takes the last ticked set's time when open over 3 hours; an empty swap list gave no reason - it says what to do;
+Discard had no Undo - it has; Android Back left the setup - it steps back; read chapters were shown by colour only -
+they say "read" and show a check; "week 2 of 5" contradicted "4 weeks building up" - it counts 1 to 4. Also: the
+targets screen says Save waits for body weight.
+
 ## Decisions made in the loop
 
 - **Local-first, no account:** the base app keeps everything on the phone and Grumble Camp's game store no longer
@@ -179,6 +190,7 @@ lost screen-only state; the phone's switch is now taken when the app comes to th
 - 09:22 studio's 9:00 run finished (article-169 published), ComfyUI stopped; APK 1 build started, emulator booting.
 - 09:35 APK 1 built and installed; 09:36 setup recorded; 09:40 to 09:45 emulator check, fixes (44d89ec, 993db5a).
 - 12:28 a second cut of the ad with the male Chatterbox voice (`levelmeup-ad-male.mp4`, 31.6 s, Whisper-checked).
+- 13:03 third review fixed; last APK 11 started.
 - 12:52 APK 10 built and checked.
 - 12:40 APK 9 checked; 12:42 final APK 10 started with the book-finished moment, history links and the status-bar band.
 - 12:30 APK 9 build started (Train preview, Today picture, "1 set").
