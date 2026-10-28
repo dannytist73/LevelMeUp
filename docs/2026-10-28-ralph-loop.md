@@ -90,6 +90,9 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
 | 14 | A daily nudge that steps back after a week away, permission asked when switched on | Done (Me > Daily reminder) |
 | 15 | Weeks, not streaks ("2 of 3 workouts this week", "Read on 4 days this week") | Done |
 
+Also checked at the largest text size (2x): nothing truncates; the workout's "Set" header broke mid-word (fixed).
+The home-screen widget now shows the base app (next workout, next chapter, today's food) in Graphite.
+
 Also from the Kaizen research: warm-up sets for the big lifts (50/75/90%) and an exercise page with how-to steps,
 the form cue, best set and a top-set chart.
 
