@@ -42,15 +42,21 @@ function KeepAwake() {
 
 function NumberCell({ value, onChange, label, decimal, testID }: { value: number | null; onChange: (n: number | null) => void; label: string; decimal: boolean; testID?: string }) {
   const [draft, setDraft] = useState<string | null>(null);
+  const [, redraw] = useState(0);
   const shown = draft ?? (value === null ? '' : String(value));
   return (
     <TextInput
       accessibilityLabel={label} value={shown} testID={testID} keyboardType={decimal ? 'decimal-pad' : 'number-pad'} selectTextOnFocus maxFontSizeMultiplier={1.6}
       onChangeText={(t) => {
+        // Only a number is kept (a comma counts as the decimal point): anything else, like "..", is refused.
         const clean = t.replace(',', '.');
+        if (clean !== '' && !(decimal ? /^\d{0,4}(\.\d{0,2})?$/ : /^\d{0,4}$/).test(clean)) {
+          redraw((n) => n + 1); // the field shows its kept value again
+          return;
+        }
         setDraft(clean);
-        if (clean === '') onChange(null);
-        else if (/^\d{0,4}(\.\d{0,2})?$/.test(clean) && !Number.isNaN(Number(clean))) onChange(Number(clean));
+        if (clean === '' || clean === '.') onChange(null);
+        else onChange(Number(clean));
       }}
       onBlur={() => setDraft(null)}
       style={{ flex: 1, minWidth: 0, minHeight: 48, borderRadius: 10, backgroundColor: G.raised, color: G.text, textAlign: 'center', fontFamily: F.semibold, fontSize: 17, paddingHorizontal: 4 }}

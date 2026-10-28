@@ -244,6 +244,10 @@ describe('the base screens', () => {
     const { store } = setup(() => Date.now());
     store.getState().setPlan(PLAN);
     await render(<BaseProvider store={store}><Workout /></BaseProvider>);
+    await act(async () => fireEvent.changeText(screen.getByTestId('w-0-0'), '..'));
+    expect(store.getState().active!.exercises[0]!.sets[0]!.weight).toBeNull();
+    await act(async () => fireEvent.changeText(screen.getByTestId('w-0-0'), '42,5'));
+    expect(store.getState().active!.exercises[0]!.sets[0]!.weight).toBe(42.5);
     await act(async () => fireEvent.changeText(screen.getByTestId('w-0-0'), '42.5'));
     await act(async () => fireEvent.press(screen.getByTestId('done-0-0')));
     expect(store.getState().active!.exercises[0]!.sets[0]).toMatchObject({ weight: 42.5, done: true });
