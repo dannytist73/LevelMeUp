@@ -70,8 +70,11 @@ Branch `base-app`. Plan: `docs/2026-10-28-base-app.md`.
   squat to dumbbell split squats), the exercise page, Eat's earlier day, a chapter reopening at its card, warm-up sets.
 - [x] `npm run check:bundle`: 539 files, no secrets, no developer code (09:48, again 11:32)
 - [x] APK 5 (11:22 to 11:33 from 6367e84): 178,249,570 bytes, 16 KB ok; light look checked (it keeps you on Me)
-- [ ] APK 6 (11:34 from 85e8445: the review fixes) built, installed, checked
-- [ ] Research pass 2: purposeful micro-interactions (agent), apply the top ones
+- [x] APK 6 (11:34 to 11:43 from 85e8445, the review fixes): 178,247,854 bytes, sha256 `45368bb2…ae91`, 16 KB ok.
+  Checked: the light look on every tab, Change plan prefilled past the welcome, kg to lb converting the history
+  (60 kg to 132.5 lb) and back
+- [x] Research pass 2: `docs/research/2026-10-28-micro-interactions.md`. Applied: a ticked set fills in 200 ms, the
+  calorie and protein bars grow to new values (both still with reduced motion), and haptics follow one map
 - [ ] Final APK built by 14:00 with everything after APK 6, installed, checked; doc and memory current
 
 ## Research applied (docs/research/2026-10-28-simple-logging-ux.md, ranked list)
