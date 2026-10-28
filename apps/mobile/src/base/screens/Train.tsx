@@ -6,7 +6,8 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 import { useState } from 'react';
 import { useClock } from '../clock.ts';
-import { best, defaultPlace, doneThisWeek, place, planWeeks, plannedDay, restarted } from '../logic.ts';
+import { best, defaultPlace, place, planWeeks, plannedDay, restarted, weekDone } from '../logic.ts';
+import { StartButton } from '../start.tsx';
 import { useBase, useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
 import { toast } from '../../ui/toast.ts';
@@ -18,11 +19,13 @@ const TX = BASE_TEXT.train;
 export function Train({ now: fixed }: { now?: number }) {
   const now = useClock(fixed);
   const api = useBaseApi();
-  const [peek, setPeek] = useState<number | null>(null);
+  // The workout tapped: its exercises show, and Start opens it when it isn't done yet this week.
+  const [pick, setPick] = useState<number | null>(null);
   const s = useBase((x) => x);
   if (s.plan === null) return null;
   const p = place(s, now)!;
-  const done = doneThisWeek(s, now);
+  const done = weekDone(s, now);
+  const startDay = s.active?.day ?? (pick !== null && pick < s.plan.days && !done.includes(pick) ? pick : p.day);
   const moves = [...new Set(s.workouts.flatMap((w) => w.exercises.map((e) => e.move)))];
   const history = [...s.workouts].reverse().slice(0, 12);
   return (
@@ -41,14 +44,15 @@ export function Train({ now: fixed }: { now?: number }) {
         <T v="bodyStrong">{TX.workouts(p.week)}</T>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {Array.from({ length: s.plan.days }, (_, i) => {
-            const isDone = i < done;
-            const isNext = i === done;
+            const isDone = done.includes(i);
+            const isNext = !p.finished && i === startDay;
             const name = BASE_TEXT.today.workout(workoutName(i));
-            // A tap shows what that workout holds this week (and hides it again).
+            // A tap shows what that workout holds this week and, when it isn't done, makes it the one Start opens; a
+            // second tap hides it again.
             return (
-              <Press key={i} label={`${name}${isDone ? `, ${TX.done}` : isNext ? `, ${TX.next}` : ''}. ${TX.showPreview(name)}`} selected={peek === i}
-                onPress={() => setPeek(peek === i ? null : i)}
-                style={{ minWidth: 64, flexGrow: 1, minHeight: 56, borderRadius: 12, borderWidth: isNext || peek === i ? 2 : 1.5, borderColor: isNext || peek === i ? G.accent : G.line,
+              <Press key={i} label={`${name}${isDone ? `, ${TX.done}` : isNext ? `, ${TX.next}` : ''}. ${isDone || isNext || s.active !== null ? TX.showPreview(name) : TX.pickThis(name)}`}
+                selected={pick === i} onPress={() => setPick(pick === i ? null : i)}
+                style={{ minWidth: 64, flexGrow: 1, minHeight: 56, borderRadius: 12, borderWidth: isNext || pick === i ? 2 : 1.5, borderColor: isNext || pick === i ? G.accent : G.line,
                   backgroundColor: isDone ? G.doneBg : 'transparent', alignItems: 'center', justifyContent: 'center', padding: 6 }}>
                 <T v="bodyStrong" color={isDone ? G.accentText : G.text}>{workoutName(i)}</T>
                 <T v="label" color={G.muted}>{isDone ? TX.done : isNext ? TX.next : ' '}</T>
@@ -56,10 +60,11 @@ export function Train({ now: fixed }: { now?: number }) {
             );
           })}
         </View>
-        {peek !== null && !p.finished && (
+        {!p.finished && s.active === null && s.plan.days - done.length > 1 && <T v="small" color={G.muted}>{TX.anyOrder}</T>}
+        {pick !== null && pick < s.plan.days && !p.finished && (
           <View accessibilityLiveRegion="polite" style={{ gap: 4 }}>
-            <T v="label" color={G.muted}>{TX.preview(BASE_TEXT.today.workout(workoutName(peek)))}</T>
-            {plannedDay(s.plan, s.kept, peek, p.blockWeek, defaultPlace(s.plan)).map((e, i) => (
+            <T v="label" color={G.muted}>{TX.preview(BASE_TEXT.today.workout(workoutName(pick)))}</T>
+            {plannedDay(s.plan, s.kept, pick, p.blockWeek, defaultPlace(s.plan)).map((e, i) => (
               <T key={`${i}-${e.move}`} v="small">{`${baseMove(e.move).name} · ${TX.sets(e.sets)}`}</T>
             ))}
           </View>
@@ -70,10 +75,8 @@ export function Train({ now: fixed }: { now?: number }) {
             <Button label={TX.newPlan} onPress={() => router.push('/start')} />
           </>
         ) : (
-          <Button label={s.active === null ? BASE_TEXT.today.start : BASE_TEXT.today.resume} icon="train" onPress={() => {
-            api.getState().startWorkout();
-            router.push('/workout');
-          }} />
+          <StartButton now={now} day={startDay} testID="train-start"
+            label={s.active === null ? BASE_TEXT.today.startThis(BASE_TEXT.today.workout(workoutName(startDay))) : BASE_TEXT.today.resume} />
         )}
         <Button label={TX.change} kind="quiet" onPress={() => router.push('/start')} />
       </Card>

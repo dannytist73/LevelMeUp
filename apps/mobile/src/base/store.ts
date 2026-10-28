@@ -8,7 +8,7 @@ import type { StoreApi } from 'zustand/vanilla';
 import type { LoggedSet, Place, Units } from '@levelmeup/rules';
 import { baseMove } from '@levelmeup/content';
 import { restFor, targetFor } from '@levelmeup/rules';
-import { EMPTY, dayKey, defaultPlace, newExercises, place, plannedDay } from './logic.ts';
+import { EMPTY, dayKey, defaultPlace, newExercises, place, plannedDay, weekDone } from './logic.ts';
 
 const blockWeek6 = (w: { blockWeek: number }): boolean => w.blockWeek === 6;
 import type { BaseData, FoodEntry, LookChoice, PlanSetup, Reminder, Targets, Workout } from './logic.ts';
@@ -30,7 +30,8 @@ export type BaseState = BaseData & {
   setLook: (look: LookChoice) => void;
   setReminder: (reminder: Reminder) => void;
   setRestAlerts: (on: boolean) => void;
-  startWorkout: () => Workout | null;
+  /** Starts the next workout, or `day` (0 is A) when it isn't done yet this week; an open one comes back as it is. */
+  startWorkout: (day?: number) => Workout | null;
   setSet: (ex: number, set: number, patch: Partial<LoggedSet>) => void;
   toggleSet: (ex: number, set: number) => boolean;
   addSet: (ex: number) => void;
@@ -136,16 +137,17 @@ export function createBaseStore({ blobs, now, newId }: BaseDeps): StoreApi<BaseS
       setLook: (look) => change({ look }),
       setReminder: (reminder) => change({ reminder }),
       setRestAlerts: (restAlerts) => change({ restAlerts }),
-      startWorkout: () => {
+      startWorkout: (pick) => {
         const s = get();
         if (s.active !== null) return s.active;
         if (s.plan === null) return null;
         const p = place(s, now());
         if (p === null || p.finished) return null;
         const at = defaultPlace(s.plan);
+        const day = pick !== undefined && Number.isInteger(pick) && pick >= 0 && pick < s.plan.days && !weekDone(s, now()).includes(pick) ? pick : p.day;
         const workout: Workout = {
-          id: newId(), startedAt: now(), finishedAt: null, day: p.day, week: p.week, blockWeek: p.blockWeek, place: at,
-          exercises: newExercises(s, plannedDay(s.plan, s.kept, p.day, p.blockWeek, at), p.blockWeek),
+          id: newId(), startedAt: now(), finishedAt: null, day, week: p.week, blockWeek: p.blockWeek, place: at,
+          exercises: newExercises(s, plannedDay(s.plan, s.kept, day, p.blockWeek, at), p.blockWeek),
         };
         change({ active: workout });
         return workout;

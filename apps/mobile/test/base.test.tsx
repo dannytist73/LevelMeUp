@@ -4,7 +4,7 @@ import { BASE_KEY, BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { Blobs } from '../src/base/store.ts';
 import { warmupSets } from '../src/base/logic.ts';
 import { newExercises, readBase, restarted, widgetLines } from '../src/base/logic.ts';
-import { currentBook, dailyNotes, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
+import { currentBook, dailyNotes, doneThisWeek, keepWeek, place, readDaysThisWeek, recentFoods, suggestTargets, weekDone } from '../src/base/logic.ts';
 import { baseMove } from '@levelmeup/content';
 
 const loaded = (id: string) => baseMove(id).needs.some((n) => n === 'gym' || n === 'dumbbells');
@@ -18,7 +18,7 @@ import { Exercise } from '../src/base/screens/Exercise.tsx';
 import { ChapterScreen } from '../src/base/screens/Read.tsx';
 import { ExercisePain } from '../src/base/screens/SwapPain.tsx';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => false) } }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), navigate: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => false) } }));
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }));
 
 const memory = (): Blobs & { data: Map<string, string> } => {
@@ -324,6 +324,61 @@ describe('the base store', () => {
     store.getState().moveRest(-15);
     expect(store.getState().restUntil).toBeNull();
   });
+
+  it('the workouts of a week can be done in any order; a done one is not done twice, and the week moves on after all', () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
+    const finish = (day?: number) => {
+      const w = store.getState().startWorkout(day)!;
+      store.getState().toggleSet(0, 0);
+      now += 60 * 60_000;
+      store.getState().finishWorkout();
+      now += 24 * 60 * 60_000;
+      return w.day;
+    };
+    expect(finish(2)).toBe(2);
+    expect(weekDone(store.getState(), now)).toEqual([2]);
+    expect(place(store.getState(), now)).toMatchObject({ week: 1, day: 0 });
+    expect(doneThisWeek(store.getState(), now)).toBe(1);
+    expect(finish(2)).toBe(0);
+    expect(finish(7)).toBe(1);
+    expect(weekDone(store.getState(), now)).toEqual([]);
+    expect(place(store.getState(), now)).toMatchObject({ week: 2, day: 0 });
+    expect(finish(1)).toBe(1);
+    expect(place(store.getState(), now)).toMatchObject({ week: 2, day: 0 });
+  });
+
+  it('changing days a week keeps the workouts done that week; a week they already fill moves on', () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    const run = (days: 3 | 4 | 5, picks: number[]) => {
+      store.getState().setPlan({ ...PLAN, days, startedAt: now - 1 }, true);
+      for (const d of picks) {
+        store.getState().startWorkout(d);
+        store.getState().toggleSet(0, 0);
+        now += 60 * 60_000;
+        store.getState().finishWorkout();
+        now += 24 * 60 * 60_000;
+      }
+    };
+    const change = (days: 3 | 4) => store.getState().setPlan({ ...store.getState().plan!, days, ...keepWeek(store.getState(), days, now) });
+
+    run(3, [0, 2]);
+    change(4);
+    expect(weekDone(store.getState(), now)).toEqual([0, 2]);
+    expect(place(store.getState(), now)).toMatchObject({ week: 1, day: 1 });
+
+    run(4, [0, 1, 2]);
+    change(3);
+    expect(weekDone(store.getState(), now)).toEqual([]);
+    expect(place(store.getState(), now)).toMatchObject({ week: 2, day: 0 });
+
+    run(5, [0, 4]);
+    change(3);
+    expect(weekDone(store.getState(), now)).toEqual([0, 1]);
+    expect(place(store.getState(), now)).toMatchObject({ week: 1, day: 2 });
+  });
 });
 
 describe('the base screens', () => {
@@ -371,7 +426,7 @@ describe('the base screens', () => {
     expect(store.getState().plan).toMatchObject({ days: 4, startedAt: PLAN.startedAt, length: { kind: 'weeks', weeks: 9 } });
   });
 
-  it('changing days a week keeps the week you were on', async () => {
+  it('changing days a week keeps the week you were on and its workouts', async () => {
     let now = T0;
     const { store } = setup(() => now);
     store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
@@ -387,8 +442,8 @@ describe('the base screens', () => {
     await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
     await act(async () => fireEvent.press(screen.getByLabelText('4')));
     for (let i = 0; i < 5; i++) await act(async () => fireEvent.press(screen.getByTestId('setup-next')));
-    expect(store.getState().plan).toMatchObject({ days: 4, weekOffset: 2, startedAt: now });
-    expect(place(store.getState(), now + 1)).toMatchObject({ week: 3, day: 0 });
+    expect(store.getState().plan).toMatchObject({ days: 4, weekOffset: 2, startedAt: store.getState().workouts[6]!.finishedAt! - 1 });
+    expect(place(store.getState(), now + 1)).toMatchObject({ week: 3, day: 1 });
   });
 
   it('Today shows the next workout, the chapter and asks for food targets', async () => {
@@ -403,12 +458,60 @@ describe('the base screens', () => {
     expect(screen.queryByText(/^Done today/)).toBeNull();
   });
 
+  it('Today offers a different workout from Train', async () => {
+    const { store } = setup();
+    store.getState().setPlan(PLAN);
+    await render(<BaseProvider store={store}><Today now={T0} /></BaseProvider>);
+    await act(async () => fireEvent.press(screen.getByText('Do a different workout')));
+    expect(router.navigate).toHaveBeenCalledWith('/train');
+  });
+
   it('Train shows a workout tile\'s exercises when tapped', async () => {
     const { store } = setup();
     store.getState().setPlan(PLAN);
     await render(<BaseProvider store={store}><Train now={T0} /></BaseProvider>);
-    await act(async () => fireEvent.press(screen.getByLabelText(/^Workout C\. Show what's in Workout C$/)));
+    await act(async () => fireEvent.press(screen.getByLabelText(/^Workout C\. Show what's in Workout C and do it next$/)));
     expect(screen.getByText('Workout C this week')).toBeTruthy();
+    expect(screen.getByLabelText(/^Workout C, Next\./)).toBeSelected();
+    await act(async () => fireEvent.press(screen.getByTestId('train-start')));
+    expect(store.getState().active).toMatchObject({ day: 2 });
+    expect(router.push).toHaveBeenCalledWith('/workout');
+  });
+
+  it('a second workout on the same day asks first, and can still start', async () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
+    store.getState().startWorkout();
+    store.getState().toggleSet(0, 0);
+    now += 60 * 60_000;
+    store.getState().finishWorkout();
+    await render(<BaseProvider store={store}><Train now={now} /></BaseProvider>);
+    expect(screen.getByText('Start Workout B')).toBeTruthy();
+    await act(async () => fireEvent.press(screen.getByTestId('train-start')));
+    expect(screen.getByText('You already trained today')).toBeTruthy();
+    expect(store.getState().active).toBeNull();
+    await act(async () => fireEvent.press(screen.getByText('Not now')));
+    expect(screen.queryByText('You already trained today')).toBeNull();
+    await act(async () => fireEvent.press(screen.getByTestId('train-start')));
+    await act(async () => fireEvent.press(screen.getByTestId('start-anyway')));
+    expect(store.getState().active).toMatchObject({ day: 1 });
+    expect(router.push).toHaveBeenCalledWith('/workout');
+  });
+
+  it('the next day starts without asking', async () => {
+    let now = T0;
+    const { store } = setup(() => now);
+    store.getState().setPlan({ ...PLAN, startedAt: T0 - 1 });
+    store.getState().startWorkout();
+    store.getState().toggleSet(0, 0);
+    now += 60 * 60_000;
+    store.getState().finishWorkout();
+    now += 24 * 60 * 60_000;
+    await render(<BaseProvider store={store}><Today now={now} /></BaseProvider>);
+    await act(async () => fireEvent.press(screen.getByTestId('today-start')));
+    expect(screen.queryByText('You already trained today')).toBeNull();
+    expect(store.getState().active).toMatchObject({ day: 1 });
   });
 
   it('Today says a workout was done today, and the next one waits', async () => {

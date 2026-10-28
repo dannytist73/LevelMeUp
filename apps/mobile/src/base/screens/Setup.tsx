@@ -7,7 +7,7 @@ import type { BaseDays, BaseStyle, Equipment, Experience, Limitation, Where } fr
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { BackHandler, View } from 'react-native';
-import { moveName, place, plannedDay } from '../logic.ts';
+import { keepWeek, moveName, place, plannedDay } from '../logic.ts';
 import type { PlanSetup } from '../logic.ts';
 import { useBaseApi } from '../store.ts';
 import { G } from '../theme.ts';
@@ -25,7 +25,6 @@ export function Setup({ now = Date.now, tester = false }: { now?: () => number; 
   const [was] = useState(() => ({ plan: api.getState().plan, book: api.getState().reading.book }));
   const prev = was.plan;
   const [wasFinished] = useState(() => place(api.getState(), now())?.finished ?? false);
-  const [wasWeek] = useState(() => place(api.getState(), now())?.week ?? 1);
   const prevWeeks = prev?.length.kind === 'weeks' ? prev.length.weeks : null;
   const [step, setStep] = useState<Step>(prev === null ? 'welcome' : 'builder');
   const [style, setStyle] = useState<BaseStyle | null>(prev?.style ?? null);
@@ -44,11 +43,11 @@ export function Setup({ now = Date.now, tester = false }: { now?: () => number; 
   const weeks = lengthPick === 'six' ? 6 : lengthPick === 'twelve' ? 12 : lengthPick === 'custom' ? custom : null;
   const plan = (): PlanSetup => ({
     style: style ?? 'men', experience: experience ?? 'new', days, where, home: where === 'gym' ? [] : home, limitations: hurts,
-    // A changed plan keeps its place (a new number of days starts its count at the week you were on); a finished one,
-    // or the first, starts at week 1.
+    // A changed plan keeps its place (a new number of days keeps the week you were on and the workouts done in it); a
+    // finished one, or the first, starts at week 1.
     length: weeks === null ? { kind: 'open' } : { kind: 'weeks', weeks },
     ...(prev === null || wasFinished ? { startedAt: now() }
-      : prev.days !== days ? { startedAt: now(), weekOffset: wasWeek - 1 }
+      : prev.days !== days ? keepWeek(api.getState(), days, now())
         : { startedAt: prev.startedAt, ...(prev.weekOffset !== undefined ? { weekOffset: prev.weekOffset } : {}) }),
   });
 

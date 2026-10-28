@@ -72,11 +72,42 @@ export function doneInRun(data: BaseData, now: number): number {
   return programRun(planTimes(data), now);
 }
 
-/** When this plan's workouts were finished. */
-const planTimes = (data: BaseData): number[] => {
+/** This plan's finished workouts, oldest first. */
+const planWorkouts = (data: BaseData): Workout[] => {
   const since = data.plan?.startedAt ?? 0;
-  return data.workouts.filter((w) => w.finishedAt !== null && w.finishedAt > since).map((w) => w.finishedAt!);
+  return data.workouts.filter((w) => w.finishedAt !== null && w.finishedAt > since).sort((a, b) => a.finishedAt! - b.finishedAt!);
 };
+
+/** When this plan's workouts were finished. */
+const planTimes = (data: BaseData): number[] => planWorkouts(data).map((w) => w.finishedAt!);
+
+/** The first workout (0 is A) of `days` not in `done`. */
+const firstOpen = (done: readonly number[], days: number): number => Array.from({ length: days }, (_, d) => d).find((d) => !done.includes(d)) ?? 0;
+
+/**
+ * The workouts done in this plan week, by letter (0 is A), in any order: how many comes from the run, which from its
+ * last workouts. A letter done twice, or one past the plan's days (from before a days change), counts as the first one
+ * not done yet, so the number and the letters always agree.
+ */
+export function weekDone(data: BaseData, now: number): number[] {
+  if (data.plan === null) return [];
+  const days = data.plan.days;
+  const k = doneInRun(data, now) % days;
+  const done: number[] = [];
+  for (const w of k === 0 ? [] : planWorkouts(data).slice(-k)) done.push(w.day < days && !done.includes(w.day) ? w.day : firstOpen(done, days));
+  return done.sort((a, b) => a - b);
+}
+
+/**
+ * Where a days-a-week change starts the plan: the week you were on, with the workouts already done in it (a week they
+ * already fill is over, and the next one starts).
+ */
+export function keepWeek(data: BaseData, days: BaseDays, now: number): Pick<PlanSetup, 'startedAt' | 'weekOffset'> {
+  const week = place(data, now)?.week ?? 1;
+  const k = weekDone(data, now).length;
+  if (k === 0 || k >= days) return { startedAt: now, weekOffset: k === 0 ? week - 1 : week };
+  return { startedAt: planWorkouts(data).slice(-k)[0]!.finishedAt! - 1, weekOffset: week - 1 };
+}
 
 /** The plan started again after 14 days away: workouts were done in this plan, none count in the current run. */
 export function restarted(data: BaseData, now: number): boolean {
@@ -87,7 +118,8 @@ export function place(data: BaseData, now: number): PlanPlace | null {
   if (data.plan === null) return null;
   const run = doneInRun(data, now);
   const before = planTimes(data).length - run;
-  return placeAt(planIndex(data.plan.weekOffset ?? 0, before, run, data.plan.days), run % data.plan.days, data.plan.length);
+  // The day is the workout Start opens: the first one not done this week.
+  return placeAt(planIndex(data.plan.weekOffset ?? 0, before, run, data.plan.days), firstOpen(weekDone(data, now), data.plan.days), data.plan.length);
 }
 
 /** The total weeks of a plan with an end (null for no end date). */
@@ -158,9 +190,12 @@ export function readDaysThisWeek(data: Pick<BaseData, 'reading'>, now: number): 
 
 /** Workouts finished in the current plan week. */
 export function doneThisWeek(data: BaseData, now: number): number {
-  const p = place(data, now);
-  if (p === null || data.plan === null) return 0;
-  return p.day;
+  return weekDone(data, now).length;
+}
+
+/** The last workout finished on `now`'s calendar day, if any. */
+export function trainedToday(data: Pick<BaseData, 'workouts'>, now: number): Workout | undefined {
+  return [...data.workouts].reverse().find((w) => w.finishedAt !== null && dayKey(w.finishedAt) === dayKey(now));
 }
 
 /** A local calendar day's key, "2026-10-28". */
