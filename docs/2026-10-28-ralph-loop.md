@@ -211,6 +211,18 @@ targets screen says Save waits for body weight.
   Read's book covers, a chapter's story cards, Today's chapter picture, a chapter reopening where it was left.
   Emulator powered off, WSL stopped, ComfyUI stopped (15:51).
 
+## After the loop: any day, any order (owner, 2026-10-29: "are we able to workout anytime? Switch workout days around?")
+
+- Already true: no fixed weekdays, the week moves on by workouts done, missed days wait. New (caae48e): pick any
+  workout not done this week in Train (Today links there); a days-a-week change keeps the week's workouts; a second
+  workout on the same day asks first ("You already trained today"), never blocks.
+- **APK 0.15.2 (03:18 to 03:25 from caae48e):** `apps/mobile/dist/levelmeup-0.15.2-preview.apk`, 176,532,918 bytes,
+  sha256 `f87941f68ae57191b4e585789b3858661ea00dccc6d99c4c286b36e2a838bfeb`, 26 arm64 libraries all 16 KB aligned,
+  bundle scan clean (539 files), app tests 1369, rules/content/server tests and typecheck green. The first try ran out
+  of Java heap (a stale WSL VM held 11 GB); `wsl --shutdown` and a rebuild fixed it. Installed over 0.15.1 (data
+  kept) and checked (`apps/mobile/dist/0.15.2-check.png`): Workout C picked and started out of order, the question on
+  Train and on Today, "Not now", the link to Train; the test workouts removed after. Emulator off, WSL stopped (03:31).
+
 ## Log
 
 - 08:50 loop planned; research and ad agents started.
