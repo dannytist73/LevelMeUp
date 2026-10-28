@@ -48,7 +48,9 @@ export function Button({ label, onPress, kind = 'primary', icon, disabled, style
     <Press label={label} onPress={onPress} disabled={disabled} testID={testID}
       style={[{ minHeight: 52, borderRadius: S.control, paddingHorizontal: 18, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, box, style]}>
       {icon !== undefined && <Icon name={icon} size={20} color={fg} />}
-      <T v="bodyStrong" color={fg} style={{ textAlign: 'center', flexShrink: 1 }}>{label}</T>
+      {/* Android reuses a text view across a disabled -> enabled change and can lose its words (seen 2026-10-28, and
+          "Add a set" in 2026-10-15): a new view per state, and without an icon the label fills the button. */}
+      <T key={disabled ? 'off' : 'on'} v="bodyStrong" color={fg} style={{ textAlign: 'center', flexShrink: 1, flexGrow: icon === undefined ? 1 : 0 }}>{label}</T>
     </Press>
   );
 }
