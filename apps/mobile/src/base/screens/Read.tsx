@@ -155,7 +155,8 @@ export function ChapterScreen({ id }: { id: string }) {
           <T v="bodyStrong">{ch.check.question}</T>
           <Options label={ch.check.question} columns={1} value={answer} onChange={(k) => {
             setAnswer(k);
-            buzz('tick');
+            // A right answer confirms; a wrong one stays quiet (research 2026-10-28, haptic map).
+            if (k === ch.check.answer) buzz('stamp');
           }} options={ch.check.options.map((o, i) => ({ key: i, label: o }))} />
           {answer !== null && (
             <T accessibilityLiveRegion="polite" color={answer === ch.check.answer ? G.accentText : G.text}>{`${answer === ch.check.answer ? TX.right : TX.notQuite} ${ch.check.why}`}</T>

@@ -55,13 +55,13 @@ export function Eat({ now: clock = Date.now() }: { now?: number }) {
     for (const f of yesterday.filter((x) => x.meal === m)) {
       api.getState().addFood({ meal: m, name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat, day: shownDay });
     }
-    buzz('tick');
+    buzz('stamp');
     toast(TX.form.saved(TX.meals[m]));
   };
   const copyable = MEALS.filter((m) => yesterday.some((f) => f.meal === m) && !today.some((f) => f.meal === m));
   const again = (f: FoodEntry) => {
     api.getState().addFood({ meal: back === 0 ? mealNow(Date.now()) : f.meal, name: f.name, amount: f.amount, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat, day: shownDay });
-    buzz('tick');
+    buzz('stamp');
     toast(TX.form.saved(f.name));
   };
   const remove = (f: FoodEntry) => {
@@ -166,7 +166,7 @@ export function FoodAdd({ day }: { day?: string }) {
     if (toNumber(kcal) === null && toNumber(protein) === null) return;
     const label = name.trim() === '' ? F.quickName : name.trim();
     api.getState().addFood({ meal, name: label, amount: amount.trim(), kcal: Math.round(toNumber(kcal) ?? 0), protein: Math.round(toNumber(protein) ?? 0), carbs: toNumber(carbs), fat: toNumber(fat), ...(day !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(day) ? { day } : {}) });
-    buzz('tick');
+    buzz('stamp');
     toast(F.saved(label));
     router.back();
   };

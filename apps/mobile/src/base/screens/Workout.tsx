@@ -95,7 +95,7 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
   const tick = (i: number) => {
     const done = api.getState().toggleSet(index, i);
     if (!done) return;
-    buzz('tick');
+    buzz('stamp');
     const set = api.getState().active?.exercises[index]?.sets[i];
     if (set !== undefined && before !== null && set.weight !== null && before.weight !== null && bestSet([before, set]) === set && (set.weight > before.weight || (set.reps ?? 0) > (before.reps ?? 0))) {
       toast(TX.best(move.name, formatSet(set.weight, set.reps ?? 0, units)));
@@ -148,9 +148,15 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
       {weighted && ex.sets.some((x) => !x.done) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <T v="small" color={G.muted} style={{ flex: 1 }}>{TX.allSets}</T>
-          <IconButton icon="minus" size={44} label={TX.lighter(formatWeight(step, units))} onPress={() => api.getState().shiftWeight(index, -step)} />
+          <IconButton icon="minus" size={44} label={TX.lighter(formatWeight(step, units))} onPress={() => {
+            buzz('tick');
+            api.getState().shiftWeight(index, -step);
+          }} />
           <T v="bodyStrong" style={{ minWidth: 72, textAlign: 'center' }}>{formatWeight(ex.sets.find((x) => !x.done)?.weight ?? 0, units)}</T>
-          <IconButton icon="plus" size={44} label={TX.heavier(formatWeight(step, units))} onPress={() => api.getState().shiftWeight(index, step)} />
+          <IconButton icon="plus" size={44} label={TX.heavier(formatWeight(step, units))} onPress={() => {
+            buzz('tick');
+            api.getState().shiftWeight(index, step);
+          }} />
         </View>
       )}
       <Button label={TX.addSet} icon="plus" kind="quiet" onPress={() => api.getState().addSet(index)} />
@@ -167,7 +173,7 @@ function RestBar() {
   useEffect(() => {
     if (until !== null && now >= until && ended.current !== until) {
       ended.current = until;
-      buzz('stamp');
+      buzz('level');
       api.getState().endRest();
       toast(TX.restDone);
     }
@@ -246,7 +252,7 @@ export function Workout() {
   const undone = active.exercises.some((e) => e.sets.some((x) => !x.done));
   const finish = () => {
     const w = api.getState().finishWorkout();
-    buzz('level');
+    buzz('stamp');
     if (w === null) router.back();
     else setFinished(w);
   };
