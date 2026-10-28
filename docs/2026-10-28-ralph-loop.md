@@ -98,6 +98,27 @@ test. Changing the look redraws the app from Today.
 Also from the Kaizen research: warm-up sets for the big lifts (50/75/90%) and an exercise page with how-to steps,
 the form cue, best set and a top-set chart.
 
+## Independent review (11:21, a fresh agent reading the base-app code)
+
+Twelve findings, all fixed in 82172d8 and 85e8445 with tests:
+
+1. The week after every easy week advised a lighter weight (it judged half-rep sets against full targets): advice and
+   prefill now look past easy weeks.
+2. Changing days a week mid-plan shifted the week: the new count starts at the week you were on (`weekOffset`).
+3. kg/lb only changed the label: stored weights (history, the open workout, body weight) are converted.
+4. A redraw after finishing (e.g. the phone switching dark/light) could start a new workout: only Start buttons start one.
+5. An unreadable saved record could be overwritten by the next save: it is kept aside first (or saving stops).
+6. A new weight prefilled last time's top reps: it starts at the range's bottom.
+7. "Swap to a gentler one" could pick a harder neighbouring-slot move: it stays in the movement, closest easier first.
+8. Edits in Me wiped kept swaps: they stay; the button now says "Keep it in my plan" (it never expired by block).
+9. A finished plan showed "Week 7 of 6" and un-finished after 14 days: Train shows it done; a long break restarts the
+   block you were in, and a finished plan stays finished.
+10. A swap with done sets then Gym/Home could show the same exercise twice: no duplicates, unique keys.
+11. Notification plans could race on fast app switches: they run one at a time.
+12. The rest bar could squeeze at large text: it wraps.
+
+Also: read days are the last 7 calendar days; Eat steps back by the calendar (daylight-saving safe).
+
 ## Decisions made in the loop
 
 - **Local-first, no account:** the base app keeps everything on the phone and Grumble Camp's game store no longer
