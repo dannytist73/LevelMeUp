@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import { best, doneThisWeek, place, planWeeks } from '../logic.ts';
 import { useBase } from '../store.ts';
 import { G } from '../theme.ts';
-import { Button, Card, Screen, T } from '../ui.tsx';
+import { Button, Card, Press, Screen, T } from '../ui.tsx';
 
 const TX = BASE_TEXT.train;
 
@@ -75,10 +75,11 @@ export function Train({ now = Date.now() }: { now?: number }) {
             const b = best(s, m);
             const unit = baseMove(m).unit;
             return b === null ? null : (
-              <View key={m} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+              <Press key={m} label={BASE_TEXT.exercise.open(baseMove(m).name)} onPress={() => router.push(`/exercise/${m}`)}
+                style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <T v="small" style={{ flexShrink: 1 }}>{baseMove(m).name}</T>
                 <T v="small" color={G.accentText}>{formatSet(b.weight, b.reps ?? 0, s.units, unit)}</T>
-              </View>
+              </Press>
             );
           })}
         </Card>

@@ -107,6 +107,18 @@ export function newExercises(data: BaseData, planned: readonly BaseExercise[], b
   });
 }
 
+/**
+ * Ramp-up sets before a heavy lift (Kaizen's warm-up, docs/research/kaizen-training.md §3.7): about 50% × 6, 75% × 4
+ * and 90% × 2 of the working weight, rounded down to the plate step; none for a light weight.
+ */
+export function warmupSets(weight: number, units: 'kg' | 'lb'): { weight: number; reps: number }[] {
+  const step = units === 'kg' ? 2.5 : 5;
+  if (weight < (units === 'kg' ? 20 : 45)) return [];
+  return [[0.5, 6], [0.75, 4], [0.9, 2]]
+    .map(([share, reps]) => ({ weight: Math.floor((weight * share!) / step) * step, reps: reps! }))
+    .filter((s, i, all) => s.weight > 0 && (i === 0 || s.weight !== all[i - 1]!.weight));
+}
+
 /** Days with a chapter read in the 7 days to `now` (weeks, not streaks: nothing is lost). */
 export function readDaysThisWeek(data: Pick<BaseData, 'reading'>, now: number): number {
   const since = now - 7 * 24 * 60 * 60 * 1000;

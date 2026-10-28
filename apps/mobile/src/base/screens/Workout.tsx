@@ -11,7 +11,7 @@ import { TextInput, View } from 'react-native';
 import { buzz } from '../../ui/haptics.ts';
 import { toast } from '../../ui/toast.ts';
 import { Icon } from '../icons.tsx';
-import { best, lastSets, planWeeks } from '../logic.ts';
+import { best, lastSets, planWeeks, warmupSets } from '../logic.ts';
 import type { Workout as WorkoutData, WorkoutExercise } from '../logic.ts';
 import { useBase, useBaseApi } from '../store.ts';
 import { F, G, S } from '../theme.ts';
@@ -79,6 +79,9 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
   const seconds = ex.target.kind === 'range' && ex.target.unit === 'seconds';
   const weighted = move.needs.some((n) => n === 'gym' || n === 'dumbbells');
   const target = ex.target.kind === 'fixed' ? TX.fixed(ex.target.reps) : TX.range(ex.target.min, ex.target.max, ex.target.unit);
+  // Ramp-up sets for the big lifts (2 to 3 minutes' rest), from the first set's weight.
+  const first = ex.sets[0]?.weight ?? null;
+  const warm = ex.restSeconds >= 150 && weighted && first !== null && !ex.sets[0]!.done ? warmupSets(first, units === 'lb' ? 'lb' : 'kg') : [];
   const tick = (i: number) => {
     const done = api.getState().toggleSet(index, i);
     if (!done) return;
@@ -93,7 +96,9 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
     <Card>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
         <View style={{ flex: 1, gap: 2 }}>
-          <T v="heading">{move.name}</T>
+          <Press label={BASE_TEXT.exercise.open(move.name)} onPress={() => router.push(`/exercise/${ex.move}`)} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
+            <T v="heading" color={G.text} style={{ textDecorationLine: 'underline', textDecorationColor: G.edge }}>{move.name}</T>
+          </Press>
           <T v="small" color={G.muted}>{TX.target(target, TX.rest(ex.restSeconds))}</T>
         </View>
       </View>
@@ -102,6 +107,7 @@ function ExerciseCard({ ex, index, workout }: { ex: WorkoutExercise; index: numb
         <Button label={TX.pain} icon="alert" kind="secondary" style={{ flex: 1, minHeight: 48 }} onPress={() => router.push({ pathname: '/exercise-pain', params: { ex: String(index) } })} />
       </View>
       <T v="small" color={G.accentText}>{tipFor(ex, last, workout.blockWeek, units)}</T>
+      {warm.length > 0 && <T v="small" color={G.muted}>{BASE_TEXT.exercise.warmup(warm.map((w) => formatSet(w.weight, w.reps, units)).join(', '))}</T>}
       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <T v="label" color={G.muted} style={{ width: 34 }}>{TX.set}</T>
         <T v="label" color={G.muted} style={{ flex: 1.3 }}>{TX.last}</T>

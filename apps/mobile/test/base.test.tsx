@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { BASE_KEY, BaseProvider, createBaseStore } from '../src/base/store.ts';
 import type { Blobs } from '../src/base/store.ts';
+import { warmupSets } from '../src/base/logic.ts';
 import { currentBook, dailyNotes, doneThisWeek, place, readDaysThisWeek, recentFoods, suggestTargets } from '../src/base/logic.ts';
 import { baseMove } from '@levelmeup/content';
 
@@ -11,6 +12,7 @@ import { Setup } from '../src/base/screens/Setup.tsx';
 import { FoodAdd } from '../src/base/screens/Eat.tsx';
 import { Today } from '../src/base/screens/Today.tsx';
 import { Workout } from '../src/base/screens/Workout.tsx';
+import { Exercise } from '../src/base/screens/Exercise.tsx';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissAll: jest.fn(), canDismiss: jest.fn(() => false) } }));
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }));
@@ -172,6 +174,12 @@ describe('the base store', () => {
     expect(new Date(dailyNotes(store.getState(), T0)[0]!.at).getDate()).toBe(29);
   });
 
+  it('warm-up sets ramp to the working weight on the plate step', () => {
+    expect(warmupSets(60, 'kg')).toEqual([{ weight: 30, reps: 6 }, { weight: 45, reps: 4 }, { weight: 52.5, reps: 2 }]);
+    expect(warmupSets(135, 'lb')).toEqual([{ weight: 65, reps: 6 }, { weight: 100, reps: 4 }, { weight: 120, reps: 2 }]);
+    expect(warmupSets(12.5, 'kg')).toEqual([]);
+  });
+
   it('the rest timer moves and ends', () => {
     let now = T0;
     const { store } = setup(() => now);
@@ -235,6 +243,18 @@ describe('the base screens', () => {
     await act(async () => fireEvent.press(screen.getByTestId('finish-yes')));
     expect(screen.getByText('Workout done')).toBeTruthy();
     expect(store.getState().workouts).toHaveLength(1);
+  });
+
+  it('an exercise page shows how to do it, the best set and past workouts', async () => {
+    const { store } = setup();
+    store.setState({ workouts: [
+      { id: 'w1', startedAt: T0, finishedAt: T0 + 1, day: 0, week: 1, blockWeek: 1, place: 'gym', exercises: [{ slot: 'squat', move: 'goblet-squat', target: { kind: 'range', min: 8, max: 12, unit: 'reps' }, restSeconds: 150, sets: [{ weight: 20, reps: 10, done: true }] }] },
+      { id: 'w2', startedAt: T0 + 2, finishedAt: T0 + 3, day: 0, week: 2, blockWeek: 2, place: 'gym', exercises: [{ slot: 'squat', move: 'goblet-squat', target: { kind: 'range', min: 8, max: 12, unit: 'reps' }, restSeconds: 150, sets: [{ weight: 22.5, reps: 9, done: true }] }] },
+    ] });
+    await render(<BaseProvider store={store}><Exercise id="goblet-squat" /></BaseProvider>);
+    expect(screen.getByText('How to do it')).toBeTruthy();
+    expect(screen.getByText('Best set: 22.5 kg × 9')).toBeTruthy();
+    expect(screen.getByLabelText('Your top set over the last 2 workouts, best 22.5 kg × 9')).toBeTruthy();
   });
 
   it('logging food asks for a number, names a nameless one Quick add, then saves', async () => {

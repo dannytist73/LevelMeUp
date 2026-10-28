@@ -165,6 +165,17 @@ export const BASE_TEXT = {
     discard: 'Discard workout',
     empty: 'Nothing fits here yet. Switch to Gym, or add equipment in Me.',
   },
+  exercise: {
+    how: 'How to do it',
+    cue: 'Keep in mind',
+    best: (set: string) => `Best set: ${set}`,
+    chart: 'Your top set each time',
+    chartLabel: (n: number, best: string) => `Your top set over the last ${n} workouts, best ${best}`,
+    sessions: 'Past workouts',
+    none: 'Not done yet. Your sets show up here after your first workout with it.',
+    open: (name: string) => `${name}: how to do it and your history`,
+    warmup: (sets: string) => `Warm-up: ${sets}, then your working sets.`,
+  },
   swap: {
     title: 'Swap exercise',
     body: (place: string) => `Exercises for the same muscles that fit ${place}.`,
