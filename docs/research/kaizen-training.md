@@ -1,6 +1,6 @@
 # Kaizen training materials: research for LevelMeUp's physical quests
 
-*Compiled 2026-10-11 from the owner's Google Drive (dannytist.73@gmail.com), read-only. Kaizen is a paid coaching
+*Compiled 2026-10-11 from the owner's Google Drive, read-only. Kaizen is a paid coaching
 program (Lazy Lifter / "Coach Cho"); its principles below are paraphrased. Exercise names, muscles, equipment and
 set/rep numbers are listed in full because they are facts. Do not ship Kaizen's wording, links or branding in the app.*
 
@@ -33,37 +33,37 @@ set/rep numbers are listed in full because they are facts. Do not ship Kaizen's 
 
 ## 2. Sources
 
-| Title | Drive file ID | Type | Status |
+| Title | Drive file | Type | Status |
 |---|---|---|---|
-| Copy of [Kaizen] Men's Workout Builder (v3.01) | 1eaDmqMYnhW7F1AT5S-TYpxPBGeW3CPn5dLK1DLP0GLY | Google Sheet, 11 tabs | **Read OK**, all tabs. `read_file_content` returned only sample rows, so I exported the file as .xlsx and parsed values, formulas and dropdown validations with openpyxl. This copy was saved 3 seconds after it was created (2023-01-22), so its picks are the template's own defaults. |
-| Copy of [Kaizen] Men's Workout Builder (v3.02) | 1e7yvoU-RVF7X9zJKb7WxV2xO3kHfmX7_AXAEohtAoHA | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Last modified 2024-04-28. |
-| [Kaizen] Women's Workout Builder (v3.01) | 1UByzT-NJlTFnq2DEMSP9L7SQst3SJ2eFFQF8_UNZySU | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Last modified 2024-05-02. |
-| Day-2-Day Workout Builder | 11Njz6-T4DhLJiPbNiV48kPsLx8dyI1-Zqxn110fvASg | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Created 2026-04-07. |
-| D-Code Workout Builder v1.0 | 1vx2-B2AKYMpzHvjfgLSWP8GgSWcC44UaqekLG2nDwzc | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Created 2023-05-29, last modified 2024-12-11. |
-| Kaizen Bulk/Cut 2023 Planner | 1xnJZkzHMJvc6Hjz1Ehyb271trYFprkd7Jpbl12j5wQI | Google Sheet, 2 tabs (Scenario 1, Scenario 2) | **Read OK**, both tabs (`read_file_content`; the .xlsx export confirmed there are only 2 sheets). |
-| KAIZEN MAINTENANCE PROGRAM (S3) | 1e9TI14HEkcn5DDdwwZs9zoL9bazEEiWkNTzjsQfpe7E | Google Doc | **Read OK**. Mostly an enrollment offer (prices) for the off-season, with a short argument about relapse after a diet. |
-| KAIZEN SEASON 4 ONBOARDING REMINDERS & ACTION ITEMS | 1U_dBdaNPD6o0-7blcTKCgombWNfZwEhoU0g3G9r9lpc | Google Doc | **Read OK**. |
-| KAIZEN SEASON 3 PRE-COACHING REMINDERS & ACTION ITEMS | 192U_LqpzaaTsRHlIWJkqtdTF1spH7cf-a4By7Ki7gdg | Google Doc | **Read OK**. |
-| Kaizen Daily Journal Guide | 1MlfQ516tYo5NEfNdjqkgKwySYtzhYQENQK6StAc6kvc | Google Doc | **Read OK**. The Notion template it links to was not opened. |
-| KAIZEN SEASON 3 - Habit Tracker Walkthrough | 1qNe4iNNo1lI1tEBs0tW74o5woMbOt_TUUyIlg7grSiw | Google Doc | **Partly**. The doc is only five links to walkthrough videos (setup tab, measurements tab, filling in the tracker, dashboard). The videos were not opened, so the tracker's habit list and scoring are unknown. |
-| 4 - Workout Rules.png | 14wToeiTpdFGsNzb7SUccSSZZjnkVILbt | PNG | **Read OK** (Drive's text extraction). Same rules as the builders' Rules tab. |
-| 6 - Daily Routine Cheatsheet.pdf | 1PMuO00zjpnuJWoB8Cro61MjrBuzWbIvW | PDF | **Read OK**. |
-| 11 - Tips On Mindful Eating | 1k93QzriEzIiQCk9MwhCDlJXJ8T2KTynFHTehpPHtMTo | Google Doc | **Read OK**. |
-| #1. Cho's Photoshoot Workout.pdf | 1Mqi-Wrz-D_QDG4yU1s0F8wYTTfp2YkjO | PDF, 3 pages | **Read OK**. Drive's text extraction scrambled the table, so I downloaded the PDF to the scratchpad and read the rendered pages. |
-| 5 - 2.0 Character Worksheet (Editable).pdf | 14YtZbcGYoTyY3gZM8vbI0Kzv0VbgBQFa | PDF, 24 pages | **Read OK**, but this copy holds the owner's own filled-in, private answers. On purpose, only the worksheet's structure is summarized here. |
-| 0 - Week 1 Action Items | 15Lu_DTfqu9n5JfVW7faaay7BPiC3MNgi | PDF | **Read OK**. Each action-item PDF ends with a raw link list that the tool cut off; the body text is complete. |
-| 0 - Week 2 Action Items | 1RM30lAXkJaIaWg4f6XDeCU2lm25XqeXI | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 3 Action Items | 1YyXEQj4Roq7042K3VA5dq_UzSoDwW6-o | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 4 Action Items | 1gqVR86wig_dj8rGBjs_CZRmFzapMQc9F | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 5 Action Items | 1UD-imLE5PYvpXkblsHx8f_V-pcgHnmfM | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 6 Action Items | 1eORXE6nqq6EbS31UrAc63Xu1_0SDieZN | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 7 Action Items | 1GlaNfFqw-BX_EX_U_OlXBiebO2lG_ble | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 8 Action Items | 14u1i-rgLd9dgVKWYJoBl9o-uZkJUO9MT | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 9 Action Items | 151USoaPF0AFotcNQiwNZqTZDc2srTCt_ | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 13 - Action Items | 1E5K80HDIBPBqAZBhVw62jPoHRAy5__18 | PDF | **Read OK** (trailing link list cut off). |
-| 0 - Week 15 Action Items | 1qYJrDgbADt0PAeAuQUt8kHbTy2Vu7mRa | PDF | **Read OK** (trailing link list cut off). |
+| Copy of [Kaizen] Men's Workout Builder (v3.01) | (not kept: private) | Google Sheet, 11 tabs | **Read OK**, all tabs. `read_file_content` returned only sample rows, so I exported the file as .xlsx and parsed values, formulas and dropdown validations with openpyxl. This copy was saved 3 seconds after it was created (2023-01-22), so its picks are the template's own defaults. |
+| Copy of [Kaizen] Men's Workout Builder (v3.02) | (not kept: private) | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Last modified 2024-04-28. |
+| [Kaizen] Women's Workout Builder (v3.01) | (not kept: private) | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Last modified 2024-05-02. |
+| Day-2-Day Workout Builder | (not kept: private) | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Created 2026-04-07. |
+| D-Code Workout Builder v1.0 | (not kept: private) | Google Sheet, 11 tabs | **Read OK**, all tabs (.xlsx export). Created 2023-05-29, last modified 2024-12-11. |
+| Kaizen Bulk/Cut 2023 Planner | (not kept: private) | Google Sheet, 2 tabs (Scenario 1, Scenario 2) | **Read OK**, both tabs (`read_file_content`; the .xlsx export confirmed there are only 2 sheets). |
+| KAIZEN MAINTENANCE PROGRAM (S3) | (not kept: private) | Google Doc | **Read OK**. Mostly an enrollment offer (prices) for the off-season, with a short argument about relapse after a diet. |
+| KAIZEN SEASON 4 ONBOARDING REMINDERS & ACTION ITEMS | (not kept: private) | Google Doc | **Read OK**. |
+| KAIZEN SEASON 3 PRE-COACHING REMINDERS & ACTION ITEMS | (not kept: private) | Google Doc | **Read OK**. |
+| Kaizen Daily Journal Guide | (not kept: private) | Google Doc | **Read OK**. The Notion template it links to was not opened. |
+| KAIZEN SEASON 3 - Habit Tracker Walkthrough | (not kept: private) | Google Doc | **Partly**. The doc is only five links to walkthrough videos (setup tab, measurements tab, filling in the tracker, dashboard). The videos were not opened, so the tracker's habit list and scoring are unknown. |
+| 4 - Workout Rules.png | (not kept: private) | PNG | **Read OK** (Drive's text extraction). Same rules as the builders' Rules tab. |
+| 6 - Daily Routine Cheatsheet.pdf | (not kept: private) | PDF | **Read OK**. |
+| 11 - Tips On Mindful Eating | (not kept: private) | Google Doc | **Read OK**. |
+| #1. Cho's Photoshoot Workout.pdf | (not kept: private) | PDF, 3 pages | **Read OK**. Drive's text extraction scrambled the table, so I downloaded the PDF to the scratchpad and read the rendered pages. |
+| 5 - 2.0 Character Worksheet (Editable).pdf | (not kept: private) | PDF, 24 pages | **Read OK**, but this copy holds the owner's own filled-in, private answers. On purpose, only the worksheet's structure is summarized here. |
+| 0 - Week 1 Action Items | (not kept: private) | PDF | **Read OK**. Each action-item PDF ends with a raw link list that the tool cut off; the body text is complete. |
+| 0 - Week 2 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 3 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 4 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 5 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 6 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 7 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 8 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 9 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 13 - Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
+| 0 - Week 15 Action Items | (not kept: private) | PDF | **Read OK** (trailing link list cut off). |
 
-**Lesson videos** (transcribed on the laptop on 2026-10-11; notes in `kaizen-videos.md`) (in the Kaizen folder `16CTKFkOg99FXRc8XNQxTfYxb1d7jFLvF`; titles and sizes
+**Lesson videos** (transcribed on the laptop on 2026-10-11; notes in `kaizen-videos.md`) (in the private Kaizen folder; titles and sizes
 only, nothing downloaded):
 
 | Title | Size |

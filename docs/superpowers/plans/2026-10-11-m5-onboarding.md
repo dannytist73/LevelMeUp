@@ -133,7 +133,7 @@ safety questions except "gentle start: yes or no".
 Claude can't do these: they're your Google and Supabase dashboards, and the Google client secret must never pass
 through the chat. None of them changes how the wedding site signs in (guests: anonymous; admins: email links).
 
-**A. Google Cloud** (https://console.cloud.google.com, signed in as dannytist.73@gmail.com)
+**A. Google Cloud** (https://console.cloud.google.com, signed in as the owner's Google account)
 
 1. Create a project named **LevelMeUp**.
 2. **Google Auth Platform → Get started.** App name **LevelMeUp**, support email yours, audience **External**, contact
